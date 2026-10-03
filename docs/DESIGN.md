@@ -418,6 +418,7 @@ The site prints "Renderable projects" as thirty-odd rows, each repeating one of 
 - **Do** print a field the vocabulary does not recognise, with its raw label, and keep a secret behind the click that asks for it.
 - **Do** keep a row-level action out of the way until the row is engaged — hidden by opacity behind `:hover` **and** `:focus-within`, never by `display: none`, and always visible where there is no hover to reveal it.
 - **Do** state membership with a persistent mark rather than a hover-dependent one, and make a row-level toggle say its own state in the label (Prioritise / Remove) — dropping it entirely when the membership is unknown.
+- **Do** draw the top-bar sheep as our own glyph — a plain rounded animal outline in `currentColor`, so it follows the accent through both themes. It is deliberately **not** a trace of SheepIt's mark: theirs is a comma-shaped head with a curl, sitting above a separate cloud-shaped body.
 
 ### Don't:
 - **Don't** colour status text or add semantic pills. "Rendering", "Waiting" and "Paused" stay neutral secondary ink — a wall of orange statuses destroys the accent's meaning and its usefulness.
@@ -431,3 +432,4 @@ The site prints "Renderable projects" as thirty-odd rows, each repeating one of 
 - **Don't** repeat a grouped reason on every row. When thirty rows carry six sentences, the reason is the grouping — print it once, above the names it explains.
 - **Don't** print a raw record as the default reading of a page, and don't print a render key on load. Both make the record louder than the machine it describes.
 - **Don't** colour-code event types or invent a status ramp to make a log look informative. The accent bar carries one measure; everything else is text.
+- **Don't** substitute the site's own logo file for that glyph. Measured 2026-10-04 and left as-is on purpose: the asset in the site's navbar is `/media/image/title.png` (71×67, 75.6% of its pixels fully transparent, centred on `#e06d58`) and would technically drop in — but `logo_v5a.png` is **opaque**, alpha 255 on every pixel with a `#232323` field baked into the bitmap, so it lands as a dark rectangle in both themes. Either one also costs us something we would rather keep: the first needs the "every image is self-contained" claim rewritten, the second redistributes their artwork inside an MIT file.
