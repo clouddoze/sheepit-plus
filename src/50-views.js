@@ -345,11 +345,14 @@
   }
 
   function projectRow(p, me, maps) {
+    // 分数单占一列：跟在条子后面会让每条轨道的长度随数字宽度变来变去（见 40-ui.js 的 progress）。
+    const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
       <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
-      <td>${UI.progress(p.pct, p.done, p.total)}</td>
+      <td>${UI.progress(p.pct, frac)}</td>
+      <td class="r num frac">${esc(frac)}</td>
       <td>${UI.devices(p.cpu, p.gpu)}</td>
       <td class="r num">${esc(p.memory || '—')}</td>
     </tr>`;
@@ -376,9 +379,9 @@
     }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
-    const th = (key, label) => {
+    const th = (key, label, span) => {
       const on = projState.sort === key;
-      return `<th class="sortable" data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
     };
 
     // 三份名单（都是我自己那份，来自账户设置页）：优先级决定「优先 / 移出」，
@@ -429,12 +432,12 @@
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
             <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'))}
+            ${th('progress', t('proj.col.progress'), 2)}
             <th>${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || `<tr><td colspan="7"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>

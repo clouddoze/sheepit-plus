@@ -376,10 +376,13 @@ ${Theme.css('#sp')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-#sp .bar{display:flex;align-items:center;gap:10px;min-width:180px}
-#sp .bar .t{position:relative;flex:1;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+/* 进度条。分数在**自己的列**里（td.frac），不挂在条子后面 —— 挂上去会让每行的轨道长度
+   随数字宽度变来变去，一整列参差不齐；进了列，表格布局保证每行轨道等长，分数也右对齐成线。
+   .bar 仍被活动汇总表的表头当弹性占位用（见 .acthead .bar），所以这里不给它定 display。 */
+#sp .bar{min-width:180px}
+#sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .bar .n{font-size:11.5px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}

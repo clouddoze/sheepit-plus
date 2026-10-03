@@ -275,19 +275,27 @@
   /* ------------------------------------------------------------ 进度条 / 设备 */
 
   /**
-   * 进度条 + 右侧数字。
-   * 原站把「1216 / 12000」直接压在半填充的条子上，白字横跨橙/灰两色，还容易被截断；
-   * 这里把数字移到条子外面。
+   * 进度分数文案。原站把「1216 / 12000」直接压在半填充的条子上，白字横跨橙/灰两色，
+   * 还容易被截断；这里把数字移到条子外面，回落时用百分比。
    */
-  function progress(pct, done, total) {
+  function progressText(pct, done, total) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    const label = Number.isFinite(done) && Number.isFinite(total) && total > 0
+    return Number.isFinite(done) && Number.isFinite(total) && total > 0
       ? `${fmt(done)} / ${fmt(total)}`
       : `${p.toFixed(0)}%`;
-    return `<div class="bar" title="${esc(label)}">
-      <div class="t"><div class="f" style="width:${p}%"></div></div>
-      <span class="n">${esc(label)}</span>
-    </div>`;
+  }
+
+  /**
+   * 6px 轨道 + 强调色填充。
+   *
+   * 分数**不在这里**：它作为独立的一列跟在这个格子后面（见 50-views.js 的项目表）。
+   * 早先把 `<span class="n">` 挂在条子后面，`flex:1` 的轨道就被每行不同的数字宽度挤得
+   * 长短不一 —— 一张表里十条进度条十个长度，整列看着参差不齐。数字一旦进了自己的列，
+   * 表格布局保证每行的轨道宽度完全一致，顺带让分数右对齐成一条线。
+   */
+  function progress(pct, label) {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
   }
 
   function devices(cpu, gpu) {
@@ -445,6 +453,6 @@
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, progressText, devices, state, newUser, skeleton, compact };
   SP.Charts = { points: pointsChart };
 })();

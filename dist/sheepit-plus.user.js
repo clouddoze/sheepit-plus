@@ -2072,10 +2072,13 @@ ${Theme.css('#sp')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-#sp .bar{display:flex;align-items:center;gap:10px;min-width:180px}
-#sp .bar .t{position:relative;flex:1;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
+/* 进度条。分数在**自己的列**里（td.frac），不挂在条子后面 —— 挂上去会让每行的轨道长度
+   随数字宽度变来变去，一整列参差不齐；进了列，表格布局保证每行轨道等长，分数也右对齐成线。
+   .bar 仍被活动汇总表的表头当弹性占位用（见 .acthead .bar），所以这里不给它定 display。 */
+#sp .bar{min-width:180px}
+#sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .bar .n{font-size:11.5px;color:var(--text-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
@@ -2698,19 +2701,27 @@ ${Theme.css('#sp')}
   /* ------------------------------------------------------------ 进度条 / 设备 */
 
   /**
-   * 进度条 + 右侧数字。
-   * 原站把「1216 / 12000」直接压在半填充的条子上，白字横跨橙/灰两色，还容易被截断；
-   * 这里把数字移到条子外面。
+   * 进度分数文案。原站把「1216 / 12000」直接压在半填充的条子上，白字横跨橙/灰两色，
+   * 还容易被截断；这里把数字移到条子外面，回落时用百分比。
    */
-  function progress(pct, done, total) {
+  function progressText(pct, done, total) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
-    const label = Number.isFinite(done) && Number.isFinite(total) && total > 0
+    return Number.isFinite(done) && Number.isFinite(total) && total > 0
       ? `${fmt(done)} / ${fmt(total)}`
       : `${p.toFixed(0)}%`;
-    return `<div class="bar" title="${esc(label)}">
-      <div class="t"><div class="f" style="width:${p}%"></div></div>
-      <span class="n">${esc(label)}</span>
-    </div>`;
+  }
+
+  /**
+   * 6px 轨道 + 强调色填充。
+   *
+   * 分数**不在这里**：它作为独立的一列跟在这个格子后面（见 50-views.js 的项目表）。
+   * 早先把 `<span class="n">` 挂在条子后面，`flex:1` 的轨道就被每行不同的数字宽度挤得
+   * 长短不一 —— 一张表里十条进度条十个长度，整列看着参差不齐。数字一旦进了自己的列，
+   * 表格布局保证每行的轨道宽度完全一致，顺带让分数右对齐成一条线。
+   */
+  function progress(pct, label) {
+    const p = Math.max(0, Math.min(100, Number(pct) || 0));
+    return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
   }
 
   function devices(cpu, gpu) {
@@ -2868,7 +2879,7 @@ ${Theme.css('#sp')}
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, progressText, devices, state, newUser, skeleton, compact };
   SP.Charts = { points: pointsChart };
 })();
 
@@ -3220,11 +3231,14 @@ ${Theme.css('#sp')}
   }
 
   function projectRow(p, me, maps) {
+    // 分数单占一列：跟在条子后面会让每条轨道的长度随数字宽度变来变去（见 40-ui.js 的 progress）。
+    const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
       <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
-      <td>${UI.progress(p.pct, p.done, p.total)}</td>
+      <td>${UI.progress(p.pct, frac)}</td>
+      <td class="r num frac">${esc(frac)}</td>
       <td>${UI.devices(p.cpu, p.gpu)}</td>
       <td class="r num">${esc(p.memory || '—')}</td>
     </tr>`;
@@ -3251,9 +3265,9 @@ ${Theme.css('#sp')}
     }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
-    const th = (key, label) => {
+    const th = (key, label, span) => {
       const on = projState.sort === key;
-      return `<th class="sortable" data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
     };
 
     // 三份名单（都是我自己那份，来自账户设置页）：优先级决定「优先 / 移出」，
@@ -3304,12 +3318,12 @@ ${Theme.css('#sp')}
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
             <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'))}
+            ${th('progress', t('proj.col.progress'), 2)}
             <th>${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || `<tr><td colspan="7"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>
