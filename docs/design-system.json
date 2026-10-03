@@ -1,0 +1,913 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-03T18:42:22.797Z",
+  "title": "Design System: SheepIt Plus",
+  "extensions": {
+    "colorMeta": {
+      "brand-orange": {
+        "role": "primary",
+        "displayName": "Brand Orange",
+        "canonical": "#e06d58",
+        "oklch": "oklch(66.7% 0.148 31.9)",
+        "notes": "User-pinned SheepIt identity colour. Dark theme accent. Permitted in exactly three places: actionable elements, the current selection, and the single element that stands for the viewer (the one accent-washed tag per machine or render-key row included).",
+        "tonalRamp": [
+          "#340000",
+          "#590000",
+          "#7e0c00",
+          "#a43725",
+          "#cb5b46",
+          "#f37e68",
+          "#ffa38b",
+          "#ffc8af"
+        ]
+      },
+      "accent-deep": {
+        "role": "primary",
+        "displayName": "Deep Ember",
+        "canonical": "#b6472f",
+        "oklch": "oklch(54.4% 0.149 33.8)",
+        "notes": "Light theme accent. Same hue driven down in lightness: white on the pinned brand orange is 3.2:1, white on this is 5.3:1.",
+        "tonalRamp": [
+          "#340000",
+          "#590000",
+          "#7f0c00",
+          "#a5371f",
+          "#cc5b42",
+          "#f37e64",
+          "#ffa387",
+          "#ffc8ab"
+        ]
+      },
+      "accent-weak": {
+        "role": "primary",
+        "displayName": "Ember Wash",
+        "canonical": "rgba(224,109,88,.14)",
+        "oklch": "oklch(66.7% 0.148 31.9 / 14%)",
+        "notes": "The accent as a fill behind something, never as a colour on something. Dark value shown; the light-theme twin is rgba(182,71,47,.10). Used by pressed segments, chips, the current-user table row, the machine tag, the in-use key badge, and ::selection.",
+        "tonalRamp": [
+          "#340000",
+          "#590000",
+          "#7e0c00",
+          "#a43725",
+          "#cb5b46",
+          "#f37e68",
+          "#ffa38b",
+          "#ffc8af"
+        ]
+      },
+      "field-ink": {
+        "role": "neutral",
+        "displayName": "Field Ink",
+        "canonical": "#0f1218",
+        "oklch": "oklch(18.2% 0.013 264.2)",
+        "notes": "Label colour that sits on brand orange in the dark theme. The brand hex may not move, so the label does. Also the switch knob's fill when the switch is on, through the --btn-ink token.",
+        "tonalRamp": [
+          "#080b11",
+          "#22252c",
+          "#3e4249",
+          "#5d6169",
+          "#7e828b",
+          "#a1a5ae",
+          "#c5c9d2",
+          "#eaeff8"
+        ]
+      },
+      "ink-on-accent": {
+        "role": "neutral",
+        "displayName": "Ink on Accent",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 0)",
+        "notes": "Light theme label on the deepened accent (5.3:1). Also the switch knob in the light theme.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "canvas": {
+        "role": "neutral",
+        "displayName": "Instrument Black",
+        "canonical": "#0b0d11",
+        "oklch": "oklch(15.9% 0.009 264.3)",
+        "notes": "Dark page field. Not pure black, so raised surfaces have room in both directions.",
+        "tonalRamp": [
+          "#090b0f",
+          "#23252a",
+          "#3f4247",
+          "#5f6167",
+          "#7f8288",
+          "#a2a5ab",
+          "#c6c9cf",
+          "#ebeef5"
+        ]
+      },
+      "canvas-light": {
+        "role": "neutral",
+        "displayName": "Paper White",
+        "canonical": "#fbfbfc",
+        "oklch": "oklch(98.8% 0.001 286.4)",
+        "notes": "Light page field. Not pure white, so white panels remain distinguishable from it.",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#252526",
+          "#424243",
+          "#616162",
+          "#828283",
+          "#a5a5a6",
+          "#c9c9ca",
+          "#eeeeef"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Panel",
+        "canonical": "#111419",
+        "oklch": "oklch(19.0% 0.011 260.7)",
+        "notes": "Default container surface in the dark theme: panels, tables, the metric band, buttons, the mode button and the mode pill.",
+        "tonalRamp": [
+          "#090b10",
+          "#22252b",
+          "#3f4248",
+          "#5e6168",
+          "#7e8389",
+          "#a1a5ac",
+          "#c5c9d1",
+          "#eaeff6"
+        ]
+      },
+      "surface-light": {
+        "role": "neutral",
+        "displayName": "Card White",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 0)",
+        "notes": "Default container surface in the light theme.",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "surface-raised": {
+        "role": "neutral",
+        "displayName": "Raised Tier",
+        "canonical": "#161a21",
+        "oklch": "oklch(21.7% 0.015 261.6)",
+        "notes": "Hover and inset fill: table row hover, nav hover, avatar initial fallback, skeleton shimmer midpoint, the list avatar well.",
+        "tonalRamp": [
+          "#080b12",
+          "#21252d",
+          "#3e424a",
+          "#5c616a",
+          "#7d838c",
+          "#a0a5af",
+          "#c4c9d3",
+          "#e9eff9"
+        ]
+      },
+      "surface-raised-light": {
+        "role": "neutral",
+        "displayName": "Raised Tier Light",
+        "canonical": "#f5f6f8",
+        "oklch": "oklch(97.3% 0.003 264.5)",
+        "notes": "Light-theme twin of the raised tier.",
+        "tonalRamp": [
+          "#0b0b0c",
+          "#242526",
+          "#414243",
+          "#606163",
+          "#818284",
+          "#a4a5a7",
+          "#c8c9cb",
+          "#edeef0"
+        ]
+      },
+      "surface-sunken": {
+        "role": "neutral",
+        "displayName": "Sunken Tier",
+        "canonical": "#1c2129",
+        "oklch": "oklch(24.6% 0.017 259.8)",
+        "notes": "Recessed fill: empty heatmap cells, the progress-bar track, tooltip and toast backgrounds, the switch track at rest, the idle key badge.",
+        "tonalRamp": [
+          "#070b12",
+          "#20252d",
+          "#3d424b",
+          "#5c626b",
+          "#7c838d",
+          "#9fa5b0",
+          "#c3cad5",
+          "#e8effa"
+        ]
+      },
+      "surface-sunken-light": {
+        "role": "neutral",
+        "displayName": "Sunken Tier Light",
+        "canonical": "#eceef1",
+        "oklch": "oklch(94.8% 0.005 258.3)",
+        "notes": "Light-theme twin of the sunken tier.",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#404244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c7c9cc",
+          "#edeff2"
+        ]
+      },
+      "hairline": {
+        "role": "neutral",
+        "displayName": "Hairline",
+        "canonical": "#22272f",
+        "oklch": "oklch(27.1% 0.017 259.8)",
+        "notes": "Every border in the system, including the internal dividers of a multi-cell band, the table's row rules, and the account list's frame and row rules (same colour both places). Always 1px, always solid.",
+        "tonalRamp": [
+          "#070b12",
+          "#20252d",
+          "#3d424b",
+          "#5c626b",
+          "#7d838d",
+          "#9fa5b0",
+          "#c3cad4",
+          "#e8effa"
+        ]
+      },
+      "hairline-light": {
+        "role": "neutral",
+        "displayName": "Hairline Light",
+        "canonical": "#e4e6ea",
+        "oklch": "oklch(92.5% 0.006 264.5)",
+        "notes": "Light-theme border.",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#242528",
+          "#404245",
+          "#5f6165",
+          "#808286",
+          "#a3a5a9",
+          "#c7c9cd",
+          "#eceef2"
+        ]
+      },
+      "hairline-strong": {
+        "role": "neutral",
+        "displayName": "Hairline Strong",
+        "canonical": "#2f3640",
+        "oklch": "oklch(33.0% 0.020 257.3)",
+        "notes": "The border one step up, for what must read as interactive: icon buttons, the mode button, inputs, the switch track on hover, scrollbar thumbs, tooltip outlines, the chart crosshair, the hovered heatmap cell.",
+        "tonalRamp": [
+          "#060b14",
+          "#1f252f",
+          "#3b434d",
+          "#5a626d",
+          "#7b838f",
+          "#9da6b2",
+          "#c1cad7",
+          "#e6effc"
+        ]
+      },
+      "hairline-strong-light": {
+        "role": "neutral",
+        "displayName": "Hairline Strong Light",
+        "canonical": "#d0d4da",
+        "oklch": "oklch(86.9% 0.009 258.3)",
+        "notes": "Light-theme interactive border.",
+        "tonalRamp": [
+          "#090b0f",
+          "#22252a",
+          "#3f4247",
+          "#5e6167",
+          "#7f8388",
+          "#a1a5ab",
+          "#c5c9cf",
+          "#ebeff5"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Primary Ink",
+        "canonical": "#e8eaed",
+        "oklch": "oklch(93.6% 0.005 258.3)",
+        "notes": "Headings, metric values, and the dark-theme body copy that carries meaning. Also the mode pill's label, hard-coded because no token reaches it.",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242527",
+          "#404244",
+          "#606164",
+          "#818285",
+          "#a3a5a8",
+          "#c7c9cc",
+          "#edeff2"
+        ]
+      },
+      "ink-light": {
+        "role": "neutral",
+        "displayName": "Primary Ink Light",
+        "canonical": "#14171c",
+        "oklch": "oklch(20.4% 0.011 260.7)",
+        "notes": "Light-theme primary ink.",
+        "tonalRamp": [
+          "#090b10",
+          "#22252b",
+          "#3f4248",
+          "#5e6168",
+          "#7f8389",
+          "#a1a5ac",
+          "#c5c9d0",
+          "#eaeff6"
+        ]
+      },
+      "ink-secondary": {
+        "role": "neutral",
+        "displayName": "Secondary Ink",
+        "canonical": "#a8b0bb",
+        "oklch": "oklch(75.4% 0.018 256.3)",
+        "notes": "Supporting prose, table cell text, nav labels, inline metadata, the mode button's label, a machine's specification. Also the default label of every ghost button.",
+        "tonalRamp": [
+          "#070b13",
+          "#1f262e",
+          "#3c434c",
+          "#5b626c",
+          "#7b838d",
+          "#9ea6b1",
+          "#c2cad5",
+          "#e7effb"
+        ]
+      },
+      "ink-secondary-light": {
+        "role": "neutral",
+        "displayName": "Secondary Ink Light",
+        "canonical": "#4b5462",
+        "oklch": "oklch(44.3% 0.026 259.2)",
+        "notes": "Light-theme secondary ink.",
+        "tonalRamp": [
+          "#050b16",
+          "#1e2532",
+          "#3a4350",
+          "#596270",
+          "#798392",
+          "#9ca6b6",
+          "#bfcada",
+          "#e4efff"
+        ]
+      },
+      "ink-tertiary": {
+        "role": "neutral",
+        "displayName": "Tertiary Ink",
+        "canonical": "#7c8695",
+        "oklch": "oklch(61.7% 0.026 258.4)",
+        "notes": "The quiet layer: axis labels, column headers, KPI captions, units, hints, footers, the switch knob at rest, the key comment, the machine row's exit link. Deliberately still readable — small-and-faint is not the same as restrained.",
+        "tonalRamp": [
+          "#050b16",
+          "#1d2532",
+          "#3a4350",
+          "#586270",
+          "#798392",
+          "#9ba6b5",
+          "#bfcada",
+          "#e4efff"
+        ]
+      },
+      "ink-tertiary-light": {
+        "role": "neutral",
+        "displayName": "Tertiary Ink Light",
+        "canonical": "#656d79",
+        "oklch": "oklch(53.2% 0.021 258.4)",
+        "notes": "Light-theme tertiary ink.",
+        "tonalRamp": [
+          "#060b14",
+          "#1f252f",
+          "#3b424d",
+          "#5a626e",
+          "#7b838f",
+          "#9da6b3",
+          "#c1cad7",
+          "#e6effd"
+        ]
+      },
+      "positive": {
+        "role": "tertiary",
+        "displayName": "Signal Green",
+        "canonical": "#3fb950",
+        "oklch": "oklch(69.5% 0.181 145.6)",
+        "notes": "The only semantic colour. One derived delta inside one KPI caption. No red, no amber, no warning ramp — errors are stated in words, and a failed write is reported by the toast, not by the button.",
+        "tonalRamp": [
+          "#001700",
+          "#003600",
+          "#005700",
+          "#007900",
+          "#159d33",
+          "#49c258",
+          "#71e77c",
+          "#98ffa1"
+        ]
+      },
+      "positive-light": {
+        "role": "tertiary",
+        "displayName": "Signal Green Light",
+        "canonical": "#1a7f37",
+        "oklch": "oklch(52.4% 0.140 148.0)",
+        "notes": "Light-theme positive, deepened for the same contrast reason as the accent.",
+        "tonalRamp": [
+          "#001600",
+          "#003400",
+          "#005408",
+          "#06752e",
+          "#3a984f",
+          "#60bd71",
+          "#85e294",
+          "#abffb9"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The account name in the identity strip. The largest non-numeric text in the product."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Empty-state title and the monthly best/worst values. Statements, not labels."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Panel headers, section headers, the top-bar product mark, the error-state headline, every account panel including the second heading inside the blacklist panel. Panels are titled rather than headed."
+      },
+      "metric": {
+        "displayName": "Metric",
+        "purpose": "The four KPI values. The only place the ramp is allowed to be loud, and the only text permitted negative tracking as display treatment."
+      },
+      "metric-narrow": {
+        "displayName": "Metric, narrow",
+        "purpose": "The KPI values below the 560px breakpoint, where four 27px figures would truncate."
+      },
+      "metric-band": {
+        "displayName": "Metric, band",
+        "purpose": "The four farm-status values. Smaller than the KPI tier because they are secondary readings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "The 14px root size and the table's baseline. Row names take 550 when they need to lead their row."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Navigation, segment buttons, table status text, identity metadata, hints, captions, the switch label and its hint line."
+      },
+      "micro-label": {
+        "displayName": "Micro-label",
+        "purpose": "KPI captions, column headers, legend text, the heatmap note. One step below it sits the 11px floor: axis ticks, the heat map's weekday column and month labels, the month-bar labels, the PLUS badge, the CPU/GPU chips, the numbered step marker, the render key's in-use badge, the tooltip's date line. Nothing is set below 11px, and nothing at 11px carries a sentence."
+      }
+    },
+    "shadows": [
+      {
+        "name": "ambient-panel-dark",
+        "value": "0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)",
+        "purpose": "The default and only elevation in the dark theme: metric band, panels, the farm band, tooltips, toasts, the mode pill. A tight contact shadow plus a wide soft one, so a panel reads as sitting a millimetre above the field rather than as a drop shadow. Also carried by the --shadow token on #sp, and hard-coded by the mode pill because in its mode the token does not exist."
+      },
+      {
+        "name": "ambient-panel-light",
+        "value": "0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)",
+        "purpose": "The same construction at the strength a light field can absorb, tuned toward the neutral ink hue so the shadow stays cool rather than sooty."
+      }
+    ],
+    "motion": [
+      {
+        "name": "state-transition",
+        "value": "background .12s, color .12s, border-color .12s, filter .12s",
+        "purpose": "Every hover, focus and pressed change. Short enough that a mouse crossing a table does not produce a light show."
+      },
+      {
+        "name": "switch-throw",
+        "value": "transform .14s, background .14s, border-color .14s",
+        "purpose": "The switch: the track's fill and border swap while the knob travels exactly its own width (14px) inside the 34×20 track. The only motion in the account surface, and it is a state change, not an entrance."
+      },
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(.16,1,.3,1)",
+        "purpose": "The system's only authored curve. Carries the one-time entrance rise and the points curve's draw-on."
+      },
+      {
+        "name": "rise-in",
+        "value": "sp-rise .5s cubic-bezier(.16,1,.3,1) both",
+        "purpose": "One-time entrance for the metric band (0s), the 8/4 working area (.06s), and the farm band (.1s) — a staggered 4px rise, fired once per view render."
+      },
+      {
+        "name": "area-rise",
+        "value": "sp-rise .7s cubic-bezier(.16,1,.3,1) .15s both",
+        "purpose": "The chart's area fill fades and rises once, slightly behind the line."
+      },
+      {
+        "name": "curve-draw",
+        "value": "stroke-dashoffset .9s cubic-bezier(.16,1,.3,1) .05s",
+        "purpose": "The points curve draws itself once on first paint, driven by getTotalLength() so the timing is exact rather than guessed."
+      },
+      {
+        "name": "tooltip-fade",
+        "value": "opacity .1s",
+        "purpose": "Chart and heatmap tooltip appearing and leaving under the pointer. Position is set imperatively, never transitioned."
+      },
+      {
+        "name": "spinner",
+        "value": "sp-spin .8s linear infinite",
+        "purpose": "The 26px loading ring: 2px hairline track with a single accent arc."
+      },
+      {
+        "name": "skeleton-shimmer",
+        "value": "sp-sk 1.3s ease infinite",
+        "purpose": "400%-wide tonal sweep between the surface and raised tiers for skeleton rows."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce)",
+        "purpose": "Gates the entrance animations and the curve draw entirely; hover and focus still change colour, because a colour change is not motion."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "wide",
+        "value": "1000px",
+        "purpose": "The 8/4 working area collapses to a single column, and the top bar's mode button drops its label to keep the icon."
+      },
+      {
+        "name": "medium",
+        "value": "860px",
+        "purpose": "Metric band and farm band fold to 2x2 with internal rules reassigned; the top bar's timestamp surrenders first."
+      },
+      {
+        "name": "narrow",
+        "value": "760px",
+        "purpose": "Page gutters drop 24px to 16px; tables keep their columns at a 660px min-width and scroll; the heatmap switches from aspect-ratio cells to fixed 14px cells with horizontal scroll, its month labels to fixed 14px columns, and its weekday column is dropped entirely; the empty state's three steps stack."
+      },
+      {
+        "name": "compact",
+        "value": "620px",
+        "purpose": "Top bar tightens; the username surrenders because the identity strip already carries the name; the brand's PLUS badge drops and the nav labels shorten to 排行/账户 rather than scrolling or hiding."
+      },
+      {
+        "name": "phone",
+        "value": "560px",
+        "purpose": "KPI cells and farm cells drop to 15px/14px padding and their values to 22px/16px; month bars shorten to 96px; machine rows wrap rather than truncate their specification; the empty-state inner block eases to 32px/18px."
+      }
+    ],
+    "surfaces": [
+      {
+        "name": "page-column",
+        "value": "max-width: 1240px; margin: 0 auto; padding: 0 24px 72px",
+        "purpose": "The single centred column every view is built in."
+      },
+      {
+        "name": "form-column",
+        "value": "settings: max-width 680px; account: max-width 820px",
+        "purpose": "Forms run narrower than the page column on purpose: a form is read one control per line, and a full-width input row is a longer reach than a target needs to be."
+      },
+      {
+        "name": "top-bar",
+        "value": "min-height: 56px; background: color-mix(in srgb, var(--bg) 86%, transparent); backdrop-filter: saturate(1.6) blur(12px)",
+        "purpose": "Sticky, with a 1px hairline under it. The only backdrop filter in the shell; falls back to the solid page field where color-mix is unsupported. Order left to right: brand, nav, spacer, timestamp, mode button, refresh, identity."
+      },
+      {
+        "name": "mode-pill",
+        "value": "position: fixed; left: 14px; bottom: 14px; z-index: 2147482000; opacity: .62 (1 on hover)",
+        "purpose": "The only element that renders while the main stylesheet is deliberately not loaded, so it hard-codes the dark surface, primary ink, a white-alpha hairline and the dark ambient shadow instead of reading a token. It stays dark in the light theme and sits below the shell's z-index, so it can never float over the interface it came from."
+      },
+      {
+        "name": "stack-gap",
+        "value": "16px",
+        "purpose": "The vertical gap between every region on the page."
+      },
+      {
+        "name": "log-scrollport",
+        "value": "max-height: min(58vh, 560px); overflow: auto; thead th { position: sticky; top: 0 } — opened from a secondary button that states the event count",
+        "purpose": "The session page’s activity summary (default) and its full log (behind one button). 761 raw events printed as a table made the page 4988px tall with the diagnostics unreachable and every row mostly whitespace; the summary answers \"was this machine working\" in five rows, and the raw log keeps its own scrollport and stuck header for when the detail is actually wanted."
+      }
+    ],
+    "signatureColor": {
+      "token": "brand-orange",
+      "textColorOnAccent": {
+        "dark": "#0f1218",
+        "light": "#ffffff"
+      },
+      "contrastNotes": [
+        "White on #e06d58 is 3.2:1 and fails the 4.5:1 floor, so the dark theme pairs the pinned brand orange with the near-black #0f1218 (5.7:1).",
+        "White on the deepened light accent #b6472f is 5.3:1.",
+        "The brand hex is a hard constraint; the label is the variable. The switch knob is the same label: it takes --btn-ink when the track is on, so the contrast decision is inherited rather than re-made."
+      ]
+    }
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The only committed button: brand orange fill with a near-black label in the dark theme, white on the deepened accent in the light theme. Used for refresh, retry, the empty state's download exit, and the single commit action at the end of every account panel.",
+      "html": "<button class=\"ds-btn-primary\">Refresh</button>",
+      "css": ".ds-btn-primary { display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent, #e06d58); background: var(--accent, #e06d58); color: var(--btn-ink, #0f1218); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 13px; line-height: 1.5; font-weight: 600; cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-btn-primary:hover { filter: brightness(1.07); } .ds-btn-primary:active { filter: brightness(.97); } .ds-btn-primary:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 6px; } .ds-btn-primary[data-sp-theme=\"light\"] { color: #ffffff; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "The default button, and the required form of every maintenance action — remove, delete, unblock. Surface fill, hairline stroke, secondary-ink label; hover steps the border and the label up one tier with no fill change. This is the only button that may appear without a reason, and it is never painted to warn.",
+      "html": "<button class=\"ds-btn-ghost\">Show more <span class=\"ds-btn-ghost-count\">100 / 500</span></button>",
+      "css": ".ds-btn-ghost { display: inline-flex; align-items: center; gap: 9px; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-2, #a8b0bb); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 13px; line-height: 1.5; cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-btn-ghost:hover { border-color: var(--border-strong, #2f3640); color: var(--text, #e8eaed); } .ds-btn-ghost:active { filter: brightness(.96); } .ds-btn-ghost:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 6px; } .ds-btn-ghost-count { font-size: 12px; color: var(--text-3, #7c8695); font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Icon Button",
+      "kind": "button",
+      "refersTo": "button-icon",
+      "description": "A 30px square on the small radius holding a 14px glyph. The top bar's refresh control: its border is a hit target, not decoration.",
+      "html": "<button class=\"ds-iconbtn\" aria-label=\"Refresh\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z\"/></svg></button>",
+      "css": ".ds-iconbtn { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-2, #a8b0bb); cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-iconbtn svg { display: block; } .ds-iconbtn:hover { border-color: var(--border-strong, #2f3640); color: var(--text, #e8eaed); } .ds-iconbtn:active { filter: brightness(.96); } .ds-iconbtn:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; }"
+    },
+    {
+      "name": "Navigation Item",
+      "kind": "nav",
+      "refersTo": "nav-item-current",
+      "description": "Flat text buttons, 2px apart, no underline and no indicator bar. The current page takes the raised tier as a fill plus a 550-weight primary-ink label, marked with aria-current so the state is semantic before it is visual. At 620px the labels shorten (排行榜 to 排行) instead of scrolling or hiding, so five items keep fitting at 390px.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"Sections\"><button class=\"ds-nav-item\">Projects</button><button class=\"ds-nav-item\" aria-current=\"page\">Overview</button><button class=\"ds-nav-item\">Ranking</button></nav>",
+      "css": ".ds-nav { display: flex; gap: 2px; } .ds-nav-item { padding: 6px 11px; border: none; border-radius: 6px; background: none; color: var(--text-2, #a8b0bb); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 13.5px; line-height: 1.5; font-weight: 400; cursor: pointer; transition: background .12s, color .12s; } .ds-nav-item:hover { background: var(--surface-2, #161a21); color: var(--text, #e8eaed); } .ds-nav-item[aria-current=\"page\"] { background: var(--surface-2, #161a21); color: var(--text, #e8eaed); font-weight: 550; } .ds-nav-item:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "field-search",
+      "description": "A bordered container holding a muted 14px glyph and a borderless transparent input, wrapped in a label so the whole field is the hit target. On focus the container's border turns accent — the control lights up as one unit instead of growing a frame inside a frame. The account page's add rows are this same field with the width constraint lifted.",
+      "html": "<label class=\"ds-input\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z\"/></svg><input type=\"search\" placeholder=\"Search project or renderer&#8230;\"></label>",
+      "css": ".ds-input { display: flex; align-items: center; gap: 7px; padding: 7px 11px; min-width: 220px; max-width: 340px; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-3, #7c8695); transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-input svg { display: block; flex: none; } .ds-input input { flex: 1; min-width: 0; border: none; background: none; outline: none; color: var(--text, #e8eaed); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 13px; line-height: 1.5; caret-color: var(--accent, #e06d58); } .ds-input input::placeholder { color: var(--text-3, #7c8695); } .ds-input:hover { border-color: var(--border-strong, #2f3640); } .ds-input:focus-within { border-color: var(--accent, #e06d58); }"
+    },
+    {
+      "name": "Segmented Control",
+      "kind": "chip",
+      "refersTo": "segment-selected",
+      "description": "Status filters and settings rows share one construct: a bordered container with 3px of padding. The pressed segment takes the ember wash with accent text; the state is driven by aria-pressed, not by a modifier class.",
+      "html": "<div class=\"ds-seg\" role=\"group\"><button class=\"ds-seg-btn\" aria-pressed=\"true\">All</button><button class=\"ds-seg-btn\" aria-pressed=\"false\">Rendering</button><button class=\"ds-seg-btn\" aria-pressed=\"false\">GPU</button><button class=\"ds-seg-btn\" aria-pressed=\"false\">CPU</button></div>",
+      "css": ".ds-seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 8px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); } .ds-seg-btn { padding: 5px 11px; border: none; border-radius: 6px; background: none; color: var(--text-2, #a8b0bb); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 12.5px; line-height: 1.5; font-weight: 400; cursor: pointer; transition: background .12s, color .12s, border-color .12s; } .ds-seg-btn:hover { color: var(--text, #e8eaed); } .ds-seg-btn[aria-pressed=\"true\"] { background: var(--accent-weak, rgba(224,109,88,.14)); color: var(--accent, #e06d58); font-weight: 600; } .ds-seg-btn:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; }"
+    },
+    {
+      "name": "Metric Band",
+      "kind": "card",
+      "refersTo": "metric-band",
+      "description": "Four KPIs inside one bordered surface with internal 1px dividers — never four separate cards. Each cell is a micro-label caption, a 27px tabular value, and a caption line carrying the second-order fact the source site does not show. An account that has published projects adds two cells (projects created, frames ordered) to the same surface — never a second band — and the internal edges are re-derived at every fold (6 across, then 3×2, then 2×3).",
+      "html": "<div class=\"ds-kpis\"><div class=\"ds-kpi\"><div class=\"ds-kpi-k\">Frames rendered</div><div class=\"ds-kpi-v\">128,400</div><div class=\"ds-kpi-d\">Avg <b>412</b> &#183; peak 2,180</div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-k\">Points</div><div class=\"ds-kpi-v\">12,340,000</div><div class=\"ds-kpi-d\">Site rank 512 &#183; 30-day rolling</div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-k\">Render time</div><div class=\"ds-kpi-v\">2y18d07h</div><div class=\"ds-kpi-d\">&#8776; 748 machine-days</div></div><div class=\"ds-kpi\"><div class=\"ds-kpi-k\">Current streak</div><div class=\"ds-kpi-v\">64 days</div><div class=\"ds-kpi-d\">Best 121d &#183; 30/30 active days</div></div></div>",
+      "css": ".ds-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); background: var(--surface, #111419); border: 1px solid var(--border, #22272f); border-radius: 10px; overflow: hidden; box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-kpi { min-width: 0; padding: 18px 20px; border-left: 1px solid var(--border, #22272f); } .ds-kpi:first-child { border-left: none; } .ds-kpi-k { font-size: 11.5px; font-weight: 500; letter-spacing: .2px; color: var(--text-3, #7c8695); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-kpi-v { margin-top: 8px; font-size: 27px; font-weight: 600; line-height: 1.1; letter-spacing: -.6px; color: var(--text, #e8eaed); font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-kpi-d { margin-top: 6px; font-size: 12px; color: var(--text-3, #7c8695); } .ds-kpi-d b { color: var(--pos, #3fb950); font-weight: 600; font-variant-numeric: tabular-nums; } @media (max-width: 860px) { .ds-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ds-kpi:nth-child(3) { border-left: none; } .ds-kpi:nth-child(n+3) { border-top: 1px solid var(--border, #22272f); } } .ds-kpis[data-n=\"5\"] { grid-template-columns: repeat(5, minmax(0, 1fr)); } .ds-kpis[data-n=\"6\"] { grid-template-columns: repeat(6, minmax(0, 1fr)); } @media (max-width: 1200px) { .ds-kpis[data-n=\"5\"], .ds-kpis[data-n=\"6\"] { grid-template-columns: repeat(3, minmax(0, 1fr)); } .ds-kpis[data-n=\"5\"] .ds-kpi:nth-child(3n+1), .ds-kpis[data-n=\"6\"] .ds-kpi:nth-child(3n+1) { border-left: none; } .ds-kpis[data-n=\"5\"] .ds-kpi:nth-child(n+4), .ds-kpis[data-n=\"6\"] .ds-kpi:nth-child(n+4) { border-top: 1px solid var(--border, #22272f); } } @media (max-width: 860px) { .ds-kpis[data-n=\"5\"], .ds-kpis[data-n=\"6\"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ds-kpis[data-n=\"5\"] .ds-kpi:nth-child(n), .ds-kpis[data-n=\"6\"] .ds-kpi:nth-child(n) { border-left: 1px solid var(--border, #22272f); } .ds-kpis[data-n=\"5\"] .ds-kpi:nth-child(odd), .ds-kpis[data-n=\"6\"] .ds-kpi:nth-child(odd) { border-left: none; } }"
+    },
+    {
+      "name": "Data Table",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "Hairline-ruled rows, no vertical rules, no zebra striping; hover moves the whole row to the raised tier. The current user's row takes the ember wash and appends a small \"you\" marker — the accent's third permitted job. The publisher cell may carry one maintenance action and only one: a labelled secondary toggle whose text is the state — Prioritise when the publisher is outside your render-priority list, Remove when they are inside it — so the reader never holds a list in their head to know what the click does. It stays out of the way until the row is engaged: on a pointer device the button is transparent until the row is hovered or focus lands inside it, hidden by opacity rather than display so it never leaves the tab order, and on a touch device it is simply always visible. Membership itself is never hover-dependent — a publisher already in your list carries a persistent 12px accent star after their name. The action is absent for your own rows and absent entirely when the list could not be read. The publisher's name in a project row and the user's name in a ranking row are links to that person's profile; the accent appears only on hover, because colouring a whole column of names turns the table into a wall of links. Beside the labelled toggle sits a 3-dot button opening a small menu of the two list actions that are not toggles — donate your points to this publisher, blacklist them — each item carrying a check and flipping its wording when the publisher is already on that list. The menu is positioned by measurement with its left edge aligned to the trigger, so it unfolds to the right of the button rather than hanging back across the row; near the bottom of the viewport it flips upward, and near the right edge it slides left instead of overflowing. It is never an absolutely positioned child of the table: the table's own scroll container would clip it on the bottom rows.",
+      "html": "<table class=\"ds-tbl\"><thead><tr><th>Project</th><th>Owner</th><th>Status</th><th class=\"ds-r\">Frames</th></tr></thead><tbody><tr><td class=\"ds-pn\">IDEA12 1-1200</td><td><span class=\"ds-ow\"><span class=\"ds-ini\">F</span><span>FXRM666</span></span></td><td><span class=\"ds-st\">21 rendering</span></td><td class=\"ds-r ds-num\">364 / 1,200</td></tr><tr class=\"ds-me\"><td class=\"ds-pn\">FINAL7</td><td><span class=\"ds-ow\"><span class=\"ds-ini\">R</span><span>mztothe<em>you</em></span></span></td><td><span class=\"ds-st\">21 rendering</span></td><td class=\"ds-r ds-num\">1,782 / 2,228</td></tr><tr><td class=\"ds-pn\">FINAL8</td><td><span class=\"ds-ow\"><span class=\"ds-ini\">R</span><span>mztothe</span></span></td><td><span class=\"ds-st\">Rendering</span></td><td class=\"ds-r ds-num\">43 / 12,000</td></tr></tbody></table>",
+      "css": ".ds-tbl { width: 100%; border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 13px; line-height: 1.5; text-align: left; color: var(--text-2, #a8b0bb); } .ds-tbl th { padding: 0 14px 10px; border-bottom: 1px solid var(--border, #22272f); font-size: 11.5px; font-weight: 500; color: var(--text-3, #7c8695); white-space: nowrap; } .ds-tbl td { padding: 11px 14px; border-bottom: 1px solid var(--border, #22272f); vertical-align: middle; } .ds-tbl tbody tr:last-child td { border-bottom: none; } .ds-tbl tbody tr { transition: background .1s; } .ds-tbl tbody tr:hover { background: var(--surface-2, #161a21); } .ds-tbl tbody tr.ds-me { background: var(--accent-weak, rgba(224,109,88,.14)); } .ds-tbl .ds-r { text-align: right; white-space: nowrap; width: 1%; font-variant-numeric: tabular-nums; } .ds-pn { max-width: 220px; font-weight: 550; color: var(--text, #e8eaed); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .ds-ow { display: flex; align-items: center; gap: 8px; } .ds-ow em { font-style: normal; color: var(--accent, #e06d58); font-weight: 600; } .ds-ini { width: 20px; height: 20px; flex: none; display: grid; place-items: center; border-radius: 5px; border: 1px solid var(--border, #22272f); background: var(--surface-2, #161a21); color: var(--text-3, #7c8695); font-size: 11.5px; } .ds-st { font-size: 12.5px; color: var(--text-2, #a8b0bb); white-space: nowrap; } .ds-num { font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Row Action Menu",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The 3-dot button in a publisher cell and the small menu it opens, holding the two list actions that are not toggles: donate the points you earn to this publisher, or blacklist them so their projects are never sent to you. Each item leads with an icon for what the action is (a heart for donating, a prohibition sign for blacklisting), and the check that marks \"already on this list\" sits at the trailing edge rather than sharing the leading slot, so the two meanings never crowd one another. A checked item also flips its wording into the undo. The button follows the table's row-action rule (hidden by opacity until the row is hovered or focused) but stays visible while its own menu is open, tracked by aria-expanded. The menu is positioned by measurement and aligned to the table's right edge, not to the trigger: the publisher column sits on the left, so a menu hung off the button would cover the very name just clicked, and the table's scroll container would clip an absolutely positioned child on the bottom rows.",
+      "html": "<button class=\"ds-kebab\" title=\"More actions\" aria-haspopup=\"menu\" aria-expanded=\"false\"><svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z\"/></svg></button><div class=\"ds-omenu\" role=\"menu\"><div class=\"ds-omenu-h\">This publisher&#8230;</div><button class=\"ds-mi\" role=\"menuitem\"><span class=\"ds-mi-ic\"><svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z\"/></svg></span><span class=\"ds-mi-tx\">Donate points to them</span><span class=\"ds-mi-ck\"></span></button><button class=\"ds-mi\" role=\"menuitem\"><span class=\"ds-mi-ic\"><svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"8.6\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M6 6l12 12\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/></svg></span><span class=\"ds-mi-tx\">Remove from blacklist</span><span class=\"ds-mi-ck\"><svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z\"/></svg></span></button></div>",
+      "css": ".ds-kebab { display: inline-flex; align-items: center; padding: 4px 7px; border: 1px solid var(--border, #22272f); border-radius: 6px; background: var(--surface, #111419); color: var(--text-2, #a8b0bb); cursor: pointer; } .ds-kebab[aria-expanded=\"true\"] { border-color: var(--border-strong, #2f3541); color: var(--text, #e8eaed); } .ds-omenu { min-width: 224px; padding: 5px; background: var(--surface-2, #171b21); border: 1px solid var(--border-strong, #2f3541); border-radius: 6px; box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif; } .ds-omenu-h { padding: 6px 10px 7px; margin-bottom: 5px; border-bottom: 1px solid var(--border, #22272f); font-size: 11.5px; color: var(--text-3, #7c8695); } .ds-mi { display: flex; align-items: center; gap: 9px; width: 100%; padding: 7px 10px; border: none; border-radius: 6px; background: none; color: var(--text-2, #a8b0bb); font-size: 12.5px; line-height: 1.5; text-align: left; cursor: pointer; } .ds-mi:hover { background: var(--surface-3, #1c2129); color: var(--text, #e8eaed); } .ds-mi-ic { flex: none; color: var(--text-3, #7c8695); } .ds-mi:hover .ds-mi-ic { color: var(--accent, #e06d58); } .ds-mi-tx { flex: 1; min-width: 0; } .ds-mi-ck { width: 15px; height: 15px; flex: none; color: var(--accent, #e06d58); }"
+    },
+    {
+      "name": "Progress Bar",
+      "kind": "custom",
+      "refersTo": "insight-progress-bar",
+      "description": "A 6px rounded track with an accent fill, and the fraction printed outside the bar in tertiary ink. Moving the number out of the bar is the fix for the interface it replaces, where the numerator was printed across a half-filled two-tone bar.",
+      "html": "<div class=\"ds-bar\"><div class=\"ds-bar-track\"><div class=\"ds-bar-fill\" style=\"width:80%\"></div></div><span class=\"ds-bar-num\">1,782 / 2,228</span></div>",
+      "css": ".ds-bar { display: flex; align-items: center; gap: 10px; min-width: 180px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-bar-track { position: relative; flex: 1; height: 6px; border-radius: 3px; background: var(--surface-3, #1c2129); overflow: hidden; } .ds-bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--accent, #e06d58); transition: background .12s; } .ds-bar-num { color: var(--text-3, #7c8695); font-size: 11.5px; line-height: 1.5; white-space: nowrap; font-variant-numeric: tabular-nums; }"
+    },
+    {
+      "name": "Insight Heatmap",
+      "kind": "custom",
+      "refersTo": "insight-heatmap-cell",
+      "description": "The 53-week render calendar. Quantile-banded over the non-zero days, not absolute counts, so a heavy user's ordinary days stay distinguishable. Cells size from the panel width via an aspect ratio and switch to fixed 14px with horizontal scroll on narrow screens rather than shrinking into unreadable speckle. Runs in two modes: per-day frame counts on your own profile (quantile ramp, counts in frames), and a binary rendered/not-rendered calendar on anyone else's page, where the site inlines no counts — the ramp degrades to its middle step, the legend collapses to none/rendered, and every figure is counted in days rather than in frames.",
+      "html": "<div class=\"ds-cellwrap\"><div class=\"ds-cells\"><i class=\"ds-cell\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.16)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.34)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.55)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.78)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,1)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.34)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.55)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,1)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.16)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.78)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.34)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.55)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,1)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.16)\"></i></div></div><div class=\"ds-legend\"><span>Less</span><i class=\"ds-cell\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.16)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.34)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.55)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,.78)\"></i><i class=\"ds-cell\" style=\"background:rgba(224,109,88,1)\"></i><span>More</span></div>",
+      "css": ".ds-cellwrap { overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; } .ds-cells { --cols: 7; display: grid; grid-auto-flow: column; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-template-rows: repeat(2, minmax(0, 1fr)); gap: 2px; aspect-ratio: var(--cols) / 2; } .ds-cell { display: block; min-width: 0; min-height: 0; border-radius: 2px; background: var(--surface-3, #1c2129); } .ds-legend { display: flex; align-items: center; gap: 5px; margin-top: 14px; color: var(--text-3, #7c8695); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 11.5px; line-height: 1.5; } .ds-legend .ds-cell { width: 11px; height: 11px; flex: none; border-radius: 2.5px; } @media (max-width: 760px) { .ds-cells { grid-template-columns: repeat(var(--cols), 14px); grid-template-rows: repeat(2, 14px); aspect-ratio: auto; gap: 3px; width: max-content; } }"
+    },
+    {
+      "name": "Panel",
+      "kind": "card",
+      "refersTo": "card-panel",
+      "description": "The default container: 10px radius, hairline border, the one ambient shadow, and a title row made of a 15px name plus a tertiary-ink sub-line. The sub-line carries the provenance of what is being shown.",
+      "html": "<section class=\"ds-panel\"><header class=\"ds-phead\"><h2>Points growth</h2><span class=\"ds-phead-sub\">973 samples &#183; 2024-02-01 &#8594; 2026-10-03</span></header><div class=\"ds-pbody\">Panel body</div></section>",
+      "css": ".ds-panel { border-radius: 10px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; color: var(--text, #e8eaed); } .ds-phead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 16px 20px 0; } .ds-phead h2 { margin: 0; flex: none; font-size: 15px; font-weight: 600; line-height: 1.4; white-space: nowrap; } .ds-phead-sub { min-width: 0; font-size: 12px; line-height: 1.45; color: var(--text-3, #7c8695); } .ds-pbody { padding: 14px 20px 16px; font-size: 13px; line-height: 1.5; color: var(--text-2, #a8b0bb); }"
+    },
+    {
+      "name": "Mode Button",
+      "kind": "button",
+      "refersTo": "mode-switch-button",
+      "description": "The exit from the system: a 30px-tall icon+label control in the top bar, between the timestamp and the refresh button. Plain surface, hairline and secondary ink — never the accent, because leaving is not the primary action of any page. Below 1000px the label drops and the 13px sheep glyph stays.",
+      "html": "<button class=\"ds-modebtn\" title=\"Switch to the original interface\"><svg viewBox=\"0 0 24 24\" width=\"13\" height=\"13\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M17 4a3 3 0 0 0-2.82 2H9.82A3 3 0 1 0 4 8.83V15a4 4 0 0 0 4 4h8a2 2 0 0 0 2-2v-2.2A3 3 0 0 0 17 4zm0 2a1 1 0 1 1-1 1 1 1 0 0 1 1-1z\"/></svg><span class=\"ds-modebtn-txt\">Switch to the original interface</span></button>",
+      "css": ".ds-modebtn { height: 30px; flex: none; display: inline-flex; align-items: center; gap: 6px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-2, #a8b0bb); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 12px; line-height: 1.5; white-space: nowrap; cursor: pointer; transition: border-color .12s, color .12s; } .ds-modebtn svg { display: block; flex: none; } .ds-modebtn:hover { border-color: var(--border-strong, #2f3640); color: var(--text, #e8eaed); } .ds-modebtn:active { filter: brightness(.96); } .ds-modebtn:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; } @media (max-width: 1000px) { .ds-modebtn-txt { display: none; } .ds-modebtn { padding: 0 7px; } }"
+    },
+    {
+      "name": "Mode Restore Pill",
+      "kind": "button",
+      "refersTo": "mode-restore-pill",
+      "description": "The way back, and the only element that renders while the main stylesheet is deliberately not loaded: it hard-codes the brand accent fill, white ink and the ambient panel shadow, and keeps its own thirty-line stylesheet keyed to its own id. It is deliberately loud — an earlier version was a 12.5px chip at 62% opacity on the dark panel surface, and a reader who switched to the original interface could not find it. The label is the action ('Back to the new UI'), not the state. In the product it is anchored position:fixed at the bottom-left of the viewport (left/bottom 14px, z-index below the shell's) — the corner the original site leaves empty, since the site's own to-top control lives bottom-right; the snippet renders it in flow so the panel can show it. It keeps its own :focus-visible ring (2px white, 2px offset) because at that moment the system's accent ring would sink into the accent fill.",
+      "html": "<button class=\"ds-modepill\"><svg viewBox=\"0 0 24 24\" width=\"15\" height=\"15\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M17 4a3 3 0 0 0-2.82 2H9.82A3 3 0 1 0 4 8.83V15a4 4 0 0 0 4 4h8a2 2 0 0 0 2-2v-2.2A3 3 0 0 0 17 4zm0 2a1 1 0 1 1-1 1 1 1 0 0 1 1-1z\"/></svg><span>Back to the new UI</span></button>",
+      "css": ".ds-modepill { display: inline-flex; align-items: center; gap: 8px; padding: 10px 15px; border-radius: 9px; cursor: pointer; background: #e06d58; color: #fff; border: 1px solid rgba(0,0,0,.2); font: 600 13px/1 -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Microsoft YaHei\", sans-serif; box-shadow: 0 2px 6px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.3); transition: transform .12s, box-shadow .12s; } .ds-modepill:hover { transform: translateY(-1px); box-shadow: 0 3px 10px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.34); } .ds-modepill:focus-visible { outline: 2px solid #fff; outline-offset: 2px; } .ds-modepill svg { width: 15px; height: 15px; flex: none; fill: #fff; }"
+    },
+    {
+      "name": "Toggle Switch",
+      "kind": "input",
+      "refersTo": "switch-track",
+      "description": "The account page's on/off control: a 34x20 track on the sunken tier with a 14px knob that travels exactly its own width. At rest the knob is tertiary ink; on, the track takes the accent fill and the knob takes --btn-ink — a knob on the accent is a label on the accent, so it inherits the contrast decision instead of inventing one. The whole row is the hit target and focus lands on the track, never on the hidden input.",
+      "html": "<label class=\"ds-sw\"><input type=\"checkbox\" checked><span class=\"ds-sw-track\"><span class=\"ds-sw-knob\"></span></span><span class=\"ds-sw-txt\"><b>Render my projects first</b><small>On by default. On an older machine it may be better to let the scheduler pick an easier frame.</small></span></label>",
+      "css": ".ds-sw { display: flex; align-items: flex-start; gap: 11px; padding: 9px 0; cursor: pointer; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-sw input { position: absolute; opacity: 0; width: 0; height: 0; } .ds-sw-track { flex: none; width: 34px; height: 20px; margin-top: 1px; border-radius: 10px; background: var(--surface-3, #1c2129); border: 1px solid var(--border, #22272f); position: relative; transition: background .14s, border-color .14s; } .ds-sw-knob { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--text-3, #7c8695); transition: transform .14s, background .14s; } .ds-sw input:checked + .ds-sw-track { background: var(--accent, #e06d58); border-color: var(--accent, #e06d58); } .ds-sw input:checked + .ds-sw-track .ds-sw-knob { transform: translateX(14px); background: var(--btn-ink, #0f1218); } .ds-sw input:focus-visible + .ds-sw-track { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; } .ds-sw:hover .ds-sw-track { border-color: var(--border-strong, #2f3640); } .ds-sw-txt { font-size: 13px; color: var(--text-2, #a8b0bb); line-height: 1.45; } .ds-sw-txt b { display: block; font-weight: 550; color: var(--text, #e8eaed); } .ds-sw-txt small { display: block; font-size: 12px; color: var(--text-3, #7c8695); margin-top: 2px; line-height: 1.55; }"
+    },
+    {
+      "name": "Add Row",
+      "kind": "input",
+      "refersTo": "field-search",
+      "description": "How every account panel commits: the search-field idiom with the width constraint lifted, plus the panel's one accent-filled primary button 8px away. Focus lights the field up as one unit, exactly as it does in the toolbar; the button is the only accent in the row.",
+      "html": "<div class=\"ds-addrow\"><label class=\"ds-addfield\"><svg viewBox=\"0 0 24 24\" width=\"14\" height=\"14\" fill=\"currentColor\" aria-hidden=\"true\"><path d=\"M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z\"/></svg><input type=\"text\" placeholder=\"Paste an owner ID and press Enter\"></label><button class=\"ds-addbtn\">Add</button></div>",
+      "css": ".ds-addrow { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-addfield { display: flex; align-items: center; gap: 7px; flex: 1; min-width: 180px; padding: 7px 11px; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-3, #7c8695); transition: border-color .12s; } .ds-addfield svg { display: block; flex: none; } .ds-addfield input { flex: 1; min-width: 0; border: none; background: none; color: var(--text, #e8eaed); font-family: inherit; font-size: 13px; line-height: 1.5; caret-color: var(--accent, #e06d58); } .ds-addfield input::placeholder { color: var(--text-3, #7c8695); } .ds-addfield input:focus-visible { outline: none; } .ds-addfield:hover { border-color: var(--border-strong, #2f3640); } .ds-addfield:focus-within { border-color: var(--accent, #e06d58); outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; } .ds-addbtn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent, #e06d58); background: var(--accent, #e06d58); color: var(--btn-ink, #0f1218); font-family: inherit; font-size: 13px; line-height: 1.5; font-weight: 600; cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-addbtn:hover { filter: brightness(1.07); } .ds-addbtn:active { filter: brightness(.97); } .ds-addbtn:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 6px; }"
+    },
+    {
+      "name": "Account List & Key Row",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "One bordered group holding two row species: a person (22px avatar or initial, name link, secondary remove) and a render key (12.5px tabular key, truncating comment, in-use badge, secondary delete). The group has no fill and no shadow — that is what keeps it a list rather than a card nested in a card, and its row rules are the same hairline as its frame.",
+      "html": "<div class=\"ds-ulist\"><div class=\"ds-ul-row\"><span class=\"ds-ul-av\">R</span><span class=\"ds-ul-name\"><a href=\"#\">renderfan</a></span><button class=\"ds-ul-act\">Remove</button></div><div class=\"ds-ul-key\"><span class=\"ds-ul-keyval\">example-key-0001</span><span class=\"ds-ul-keyc\">Home desktop</span><span class=\"ds-ul-use is-on\">in use</span><button class=\"ds-ul-act\">Delete</button></div><div class=\"ds-ul-key\"><span class=\"ds-ul-keyval\">example-key-0002</span><span class=\"ds-ul-keyc\">Laptop</span><span class=\"ds-ul-use\">idle</span><button class=\"ds-ul-act\">Delete</button></div></div>",
+      "css": ".ds-ulist { display: flex; flex-direction: column; border: 1px solid var(--border, #22272f); border-radius: 6px; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-ul-row { display: flex; align-items: center; gap: 9px; padding: 9px 12px; border-bottom: 1px solid var(--border, #22272f); } .ds-ul-key { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border, #22272f); } .ds-ul-row:last-child, .ds-ul-key:last-child { border-bottom: none; } .ds-ul-av { width: 22px; height: 22px; flex: none; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface-2, #161a21); color: var(--text-3, #7c8695); font-size: 11.5px; } .ds-ul-name { flex: 1; min-width: 0; font-size: 13px; color: var(--text-2, #a8b0bb); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-ul-name a { color: inherit; text-decoration: none; } .ds-ul-name a:hover { color: var(--accent, #e06d58); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; } .ds-ul-name a:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 4px; } .ds-ul-keyval { flex: 1; min-width: 0; font-size: 12.5px; letter-spacing: .3px; color: var(--text-2, #a8b0bb); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-variant-numeric: tabular-nums; } .ds-ul-keyc { flex: none; max-width: 180px; font-size: 12px; color: var(--text-3, #7c8695); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-ul-use { flex: none; font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--surface-3, #1c2129); color: var(--text-3, #7c8695); } .ds-ul-use.is-on { background: var(--accent-weak, rgba(224,109,88,.14)); color: var(--accent, #e06d58); } .ds-ul-act { flex: none; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-2, #a8b0bb); font-family: inherit; font-size: 13px; line-height: 1.5; cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-ul-act:hover { border-color: var(--border-strong, #2f3640); color: var(--text, #e8eaed); } .ds-ul-act:active { filter: brightness(.96); } .ds-ul-act:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 6px; }"
+    },
+    {
+      "name": "Avatar Line",
+      "kind": "custom",
+      "refersTo": null,
+      "description": "The one control that is not a button: a 64px avatar on the container radius (10px, not the media radius), a file picker drawn as a bordered label around a hidden input, and the commit under it. The input is hidden visually only — 1px, transparent, absolutely positioned, still in the tab order — so the label takes the accent ring through :focus-within. display:none there would delete the control for anyone on a keyboard, which is why the stylesheet says so next to the rule that forbids it.",
+      "html": "<div class=\"ds-avline\"><span class=\"ds-avline-av\">R</span><div><label class=\"ds-filepick\">Choose an image<input type=\"file\" accept=\"image/*\"></label><div class=\"ds-avline-act\"><button class=\"ds-addbtn\">Upload avatar</button></div></div></div>",
+      "css": ".ds-avline { display: flex; align-items: center; gap: 14px; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-avline-av { width: 64px; height: 64px; flex: none; display: grid; place-items: center; border-radius: 10px; border: 1px solid var(--border, #22272f); background: var(--surface-2, #161a21); color: var(--text-3, #7c8695); font-size: 24px; } .ds-filepick { display: inline-flex; align-items: center; gap: 7px; padding: 7px 13px; border-radius: 6px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); color: var(--text-2, #a8b0bb); font-size: 13px; line-height: 1.5; cursor: pointer; transition: border-color .12s, color .12s; } .ds-filepick:hover { border-color: var(--border-strong, #2f3640); color: var(--text, #e8eaed); } .ds-filepick:focus-within { border-color: var(--accent, #e06d58); outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; } .ds-filepick input { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; } .ds-avline-act { display: flex; gap: 8px; margin-top: 11px; flex-wrap: wrap; } .ds-addbtn { display: inline-flex; align-items: center; gap: 7px; padding: 8px 15px; border-radius: 8px; border: 1px solid var(--accent, #e06d58); background: var(--accent, #e06d58); color: var(--btn-ink, #0f1218); font-family: inherit; font-size: 13px; line-height: 1.5; font-weight: 600; cursor: pointer; transition: background .12s, color .12s, border-color .12s, filter .12s; } .ds-addbtn:hover { filter: brightness(1.07); } .ds-addbtn:active { filter: brightness(.97); } .ds-addbtn:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 6px; }"
+    },
+    {
+      "name": "Machines Panel",
+      "kind": "card",
+      "refersTo": "machine-tag",
+      "description": "One machine per row, explicitly not a card grid: an 11.5px accent-washed tag with the client name, the specification in muted secondary ink on one truncating line, and a tertiary exit link. Shown here inside the panel shell it always lives in, so the rows' hairlines terminate correctly.",
+      "html": "<div class=\"ds-machines\"><div class=\"ds-machines-head\"><h2>Connected machines</h2><span class=\"ds-machines-count\">2 machines</span></div><div class=\"ds-machine\"><span class=\"ds-machine-tag\">SheepIt 5.0</span><span class=\"ds-machine-spec\">Apple M2 Pro &#183; 10 cores &#183; Metal</span><a class=\"ds-machine-open\" href=\"#\">Open session</a></div><div class=\"ds-machine\"><span class=\"ds-machine-tag\">Blender 4.2</span><span class=\"ds-machine-spec\">AMD Ryzen 9 5950X &#183; 32 threads &#183; CPU</span><a class=\"ds-machine-open\" href=\"#\">Open session</a></div></div>",
+      "css": ".ds-machines { display: flex; flex-direction: column; border-radius: 10px; border: 1px solid var(--border, #22272f); background: var(--surface, #111419); overflow: hidden; color: var(--text, #e8eaed); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-machines-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; padding: 16px 20px 14px; } .ds-machines-head h2 { margin: 0; flex: none; font-size: 15px; font-weight: 600; line-height: 1.4; white-space: nowrap; } .ds-machines-count { min-width: 0; font-size: 12px; color: var(--text-3, #7c8695); font-variant-numeric: tabular-nums; } .ds-machine { display: flex; align-items: center; gap: 12px; padding: 11px 20px; border-bottom: 1px solid var(--border, #22272f); } .ds-machine:last-child { border-bottom: none; } .ds-machine-tag { flex: none; font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 4px; background: var(--accent-weak, rgba(224,109,88,.14)); color: var(--accent, #e06d58); } .ds-machine-spec { flex: 1; min-width: 0; font-size: 13px; color: var(--text-2, #a8b0bb); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .ds-machine-open { flex: none; font-size: 12px; color: var(--text-3, #7c8695); white-space: nowrap; text-decoration: none; } .ds-machine-open:hover { color: var(--accent, #e06d58); text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1px; } .ds-machine-open:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; border-radius: 4px; } @media (max-width: 560px) { .ds-machine { flex-wrap: wrap; gap: 6px 10px; padding: 11px 16px; } }"
+    },
+    {
+      "name": "Heatmap Date Axes",
+      "kind": "custom",
+      "refersTo": "insight-heatmap-cell",
+      "description": "The calendar's date axes, built so they cannot drift: a fixed weekday column (Mon/Wed/Fri) aligned to the cell rows by a spacer whose height is the month row's height plus its margin, and a month row that shares the grid's own column template so a label is placed by column index. Months one column wide, or starting fewer than two columns after the previous label, are skipped; the year appears only on the first label and on the year change. Hovering a day draws a 1px outline and never a recolour — the fill is the datum. The tooltip is the chart's, pinned open here for the gallery; in the product it is created by JS and placed over the hovered cell, and it is pointer-driven — the cells are not focusable controls, so a day's detail has no keyboard path today.",
+      "html": "<div class=\"ds-heatwrap\"><div class=\"ds-wdcol\"><div class=\"ds-wdpad\"></div><div class=\"ds-wd\"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span></span></div></div><div class=\"ds-heatscroll\"><div class=\"ds-mlabels\" style=\"--cols:8\"><span style=\"grid-column:1 / span 3\">Nov 2025</span><span style=\"grid-column:4 / span 3\">Dec</span><span style=\"grid-column:7 / span 2\">Jan 2026</span></div><div class=\"ds-cells\" style=\"--cols:8\"><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i style=\"background:rgba(224,109,88,.34)\"></i><i></i><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i></i><i></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,1)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,1)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.78)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.78)\"></i><i style=\"background:rgba(224,109,88,1)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i></i><i style=\"background:rgba(224,109,88,.16)\"></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i></i><i></i><i style=\"background:rgba(224,109,88,.34)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.78)\"></i><i style=\"background:rgba(224,109,88,.55)\"></i><i style=\"background:rgba(224,109,88,.16)\"></i><i></i><i></i></div></div><div class=\"ds-tip\" style=\"left:86px;top:46px;opacity:1\"><b class=\"ds-tip-n\">1,204 frames</b><i>Thu, 11 Dec 2025</i></div></div>",
+      "css": ".ds-heatwrap { position: relative; display: flex; gap: 8px; color: var(--text, #e8eaed); font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-wdcol { display: flex; flex-direction: column; flex: none; font-size: 11px; color: var(--text-3, #7c8695); } .ds-wdpad { height: 13px; margin-bottom: 6px; } .ds-wd { flex: 1; display: grid; grid-template-rows: repeat(7, minmax(0, 1fr)); gap: 2px; line-height: 1; } .ds-wd span { align-self: center; white-space: nowrap; } .ds-heatscroll { flex: 1; min-width: 0; overflow-x: auto; overflow-y: hidden; padding-bottom: 2px; } .ds-mlabels { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: 2px; height: 13px; margin-bottom: 6px; font-size: 11px; line-height: 1; color: var(--text-3, #7c8695); } .ds-mlabels span { overflow: visible; white-space: nowrap; } .ds-cells { --cols: 8; display: grid; grid-auto-flow: column; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); grid-template-rows: repeat(7, minmax(0, 1fr)); gap: 2px; aspect-ratio: var(--cols) / 7; } .ds-cells i { display: block; min-width: 0; min-height: 0; border-radius: 2px; background: var(--surface-3, #1c2129); } .ds-cells i:hover { outline: 1px solid var(--border-strong, #2f3640); outline-offset: 1px; } .ds-tip { position: absolute; pointer-events: none; transform: translate(-50%, -100%); padding: 7px 10px; border-radius: 6px; border: 1px solid var(--border-strong, #2f3640); background: var(--surface-3, #1c2129); color: var(--text, #e8eaed); font-size: 12px; line-height: 1.5; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28); transition: opacity .1s; } .ds-tip b { font-weight: 600; font-variant-numeric: tabular-nums; } .ds-tip i { display: block; margin-top: 2px; font-style: normal; font-size: 11px; color: var(--text-3, #7c8695); } @media (max-width: 760px) { .ds-heatwrap { gap: 6px; } .ds-wdcol { display: none; } .ds-mlabels { grid-template-columns: repeat(var(--cols), 14px); gap: 3px; width: max-content; } .ds-cells { grid-template-columns: repeat(var(--cols), 14px); grid-template-rows: repeat(7, 14px); aspect-ratio: auto; gap: 3px; width: max-content; } }"
+    },
+    {
+      "name": "Activity Summary",
+      "kind": "custom",
+      "refersTo": "segment-selected",
+      "description": "The session page’s default reading of 761 events: one row per day (per month once the session is older than a month), newest first, capped at fourteen rows with a tertiary line naming what is left out (days or months, whichever the buckets are). Four numbers per row — render time, events, jobs, send failures — plus a 6px accent bar at 55% drawn from the rendering time. The bar keeps one meaning: a machine that has never rendered anything gets unfilled tracks, never a bar quietly counting events under a column still labelled render time; the gutter holding it is never removed, because that flex column is what keeps the header labels over their own numbers. Keys carry a year once the record crosses one, and the failures column exists only when there are failures.",
+      "html": "<div class=\"ds-acts\"><div class=\"ds-acthead\"><span class=\"ad\">Date</span><span class=\"bar\"></span><span class=\"h\">Render time</span><span class=\"h s\">Events</span><span class=\"h s\">Jobs</span><span class=\"h s\">Failed</span></div><div class=\"ds-actrow\"><span class=\"ad\">10-03</span><span class=\"ab\"><i style=\"width:100%\"></i></span><span class=\"av\">1h50m</span><span class=\"an\">162</span><span class=\"aj\">9</span><span class=\"af on\">3</span></div><div class=\"ds-actrow\"><span class=\"ad\">10-02</span><span class=\"ab\"><i style=\"width:9%\"></i></span><span class=\"av\">10m</span><span class=\"an\">57</span><span class=\"aj\">10</span><span class=\"af on\">1</span></div></div>",
+      "css": ".ds-acts { padding: 2px 0 0; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-acthead, .ds-actrow { display: flex; align-items: center; gap: 12px; padding: 0 20px; } .ds-acthead { font-size: 11.5px; color: var(--text-3, #7c8695); padding-bottom: 8px; border-bottom: 1px solid var(--border, #22272f); } .ds-actrow { padding-top: 9px; padding-bottom: 9px; border-bottom: 1px solid var(--border, #22272f); font-size: 12.5px; color: var(--text-2, #a8b0bb); font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; } .ds-actrow .ad { flex: none; width: 64px; color: var(--text, #e8eaed); } .ds-actrow .ab { flex: 1; min-width: 28px; height: 6px; border-radius: 3px; background: var(--surface-3, #1c2129); overflow: hidden; } .ds-actrow .ab i { display: block; height: 100%; background: var(--accent, #e06d58); opacity: .55; border-radius: 3px; } .ds-actrow .av { flex: none; width: 62px; text-align: right; color: var(--text, #e8eaed); } .ds-actrow .an { flex: none; width: 44px; text-align: right; } .ds-actrow .aj, .ds-actrow .af { flex: none; width: 44px; text-align: right; color: var(--text-3, #7c8695); } .ds-actrow .af.on { color: var(--text-2, #a8b0bb); } .ds-acthead .bar { flex: 1; min-width: 28px; } .ds-acthead .h { flex: none; width: 62px; text-align: right; } .ds-acthead .h.s { width: 44px; }"
+    },
+    {
+      "name": "Session Facts Grid",
+      "kind": "card",
+      "refersTo": null,
+      "description": "The session page’s spec sheet: the site’s own label/value table re-set as a two-column grid inside one bordered surface with internal hairlines, folding to one column at 720px. Labels are the site’s labels passed through a vocabulary rather than rewritten, and a row the vocabulary does not recognise is still printed with its raw label — a field we cannot name is not a field the reader should lose.",
+      "html": "<div class=\"ds-facts\"><div class=\"ds-fact\"><span class=\"ds-fact-k\">Processor</span><span class=\"ds-fact-v\">Intel(R) Core(TM) i7-9700K CPU @ 3.60GHz x 8</span></div><div class=\"ds-fact\"><span class=\"ds-fact-k\">RAM allowed</span><span class=\"ds-fact-v\">12.0 GB</span></div><div class=\"ds-fact\"><span class=\"ds-fact-k\">Scheduler</span><span class=\"ds-fact-v\">very_slow_computer</span></div><div class=\"ds-fact\"><span class=\"ds-fact-k\">Render key</span><span class=\"ds-fact-v\"><span class=\"ds-fact-secret\">••••••••</span><button class=\"ds-btn-ghost\">Show</button></span></div></div>",
+      "css": ".ds-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); background: var(--surface, #111419); border: 1px solid var(--border, #22272f); border-radius: 10px; overflow: hidden; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-fact { display: flex; align-items: baseline; gap: 12px; padding: 12px 20px; min-width: 0; border-top: 1px solid var(--border, #22272f); } .ds-fact:nth-child(-n+2) { border-top: none; } .ds-fact:nth-child(even) { border-left: 1px solid var(--border, #22272f); } .ds-fact-k { flex: none; min-width: 88px; font-size: 12px; color: var(--text-3, #7c8695); } .ds-fact-v { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; min-width: 0; font-size: 13px; color: var(--text, #e8eaed); } .ds-fact-secret { letter-spacing: 1px; color: var(--text-3, #7c8695); } @media (max-width: 720px) { .ds-facts { grid-template-columns: minmax(0, 1fr); } .ds-fact:nth-child(even) { border-left: none; } .ds-fact:nth-child(-n+2) { border-top: 1px solid var(--border, #22272f); } .ds-fact:first-child { border-top: none; } }"
+    },
+    {
+      "name": "Event Log",
+      "kind": "custom",
+      "refersTo": "segment-selected",
+      "description": "The full record, behind one button that states what it costs (\"show the full log (761 events)\") — a secondary button, because looking is not an action. Inside is a counted type filter over a bounded scrollport: the record gets min(58vh, 560px) of height with its header stuck to the top of that box, so two adjacent date columns stay tellable apart. Columns run event, start, duration, then end and job — ordered by what survives a 390px viewport. Rows are 12.5px with 7px of vertical padding: this is a log, and its density is the point.",
+      "html": "<div class=\"ds-logwrap\" tabindex=\"0\" role=\"region\" aria-label=\"Timeline\"><table class=\"ds-log\"><thead><tr><th>Event</th><th class=\"r\">Start</th><th class=\"r\">Duration</th><th class=\"r\">End</th><th>Job</th></tr></thead><tbody><tr><td>Rendering</td><td class=\"r\">10-03 15:52</td><td class=\"r\">1h30m</td><td class=\"r\">10-03 17:22</td><td>p1223022</td></tr><tr><td>Validate</td><td class=\"r\">10-03 15:38</td><td class=\"r\">1s</td><td class=\"r\">10-03 15:38</td><td>p1223021</td></tr></tbody></table></div>",
+      "css": ".ds-logwrap { max-height: min(58vh, 560px); overflow: auto; background: var(--surface, #111419); border: 1px solid var(--border, #22272f); border-radius: 10px; } .ds-logwrap:focus-visible { outline: 2px solid var(--accent, #e06d58); outline-offset: 2px; } .ds-log { width: 100%; border-collapse: collapse; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 12.5px; font-variant-numeric: tabular-nums; font-feature-settings: \"tnum\" 1; } .ds-log th { position: sticky; top: 0; z-index: 1; background: var(--surface, #111419); text-align: left; font-size: 11.5px; font-weight: 500; color: var(--text-3, #7c8695); padding: 0 14px 8px; border-bottom: 1px solid var(--border, #22272f); white-space: nowrap; } .ds-log th.r, .ds-log td.r { text-align: right; white-space: nowrap; } .ds-log td { padding: 7px 14px; border-bottom: 1px solid var(--border, #22272f); color: var(--text-2, #a8b0bb); } .ds-log tbody tr:last-child td { border-bottom: none; }"
+    },
+    {
+      "name": "Reason Groups",
+      "kind": "card",
+      "refersTo": null,
+      "description": "The invert of the site’s flat list: what the site prints as thirty rows each repeating one of six sentences becomes six groups — the reason is the grouping — with the projects themselves as chips under each heading. The reader’s question is why this machine is idle, and the headings answer it; the thirty rows do not. No reason at all is stated in one line rather than left blank.",
+      "html": "<div class=\"ds-whys\"><div class=\"ds-why\"><div class=\"ds-why-head\"><span class=\"ds-why-name\">No big-archive download on this machine</span><span class=\"ds-why-n\">12</span></div><div class=\"ds-why-names\"><span class=\"ds-why-chip\">FINAL7</span><span class=\"ds-why-chip\">FINAL5</span><span class=\"ds-why-chip\">rottne3_bg</span></div></div><div class=\"ds-why\"><div class=\"ds-why-head\"><span class=\"ds-why-name\">Requires a GPU</span><span class=\"ds-why-n\">10</span></div><div class=\"ds-why-names\"><span class=\"ds-why-chip\">IDEA12 1-1200</span><span class=\"ds-why-chip\">Cars</span></div></div></div>",
+      "css": ".ds-whys { font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; } .ds-why { padding: 11px 0; border-top: 1px solid var(--border, #22272f); } .ds-why:first-child { border-top: none; padding-top: 2px; } .ds-why-head { display: flex; align-items: baseline; gap: 9px; margin-bottom: 9px; } .ds-why-name { font-size: 12.5px; font-weight: 600; color: var(--text-2, #a8b0bb); } .ds-why-n { font-size: 12px; color: var(--text-3, #7c8695); font-variant-numeric: tabular-nums; } .ds-why-names { display: flex; flex-wrap: wrap; gap: 6px; } .ds-why-chip { font-size: 12.5px; color: var(--text-2, #a8b0bb); background: var(--surface-2, #161a21); border: 1px solid var(--border, #22272f); border-radius: 6px; padding: 3px 9px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }"
+    },
+    {
+      "name": "Status Chip",
+      "kind": "chip",
+      "refersTo": null,
+      "description": "How a machine’s state is stated on the session page, and it stays neutral: the sunken tier at 11.5px with a secondary-ink label, and a paused machine takes the strong hairline instead of a colour. \"Paused\" is a state, not an alarm — there is no red here and no coloured status pill.",
+      "html": "<span class=\"ds-chip-status\">Running</span>\n<span class=\"ds-chip-status is-off\">Paused</span>",
+      "css": ".ds-chip-status { display: inline-flex; flex: none; align-items: center; font-family: -apple-system, BlinkMacSystemFont, \"Segoe UI\", \"PingFang SC\", \"Hiragino Sans GB\", \"Microsoft YaHei\", sans-serif; font-size: 11.5px; font-weight: 600; padding: 3px 9px; border-radius: 4px; background: var(--surface-3, #1c2129); color: var(--text-2, #a8b0bb); white-space: nowrap; } .ds-chip-status.is-off { border: 1px solid var(--border-strong, #2f3640); color: var(--text, #e8eaed); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Instrument Panel",
+    "overview": "This is a read-out, not a landing page. Every view exists so that a contributor can glance at it and be told the truth about their own labour: how much they have rendered, how the curve is bending, and where they sit among five hundred other people. The world that carries that job is deliberately the category-standard one — a neutral grey field, hairline rules, tabular numerals, one accent — executed without a single shortcut. Familiarity is the point: the structure should be invisible so the numbers are not.\n\nThe system has two temperatures and only one voice. Surfaces step through three neutral tiers by tint alone; separation comes from a 1px border, never from a line of colour or a glow. Type runs down a single sans stack in seven narrow steps, and anything that could be read as a quantity is tabular-aligned so columns of digits stay in vertical register. Into that grey field goes one warm colour, and it is spent with intent: brand orange marks what you can act on, what is currently selected, and the one series that represents you. Everything else — statuses, project names, machine counts, the entire ranking table — stays neutral, including the things that feel like they deserve a badge. The account page is the first surface that changes something rather than showing something, and it holds the same line: one accent-filled commit per panel, and every maintenance action behind it a quiet bordered button.\n\nDepth is nearly flat. There are exactly two shadows in the system and both are ambient rather than structural: a two-part soft shadow that keeps a panel off the page by a millimetre, and a darker twin for the dark theme. Nothing floats, nothing glows, nothing is glass. Where the older interface it replaces failed, it failed by compression — labels truncated, progress numbers printed across a two-tone bar, six columns crushed into 620px while half the viewport sat empty. This system answers every one of those failures the same way: give the content the space it needs and let it be read.",
+    "keyCharacteristics": [
+      "Neutral grey tonal field, three surface tiers, 1px hairlines as the only separator.",
+      "One warm accent with three permitted jobs; everything else is neutral by default, not by omission.",
+      "Tabular numerals everywhere a number can appear.",
+      "Near-flat depth: two ambient shadows, plus tone and border for layering.",
+      "Data-density by subject: compact rows in tables and lists, breathing room around charts.",
+      "Chinese-first type with the English base language as an equal-weight fallback, both on the system UI stack.",
+      "A visible exit: the shell is a mode, the way out is a button in its own top bar, and the way back is a pill that renders while the rest of the system is switched off."
+    ],
+    "rules": [
+      {
+        "name": "The One Voice Rule",
+        "body": "Brand orange is spent on exactly three jobs: actionable elements, the current selection, and the one series or element in data that represents \"you\". A fourth use is a defect. Status text stays neutral on purpose — painting \"Rendering\" orange turns the table into a wall of orange and dilutes what the colour means everywhere else.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Sets Rule",
+        "body": "The light theme is not the dark theme inverted. Surfaces get brighter, borders get fainter, and the accent deepens until white text clears the contrast floor on it. Every token has a light twin and both are normative.",
+        "section": "colors"
+      },
+      {
+        "name": "The No Decorative Colour Rule",
+        "body": "Hue never enters as decoration. There are no gradients used as ornament, no glass, no coloured status pills, no icon medallions. The only gradient in the product is the fade under the points curve, and it fades the accent to nothing.",
+        "section": "colors"
+      },
+      {
+        "name": "The Tabular Truth Rule",
+        "body": "Any string that could be read as a quantity carries tabular numerals — KPI values, table figures, axis ticks, the heatmap total and peak, the progress numerator, the \"showing n / total\" counters, the month labels, and the render keys, which are strings that still have to line up like numbers. This is applied through one utility class rather than repeated declarations, so a number that is not aligned is a missing class, not a judgement call.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Face Rule",
+        "body": "One font stack for everything, including numerals and code-like strings. A second face has to earn its place, and nothing in this product needs one.",
+        "section": "typography"
+      },
+      {
+        "name": "The Flat-By-Default Rule",
+        "body": "One shadow token, two themes, one role. Shadows mark \"this is a container\"; they never mark hover, focus, selection, or importance. If an element needs to look more important, change its tone or its position, not its blur radius.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Hairline Rule",
+        "body": "A border is the separator. Cards are not nested inside cards, and a divider inside a group is the same colour as the border around it — never lighter, never dashed.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Medallion Rule",
+        "body": "No icon is ever placed inside a coloured shape to give it weight. Icons are 14–15px of `currentColor` sitting next to their label at the same optical weight — the top bar's refresh control is a 30px boxed icon button, and that border is a hit target, not a decoration.",
+        "section": "shapes"
+      },
+      {
+        "name": "The One Commit Rule",
+        "body": "A panel ends in exactly one accent-filled primary button — the action that changes something on the server. Every other action in that panel, delete included, is a secondary button on the surface fill and the hairline border; there is no third button tier, and there is still no red one. A maintenance action is not painted, it is worded.",
+        "section": "components"
+      },
+      {
+        "name": "The Unknown Field Rule",
+        "body": "A parsed field with no entry in the vocabulary is printed with its raw label instead of being dropped. Silence about a field the site chose to show is a data loss, not tidiness — and the site does add fields."
+      },
+      {
+        "name": "The Summarise Before Printing Rule",
+        "body": "A record is summarised by its own natural period before it is printed — a day is the unit a person asks about a machine, so a day is the row — and the raw rows go behind one button that says how many there are. When they are opened they get their own scrollport with a stuck header; a log is allowed to be long, the page it sits on is not."
+      },
+      {
+        "name": "The One Clock Rule",
+        "body": "Every timestamp the system renders is the reader’s local time, and the surface says so once instead of leaving two clocks on one screen. The site’s own raw strings stay inside the facts grid, under a header that already says the values are unconverted; a derived figure that can be expressed on the reader’s clock is expressed there — the \"since\" line comes from the first logged event, not from the server’s creation string, because those two differ by the server’s offset and reading them side by side looks like six lost hours."
+      }
+    ],
+    "dos": [
+      "Do keep brand orange to its three jobs, and audit for the fourth: a rendered run of the projects table should show orange only on the progress fills, the selected CPU/GPU markers, the \"you\" marker, and the primary button.",
+      "Do use one bordered surface with internal hairlines for any band of peer metrics (the KPI band, the farm band); reassign which internal edge is drawn when the band folds to 2×2.",
+      "Do put `tabular-nums` on every quantity, including axis ticks, legend totals, month labels, render keys, and the \"showing n / total\" counters.",
+      "Do size data visualisations so a single unit is readable — 53 weeks at ~20px per cell full-bleed, 14px plus horizontal scroll on narrow screens — and prefer moving a visualisation to full width over shrinking it into a side column.",
+      "Do move a label out of a bar, out of a truncated `<dl>`, or onto its own line rather than shrinking its type or letting it be cut off; the previous interface's defects were all compression defects.",
+      "Do state failures in words with a retry action, and degrade a failed parse to a local \"no data\" instead of an empty-state story or a thrown error.",
+      "Do theme the browser surfaces from the palette — selection wash, accent caret, thin scrollbar on the strong hairline, and a 2px accent focus ring at a 2px offset — and keep `text-underline-offset` at 3px with a 1px thickness on links.",
+      "Do keep hover a colour change and reserve motion for the one-time entrance: a 500–700ms rise from 4px with `cubic-bezier(.16, 1, .3, 1)`, and state transitions at 100–120ms.",
+      "Do keep the way out of a mode visible from inside it, and let the pill that brings the user back carry its own styles: it renders while the stylesheet is deliberately not loaded, so it reads no tokens and is allowed to read none. Word it as the action rather than the state, and make it opaque — a subdued chip is not \"quiet\", it is missing.",
+      "Do hide a control visually instead of removing it: `display: none` deletes it from the tab order, so a 1px transparent input that still takes focus — with the ring drawn on the label through `:focus-within` — is the pattern for anything a platform will not let you style.",
+      "Do summarise a long record by its natural period before printing it, and put the raw rows behind one button that states how many there are.",
+      "Do print a field the vocabulary does not recognise, with its raw label, and keep a secret revealed only by the click that asks for it.",
+      "Do join a fact the page does not carry back on from the page that does — the publisher of a renderable project — and leave it blank when the join cannot resolve, rather than guessing.",
+      "Do say once, on the surface, which clock its timestamps are on — and keep the site’s own raw time strings inside the panel that is explicitly unconverted.",
+      "Do keep a row-level action out of the way until the row is engaged (opacity behind :hover and :focus-within, never display:none, always visible where there is no hover), state membership with a persistent mark, and make the toggle say its own state in the label — dropping it entirely when the membership is unknown."
+    ],
+    "donts": [
+      "Don't colour status text or add semantic pills. \"Rendering\", \"Waiting\" and \"Paused\" stay neutral secondary ink — a wall of orange statuses destroys the accent's meaning and its usefulness.",
+      "Don't split a peer-metric band into four cards, and never nest a card inside a card.",
+      "Don't use decorative gradients, glassmorphism, blurred backdrops, coloured icon medallions, or hover lift. The one gradient in the product is the accent fading to transparent under the points curve, and the one backdrop filter is the shell's sticky top bar, filled with the page field mixed to 86% and blurred.",
+      "Don't paint a maintenance action or hide it behind an icon. Remove and delete are secondary buttons that word what they remove; the accent belongs to the commit, and there is still no red.",
+      "Don't reach for a smaller, fainter grey as a substitute for restraint. The muted ink is readable at 11px, which is the floor, and 11px is spent on axis ticks and badges — never on a sentence. Small-and-faint is not the same thing as disciplined.",
+      "Don't use white text on the pinned brand orange, or lighten the brand orange to make white work — move the label to the near-black ink instead. The brand hex is a hard constraint; the label is not.",
+      "Don't reflow tables into stacked cards on narrow screens. Keep the columns, let the table scroll, and keep \"show more\" stating how many of how many.",
+      "Don't add a second typeface, a webfont, a second accent hue, or a red. One face, one voice, and errors said in words.",
+      "Don’t repeat a grouped reason on every row. When thirty rows carry six sentences, the reason is the grouping — print it once, above the names it explains.",
+      "Don’t print a raw record as a page’s default reading, and don’t print a render key on load. Both make the record louder than the machine it describes.",
+      "Don’t colour-code event types or invent a status ramp to make a log look informative. The accent bar carries one measure; everything else is text.",
+      "Don’t let a chart quietly change what it measures. If the only measure that exists is not the one the column is named after, drop the chart instead of relabelling it in silence.",
+      "Don’t make a control hover-only. A mouse-only affordance is unreachable by keyboard and invisible on touch; reveal it only where hovering exists, and keep whatever it tells you visible without it."
+    ]
+  }
+}
