@@ -1,10 +1,10 @@
 # 分发文案包（GreasyFork / OpenUserJS）
 
 > **这份文件给发布者用，不是给最终用户看的** —— 用户文档在 `README.md`。
-> 文案已定稿，可直接使用。脚本头里 `@updateURL` / `@downloadURL` / `@namespace` /
-> `@homepageURL` 四行待脚本页存在后回填，清单见下面「四」。
+> 文案已定稿，可直接使用。**已发布**：GreasyFork 脚本 id `598624`（2026-10-04），
+> 脚本头四行 metadata 已回填，值见下面「四」。
 > 事实来源：能力与限制以 `README.md` 为准；合规声明（只读取你本已可见的数据、不参与渲染调度、
-> 不触碰积分计算）是本项目的固定对外表述，发布时不要删。
+> 不触碰积分计算）与本项目的 **AI 作者身份声明**都是固定对外表述，发布时不要删。
 > 界面语言策略：中文优先，英文为基准语言，缺失的键回落站点原文（见 `README.md`）。
 
 ---
@@ -19,8 +19,8 @@
 | Language | 选「中文（简体）」。脚本自带 `:en` 后缀，英文浏览器会看到英文那套 |
 | License | MIT（脚本头 `@license` 已写，会自动识别） |
 | Applies to | **自动**读 `@match`：`https://www.sheepit-renderfarm.com/*`，并按 `@exclude` 排除 `/forum/*` |
-| Tags | `sheepit` `renderfarm` `blender` `dashboard` `dark-mode` `chinese` |
-| Additional info | 抄下面「二」的正文（英文段在前、中文段接在后，两段一起贴） |
+| Tags | **表单里没有这个字段**（2026-10-04 实测：新建与更新表单的字段里都没有 Tags），标签由站点自己生成。当初想填的：`sheepit` `renderfarm` `blender` `dashboard` `dark-mode` `chinese` |
+| Additional info | 抄下面「二」的正文。2026-10-04 首次发布时按「默认简体中文」把**中文段放前面、英文段接在后面**贴的 |
 
 英文段放在前面，是因为 GreasyFork 的读者以国际用户为主；这不影响界面本身的中文优先
 （界面的基准语言与词表策略见 `PRODUCT.md`）。
@@ -93,6 +93,12 @@ session — the script reads data through your existing session. No extra permis
 SheepIt Render Farm. The name, the sheep and the orange are kept on purpose, so it stays
 recognisable as *their* site.
 
+**Written by an AI.** The code, the interface copy and the docs were produced by an AI assistant
+(DeepSeek Harness) under a human's direction and item-by-item review — the human supplied the real
+site material, made every product call, and checked each view against a live account. This is
+stated so you can calibrate how much to trust it: if something breaks, tell me the page and what
+you saw, rather than assuming the author has read every line.
+
 MIT licensed. Feedback welcome — tell me which page and what you saw.
 
 ### 中文（接在后面贴）
@@ -148,37 +154,45 @@ SheepIt Plus 是一个油猴脚本，用新前端接管站点自己的数据 —
 **非官方。** 这是第三方界面重制，与 SheepIt Render Farm 官方无隶属或背书关系。保留名称、
 羊的形象与品牌橙，是为了让人一眼看出这是**他们的**站点 —— 不是另一个产品。
 
+**由 AI 写成。** 代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下产出 ——
+真实站点样本由人提供，产品取舍由人拍板，每一个视图都在真实账号上复核过。之所以写明白这一点，
+是让你知道该按什么标准去信任它：遇到问题请直接告诉我页面和现象，不必假设作者逐行读过这段代码。
+
 MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
 
 ---
 
-## 三、截图
+## 三、截图（当前：一张都不放）
 
-截图随脚本页一起托管，在说明里引用即可。
+**2026-10-04 决定：脚本页与仓库都不放截图。** 原来的 6 张（曾放在 `docs/screenshots/`）是从
+真实账号抓的实测画面：用户名、排名、积分、帧数、累计渲染时长、注册日期全在图上，足以反推
+是哪个账号 —— 与「不要出现测试账号」这条拍板直接冲突，已从 GreasyFork 脚本页撤下、
+并从仓库删除。这段说明刻意不抄那些数字，原因就是这一条本身。
 
-| 文件 | 内容 |
-|---|---|
-| `docs/screenshots/overview-dark.png` | 总览页 · 暗色（1800×1900）——**首图**，最能说明「不是换肤」 |
-| `docs/screenshots/session-dark.png` | 会话页 · 暗色（1440）——信息密度最高的一页 |
-| `docs/screenshots/projects.png` / `projects-hover.png` | 项目页 · 发布者那格的优先级开关（静止 / 悬停） |
-| `docs/screenshots/session-light.png` | 会话页 · 亮色（1440）——亮色主题的证明 |
-| `docs/screenshots/session-mobile.png` | 会话页 · 390 宽——窄屏可用 |
-
-图里的数字是截图当次的真实数据，会随账号漂移；不必为了截图去改它们。
+要再放图时：**必须用合成数据渲染**，不能拿真实会话的页面截图。图上出现的账号名、积分、
+帧数、排名、机器名、渲染密钥一律用假值；`tools/` 里有夹具服务器与截图工具，夹具来源见
+`tools/README.md`。GreasyFork 单次新建/更新最多带 5 个附件，每张 ≤ 1 MB。
 
 ---
 
-## 四、发布后回填清单（四行 metadata）
+## 四、metadata 回填记录（2026-10-04 已完成）
 
-| 头字段 | 现在 | 回填成 |
-|---|---|---|
-| `@namespace` | `sheepit-plus`（占位） | **必须在上传前定死** —— Tampermonkey 与 Violentmonkey 都用 `@name` + `@namespace` 认脚本身份，先发布再改会让已装用户收不到更新、并变成两个脚本。建议 `https://greasyfork.org/users/<你的用户 ID>`，或你的主页 / GitHub 地址 |
-| `@updateURL` | 无 | `https://update.greasyfork.org/scripts/<id>/SheepIt%20Plus.meta.js` |
-| `@downloadURL` | 无 | `https://update.greasyfork.org/scripts/<id>/SheepIt%20Plus.user.js` |
-| `@homepageURL` / `@supportURL` | 无 | 脚本页地址 `https://greasyfork.org/scripts/<id>`（`@supportURL` 可指向 issue 区） |
+首次公开：**2026-10-04，GreasyFork 脚本 id `598624`，以版本 0.1.0 建页、随即以 0.1.1 补全下列字段。**
 
-回填流程：改 `src/00-meta.js` → `node build.mjs` → 在 GreasyFork 更新脚本 → 在装着旧版的
-浏览器里手动「检查更新」一次，确认能拉到新版本。位置在 `src/00-meta.js` 里已留 TODO 注释。
+| 头字段 | 最终值 |
+|---|---|
+| `@namespace` | `https://github.com/clouddoze` —— 上传前定死，**此后不可再改**：Tampermonkey 与 Violentmonkey 都用 `@name` + `@namespace` 认脚本身份，发布后改动会让已装用户收不到更新、并在他们那里变成两个脚本 |
+| `@homepageURL` | `https://greasyfork.org/scripts/598624` |
+| `@supportURL` | `https://greasyfork.org/scripts/598624/feedback` |
+| `@updateURL` | `https://update.greasyfork.org/scripts/598624/SheepIt%20Plus%20%C2%B7%20%E6%B8%B2%E6%9F%93%E5%86%9C%E5%9C%BA%E7%95%8C%E9%9D%A2%E9%87%8D%E5%88%B6.meta.js` |
+| `@downloadURL` | 同上，把结尾换成 `.user.js` |
+
+⚠️ **URL 里的 slug 是中文脚本名，不是交接文档原先假设的 `SheepIt%20Plus`。** 上面两条取自
+脚本页「安装此脚本」的原样地址；服务端按 `/scripts/<id>/` 取脚本、slug 只影响可读性 ——
+实测 `SheepIt%20Plus.user.js` 也能取到同样的 265,219 字节，但跟站点给的那条保持一致最稳。
+
+发布新版的流程：改 `@version` → `node build.mjs` → GreasyFork 脚本页 →「更新」→（代码粘贴/
+本地上传）→ 发布新版本。`@version` 必须往上走，已装用户靠 `@updateURL` 拉 `.meta.js` 比版本号。
 
 ---
 

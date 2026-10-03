@@ -3,17 +3,14 @@
 把 [SheepIt Render Farm](https://www.sheepit-renderfarm.com) 那套 2013 年风格的界面换掉的油猴脚本。
 **不是换肤** —— 脚本读取站点自己的页面，用新前端把数据重新渲染成现代仪表盘。中文优先，自带英文界面。
 
-![总览页 · 暗色](docs/screenshots/overview-dark.png)
-
-| | |
-|---|---|
-| ![会话页](docs/screenshots/session-dark.png) | ![项目页](docs/screenshots/projects.png) |
+> **由 AI 写成。** 代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下产出：
+> 真实站点样本由人提供，产品取舍由人拍板，每一个视图都在真实账号上复核过。
 
 ## 安装
 
 1. 装一个用户脚本管理器：[Tampermonkey](https://www.tampermonkey.net/) / [Violentmonkey](https://violentmonkey.github.io/)
 2. 安装脚本：
-   - 从 GreasyFork 安装：`<发布后回填>`
+   - 从 GreasyFork 安装：<https://greasyfork.org/scripts/598624>
    - 或直接用仓库里的产物：打开 `dist/sheepit-plus.user.js`，管理器会弹出安装页
 3. 刷新 SheepIt 任意已接管的页面
 
@@ -136,6 +133,7 @@ settings — in Chinese and English, dark and light.
   site's own endpoints: the account-settings forms, pause/resume on a machine's session page, and
   the publisher actions on the project list.
 - Never makes scheduling decisions for you, never touches points accounting.
+- **Written by an AI** (DeepSeek Harness) under a human's direction and item-by-item review.
 - Third-party rebuild, not affiliated with SheepIt Render Farm.
 - MIT licensed.
 

@@ -38,13 +38,22 @@ if (!version) {
   process.exit(1);
 }
 
-const chunks = files.map((f) => {
-  const body = readFileSync(join(SRC, f), 'utf8');
-  return `/* ===== src/${f} ===== */\n${body.trimEnd()}`;
-});
-
 const banner = `/* sheepit-plus v${version} — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */`;
-const out = `${chunks[0]}\n${banner}\n${chunks.slice(1).join('\n\n')}\n`;
+const chunks = files.map((f, i) => {
+  const body = readFileSync(join(SRC, f), 'utf8').trimEnd();
+  // 第 1 个文件是用户脚本头。// ==UserScript== 必须落在产物第 1 行：前面挂任何注释或空白，
+  // GreasyFork 都会警告「您的代码没有以 // ==UserScript== 开头」，部分管理器也会不认。
+  // 所以文件 0 不挂模块横幅（模块名就是它自己），生成的 banner 排在 metadata 块之后。
+  if (i === 0) return `${body}\n\n${banner}`;
+  return `/* ===== src/${f} ===== */\n${body}`;
+});
+const out = `${chunks.join('\n\n')}\n`;
+
+// 兜底断言：产物第 1 行必须是用户脚本头的开始
+if (!out.startsWith('// ==UserScript==')) {
+  console.error('× 产物第 1 行不是 // ==UserScript==（前面混进了注释或空白）');
+  process.exit(1);
+}
 
 // 语法校验：在隔离上下文里编译（不执行），能抓出拼接产生的语法错误
 try {
