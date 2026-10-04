@@ -82,10 +82,11 @@ session — the script reads data through your existing session. No extra permis
 **Known limitations**
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/team`, `/forum`, …)
+- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/team`, `/getstarted`, `/forum`, …)
   keep their original layout; the translation layer only rewrites text it has a translation for.
-  `/getstarted` is half taken over: its "Add your project" section is rebuilt, its client-download
-  half is left alone.
+  Uploading a project is a page inside the new interface of its own (`#/upload`, behind the
+  experimental switch); `/getstarted` itself is left to the site, so one task never has two
+  interfaces.
 - The last two steps of uploading a project are still the site's own interface: the project
   settings form that appears once the analysis finishes (engine, frame range, tiles, samples,
   resolution…), and the project management page `/project/<id>`. Both are functional, they just
@@ -152,9 +153,9 @@ SheepIt Plus 是一个油猴脚本，用新前端接管站点自己的数据 —
 **已知限制**
 
 - 原站 CSS/JS 仍会下载，只是被隐藏；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/team`、`/forum` 等）保持原版界面，
-  翻译层只在有译文时替换文案。`/getstarted` 是**半接管**：上传那一段换成新界面，
-  客户端下载那一半保持原站。
+- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/team`、`/getstarted`、`/forum` 等）保持原版界面，
+  翻译层只在有译文时替换文案。上传项目在新界面里是独立的一页（`#/upload`，实验性开关），
+  `/getstarted` 归站点自己 —— 同一件事不留两种界面。
 - 项目上传的**后两步**仍是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、
   切块、采样、分辨率…），以及项目管理页 `/project/<数字>`。功能都正常，只是还没重制。
 - 站点改版可能让某个解析器失效，最坏结果是那一个视图显示「无数据」，不会影响站点本身。
@@ -267,7 +268,7 @@ MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
 分清"看过真实页面"和"只对着源码写"，因为两者出的错不一样。
 
 **已经对着真实页面看过的**：总览、项目、排行榜、会话页、账户设置，以及本批新做的
-上传页（`/getstarted` 的「Add your project」段）与分析等待页（`/project/add/<token>`）。
+上传卡片（数据取自 `/getstarted` 的「Add your project」段）与分析等待页（`/project/add/<token>`）。
 
 **但这一批的验证方式要写清楚**（2026-10-04）：不是"用户把已装脚本更新到新版、然后打开页面"，
 而是**先清掉已安装脚本留下的节点、再把 `dist` 产物注入到已加载的真实页面里**。
@@ -284,8 +285,7 @@ MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
   （0.1.8 引入）、`t('up.expNote')` 回的是译文还是键名（0.1.9 才有译文）。仍未验证的还是
   **防闪**与"用户从旧版更新上来"那一跳。
 - **0.1.9 的应用内上传视图（`#/upload`）三条路径都实测过**：直接以 `#/upload` 载入、
-  切到别的视图再切回来、以及"上一个视图还在取数据时立刻切过来"；就地接管的 `/getstarted`
-  也复测了一遍（表单、估算器、设备补全都还活着）。
+  切到别的视图再切回来、以及"上一个视图还在取数据时立刻切过来"。
 - 这三条路径当场修掉三处缺陷，**同一个形状：一个只描述"某一次渲染"的状态，被当成了元素的性质**。
   ① `#sp-body` 上的 `spWired` 切走视图后不清，切回来时 `render()` 早退、画的是上一个视图
   （地址写着 `#/upload`，界面却是总览，文件框不见）；② `boot()` 是**先 `render()` 再 `show()`**
@@ -294,6 +294,17 @@ MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
   ③ `show()` 的 `finally` 无条件按自己的视图写地址栏，取数据慢的那次会落在新导航之后把 URL
   改回去（"总览还在取 → 点了上传"就是这一串，刷新会回到总览）。三处都在 0.1.9 内修掉，
   0.1.8 及以前没有（0.1.8 根本没有应用内上传视图）。
+
+**2026-10-04（0.1.10，未发布）把 `/getstarted` 的半接管整个去掉**，用户拍板：同一件"上传项目"
+两种界面容易混淆，而且原版模式下点那颗角落按钮会落到一个半新半旧的页面。实测（真站点 + 注入
+`dist`）：
+
+- 那一页现在 `#sp`、守卫、`#sp-style`、`sp-inline` **全都不存在**；站点自己的上传段原样在 DOM 里
+  （`#addproject_main_div` + 1 个文件框 + 估算器都在），翻译照常（`lang=zh-CN`，中文文案在）。
+- 角落那颗从「切回新界面」变成 **「进入新界面」**，标题写着"这一页没有重制版"；点下去去的是
+  `/home`（完整新界面），**不再是那个半接管页**。
+- 上传卡片本身（`#/upload`）没被删坏：启动于 `#/upload`、切走再切回、慢总览后立刻切过来
+  三条路径与顶栏逐项导航同时复测，三处修复都在。
 
 **还没做的**：分析完成后的「新增项目」设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…，官方
 `formAddProject()` 约 490 行 PHP）与项目管理页 `/project/<数字>`。这两页**只对项目所有者开放**，

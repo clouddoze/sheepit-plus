@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.9
+// @version      0.1.10
 // @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
 // @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.9 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.10 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -308,9 +308,6 @@
       // 前半句是状态、后半句是要做的事，读起来像个标签而不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
-      /* /getstarted 那种**半接管**页：这一页确实有重制过的部分（上传那一段），
-         所以不能说"没有重制版" —— 浮窗是去完整界面的入口，不是"这一页没做"。 */
-      'mode.partialTip': '这一页只有上传那一段是新界面 —— 点此打开完整的新界面',
       /* 已连接的机器 */
       'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
@@ -438,19 +435,18 @@
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
 
-      /* ---- 项目上传页（/getstarted 的「Add your project」那一段） ----
-         这一页是「下载客户端」和「上传项目」两件事共用一个地址。我们只接管上传那一段，
-         下载指南保持原站 —— 所以下面这段文案是**局部接管**的标题，不是整页标题。 */
+      /* ---- 上传项目（应用内 #/upload）----
+         卡片里的三块是站点 /getstarted 上「Add your project」那一段搬过来的，
+         但**那一页本身不接管**（见 80-app.js 的 viewForPath）：它同时是「下载客户端」
+         指南页，半接管会让同一件事出现两种界面。 */
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       /* 这一句很重要：说明这块为什么长着原站的样子但数字是真的 */
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
-      'up.blocked': '站点当前不允许这个账号上传项目',
-      /* 应用内版本（实验性入口点进来的那个）顶上的一句话：这一页是我们容器里的站点控件，
-         说清楚它是什么，免得被当成和六个视图一个标准重制过的东西。 */
+      /* 顶上那句话：这一页是我们容器里的站点控件，说清楚它是什么，
+         免得被当成和六个视图一个标准重制过的东西。 */
       'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
         + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
       /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
@@ -551,7 +547,6 @@
       'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
-      'mode.partialTip': 'Only the upload section of this page is rebuilt \u2014 open the full interface instead',
       'machines.title': 'Connected machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
@@ -665,16 +660,14 @@
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
 
-      /* Project upload (/getstarted) and the "analysing" screen after it.
-         /getstarted is two pages in one address — the client download guide and the upload
-         form — and only the upload half is rebuilt; see up.origin. */
+      /* Project upload and the "analysing" screen after it.
+         The upload surface lives inside the app (#/upload); /getstarted itself is left to the
+         site — see the note on viewForPath. Its "Add your project" section is still the source. */
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
-      'up.blocked': 'The site is not letting this account upload a project at the moment',
       'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
         + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
@@ -2500,13 +2493,6 @@ ${Theme.css('#sp')}
    onsubmit/onclick 属性和已经绑定好的处理器都还在，所以我们不重实现上传逻辑。
    下面先抹掉原站 Bootstrap 给这些节点的外观，再按我们的规矩重画。 */
 
-/* 局部接管：#sp 不再铺满视口，只占它替换掉的那一段。
-   **自带底色**是必须的，不是装饰：站点那一页有自己的主题（实测站点在浅色主题下、
-   而我们的主题跟随系统是深色），文字色是从我们的 token 里来的 —— 不自带底色就会
-   出现"浅色文字落在站点白色背景上"的隐形标题。接管的那一段自己成一块，两边都不靠。 */
-#sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
-#sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
-
 /* 版式：第一行两张卡（选文件 / 估算器），须知整行跨两列。
    注意这里是 **align-items:start 而不是 stretch**：估算器下方会出现站点返回的估算结果，
    一旦它把卡片撑高，stretch 会把左边那张"选择文件"一起拉长、下面留一大片空的
@@ -2654,7 +2640,7 @@ ${Theme.css('#sp')}
 /* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
    一大截。这里把 tbody/tr 摊平（display:contents）变成规整的两列网格。
    标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
-   只认 .numband（wireUpload 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
+   只认 .numband（wireUploadDoc 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
    个形状，被这条规则误伤过一次：它的单元格被摊成网格项，分块数和耗时对调了。 */
 #sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
 #sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
@@ -4403,8 +4389,9 @@ ${Theme.css('#sp')}
   /* ================================================== 项目上传页 / 分析等待页
      这两页与前面六个视图不是一回事，写清楚免得后来人改错：
 
-     前六个是"整页重建" —— 数据从站点页面解析出来，界面由字符串模板画出来。
-     这两页是**局部换装**：卡片骨架我们画，但**能干活的节点从原站搬过来**。
+     分析等待页是"整页重建"：数据从站点接口读，界面由字符串模板画出来。
+     上传页是**换装**：卡片骨架我们画，但**能干活的节点从站点那一页搬过来** ——
+     只不过搬之前先把 /getstarted *抓回来解析*（见 wireUploadDoc），不接管那一页本身。
 
      为什么搬而不是重画：上传表单靠 `onsubmit="addproject_upload_progress_fct(uid)"`
      触发站点自己的 addproject.js，估算器靠一段内联 `jQuery(...).autocomplete()` 绑定
@@ -4412,24 +4399,25 @@ ${Theme.css('#sp')}
      节点搬进我们的卡片，处理器全都还在；重画就等于把上传、进度轮询、设备自动补全
      在客户端再实现一遍，而且站点一改就得跟着改。
 
-     搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
-     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。
+     搬运的另一个前提：文案得先翻好。抓回来的那份 HTML 没经过页面翻译层（它压根不在
+     文档里），所以 wireUploadDoc 里自己调 DomI18n.translateSubtree()：顺序永远是
+     **先翻译、再整理**，见那里的注释。
 
      验证状态（2026-10-04，别当成"已在真实安装路径下验过"）：
-     这两页是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
+     这些路径是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
      已加载的页面」。所以 `@run-at document-start` 那一段 —— 防闪、以及守卫在原站界面画出来
      之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
      详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
-  /** 卡片骨架。真正的内容由 wireUpload() / wireUploadDoc() 装进来，所以这里只有空的插槽。
-   *  opts.inApp：应用内版本（实验性入口点进来的那一个），顶上多一句话说明它的性质。 */
-  function upload(state, opts) {
+  /** 卡片骨架。真正的内容由 wireUploadDoc() 装进来，所以这里只有空的插槽。
+   *  顶上那句话说明这一页的性质：站点控件 + 我们的外观，不是重制过的一页。 */
+  function upload(state) {
     return `<div class="wrap up">
       <div class="sechead">
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      ${opts && opts.inApp ? `<div class="expnote">${esc(t('up.expNote'))}</div>` : ''}
+      <div class="expnote">${esc(t('up.expNote'))}</div>
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -4575,15 +4563,15 @@ ${Theme.css('#sp')}
   }
 
   /**
-   * 应用内版本：把 `/getstarted` 抓回来，从**解析出的文档**里取同样那三块装进卡片。
+   * 上传卡片唯一的填充方式：把 `/getstarted` 抓回来，从**解析出的文档**里取那三块装进卡片。
    *
-   * 与 wireUpload()（就地搬活节点）的差别，以及为什么还得有这一条：
-   *   · 就地搬，绑定全都活着，但那一页带着站点的头尾和下载指南 —— 从新界面点进来会变成
-   *     "新界面 → 原版页面 → 卡片"的来回跳（用户报的正是这个）。
-   *   · 抓回来装，页面完全在新界面里；代价是 `<script>` 不会执行，所以估算器的设备名
-   *     自动补全要自己重新绑一次（这是这里唯一需要"再实现一遍"的东西，源地址仍从
-   *     站点那段脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，
-   *     而 addproject.js 在每一页都加载，函数是全局的。
+   * 为什么是"抓回来装"而不是"接管那一页"：/getstarted 同时是「下载客户端」指南页，接管它
+   * 只能做成半新半旧的一页 —— 而同一件"上传项目"因此会存在两种界面（站点原版 + 新版），
+   * 原版模式下点进去还会落到那个半新半旧的页面（用户 2026-10-04 指出的正是这个）。
+   * 现在那一页归站点，上传只在新界面里出现；这里的代价是 `<script>` 不会执行，所以估算器
+   * 的设备名自动补全要自己重新绑一次（这是唯一需要"再实现一遍"的东西，源地址仍从站点那段
+   * 脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，而 addproject.js 在每一页
+   * 都加载，函数是全局的。
    *
    * 译文同样走一份词典：这里用 DomI18n.translateSubtree()，它允许翻译器走进 #sp。
    */
@@ -4652,59 +4640,6 @@ ${Theme.css('#sp')}
     });
   }
 
-  /**
-   * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
-   *
-   * 三个可能的现场，都要认：
-   *   1. 站点给了上传表单（正常）；
-   *   2. 站点给了 `#addproject_warning_zero_frame`（渲染帧数不够，站点自己拦住不让传）；
-   *   3. 两个都没有 —— 站点渲染的是 printError（未登录 / 维护中 / 管理员关了上传）。
-   * 第 3 种**原样还给用户**：这一页本来就不是我们能接管的，退回"只补翻译"。
-   *
-   * 返回 false 表示什么都没动过（调用方据此退回原站界面）。
-   */
-  function wireUpload(root) {
-    const slotForm = root.querySelector('[data-up="form"]');
-    const slotEst = root.querySelector('[data-up="est"]');
-    const slotRules = root.querySelector('[data-up="rules"]');
-    const estPanel = root.querySelector('[data-up="estPanel"]');
-    const main = document.querySelector('#addproject_main_div');
-    const blocked = document.querySelector('#addproject_warning_zero_frame');
-    // 先判定、再动手：走第 3 条路时不能留下半搬的状态
-    if (!main && !blocked) return false;
-
-    if (main) {
-      // 结构：#addproject_main_div > .row > [.col-md-5（表单块 + 估算器块）, .col-md-6（须知）]
-      const left = main.querySelector(':scope > .row > .col-md-5');
-      const right = main.querySelector(':scope > .row > .col-md-6');
-      const blocks = left ? [...left.children] : [];
-      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
-      const estBlock = blocks.find((b) => b !== formBlock) || null;
-      if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
-      if (estBlock && slotEst) {
-        slotEst.appendChild(estBlock);
-        /* 估算器自己那张「渲染耗时 / 帧数」表要单独标出来：它和站点稍后返回的结果表格
-           不是一回事 —— 前者是两列标签值，后者是带表头的真表格。没有这个类名，
-           针对前者的网格规则会连后者一起命中，把列序搞乱（实测把分块数和耗时对调了）。 */
-        const numTable = estBlock.querySelector('table');
-        if (numTable) numTable.classList.add('numband');
-        watchEstimatorResult(slotEst.querySelector('#addproject_estimator_result'));
-      }
-      else if (estPanel) estPanel.remove();
-      if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
-    } else if (slotForm) {
-      // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
-      slotForm.appendChild(blocked);
-      if (estPanel) estPanel.remove();
-    }
-
-    // 站点那个 <h3>Add your project</h3> 连同它那一节一起让位：现在这一段的标题在我们的卡片上
-    const section = (main || blocked).closest('section');
-    if (section && section.parentElement) section.replaceWith(root);
-    else (document.body || document.documentElement).appendChild(root);
-    return true;
-  }
-
   /* ------------------------------------------------------------ 分析等待页 */
 
   /** 上传后的等待页。整页归我们：站点那一版就是一个转圈圈加一句英文。
@@ -4735,25 +4670,20 @@ ${Theme.css('#sp')}
   }
 
   function mount(root, state) {
-    // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
-    // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
     /* 上传视图的接线。两道判据各拦一种"还没东西可接"的时刻：
        · `.up-grid`：show() 先画一屏骨架再取数据，骨架里没有卡片。少了它会在这时候就把
          body 标成"已接线"，等真正出内容的那次 render() 反而早退。（实测踩过一次。）
-       · `hasSource`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，直接以
-         #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（uploadHtml 还没取回来），
-         `.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次 render() 全被
-         上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去的空壳。
-         来源就是下面 wireUploadDoc / wireUpload 二选一的那两个条件，这里先说清楚。 */
-    const hasSource = !!(state && state.uploadHtml)
-      || !!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame');
+       · `state.uploadHtml`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，
+         直接以 #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（/getstarted
+         还没抓回来），`.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次
+         render() 全被上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去
+         的空壳。 */
     if (state && state.view === 'upload' && root && !root.dataset.spWired
-        && root.querySelector('.up-grid') && hasSource) {
+        && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
-      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
+      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行
       SP.DomI18n.enabled = !!state.translateSite;
-      const ok = state.uploadHtml ? wireUploadDoc(root, state.uploadHtml) : wireUpload(root);
-      if (!ok) return false;
+      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -5116,9 +5046,11 @@ ${Theme.css('#sp')}
     // 会话页（一台机器的档案）。实测别人的会话编号直接 404 —— 站点只让自己的机器可见。
     // 这里仍然按"能读到就接管"处理：接手的是站点已经给了我们的那一份页面。
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    // 项目上传页。**注意 /getstarted 同时是「下载客户端」指南页** —— 上传表单只是它三段里
-    // 的最后一段，所以这一页只做局部接管（见 INLINE_VIEWS）。
-    if (p === '/getstarted') return 'upload';
+    /* /getstarted **不接管**（2026-10-04 用户拍板）。它同时是「下载客户端」指南页，上传表单只是
+       它三段里的最后一段；当年为此只做了局部接管，代价是同一件"上传项目"存在两种界面 ——
+       站点原版那一页，和新界面里的应用内上传页 —— 在原版模式下点那颗角落按钮还会落到一个
+       "半新半旧"的页面（站点头尾 + 我们的卡片），容易混淆。
+       现在这一页永远保持原站界面（只补翻译）；新版的上传只走应用内 `#/upload`，从顶栏进。 */
     // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
     // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
@@ -5131,12 +5063,8 @@ ${Theme.css('#sp')}
     return null;
   }
 
-  /** 局部接管的视图：#sp 不铺满视口，只顶掉站点的那一段，页面其余部分保持原站。 */
-  const INLINE_VIEWS = new Set(['upload']);
-
   const pathView = viewForPath(location.pathname);
   const uiMode = Util.store.get('uiMode', 'modern');
-  const inlineView = pathView ? INLINE_VIEWS.has(pathView) : false;
 
   /* ------------------------------------------------- 原版界面 / 现代化 开关
      用户要一条退路：习惯旧界面的人、以及脚本还没覆盖到的功能，都能一键回去。
@@ -5152,7 +5080,7 @@ ${Theme.css('#sp')}
     b.id = 'sp-mode-pill';
     b.type = 'button';
     const classic = kind === 'classic';
-    b.title = classic ? t('mode.classicTip') : (kind === 'partial' ? t('mode.partialTip') : t('mode.enterTip'));
+    b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
     b.setAttribute('aria-label', b.title);
     b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
@@ -5198,9 +5126,9 @@ ${Theme.css('#sp')}
     return;
   }
 
-  // 局部接管的页面**不能**压住整页 —— 它要的是"页面其余部分照常显示，只有那一段换成我们的"，
-  // 所以守卫只在整页接管时注入。
-  if (!inlineView) SP.injectGuard();
+  // 守卫在 document-start 就注入，为的是原站界面画出来之前就把它挡住（防闪）。
+  // 现在没有局部接管的页面了 —— 走到这里的都是整页接管。
+  SP.injectGuard();
   SP.injectStyle();
 
   /** 提前注入了守卫、但后来发现不该接管时，把页面原样还给用户 */
@@ -5211,7 +5139,7 @@ ${Theme.css('#sp')}
     const s = document.getElementById('sp-style');
     if (s) s.remove();
     const host = document.getElementById('sp');
-    if (host) host.remove();   // 局部接管时它只是个还没派上用场的空壳
+    if (host) host.remove();   // 这时候界面还没画，通常不存在；存在就一起撤掉
     startSiteTranslation();
   }
   let released = false;
@@ -5316,20 +5244,7 @@ ${Theme.css('#sp')}
     applyTheme();
     const scrollY = host.scrollTop;
 
-    /* 局部接管的页面（目前只有 /getstarted 的上传段）：没有顶栏、没有 #sp-body，
-       卡片本身就是 #sp 的内容，而且**画一次就不再重画** —— 里面装着从站点搬过来的
-       活节点（上传表单、估算器），重画一次就连它们的处理器一起扔了。 */
-    if (inlineView) {
-      host.classList.add('sp-inline');
-      if (host.dataset.spWired) return;
-      host.innerHTML = Views.upload(state);
-      if (Views.mount(host, state) === false) { release(); return; }
-      host.classList.add('sp-anim');
-      return;
-    }
-
-    /* 分析等待页同理只画一次，但它是**整页接管**，所以照常给外壳 ——
-       站点那一版的导航被守卫藏了，用户得有顶栏和出口。
+    /* 分析等待页只画一次：它是整页接管，站点那一版的导航被守卫藏了，用户得有顶栏和出口。
        只能画一次是因为 #sp-an-result 里会被站点注入下一步的表单，
        重画就把站点刚塞进来的东西抹掉了；状态更新走 paintAnalyse() 的定点改。 */
     if (state.view === 'analyse' && host.dataset.spWired) return;
@@ -5375,7 +5290,7 @@ ${Theme.css('#sp')}
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
-    else if (state.view === 'upload') html = Views.upload(state, { inApp: true });
+    else if (state.view === 'upload') html = Views.upload(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -5528,9 +5443,7 @@ ${Theme.css('#sp')}
     }
 
     if (view === 'upload') {
-      // 就地接管（用户真的打开了 /getstarted）：表单就在那一页的 DOM 上，没有要取的。
-      if (inlineView) return;
-      // 应用内版本：把那一页抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
+      // 把 /getstarted 抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
       // 站点没有给这一块单独的接口，页面就是它的数据源 —— 和别处的解析器一个路子。
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
@@ -5618,7 +5531,7 @@ ${Theme.css('#sp')}
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
         || (view === 'ranking' && !state.ranking)
-        || (view === 'upload' && !inlineView && !state.uploadHtml)
+        || (view === 'upload' && !state.uploadHtml)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -5982,26 +5895,6 @@ ${Theme.css('#sp')}
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
-    /* 上传页要先确认这一页**真的有**可接管的东西。站点在这一段上有四种现场：
-     有表单 / 用"渲染帧数不够"拦住 / 未登录 / 维护中。后三种它渲染的是 printError 或
-     一句提示，那种页面原样还回去 —— 不接管，也不留半搬的状态。 */
-    if (pathView === 'upload') {
-      if (!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame')) {
-        startSiteTranslation();
-        mountModePill('enter');
-        return;
-      }
-      /* 站点那一段的文案必须**先原地翻好**，再搬进我们的卡片 ——
-         DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
-         mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
-      startSiteTranslation();
-      /* 局部接管的页面**必须**留着角落这颗「进入新界面」：卡片是刻意没有顶栏的
-         （这一页的其余部分还是原站的，不该再叠一层我们自己的导航），所以这一页上
-         属于我们的入口只有它。0.1.6 漏了这一步 —— /getstarted 从"未接管"变成
-         "半接管"之后就走了另一条分支，原来那颗按钮随之消失（用户实报）。 */
-      mountModePill('partial');
-    }
-
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
@@ -6010,9 +5903,8 @@ ${Theme.css('#sp')}
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 
     if (!state.userName && !state.profileName) {
-      // 局部接管的页面上不摆"请先登录"这一屏：站点自己的页面还在，它自己会说这句话
-      // （/getstarted 未登录时就写着 "You need to be logged in to add a project."）。
-      if (inlineView) { startSiteTranslation(); mountModePill('enter'); return; }
+      // 未接管的页面（/getstarted、/faq…）在上面就 return 了，不会走到这里；
+      // 所以这一屏只出现在"该接管但读不到登录态"的时候。
       mount().innerHTML = `<div class="wrap">${UI.state.loggedOut()}</div>`;
       return;
     }

@@ -30,9 +30,11 @@
     // 会话页（一台机器的档案）。实测别人的会话编号直接 404 —— 站点只让自己的机器可见。
     // 这里仍然按"能读到就接管"处理：接手的是站点已经给了我们的那一份页面。
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    // 项目上传页。**注意 /getstarted 同时是「下载客户端」指南页** —— 上传表单只是它三段里
-    // 的最后一段，所以这一页只做局部接管（见 INLINE_VIEWS）。
-    if (p === '/getstarted') return 'upload';
+    /* /getstarted **不接管**（2026-10-04 用户拍板）。它同时是「下载客户端」指南页，上传表单只是
+       它三段里的最后一段；当年为此只做了局部接管，代价是同一件"上传项目"存在两种界面 ——
+       站点原版那一页，和新界面里的应用内上传页 —— 在原版模式下点那颗角落按钮还会落到一个
+       "半新半旧"的页面（站点头尾 + 我们的卡片），容易混淆。
+       现在这一页永远保持原站界面（只补翻译）；新版的上传只走应用内 `#/upload`，从顶栏进。 */
     // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
     // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
@@ -45,12 +47,8 @@
     return null;
   }
 
-  /** 局部接管的视图：#sp 不铺满视口，只顶掉站点的那一段，页面其余部分保持原站。 */
-  const INLINE_VIEWS = new Set(['upload']);
-
   const pathView = viewForPath(location.pathname);
   const uiMode = Util.store.get('uiMode', 'modern');
-  const inlineView = pathView ? INLINE_VIEWS.has(pathView) : false;
 
   /* ------------------------------------------------- 原版界面 / 现代化 开关
      用户要一条退路：习惯旧界面的人、以及脚本还没覆盖到的功能，都能一键回去。
@@ -66,7 +64,7 @@
     b.id = 'sp-mode-pill';
     b.type = 'button';
     const classic = kind === 'classic';
-    b.title = classic ? t('mode.classicTip') : (kind === 'partial' ? t('mode.partialTip') : t('mode.enterTip'));
+    b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
     b.setAttribute('aria-label', b.title);
     b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
@@ -112,9 +110,9 @@
     return;
   }
 
-  // 局部接管的页面**不能**压住整页 —— 它要的是"页面其余部分照常显示，只有那一段换成我们的"，
-  // 所以守卫只在整页接管时注入。
-  if (!inlineView) SP.injectGuard();
+  // 守卫在 document-start 就注入，为的是原站界面画出来之前就把它挡住（防闪）。
+  // 现在没有局部接管的页面了 —— 走到这里的都是整页接管。
+  SP.injectGuard();
   SP.injectStyle();
 
   /** 提前注入了守卫、但后来发现不该接管时，把页面原样还给用户 */
@@ -125,7 +123,7 @@
     const s = document.getElementById('sp-style');
     if (s) s.remove();
     const host = document.getElementById('sp');
-    if (host) host.remove();   // 局部接管时它只是个还没派上用场的空壳
+    if (host) host.remove();   // 这时候界面还没画，通常不存在；存在就一起撤掉
     startSiteTranslation();
   }
   let released = false;
@@ -230,20 +228,7 @@
     applyTheme();
     const scrollY = host.scrollTop;
 
-    /* 局部接管的页面（目前只有 /getstarted 的上传段）：没有顶栏、没有 #sp-body，
-       卡片本身就是 #sp 的内容，而且**画一次就不再重画** —— 里面装着从站点搬过来的
-       活节点（上传表单、估算器），重画一次就连它们的处理器一起扔了。 */
-    if (inlineView) {
-      host.classList.add('sp-inline');
-      if (host.dataset.spWired) return;
-      host.innerHTML = Views.upload(state);
-      if (Views.mount(host, state) === false) { release(); return; }
-      host.classList.add('sp-anim');
-      return;
-    }
-
-    /* 分析等待页同理只画一次，但它是**整页接管**，所以照常给外壳 ——
-       站点那一版的导航被守卫藏了，用户得有顶栏和出口。
+    /* 分析等待页只画一次：它是整页接管，站点那一版的导航被守卫藏了，用户得有顶栏和出口。
        只能画一次是因为 #sp-an-result 里会被站点注入下一步的表单，
        重画就把站点刚塞进来的东西抹掉了；状态更新走 paintAnalyse() 的定点改。 */
     if (state.view === 'analyse' && host.dataset.spWired) return;
@@ -289,7 +274,7 @@
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
-    else if (state.view === 'upload') html = Views.upload(state, { inApp: true });
+    else if (state.view === 'upload') html = Views.upload(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -442,9 +427,7 @@
     }
 
     if (view === 'upload') {
-      // 就地接管（用户真的打开了 /getstarted）：表单就在那一页的 DOM 上，没有要取的。
-      if (inlineView) return;
-      // 应用内版本：把那一页抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
+      // 把 /getstarted 抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
       // 站点没有给这一块单独的接口，页面就是它的数据源 —— 和别处的解析器一个路子。
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
@@ -532,7 +515,7 @@
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
         || (view === 'ranking' && !state.ranking)
-        || (view === 'upload' && !inlineView && !state.uploadHtml)
+        || (view === 'upload' && !state.uploadHtml)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -896,26 +879,6 @@
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
-    /* 上传页要先确认这一页**真的有**可接管的东西。站点在这一段上有四种现场：
-     有表单 / 用"渲染帧数不够"拦住 / 未登录 / 维护中。后三种它渲染的是 printError 或
-     一句提示，那种页面原样还回去 —— 不接管，也不留半搬的状态。 */
-    if (pathView === 'upload') {
-      if (!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame')) {
-        startSiteTranslation();
-        mountModePill('enter');
-        return;
-      }
-      /* 站点那一段的文案必须**先原地翻好**，再搬进我们的卡片 ——
-         DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
-         mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
-      startSiteTranslation();
-      /* 局部接管的页面**必须**留着角落这颗「进入新界面」：卡片是刻意没有顶栏的
-         （这一页的其余部分还是原站的，不该再叠一层我们自己的导航），所以这一页上
-         属于我们的入口只有它。0.1.6 漏了这一步 —— /getstarted 从"未接管"变成
-         "半接管"之后就走了另一条分支，原来那颗按钮随之消失（用户实报）。 */
-      mountModePill('partial');
-    }
-
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
@@ -924,9 +887,8 @@
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 
     if (!state.userName && !state.profileName) {
-      // 局部接管的页面上不摆"请先登录"这一屏：站点自己的页面还在，它自己会说这句话
-      // （/getstarted 未登录时就写着 "You need to be logged in to add a project."）。
-      if (inlineView) { startSiteTranslation(); mountModePill('enter'); return; }
+      // 未接管的页面（/getstarted、/faq…）在上面就 return 了，不会走到这里；
+      // 所以这一屏只出现在"该接管但读不到登录态"的时候。
       mount().innerHTML = `<div class="wrap">${UI.state.loggedOut()}</div>`;
       return;
     }

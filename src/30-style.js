@@ -660,13 +660,6 @@ ${Theme.css('#sp')}
    onsubmit/onclick 属性和已经绑定好的处理器都还在，所以我们不重实现上传逻辑。
    下面先抹掉原站 Bootstrap 给这些节点的外观，再按我们的规矩重画。 */
 
-/* 局部接管：#sp 不再铺满视口，只占它替换掉的那一段。
-   **自带底色**是必须的，不是装饰：站点那一页有自己的主题（实测站点在浅色主题下、
-   而我们的主题跟随系统是深色），文字色是从我们的 token 里来的 —— 不自带底色就会
-   出现"浅色文字落在站点白色背景上"的隐形标题。接管的那一段自己成一块，两边都不靠。 */
-#sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
-#sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
-
 /* 版式：第一行两张卡（选文件 / 估算器），须知整行跨两列。
    注意这里是 **align-items:start 而不是 stretch**：估算器下方会出现站点返回的估算结果，
    一旦它把卡片撑高，stretch 会把左边那张"选择文件"一起拉长、下面留一大片空的
@@ -814,7 +807,7 @@ ${Theme.css('#sp')}
 /* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
    一大截。这里把 tbody/tr 摊平（display:contents）变成规整的两列网格。
    标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
-   只认 .numband（wireUpload 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
+   只认 .numband（wireUploadDoc 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
    个形状，被这条规则误伤过一次：它的单元格被摊成网格项，分块数和耗时对调了。 */
 #sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
 #sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}

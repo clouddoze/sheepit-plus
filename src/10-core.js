@@ -272,9 +272,6 @@
       // 前半句是状态、后半句是要做的事，读起来像个标签而不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
-      /* /getstarted 那种**半接管**页：这一页确实有重制过的部分（上传那一段），
-         所以不能说"没有重制版" —— 浮窗是去完整界面的入口，不是"这一页没做"。 */
-      'mode.partialTip': '这一页只有上传那一段是新界面 —— 点此打开完整的新界面',
       /* 已连接的机器 */
       'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
@@ -402,19 +399,18 @@
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
 
-      /* ---- 项目上传页（/getstarted 的「Add your project」那一段） ----
-         这一页是「下载客户端」和「上传项目」两件事共用一个地址。我们只接管上传那一段，
-         下载指南保持原站 —— 所以下面这段文案是**局部接管**的标题，不是整页标题。 */
+      /* ---- 上传项目（应用内 #/upload）----
+         卡片里的三块是站点 /getstarted 上「Add your project」那一段搬过来的，
+         但**那一页本身不接管**（见 80-app.js 的 viewForPath）：它同时是「下载客户端」
+         指南页，半接管会让同一件事出现两种界面。 */
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       /* 这一句很重要：说明这块为什么长着原站的样子但数字是真的 */
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
-      'up.blocked': '站点当前不允许这个账号上传项目',
-      /* 应用内版本（实验性入口点进来的那个）顶上的一句话：这一页是我们容器里的站点控件，
-         说清楚它是什么，免得被当成和六个视图一个标准重制过的东西。 */
+      /* 顶上那句话：这一页是我们容器里的站点控件，说清楚它是什么，
+         免得被当成和六个视图一个标准重制过的东西。 */
       'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
         + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
       /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
@@ -515,7 +511,6 @@
       'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
-      'mode.partialTip': 'Only the upload section of this page is rebuilt \u2014 open the full interface instead',
       'machines.title': 'Connected machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
@@ -629,16 +624,14 @@
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
 
-      /* Project upload (/getstarted) and the "analysing" screen after it.
-         /getstarted is two pages in one address — the client download guide and the upload
-         form — and only the upload half is rebuilt; see up.origin. */
+      /* Project upload and the "analysing" screen after it.
+         The upload surface lives inside the app (#/upload); /getstarted itself is left to the
+         site — see the note on viewForPath. Its "Add your project" section is still the source. */
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
-      'up.blocked': 'The site is not letting this account upload a project at the moment',
       'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
         + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',

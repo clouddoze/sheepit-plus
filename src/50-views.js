@@ -1088,8 +1088,9 @@
   /* ================================================== 项目上传页 / 分析等待页
      这两页与前面六个视图不是一回事，写清楚免得后来人改错：
 
-     前六个是"整页重建" —— 数据从站点页面解析出来，界面由字符串模板画出来。
-     这两页是**局部换装**：卡片骨架我们画，但**能干活的节点从原站搬过来**。
+     分析等待页是"整页重建"：数据从站点接口读，界面由字符串模板画出来。
+     上传页是**换装**：卡片骨架我们画，但**能干活的节点从站点那一页搬过来** ——
+     只不过搬之前先把 /getstarted *抓回来解析*（见 wireUploadDoc），不接管那一页本身。
 
      为什么搬而不是重画：上传表单靠 `onsubmit="addproject_upload_progress_fct(uid)"`
      触发站点自己的 addproject.js，估算器靠一段内联 `jQuery(...).autocomplete()` 绑定
@@ -1097,24 +1098,25 @@
      节点搬进我们的卡片，处理器全都还在；重画就等于把上传、进度轮询、设备自动补全
      在客户端再实现一遍，而且站点一改就得跟着改。
 
-     搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
-     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。
+     搬运的另一个前提：文案得先翻好。抓回来的那份 HTML 没经过页面翻译层（它压根不在
+     文档里），所以 wireUploadDoc 里自己调 DomI18n.translateSubtree()：顺序永远是
+     **先翻译、再整理**，见那里的注释。
 
      验证状态（2026-10-04，别当成"已在真实安装路径下验过"）：
-     这两页是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
+     这些路径是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
      已加载的页面」。所以 `@run-at document-start` 那一段 —— 防闪、以及守卫在原站界面画出来
      之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
      详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
-  /** 卡片骨架。真正的内容由 wireUpload() / wireUploadDoc() 装进来，所以这里只有空的插槽。
-   *  opts.inApp：应用内版本（实验性入口点进来的那一个），顶上多一句话说明它的性质。 */
-  function upload(state, opts) {
+  /** 卡片骨架。真正的内容由 wireUploadDoc() 装进来，所以这里只有空的插槽。
+   *  顶上那句话说明这一页的性质：站点控件 + 我们的外观，不是重制过的一页。 */
+  function upload(state) {
     return `<div class="wrap up">
       <div class="sechead">
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      ${opts && opts.inApp ? `<div class="expnote">${esc(t('up.expNote'))}</div>` : ''}
+      <div class="expnote">${esc(t('up.expNote'))}</div>
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -1260,15 +1262,15 @@
   }
 
   /**
-   * 应用内版本：把 `/getstarted` 抓回来，从**解析出的文档**里取同样那三块装进卡片。
+   * 上传卡片唯一的填充方式：把 `/getstarted` 抓回来，从**解析出的文档**里取那三块装进卡片。
    *
-   * 与 wireUpload()（就地搬活节点）的差别，以及为什么还得有这一条：
-   *   · 就地搬，绑定全都活着，但那一页带着站点的头尾和下载指南 —— 从新界面点进来会变成
-   *     "新界面 → 原版页面 → 卡片"的来回跳（用户报的正是这个）。
-   *   · 抓回来装，页面完全在新界面里；代价是 `<script>` 不会执行，所以估算器的设备名
-   *     自动补全要自己重新绑一次（这是这里唯一需要"再实现一遍"的东西，源地址仍从
-   *     站点那段脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，
-   *     而 addproject.js 在每一页都加载，函数是全局的。
+   * 为什么是"抓回来装"而不是"接管那一页"：/getstarted 同时是「下载客户端」指南页，接管它
+   * 只能做成半新半旧的一页 —— 而同一件"上传项目"因此会存在两种界面（站点原版 + 新版），
+   * 原版模式下点进去还会落到那个半新半旧的页面（用户 2026-10-04 指出的正是这个）。
+   * 现在那一页归站点，上传只在新界面里出现；这里的代价是 `<script>` 不会执行，所以估算器
+   * 的设备名自动补全要自己重新绑一次（这是唯一需要"再实现一遍"的东西，源地址仍从站点那段
+   * 脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，而 addproject.js 在每一页
+   * 都加载，函数是全局的。
    *
    * 译文同样走一份词典：这里用 DomI18n.translateSubtree()，它允许翻译器走进 #sp。
    */
@@ -1337,59 +1339,6 @@
     });
   }
 
-  /**
-   * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
-   *
-   * 三个可能的现场，都要认：
-   *   1. 站点给了上传表单（正常）；
-   *   2. 站点给了 `#addproject_warning_zero_frame`（渲染帧数不够，站点自己拦住不让传）；
-   *   3. 两个都没有 —— 站点渲染的是 printError（未登录 / 维护中 / 管理员关了上传）。
-   * 第 3 种**原样还给用户**：这一页本来就不是我们能接管的，退回"只补翻译"。
-   *
-   * 返回 false 表示什么都没动过（调用方据此退回原站界面）。
-   */
-  function wireUpload(root) {
-    const slotForm = root.querySelector('[data-up="form"]');
-    const slotEst = root.querySelector('[data-up="est"]');
-    const slotRules = root.querySelector('[data-up="rules"]');
-    const estPanel = root.querySelector('[data-up="estPanel"]');
-    const main = document.querySelector('#addproject_main_div');
-    const blocked = document.querySelector('#addproject_warning_zero_frame');
-    // 先判定、再动手：走第 3 条路时不能留下半搬的状态
-    if (!main && !blocked) return false;
-
-    if (main) {
-      // 结构：#addproject_main_div > .row > [.col-md-5（表单块 + 估算器块）, .col-md-6（须知）]
-      const left = main.querySelector(':scope > .row > .col-md-5');
-      const right = main.querySelector(':scope > .row > .col-md-6');
-      const blocks = left ? [...left.children] : [];
-      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
-      const estBlock = blocks.find((b) => b !== formBlock) || null;
-      if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
-      if (estBlock && slotEst) {
-        slotEst.appendChild(estBlock);
-        /* 估算器自己那张「渲染耗时 / 帧数」表要单独标出来：它和站点稍后返回的结果表格
-           不是一回事 —— 前者是两列标签值，后者是带表头的真表格。没有这个类名，
-           针对前者的网格规则会连后者一起命中，把列序搞乱（实测把分块数和耗时对调了）。 */
-        const numTable = estBlock.querySelector('table');
-        if (numTable) numTable.classList.add('numband');
-        watchEstimatorResult(slotEst.querySelector('#addproject_estimator_result'));
-      }
-      else if (estPanel) estPanel.remove();
-      if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
-    } else if (slotForm) {
-      // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
-      slotForm.appendChild(blocked);
-      if (estPanel) estPanel.remove();
-    }
-
-    // 站点那个 <h3>Add your project</h3> 连同它那一节一起让位：现在这一段的标题在我们的卡片上
-    const section = (main || blocked).closest('section');
-    if (section && section.parentElement) section.replaceWith(root);
-    else (document.body || document.documentElement).appendChild(root);
-    return true;
-  }
-
   /* ------------------------------------------------------------ 分析等待页 */
 
   /** 上传后的等待页。整页归我们：站点那一版就是一个转圈圈加一句英文。
@@ -1420,25 +1369,20 @@
   }
 
   function mount(root, state) {
-    // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
-    // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
     /* 上传视图的接线。两道判据各拦一种"还没东西可接"的时刻：
        · `.up-grid`：show() 先画一屏骨架再取数据，骨架里没有卡片。少了它会在这时候就把
          body 标成"已接线"，等真正出内容的那次 render() 反而早退。（实测踩过一次。）
-       · `hasSource`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，直接以
-         #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（uploadHtml 还没取回来），
-         `.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次 render() 全被
-         上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去的空壳。
-         来源就是下面 wireUploadDoc / wireUpload 二选一的那两个条件，这里先说清楚。 */
-    const hasSource = !!(state && state.uploadHtml)
-      || !!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame');
+       · `state.uploadHtml`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，
+         直接以 #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（/getstarted
+         还没抓回来），`.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次
+         render() 全被上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去
+         的空壳。 */
     if (state && state.view === 'upload' && root && !root.dataset.spWired
-        && root.querySelector('.up-grid') && hasSource) {
+        && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
-      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
+      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行
       SP.DomI18n.enabled = !!state.translateSite;
-      const ok = state.uploadHtml ? wireUploadDoc(root, state.uploadHtml) : wireUpload(root);
-      if (!ok) return false;
+      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
