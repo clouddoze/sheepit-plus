@@ -297,6 +297,12 @@
     else if (state.view === 'ranking') html = state.ranking ? Views.ranking(state) : UI.state.empty();
     else html = UI.state.empty();
 
+    /* 重画之前先把上面那枚"已接线"标记清掉：它标的是**这一次渲染装进 body 的东西**，
+       而 #sp-body 是常驻元素，标记会跟着元素活过整个会话。不清的话，从上传视图切到别的
+       视图、再切回上传，上面那条守卫会以为卡片还在、直接早退 —— 用户看到的是上一个视图
+       的内容，地址栏和导航高亮却写着"上传"（0.1.9 实测踩到，卡片和文件框都不见了）。
+       这里能安全清，是因为守卫排在前面：同一次上传访问里的静默重画都会在上面 return。 */
+    delete body.dataset.spWired;
     body.innerHTML = html;
     // 画完这一次就不再画：见上面分析等待页那一段。（错误态不锁，重试要能重画）
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
@@ -544,7 +550,12 @@
       animOnce = viewChanged || !painted;
       render();
       painted = true;
-      history.replaceState(null, '', ROUTES[view] || location.pathname);
+      /* 地址栏只归**最后一次**导航写。这一次 show() 是异步的，取数据慢的时候它可能落在
+         更新的导航之后 —— 那种情况下再按自己的视图写 URL，就会把用户真正在看的那个
+         视图的地址改掉：实测"总览还在取 → 点了上传"这一串里，总览的收尾最后落盘，
+         地址写着 #/overview 而界面是上传页，用户一刷新就回不到上传视图。
+         （上一会话看到的"hash 还是 #/overview"就是这个，不是读数时机的问题。） */
+      if (state.view === view) history.replaceState(null, '', ROUTES[view] || location.pathname);
     }
   }
 

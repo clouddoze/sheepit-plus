@@ -2697,7 +2697,8 @@ ${Theme.css('#sp')}
 #sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
 #sp .up-body #addproject_estimator_result > br:first-child{display:none}
 /* 站点给耗时套了 Bootstrap 的绿色小标签。这个调色板里没有绿色，而且"能不能接受"
-   不该靠颜色说 —— 把标签拆掉，只留数字本身。 */
+   不该靠颜色说 —— 把标签拆掉，只留数字本身。
+   （2026-10-04 用户确认：保持中性，不恢复红/绿语义。这条已经拍过板，别再翻回去。） */
 #sp .up-body #addproject_estimator_result .label{
   background:none !important;border:none !important;color:var(--text) !important;
   font-size:12.5px !important;font-weight:600;padding:0 !important;
@@ -4736,10 +4737,18 @@ ${Theme.css('#sp')}
   function mount(root, state) {
     // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
     // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
-    /* 上传视图的接线。注意那个 `.up-grid` 判断：show() 先画一屏骨架再取数据，而骨架里没有
-       卡片 —— 少了这个条件就会在骨架阶段就把 body 标成"已接线"，等真正出内容的那次
-       render() 反而早退，卡片永远不出现。（实测踩过一次。） */
-    if (state && state.view === 'upload' && root && !root.dataset.spWired && root.querySelector('.up-grid')) {
+    /* 上传视图的接线。两道判据各拦一种"还没东西可接"的时刻：
+       · `.up-grid`：show() 先画一屏骨架再取数据，骨架里没有卡片。少了它会在这时候就把
+         body 标成"已接线"，等真正出内容的那次 render() 反而早退。（实测踩过一次。）
+       · `hasSource`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，直接以
+         #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（uploadHtml 还没取回来），
+         `.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次 render() 全被
+         上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去的空壳。
+         来源就是下面 wireUploadDoc / wireUpload 二选一的那两个条件，这里先说清楚。 */
+    const hasSource = !!(state && state.uploadHtml)
+      || !!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame');
+    if (state && state.view === 'upload' && root && !root.dataset.spWired
+        && root.querySelector('.up-grid') && hasSource) {
       root.dataset.spWired = '1';
       // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
       SP.DomI18n.enabled = !!state.translateSite;
@@ -5374,6 +5383,12 @@ ${Theme.css('#sp')}
     else if (state.view === 'ranking') html = state.ranking ? Views.ranking(state) : UI.state.empty();
     else html = UI.state.empty();
 
+    /* 重画之前先把上面那枚"已接线"标记清掉：它标的是**这一次渲染装进 body 的东西**，
+       而 #sp-body 是常驻元素，标记会跟着元素活过整个会话。不清的话，从上传视图切到别的
+       视图、再切回上传，上面那条守卫会以为卡片还在、直接早退 —— 用户看到的是上一个视图
+       的内容，地址栏和导航高亮却写着"上传"（0.1.9 实测踩到，卡片和文件框都不见了）。
+       这里能安全清，是因为守卫排在前面：同一次上传访问里的静默重画都会在上面 return。 */
+    delete body.dataset.spWired;
     body.innerHTML = html;
     // 画完这一次就不再画：见上面分析等待页那一段。（错误态不锁，重试要能重画）
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
@@ -5621,7 +5636,12 @@ ${Theme.css('#sp')}
       animOnce = viewChanged || !painted;
       render();
       painted = true;
-      history.replaceState(null, '', ROUTES[view] || location.pathname);
+      /* 地址栏只归**最后一次**导航写。这一次 show() 是异步的，取数据慢的时候它可能落在
+         更新的导航之后 —— 那种情况下再按自己的视图写 URL，就会把用户真正在看的那个
+         视图的地址改掉：实测"总览还在取 → 点了上传"这一串里，总览的收尾最后落盘，
+         地址写着 #/overview 而界面是上传页，用户一刷新就回不到上传视图。
+         （上一会话看到的"hash 还是 #/overview"就是这个，不是读数时机的问题。） */
+      if (state.view === view) history.replaceState(null, '', ROUTES[view] || location.pathname);
     }
   }
 

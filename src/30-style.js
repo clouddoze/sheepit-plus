@@ -857,7 +857,8 @@ ${Theme.css('#sp')}
 #sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
 #sp .up-body #addproject_estimator_result > br:first-child{display:none}
 /* 站点给耗时套了 Bootstrap 的绿色小标签。这个调色板里没有绿色，而且"能不能接受"
-   不该靠颜色说 —— 把标签拆掉，只留数字本身。 */
+   不该靠颜色说 —— 把标签拆掉，只留数字本身。
+   （2026-10-04 用户确认：保持中性，不恢复红/绿语义。这条已经拍过板，别再翻回去。） */
 #sp .up-body #addproject_estimator_result .label{
   background:none !important;border:none !important;color:var(--text) !important;
   font-size:12.5px !important;font-weight:600;padding:0 !important;

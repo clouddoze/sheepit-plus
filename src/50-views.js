@@ -1422,10 +1422,18 @@
   function mount(root, state) {
     // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
     // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
-    /* 上传视图的接线。注意那个 `.up-grid` 判断：show() 先画一屏骨架再取数据，而骨架里没有
-       卡片 —— 少了这个条件就会在骨架阶段就把 body 标成"已接线"，等真正出内容的那次
-       render() 反而早退，卡片永远不出现。（实测踩过一次。） */
-    if (state && state.view === 'upload' && root && !root.dataset.spWired && root.querySelector('.up-grid')) {
+    /* 上传视图的接线。两道判据各拦一种"还没东西可接"的时刻：
+       · `.up-grid`：show() 先画一屏骨架再取数据，骨架里没有卡片。少了它会在这时候就把
+         body 标成"已接线"，等真正出内容的那次 render() 反而早退。（实测踩过一次。）
+       · `hasSource`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，直接以
+         #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（uploadHtml 还没取回来），
+         `.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次 render() 全被
+         上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去的空壳。
+         来源就是下面 wireUploadDoc / wireUpload 二选一的那两个条件，这里先说清楚。 */
+    const hasSource = !!(state && state.uploadHtml)
+      || !!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame');
+    if (state && state.view === 'upload' && root && !root.dataset.spWired
+        && root.querySelector('.up-grid') && hasSource) {
       root.dataset.spWired = '1';
       // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
       SP.DomI18n.enabled = !!state.translateSite;
