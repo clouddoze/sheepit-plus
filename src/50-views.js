@@ -974,25 +974,41 @@
     }
     for (const n of dup) own.delete(n);
 
+    /* ---- 可渲染项目：站点给的是平铺的 27 行、原因重复 27 遍。
+       最早按原因把名字排成一片 chip、原因当分组标题；用户反馈"不直观"，
+       改成与项目页同构的表：项目 / 发布者 / 状态（= 为什么现在不派给这台机器）。
+       行仍按原因聚在一起 —— 同因的行天然相邻，所以不用再印一遍分组标题，
+       那一列自己就是那层信息。 */
+    const prjRows = ordered.flatMap(([reason, names]) => {
+      const label = reason ? packLabel('why', reason) : t('sess.whyNone');
+      return names.map((n) => ({ n, label }));
+    });
+
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      <div class="pbody" style="padding-top:4px">
-        ${ordered.length ? ordered.map(([reason, names]) => `<div class="wgroup">
-          <div class="wghead"><span class="wgname">${esc(reason ? packLabel('why', reason) : t('sess.whyNone'))}</span>
-            <span class="num">${names.length}</span></div>
-          <div class="wnames">${names.map((n) => {
-            const p = own.get(n);
-            // 链接用 URL 里的用户名（ownerId），显示用站点给的名字 —— 站点哪天渲染显示名也不会拼出坏链接
-            const who = p && (p.ownerId || p.owner)
-              ? `<a href="/user/${encodeURIComponent(p.ownerId || p.owner)}/profile" target="_self" title="${esc(`${t('sess.publisher')} · ${p.owner || p.ownerId}`)}">${esc(p.owner || p.ownerId)}</a>`
-              : '';
-            return `<span class="wname"><span class="nm" title="${esc(n)}">${esc(n)}</span>${who}</span>`;
-          }).join('')}</div>
-        </div>`).join('') : `<div class="none">${esc(t('sess.prjNone'))}</div>`}
-      </div>
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+        <thead><tr>
+          <th>${esc(t('proj.col.project'))}</th>
+          <th>${esc(t('proj.col.owner'))}</th>
+          <th>${esc(t('proj.col.status'))}</th>
+        </tr></thead>
+        <tbody>${prjRows.map(({ n, label }) => {
+          const p = own.get(n);
+          // 链接用 URL 里的用户名（ownerId），显示用站点给的名字 —— 站点哪天渲染显示名也不会拼出坏链接。
+          // 对不上就留一个破折号：缺一个事实就让它缺着，不猜。
+          const who = p && (p.ownerId || p.owner)
+            ? `<a href="/user/${encodeURIComponent(p.ownerId || p.owner)}/profile" target="_self" title="${esc(`${t('sess.publisher')} · ${p.owner || p.ownerId}`)}">${esc(p.owner || p.ownerId)}</a>`
+            : '<span class="dash">—</span>';
+          return `<tr>
+            <td><div class="pn" title="${esc(n)}">${esc(n)}</div></td>
+            <td>${who}</td>
+            <td><span class="st">${esc(label)}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}
     </div>` : '';
 
     return head + UI.kpis(kpiItems) + factsPanel + control + timelinePanel + prjPanel + foot();

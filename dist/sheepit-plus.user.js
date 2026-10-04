@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.3
+// @version      0.1.4
 // @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
 // @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.3 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.4 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -2282,29 +2282,11 @@ ${Theme.css('#sp')}
 #sp .tbl.dense .job{color:var(--text-2)}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
-/* 可渲染项目：按原因分组。站点把同一句原因重复 27 遍，原因本身才是能读的那层信息 */
-#sp .wgroup{padding:11px 0;border-top:1px solid var(--border)}
-#sp .wgroup:first-child{border-top:none;padding-top:2px}
-#sp .wghead{display:flex;align-items:baseline;gap:9px;margin-bottom:9px}
-#sp .wghead .wgname{font-size:12.5px;font-weight:600;color:var(--text-2)}
-#sp .wghead .num{font-size:12px;color:var(--text-3)}
-#sp .wnames{display:flex;flex-wrap:wrap;gap:6px}
-/* 一个 chip = 项目名 │ 发布者。名字自己带截断 —— 换成 inline-flex 之后
-   chip 上的 text-overflow 不再作用于文本节点。 */
-#sp .wname{
-  display:inline-flex;align-items:center;gap:0;max-width:100%;
-  font-size:12.5px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);
-  border-radius:var(--r-sm);padding:3px 9px;white-space:nowrap;
-}
-#sp .wname .nm{min-width:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 发布者：站点那张表只给项目名，名字后面挂一个对出来的发布者（链接走他的主页）。
-   对不上就不挂 —— 不给错的，也不给假的。 */
-#sp .wname a{
-  margin-left:7px;padding-left:8px;border-left:1px solid var(--border);
-  color:var(--text-3);text-decoration:none;
-}
-#sp .wname a:hover{color:var(--accent);text-decoration:underline}
-@media (max-width:560px){#sp .wname .nm{max-width:150px}}
+/* 可渲染项目：与项目页同构的表（项目 / 发布者 / 状态）。
+   早先这里是按原因分组的 chip 墙（.wgroup/.wname）—— 站点把同一句原因重复 27 遍，
+   当时认为原因本身才是能读的那层信息。用户反馈那一坨不直观，改成表之后原因进了
+   「状态」列：同因的行按排序天然相邻，不必再印分组标题，那一列自己就是那层信息。 */
+#sp .dash{color:var(--text-3)}
 #sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 /* 活动汇总：时间线的默认视图。一段一行、四个数、一条按渲染时长画的条。
@@ -3860,25 +3842,41 @@ ${Theme.css('#sp')}
     }
     for (const n of dup) own.delete(n);
 
+    /* ---- 可渲染项目：站点给的是平铺的 27 行、原因重复 27 遍。
+       最早按原因把名字排成一片 chip、原因当分组标题；用户反馈"不直观"，
+       改成与项目页同构的表：项目 / 发布者 / 状态（= 为什么现在不派给这台机器）。
+       行仍按原因聚在一起 —— 同因的行天然相邻，所以不用再印一遍分组标题，
+       那一列自己就是那层信息。 */
+    const prjRows = ordered.flatMap(([reason, names]) => {
+      const label = reason ? packLabel('why', reason) : t('sess.whyNone');
+      return names.map((n) => ({ n, label }));
+    });
+
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      <div class="pbody" style="padding-top:4px">
-        ${ordered.length ? ordered.map(([reason, names]) => `<div class="wgroup">
-          <div class="wghead"><span class="wgname">${esc(reason ? packLabel('why', reason) : t('sess.whyNone'))}</span>
-            <span class="num">${names.length}</span></div>
-          <div class="wnames">${names.map((n) => {
-            const p = own.get(n);
-            // 链接用 URL 里的用户名（ownerId），显示用站点给的名字 —— 站点哪天渲染显示名也不会拼出坏链接
-            const who = p && (p.ownerId || p.owner)
-              ? `<a href="/user/${encodeURIComponent(p.ownerId || p.owner)}/profile" target="_self" title="${esc(`${t('sess.publisher')} · ${p.owner || p.ownerId}`)}">${esc(p.owner || p.ownerId)}</a>`
-              : '';
-            return `<span class="wname"><span class="nm" title="${esc(n)}">${esc(n)}</span>${who}</span>`;
-          }).join('')}</div>
-        </div>`).join('') : `<div class="none">${esc(t('sess.prjNone'))}</div>`}
-      </div>
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+        <thead><tr>
+          <th>${esc(t('proj.col.project'))}</th>
+          <th>${esc(t('proj.col.owner'))}</th>
+          <th>${esc(t('proj.col.status'))}</th>
+        </tr></thead>
+        <tbody>${prjRows.map(({ n, label }) => {
+          const p = own.get(n);
+          // 链接用 URL 里的用户名（ownerId），显示用站点给的名字 —— 站点哪天渲染显示名也不会拼出坏链接。
+          // 对不上就留一个破折号：缺一个事实就让它缺着，不猜。
+          const who = p && (p.ownerId || p.owner)
+            ? `<a href="/user/${encodeURIComponent(p.ownerId || p.owner)}/profile" target="_self" title="${esc(`${t('sess.publisher')} · ${p.owner || p.ownerId}`)}">${esc(p.owner || p.ownerId)}</a>`
+            : '<span class="dash">—</span>';
+          return `<tr>
+            <td><div class="pn" title="${esc(n)}">${esc(n)}</div></td>
+            <td>${who}</td>
+            <td><span class="st">${esc(label)}</span></td>
+          </tr>`;
+        }).join('')}</tbody>
+      </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}
     </div>` : '';
 
     return head + UI.kpis(kpiItems) + factsPanel + control + timelinePanel + prjPanel + foot();

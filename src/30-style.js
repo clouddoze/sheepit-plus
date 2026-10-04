@@ -586,29 +586,11 @@ ${Theme.css('#sp')}
 #sp .tbl.dense .job{color:var(--text-2)}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
-/* 可渲染项目：按原因分组。站点把同一句原因重复 27 遍，原因本身才是能读的那层信息 */
-#sp .wgroup{padding:11px 0;border-top:1px solid var(--border)}
-#sp .wgroup:first-child{border-top:none;padding-top:2px}
-#sp .wghead{display:flex;align-items:baseline;gap:9px;margin-bottom:9px}
-#sp .wghead .wgname{font-size:12.5px;font-weight:600;color:var(--text-2)}
-#sp .wghead .num{font-size:12px;color:var(--text-3)}
-#sp .wnames{display:flex;flex-wrap:wrap;gap:6px}
-/* 一个 chip = 项目名 │ 发布者。名字自己带截断 —— 换成 inline-flex 之后
-   chip 上的 text-overflow 不再作用于文本节点。 */
-#sp .wname{
-  display:inline-flex;align-items:center;gap:0;max-width:100%;
-  font-size:12.5px;color:var(--text-2);background:var(--surface-2);border:1px solid var(--border);
-  border-radius:var(--r-sm);padding:3px 9px;white-space:nowrap;
-}
-#sp .wname .nm{min-width:0;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 发布者：站点那张表只给项目名，名字后面挂一个对出来的发布者（链接走他的主页）。
-   对不上就不挂 —— 不给错的，也不给假的。 */
-#sp .wname a{
-  margin-left:7px;padding-left:8px;border-left:1px solid var(--border);
-  color:var(--text-3);text-decoration:none;
-}
-#sp .wname a:hover{color:var(--accent);text-decoration:underline}
-@media (max-width:560px){#sp .wname .nm{max-width:150px}}
+/* 可渲染项目：与项目页同构的表（项目 / 发布者 / 状态）。
+   早先这里是按原因分组的 chip 墙（.wgroup/.wname）—— 站点把同一句原因重复 27 遍，
+   当时认为原因本身才是能读的那层信息。用户反馈那一坨不直观，改成表之后原因进了
+   「状态」列：同因的行按排序天然相邻，不必再印分组标题，那一列自己就是那层信息。 */
+#sp .dash{color:var(--text-3)}
 #sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 /* 活动汇总：时间线的默认视图。一段一行、四个数、一条按渲染时长画的条。

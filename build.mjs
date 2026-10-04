@@ -90,7 +90,7 @@ function smoke() {
   if (typeof css !== 'string') problems.push(`SP.CSS 不是字符串（${typeof css}）—— 模板字符串很可能被提前闭合`);
   else {
     if (css.length < 8000) problems.push(`SP.CSS 只有 ${css.length} 字符，看起来被截断了`);
-    for (const sel of ['#sp{', '#sp .wrap', '#sp .kpis', '#sp .farm', '#sp .tbl', '#sp .heatwrap', '#sp .acct', '#sp .facts', '#sp .wname']) {
+    for (const sel of ['#sp{', '#sp .wrap', '#sp .kpis', '#sp .farm', '#sp .tbl', '#sp .heatwrap', '#sp .acct', '#sp .facts', '#sp .actrow']) {
       if (!css.includes(sel)) problems.push(`SP.CSS 里找不到 ${sel}`);
     }
   }
