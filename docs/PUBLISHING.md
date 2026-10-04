@@ -215,8 +215,16 @@ MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
 并把两行挪到 metadata 块末尾。所以线上 265,689 字节与本地 `dist` 的 265,693 字节只差这 4 个
 空格，正文、注释与代码逐字节相同（0.1.2 实测）。
 
-发布新版的流程：改 `@version` → `node build.mjs` → GreasyFork 脚本页 →「更新」→（代码粘贴/
-本地上传）→ 发布新版本。`@version` 必须往上走，已装用户靠 `@updateURL` 拉 `.meta.js` 比版本号。
+**同一条规律在 0.1.6 上复现（2026-10-04 实测）**：线上 `.user.js` **312,027** 字节 vs 本地
+`dist` **312,031** 字节，差的仍是这 4 个空格；5564 行里**只有第 16、17 两行不同**
+（`@updateURL` / `@downloadURL` 换了顺序、缩进由对齐列变成单空格），其余逐字节相同。
+所以"发布是否成功"有两个独立判据，都不用等 CDN：**脚本页的版本号**，以及**本地产物与线上
+产物的这个已知差值**。`.meta.js` 里则照旧没有这两行。
+
+发布新版的流程：改 `@version` → `node build.mjs` → `node .tmp/make-stage.mjs` → GreasyFork
+脚本页 →「更新」→ 代码粘进 `script_version[code]`、附加信息抄 `additional-info.md`
+（Markdown 模式）→ 填更新日志 → 提交。`@version` 必须往上走，已装用户靠 `@updateURL` 拉
+`.meta.js` 比版本号。
 
 ---
 
