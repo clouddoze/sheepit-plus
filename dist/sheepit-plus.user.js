@@ -2465,13 +2465,27 @@ ${Theme.css('#sp')}
 #sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
 #sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
 
-#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
-#sp .up-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* 版式：第一行两张卡（选文件 / 估算器）等高，须知整行跨两列。
+   之前是"左列两张卡 vs 右列须知"的两栏，而须知有 19 条 —— 左边必然空出半屏。
+   现在由 grid 直接排三张卡：.up-col 用 display:contents 让它的两个孩子成为 grid 项，
+   不再需要"列"这一层。 */
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch;margin-top:16px}
+#sp .up-col{display:contents}
+#sp .up-grid .panel{min-width:0}
+#sp .up-rules{grid-column:1 / -1}
 @media (max-width:900px){#sp .up-grid{grid-template-columns:minmax(0,1fr)}}
 #sp .up .panel{padding:0}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* 须知整行宽了，19 条横排会拉出很长的行 —— 分两栏，读到哪儿跟到哪儿。
+   注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block。 */
+@media (min-width:820px){
+  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:8px}
+  #sp .up-rules .up-body > h4{columns:1}
+}
 
 /* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
@@ -4218,7 +4232,13 @@ ${Theme.css('#sp')}
      在客户端再实现一遍，而且站点一改就得跟着改。
 
      搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
-     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。 */
+     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。
+
+     验证状态（2026-10-04，别当成"已在真实安装路径下验过"）：
+     这两页是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
+     已加载的页面」。所以 `@run-at document-start` 那一段 —— 防闪、以及守卫在原站界面画出来
+     之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
+     详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
   /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
   function upload() {
@@ -4238,7 +4258,7 @@ ${Theme.css('#sp')}
             <div class="up-body" data-up="est"></div>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel up-rules">
           <div class="phead"><h2>${esc(t('up.rulesTitle'))}</h2></div>
           <div class="up-body" data-up="rules"></div>
         </div>
@@ -4684,6 +4704,12 @@ ${Theme.css('#sp')}
     // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
     // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
+    /* 还没接管的两页，写在这里免得下次重新摸一遍：
+       · 分析完成后的「新增项目」设置表单（官方 formAddProject()，约 490 行 PHP）——
+         它是 /project/add_analyse/<token> 的响应片段，由上面那一页的轮询接住再注入；
+       · 项目管理页 /project/<数字>（官方 manage.html.twig，六个功能区 + ACL 名单）。
+       两页都只对项目所有者开放，手上没有真实样本 —— 要做只能照官方源码写，
+       成品必须标注「未对真实页面验证」，并优先请有项目的人复核。 */
     return null;
   }
 

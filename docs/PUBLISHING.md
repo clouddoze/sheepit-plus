@@ -85,6 +85,10 @@ session — the script reads data through your existing session. No extra permis
   keep their original layout; the translation layer only rewrites text it has a translation for.
   `/getstarted` is half taken over: its "Add your project" section is rebuilt, its client-download
   half is left alone.
+- The last two steps of uploading a project are still the site's own interface: the project
+  settings form that appears once the analysis finishes (engine, frame range, tiles, samples,
+  resolution…), and the project management page `/project/<id>`. Both are functional, they just
+  have not been rebuilt yet.
 - If the site is redesigned a parser can stop matching. The worst case is that one view says
   "no data" — the site itself is never affected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
@@ -150,6 +154,8 @@ SheepIt Plus 是一个油猴脚本，用新前端接管站点自己的数据 —
 - 未重建的页面（`/faq`、`/project/*`、`/servers`、`/team`、`/forum` 等）保持原版界面，
   翻译层只在有译文时替换文案。`/getstarted` 是**半接管**：上传那一段换成新界面，
   客户端下载那一半保持原站。
+- 项目上传的**后两步**仍是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、
+  切块、采样、分辨率…），以及项目管理页 `/project/<数字>`。功能都正常，只是还没重制。
 - 站点改版可能让某个解析器失效，最坏结果是那一个视图显示「无数据」，不会影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
 - 未登录时脚本会提示你先在原站登录。
@@ -211,7 +217,28 @@ MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
 
 ---
 
-## 五、OpenUserJS（可选）
+## 五、验证状态（哪些是实测过的，哪些不是）
+
+分清"看过真实页面"和"只对着源码写"，因为两者出的错不一样。
+
+**已经对着真实页面看过的**：总览、项目、排行榜、会话页、账户设置，以及本批新做的
+上传页（`/getstarted` 的「Add your project」段）与分析等待页（`/project/add/<token>`）。
+
+**但这一批的验证方式要写清楚**（2026-10-04）：不是"用户把已装脚本更新到新版、然后打开页面"，
+而是**先清掉已安装脚本留下的节点、再把 `dist` 产物注入到已加载的真实页面里**。
+两者差在 **`@run-at document-start` 那一段**：真实安装路径下守卫会在原站界面画出来之前
+就注入（防闪），而注入式验证是在 DOM 已就绪之后启动的。所以下列行为**尚未走完整安装路径验证**：
+防闪、`document-start` 时的守卫注入、以及"用户从旧版更新上来"这一跳。
+要补上它，只能让用户更新到新版后直接看 —— 记在这里，不假装已经验过。
+
+**还没做的**：分析完成后的「新增项目」设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…，官方
+`formAddProject()` 约 490 行 PHP）与项目管理页 `/project/<数字>`。这两页**只对项目所有者开放**，
+手上没有可用的真实样本 —— 将来重制只能照官方源码写，成品**必须标注「未对真实页面验证」**，
+并优先请有项目的人复核。现在它们走的是原站界面，功能不受影响。
+
+---
+
+## 六、OpenUserJS（可选）
 
 同一份产物可以直接用，它也识别 `@updateURL`；说明字段同样接受 Markdown，直接抄「二」的正文。
 两边都发时，`@updateURL` 只能指向其中一边（一般是 GreasyFork），另一边靠脚本页自身的更新机制。

@@ -667,13 +667,27 @@ ${Theme.css('#sp')}
 #sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
 #sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
 
-#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
-#sp .up-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+/* 版式：第一行两张卡（选文件 / 估算器）等高，须知整行跨两列。
+   之前是"左列两张卡 vs 右列须知"的两栏，而须知有 19 条 —— 左边必然空出半屏。
+   现在由 grid 直接排三张卡：.up-col 用 display:contents 让它的两个孩子成为 grid 项，
+   不再需要"列"这一层。 */
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch;margin-top:16px}
+#sp .up-col{display:contents}
+#sp .up-grid .panel{min-width:0}
+#sp .up-rules{grid-column:1 / -1}
 @media (max-width:900px){#sp .up-grid{grid-template-columns:minmax(0,1fr)}}
 #sp .up .panel{padding:0}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* 须知整行宽了，19 条横排会拉出很长的行 —— 分两栏，读到哪儿跟到哪儿。
+   注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block。 */
+@media (min-width:820px){
+  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:8px}
+  #sp .up-rules .up-body > h4{columns:1}
+}
 
 /* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,

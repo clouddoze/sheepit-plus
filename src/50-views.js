@@ -1091,7 +1091,13 @@
      在客户端再实现一遍，而且站点一改就得跟着改。
 
      搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
-     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。 */
+     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。
+
+     验证状态（2026-10-04，别当成"已在真实安装路径下验过"）：
+     这两页是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
+     已加载的页面」。所以 `@run-at document-start` 那一段 —— 防闪、以及守卫在原站界面画出来
+     之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
+     详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
   /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
   function upload() {
@@ -1111,7 +1117,7 @@
             <div class="up-body" data-up="est"></div>
           </div>
         </div>
-        <div class="panel">
+        <div class="panel up-rules">
           <div class="phead"><h2>${esc(t('up.rulesTitle'))}</h2></div>
           <div class="up-body" data-up="rules"></div>
         </div>
