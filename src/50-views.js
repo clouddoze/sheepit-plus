@@ -1078,7 +1078,153 @@
 
   /* ======================================================== 挂载后补丁
      视图本身是纯字符串；只有总览的积分曲线需要拿到真实像素宽度才能画。 */
+  /* ================================================== 项目上传页 / 分析等待页
+     这两页与前面六个视图不是一回事，写清楚免得后来人改错：
+
+     前六个是"整页重建" —— 数据从站点页面解析出来，界面由字符串模板画出来。
+     这两页是**局部换装**：卡片骨架我们画，但**能干活的节点从原站搬过来**。
+
+     为什么搬而不是重画：上传表单靠 `onsubmit="addproject_upload_progress_fct(uid)"`
+     触发站点自己的 addproject.js，估算器靠一段内联 `jQuery(...).autocomplete()` 绑定
+     设备名搜索，进度条由站点的轮询喂。这些绑的都是 **id 和事件属性**，不是外观 ——
+     节点搬进我们的卡片，处理器全都还在；重画就等于把上传、进度轮询、设备自动补全
+     在客户端再实现一遍，而且站点一改就得跟着改。
+
+     搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
+     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。 */
+
+  /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
+  function upload() {
+    return `<div class="wrap up">
+      <div class="sechead">
+        <h2>${esc(t('up.title'))}</h2>
+        <span class="sub">${esc(t('up.sub'))}</span>
+      </div>
+      <div class="up-grid">
+        <div class="up-col">
+          <div class="panel">
+            <div class="phead"><h2>${esc(t('up.formTitle'))}</h2></div>
+            <div class="up-body" data-up="form"></div>
+          </div>
+          <div class="panel" data-up="estPanel">
+            <div class="phead"><h2>${esc(t('up.estTitle'))}</h2></div>
+            <div class="up-body" data-up="est"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="phead"><h2>${esc(t('up.rulesTitle'))}</h2></div>
+          <div class="up-body" data-up="rules"></div>
+        </div>
+      </div>
+      <div class="up-src">${esc(t('up.origin'))}</div>
+    </div>`;
+  }
+
+  /**
+   * 站点那句「Max: 2,048 MB before ZIP compression / Blender compression is recommended
+   * and supported.」和 `<input type="file">` 挤在同一个 `<td>` 里。
+   *
+   * 这一格正是「翻译层不能整块替换」那条安全规则被踩出来的地方（见 70-i18n-dom.js）：
+   * 整块替换会把文件框一起删掉。但那一格被 `<br>`/`<strong>` 切成了好几个文本节点，
+   * 逐节点翻译也拼不回一句中文 —— 所以这句话由卡片自己说，**大小从站点原文里读**
+   * （上限是站点配置，不写死）。认不出站点那句话就原样留着，不猜。
+   */
+  function rewordFileLimit(scope) {
+    const file = scope.querySelector('input[type=file]');
+    if (!file) return;
+    const cell = file.closest('td') || file.parentElement;
+    if (!cell) return;
+    const txt = cell.textContent || '';
+    const m = txt.match(/Max:\s*([\d.,]+\s*[KMGT]?B)/i) || txt.match(/上限：\s*([\d.,]+\s*[KMGT]?B)/);
+    if (!m) return;
+    [...cell.childNodes].forEach((n) => { if (n !== file) n.remove(); });
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = t('up.maxNote', { size: m[1] });
+    file.after(note);
+  }
+
+  /**
+   * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
+   *
+   * 三个可能的现场，都要认：
+   *   1. 站点给了上传表单（正常）；
+   *   2. 站点给了 `#addproject_warning_zero_frame`（渲染帧数不够，站点自己拦住不让传）；
+   *   3. 两个都没有 —— 站点渲染的是 printError（未登录 / 维护中 / 管理员关了上传）。
+   * 第 3 种**原样还给用户**：这一页本来就不是我们能接管的，退回"只补翻译"。
+   *
+   * 返回 false 表示什么都没动过（调用方据此退回原站界面）。
+   */
+  function wireUpload(root) {
+    const slotForm = root.querySelector('[data-up="form"]');
+    const slotEst = root.querySelector('[data-up="est"]');
+    const slotRules = root.querySelector('[data-up="rules"]');
+    const estPanel = root.querySelector('[data-up="estPanel"]');
+    const main = document.querySelector('#addproject_main_div');
+    const blocked = document.querySelector('#addproject_warning_zero_frame');
+    // 先判定、再动手：走第 3 条路时不能留下半搬的状态
+    if (!main && !blocked) return false;
+
+    if (main) {
+      // 结构：#addproject_main_div > .row > [.col-md-5（表单块 + 估算器块）, .col-md-6（须知）]
+      const left = main.querySelector(':scope > .row > .col-md-5');
+      const right = main.querySelector(':scope > .row > .col-md-6');
+      const blocks = left ? [...left.children] : [];
+      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
+      const estBlock = blocks.find((b) => b !== formBlock) || null;
+      if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
+      if (estBlock && slotEst) slotEst.appendChild(estBlock);
+      else if (estPanel) estPanel.remove();
+      if (right && slotRules) slotRules.appendChild(right);
+    } else if (slotForm) {
+      // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
+      slotForm.appendChild(blocked);
+      if (estPanel) estPanel.remove();
+    }
+
+    // 站点那个 <h3>Add your project</h3> 连同它那一节一起让位：现在这一段的标题在我们的卡片上
+    const section = (main || blocked).closest('section');
+    if (section && section.parentElement) section.replaceWith(root);
+    else (document.body || document.documentElement).appendChild(root);
+    return true;
+  }
+
+  /* ------------------------------------------------------------ 分析等待页 */
+
+  /** 上传后的等待页。整页归我们：站点那一版就是一个转圈圈加一句英文。
+   *  真正在跑的是 80-app.js 里的轮询 —— 它认的是 `#sp-an-*` 这几个钩子。 */
+  function analyse() {
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('an.title'))}</h2>
+        <span class="sub">${esc(t('an.sub'))}</span>
+      </div>
+      <div class="panel an-card">
+        <div class="an-head">
+          <div class="spin" data-an="spin"></div>
+          <div>
+            <div class="an-state" data-an="state">${esc(t('an.waiting'))}</div>
+            <div class="an-sub" data-an="sub">${esc(t('an.slow'))}</div>
+          </div>
+        </div>
+        <div class="an-track" data-an="track"><i data-an="bar"></i></div>
+        <div class="an-done" data-an="done" hidden>
+          <div class="an-sub">${esc(t('an.doneNote'))}</div>
+          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
+        </div>
+        <div id="sp-an-result" class="sp-siteform" hidden></div>
+      </div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
   function mount(root, state) {
+    // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
+    // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
+    if (state && state.view === 'upload' && root && !root.dataset.spWired) {
+      root.dataset.spWired = '1';
+      if (!wireUpload(root)) return false;
+    }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
     if (box && pts && pts.length > 1) SP.Charts.points(box, pts);
@@ -1107,5 +1253,5 @@
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
 })();

@@ -30,11 +30,21 @@
     // 会话页（一台机器的档案）。实测别人的会话编号直接 404 —— 站点只让自己的机器可见。
     // 这里仍然按"能读到就接管"处理：接手的是站点已经给了我们的那一份页面。
     if (/^\/session\/\d+$/.test(p)) return 'session';
+    // 项目上传页。**注意 /getstarted 同时是「下载客户端」指南页** —— 上传表单只是它三段里
+    // 的最后一段，所以这一页只做局部接管（见 INLINE_VIEWS）。
+    if (p === '/getstarted') return 'upload';
+    // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
+    // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
+    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
     return null;
   }
 
+  /** 局部接管的视图：#sp 不铺满视口，只顶掉站点的那一段，页面其余部分保持原站。 */
+  const INLINE_VIEWS = new Set(['upload']);
+
   const pathView = viewForPath(location.pathname);
   const uiMode = Util.store.get('uiMode', 'modern');
+  const inlineView = pathView ? INLINE_VIEWS.has(pathView) : false;
 
   /* ------------------------------------------------- 原版界面 / 现代化 开关
      用户要一条退路：习惯旧界面的人、以及脚本还没覆盖到的功能，都能一键回去。
@@ -64,7 +74,7 @@
   /* -------------------------------------------- 未接管的页面：只补国际化 */
 
   /**
-   * 未重建的页面（/getstarted、/faq、/servers、/project/*…）保持原站界面，
+   * 未重建的页面（/faq、/servers、/project/*…）保持原站界面，
    * 只在本地把 UI 文案翻成当前语言。与"重做界面"是两件独立的事。
    */
   function startSiteTranslation() {
@@ -91,17 +101,23 @@
     return;
   }
 
-  SP.injectGuard();
+  // 局部接管的页面**不能**压住整页 —— 它要的是"页面其余部分照常显示，只有那一段换成我们的"，
+  // 所以守卫只在整页接管时注入。
+  if (!inlineView) SP.injectGuard();
   SP.injectStyle();
 
   /** 提前注入了守卫、但后来发现不该接管时，把页面原样还给用户 */
   function release() {
+    released = true;
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
     if (s) s.remove();
+    const host = document.getElementById('sp');
+    if (host) host.remove();   // 局部接管时它只是个还没派上用场的空壳
     startSiteTranslation();
   }
+  let released = false;
 
   /* ------------------------------------------------------- 2. 状态 */
 
@@ -116,6 +132,7 @@
     account: null,
     session: null,
     sessionId: null,       // /session/<数字>，从地址里读
+    analyseToken: null,    // /project/add/<token>，同样是地址的一部分
     myAvatar: '',          // 顶栏那张：**自己**的头像，从站点导航栏读（不是正在看的档案）
     loading: false,
     error: null,
@@ -190,9 +207,28 @@
   let painted = false;
 
   function render() {
+    if (released) return;
     const host = mount();
     applyTheme();
     const scrollY = host.scrollTop;
+
+    /* 局部接管的页面（目前只有 /getstarted 的上传段）：没有顶栏、没有 #sp-body，
+       卡片本身就是 #sp 的内容，而且**画一次就不再重画** —— 里面装着从站点搬过来的
+       活节点（上传表单、估算器），重画一次就连它们的处理器一起扔了。 */
+    if (inlineView) {
+      host.classList.add('sp-inline');
+      if (host.dataset.spWired) return;
+      host.innerHTML = Views.upload(state);
+      if (Views.mount(host, state) === false) { release(); return; }
+      host.classList.add('sp-anim');
+      return;
+    }
+
+    /* 分析等待页同理只画一次，但它是**整页接管**，所以照常给外壳 ——
+       站点那一版的导航被守卫藏了，用户得有顶栏和出口。
+       只能画一次是因为 #sp-an-result 里会被站点注入下一步的表单，
+       重画就把站点刚塞进来的东西抹掉了；状态更新走 paintAnalyse() 的定点改。 */
+    if (state.view === 'analyse' && host.dataset.spWired) return;
 
     // 注意：#sp-body 必须在外壳创建之后才查，否则首次渲染拿到 null
     if (!host.querySelector('.top')) {
@@ -230,6 +266,7 @@
     else if (state.error) html = UI.state.error(state.error, 'sp-retry');
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
+    else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -238,6 +275,8 @@
     else html = UI.state.empty();
 
     body.innerHTML = html;
+    // 画完这一次就不再画：见上面分析等待页那一段。（错误态不锁，重试要能重画）
+    if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染，字符串表达不了
@@ -250,6 +289,118 @@
     if (el) el.textContent = `${t('top.updated')} ${new Date().toLocaleTimeString()}`;
   }
 
+  /* ------------------------------------- 3.5 上传后的「正在分析」轮询
+
+     站点自己的 addproject.js 就是这么轮的：GET /project/add_analyse/<token>，
+     等待中回 {"status":"RETRY"}，分析中回 {"status":"PROCESSING","analysed":n,"total":m}，
+     分析完成则**直接把「新增项目」表单当 HTML 吐回来**（那个片段没有布局，本来就是给
+     JS 塞进容器用的）。
+
+     我们自己轮一次、而不是调站点的 doAnalyseUploadedProject()：它的状态文案是写死的英文，
+     而且它把结果写进站点那个容器 —— 那一屏已经被我们接管了。接口和状态机照抄站点，
+     没有自己发明协议；多出来的一次 GET 也不算浪费：站点自己那一版也是一样的频率。
+
+     为了让**只有一个**轮询器在打这个接口，站点的那个函数在这里摘掉 —— 它挂在
+     google.charts 的 onLoadCallback 上，什么时候跑不确定，留着就是两个轮询器。 */
+  let analyseTimer = null;
+  let siteAnalyseNeutralised = false;
+  const fmtN = (n) => Number(n).toLocaleString('en-US');
+
+  function stopAnalysePoll() {
+    if (analyseTimer) { clearTimeout(analyseTimer); analyseTimer = null; }
+  }
+
+  function startAnalysePoll() {
+    stopAnalysePoll();
+    if (!siteAnalyseNeutralised) {
+      siteAnalyseNeutralised = true;
+      try { window.doAnalyseUploadedProject = function () { /* 见上：这一页的轮询归我们 */ }; } catch (e) { /* 站点没定义就算了 */ }
+    }
+    // 先让首屏画出来再开始轮（render() 刚写完卡片，马上 repaint 会抢掉入场动效）
+    analyseTimer = setTimeout(analyseTick, 400);
+  }
+
+  async function analyseTick() {
+    const token = state.analyseToken;
+    if (!token) return;
+    let raw;
+    try {
+      // ttl 0：这一页轮的就是"现在"，缓存下来等于永远停在第一次的结果
+      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+    } catch (e) {
+      // 接口没回应就停下，不再自己重试 —— 卡片上那句文案已经说了"重新载入这一页"
+      paintAnalyse({ failed: (e && e.message) || String(e) });
+      return;
+    }
+    let json = null;
+    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
+    if (json === null) {
+      /* 分析完成时站点吐的是**一段没有布局的片段**（给 JS 塞进容器用的）；
+         而"这个编号找不到"它吐的是整页 error.html.twig。用形状把两者分开 ——
+         否则会把一整页错误当成"填表去吧"塞进卡片里。 */
+      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
+      paintAnalyse({ html: raw });
+      return;
+    }
+    if (json && json.status === 'PROCESSING') {
+      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
+    } else {
+      paintAnalyse({ waiting: true });
+    }
+    analyseTimer = setTimeout(analyseTick, 5000);
+  }
+
+  /** 只改卡片里那几个节点，不整页重画 —— 重画会把站点注入的下一步表单一起抹掉。 */
+  function paintAnalyse(s) {
+    const host = document.getElementById('sp');
+    if (!host) return;
+    const q = (k) => host.querySelector(`[data-an="${k}"]`);
+    const say = (k, text) => { const el = q(k); if (el) el.textContent = text; };
+
+    if (s.failed) {
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.failed', { err: s.failed }));
+      say('sub', '');   // "几分钟是正常的"是等待中的话，收尾了就不该再挂着
+      const track = q('track'); if (track) track.hidden = true;
+      return;
+    }
+    if (s.gone) {
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.gone'));
+      say('sub', '');
+      const track = q('track'); if (track) track.hidden = true;
+      return;
+    }
+    if (s.waiting) {
+      say('state', t('an.waiting'));
+      const track = q('track'); if (track) track.classList.add('indet');
+      const bar = q('bar'); if (bar) bar.style.width = '';
+      return;
+    }
+    if (s.html !== undefined) {
+      // 分析完成了：站点那份「新增项目」表单进来。本版没有重制它（卡片上已经写明），
+      // 所以只把它放进来做可读性兜底，功能原样可用 —— 提交走站点自己的 doAddProject。
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.doneTitle'));
+      say('sub', '');
+      const track = q('track'); if (track) track.hidden = true;
+      const done = q('done'); if (done) done.hidden = false;
+      const box = document.getElementById('sp-an-result');
+      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      return;
+    }
+    // PROCESSING
+    say('state', s.total
+      ? t('an.processing', { done: fmtN(s.done), total: fmtN(s.total) })
+      : t('an.reading'));
+    const track = q('track'); if (track) track.classList.remove('indet');
+    const bar = q('bar');
+    if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
+  }
+
   /* ------------------------------------------------------- 4. 数据编排 */
 
   async function ensureData(view) {
@@ -258,6 +409,17 @@
     if (view === 'account') {
       if (!state.userName) throw new Error(t('account.only'));
       state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`));
+      return;
+    }
+
+    if (view === 'upload') {
+      // 上传页没有要取的东西：表单、上限、须知都在站点那一页的 DOM 上，我们只是把它搬进卡片。
+      return;
+    }
+
+    if (view === 'analyse') {
+      if (!state.analyseToken) throw new Error(t('an.noToken'));
+      startAnalysePoll();
       return;
     }
 
@@ -678,6 +840,25 @@
     const se = location.pathname.match(/^\/session\/(\d+)/);
     state.sessionId = se ? se[1] : null;
 
+    // 分析等待页的 token 同理：地址就是身份。
+    const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
+    state.analyseToken = an ? decodeURIComponent(an[1]) : null;
+
+    /* 上传页要先确认这一页**真的有**可接管的东西。站点在这一段上有四种现场：
+     有表单 / 用"渲染帧数不够"拦住 / 未登录 / 维护中。后三种它渲染的是 printError 或
+     一句提示，那种页面原样还回去 —— 不接管，也不留半搬的状态。 */
+    if (pathView === 'upload') {
+      if (!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame')) {
+        startSiteTranslation();
+        mountModePill('enter');
+        return;
+      }
+      /* 站点那一段的文案必须**先原地翻好**，再搬进我们的卡片 ——
+         DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
+         mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
+      startSiteTranslation();
+    }
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
@@ -686,6 +867,9 @@
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 
     if (!state.userName && !state.profileName) {
+      // 局部接管的页面上不摆"请先登录"这一屏：站点自己的页面还在，它自己会说这句话
+      // （/getstarted 未登录时就写着 "You need to be logged in to add a project."）。
+      if (inlineView) { startSiteTranslation(); mountModePill('enter'); return; }
       mount().innerHTML = `<div class="wrap">${UI.state.loggedOut()}</div>`;
       return;
     }

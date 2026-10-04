@@ -650,6 +650,151 @@ ${Theme.css('#sp')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
+/* --------------------------------------------- 上传页 / 分析等待页（第三类页面）
+   前两类是"整页重建"和"只补翻译"。这两页是**局部换装**：
+     · /getstarted 同时是「下载客户端」指南页，所以只有「Add your project」那一段归我们，
+       页面的其余部分（介绍、四个下载入口、页脚）保持原站不动；
+     · /project/add/<token> 是上传后的纯等待页，整页归我们。
+   共同点：**能干活的东西原样搬过来，不重写**。上传表单、估算器、进度条都是站点自己
+   渲染的节点，站点挂的 addproject.js 认的是 id 而不是外观 —— 把节点搬进我们的卡片，
+   onsubmit/onclick 属性和已经绑定好的处理器都还在，所以我们不重实现上传逻辑。
+   下面先抹掉原站 Bootstrap 给这些节点的外观，再按我们的规矩重画。 */
+
+/* 局部接管：#sp 不再铺满视口，只占它替换掉的那一段。
+   **自带底色**是必须的，不是装饰：站点那一页有自己的主题（实测站点在浅色主题下、
+   而我们的主题跟随系统是深色），文字色是从我们的 token 里来的 —— 不自带底色就会
+   出现"浅色文字落在站点白色背景上"的隐形标题。接管的那一段自己成一块，两边都不靠。 */
+#sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
+#sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
+
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
+#sp .up-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){#sp .up-grid{grid-template-columns:minmax(0,1fr)}}
+#sp .up .panel{padding:0}
+#sp .up-body{padding:14px 20px 18px}
+#sp .up-body > :last-child{margin-bottom:0}
+#sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
+#sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
+#sp .up-body .sign-in-wr,#sp .up-body .blog-post{
+  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+}
+#sp .up-body .row{margin:0}
+#sp .up-body h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .up-body p{margin:0 0 14px;font-size:13px;color:var(--text-2);line-height:1.75}
+#sp .up-body ul{margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+#sp .up-body ul li{position:relative;padding-left:15px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
+#sp .up-body strong{color:var(--text);font-weight:600}
+#sp .up-body a{color:var(--accent)}
+#sp .up-body #addproject_warning_zero_frame{font-size:13px}
+
+/* 上传表单：原站是 <table> 三行（标签 / 文件框+进度 / 提交）。
+   表格在这里没有语义，摊平成一格一行。 */
+#sp .up-body form table,
+#sp .up-body form tbody,
+#sp .up-body form tr,
+#sp .up-body form td{display:block;width:auto;padding:0}
+#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
+#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
+#sp .up-body form td + td{margin-bottom:16px}
+#sp .up-body form td:last-child{margin-bottom:0}
+#sp .up-body form br + strong{color:var(--text-2)}
+
+/* 文件框：原生 file input 只有 ::file-selector-button 是可塑的 */
+#sp .up-body input[type=file]{
+  display:block;width:100%;padding:11px 12px;margin:0 0 10px;
+  background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--r-sm);
+  color:var(--text-3);font-size:12.5px;cursor:pointer;transition:border-color .12s,color .12s;
+}
+#sp .up-body input[type=file]:hover{border-color:var(--accent);color:var(--text-2)}
+#sp .up-body input[type=file]::file-selector-button{
+  font:inherit;font-weight:600;margin:0 12px 0 0;padding:6px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
+}
+#sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
+#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
+
+#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+  transition:filter .12s;
+}
+#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
+
+/* 上传进度：站点用 jQuery UI progressbar，并且**内联**写死了 #EEB0A0 的底色 ——
+   内联样式只能在样式表里用 !important 压过去，这是必要的例外。 */
+#sp .up-body #upload_progress_bar{
+  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
+  background:var(--surface-2) !important;border:1px solid var(--border) !important;
+}
+#sp .up-body #upload_progress_bar .ui-progressbar-value{
+  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
+}
+#sp .up-body #upload_progress_label{
+  position:static !important;text-shadow:none !important;text-align:right;
+  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
+}
+
+/* 估算器：两个数字输入 + 一个设备名搜索框 */
+#sp .up-body input[type=text]{
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);width:92px;
+}
+#sp .up-body input[type=text]:focus{outline:none;border-color:var(--accent)}
+#sp .up-body form.form-inline{display:block;margin:0 0 14px}
+#sp .up-body .input-group{display:flex;gap:8px;align-items:stretch}
+#sp .up-body .input-group .form-control{flex:1;min-width:0;width:auto}
+#sp .up-body .input-group-btn{display:flex;flex:none}
+#sp .up-body #addproject_estimator_result{
+  font-size:12.5px;color:var(--text-2);line-height:1.7;
+  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
+}
+#sp .up-body #addproject_estimator_result:empty{display:none}
+
+/* ---- 分析等待页 ---- */
+#sp .an-card{padding:0}
+#sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
+#sp .an-head .spin{flex:none;margin-top:2px}
+#sp .an-state{font-size:15px;font-weight:600;color:var(--text)}
+#sp .an-sub{font-size:12.5px;color:var(--text-3);line-height:1.75;margin-top:7px;max-width:640px}
+#sp .an-track{height:6px;margin:18px 20px 0;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
+#sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
+@keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
+#sp .an-done{padding:20px 20px 0}
+#sp .an-done .an-sub{margin-bottom:14px}
+#sp .an-foot{padding:0 20px 20px}
+
+/* 分析完成后，站点把它自己那套「新增项目」表单塞进 #sp-an-result。
+   这一步本版没有重制（卡片里已经写明），所以这里只做**可读性兜底**：
+   不让 2013 版 Bootstrap 的栅格和表单控件在我们的卡片里散架。不求好看，求能用。 */
+#sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
+#sp .sp-siteform section,#sp .sp-siteform .slice,
+#sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
+#sp .sp-siteform .form-light,#sp .sp-siteform .padding-15{
+  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+}
+#sp .sp-siteform .row{margin:0}
+#sp .sp-siteform [class*="col-md-"],#sp .sp-siteform [class*="col-sm-"]{float:none;width:auto;padding:0}
+#sp .sp-siteform h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
+#sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
+#sp .sp-siteform .form-group{margin-bottom:14px}
+#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
+#sp .sp-siteform select,#sp .sp-siteform textarea{
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
+#sp .sp-siteform input[type=submit],#sp .sp-siteform button{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
+#sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+
 /* ---------------------------------------------------------------- 一次编排的动效
    曲线的绘制由 JS 用 getTotalLength() 精确驱动，这里只管其余块的一次性入场。
    "一次性"是字面意思：只有换视图（或刷新）才播。筛选项、排序、显示更多这些只改列表的

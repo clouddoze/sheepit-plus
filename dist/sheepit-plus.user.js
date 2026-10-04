@@ -424,6 +424,34 @@
       'sess.tl.rendering': '渲染', 'sess.tl.request': '领任务', 'sess.tl.validate': '校验',
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
+
+      /* ---- 项目上传页（/getstarted 的「Add your project」那一段） ----
+         这一页是「下载客户端」和「上传项目」两件事共用一个地址。我们只接管上传那一段，
+         下载指南保持原站 —— 所以下面这段文案是**局部接管**的标题，不是整页标题。 */
+      'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
+      'up.formTitle': '选择文件',
+      'up.estTitle': '渲染用时估算',
+      'up.rulesTitle': '交之前先过一遍',
+      /* 这一句很重要：说明这块为什么长着原站的样子但数字是真的 */
+      'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
+      'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
+      'up.blocked': '站点当前不允许这个账号上传项目',
+      /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
+         那句话和文件框在同一个 <td> 里，翻译层一旦整块替换就会把文件框删掉。 */
+      'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
+      /* ---- 上传后的「正在分析」等待页 ---- */
+      'an.title': '正在分析你的项目',
+      'an.sub': '站点要先读一遍存档，才知道里面有几个 .blend、帧区间和分辨率是多少',
+      'an.waiting': '排队等分析器接手…',
+      'an.processing': '分析器正在读：{done} / {total} 个文件',
+      'an.reading': '分析器正在读存档…',
+      'an.slow': '几分钟是正常的，存档越大越久。这一页可以一直开着；关掉也不会中断分析，回头再打开接着看。',
+      'an.failed': '分析接口没回应（{err}）。这不是你的存档出了问题 —— 重新载入这一页就能接着等。',
+      'an.noToken': '地址里没有分析编号，这一页打不开。',
+      'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
+      'an.doneTitle': '分析完成',
+      'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
+
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* 站点原文是 "Over user's time limit"。这里的 user 是**机器主人**、time limit 是他在
@@ -610,6 +638,29 @@
       'sess.tl.rendering': 'Rendering', 'sess.tl.request': 'Request', 'sess.tl.validate': 'Validate',
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
+
+      /* Project upload (/getstarted) and the "analysing" screen after it.
+         /getstarted is two pages in one address — the client download guide and the upload
+         form — and only the upload half is rebuilt; see up.origin. */
+      'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
+      'up.formTitle': 'Choose a file',
+      'up.estTitle': 'Render time estimator',
+      'up.rulesTitle': 'Check before you upload',
+      'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
+      'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
+      'up.blocked': 'The site is not letting this account upload a project at the moment',
+      'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
+      'an.title': 'Analysing your project',
+      'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
+      'an.waiting': 'Waiting for an analyser to pick it up…',
+      'an.processing': 'Analyser is reading: {done} / {total} files',
+      'an.reading': 'Analyser is reading the archive…',
+      'an.slow': 'A few minutes is normal, and a big archive takes longer. Leaving the page open is fine; closing it does not stop the analysis — come back and it picks up again.',
+      'an.failed': 'The analysis endpoint did not answer ({err}). Nothing is wrong with your archive — reloading this page resumes the wait.',
+      'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
+      'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
+      'an.doneTitle': 'Analysis finished',
+      'an.doneNote': 'The next step (engine, frame range, tiles, samples, resolution…) is not rebuilt in this version, so it is the site\u2019s own form: fully functional, in the site\u2019s own look. Submitting it lands on the project management page.',
     },
   };
 
@@ -2397,6 +2448,151 @@ ${Theme.css('#sp')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
+/* --------------------------------------------- 上传页 / 分析等待页（第三类页面）
+   前两类是"整页重建"和"只补翻译"。这两页是**局部换装**：
+     · /getstarted 同时是「下载客户端」指南页，所以只有「Add your project」那一段归我们，
+       页面的其余部分（介绍、四个下载入口、页脚）保持原站不动；
+     · /project/add/<token> 是上传后的纯等待页，整页归我们。
+   共同点：**能干活的东西原样搬过来，不重写**。上传表单、估算器、进度条都是站点自己
+   渲染的节点，站点挂的 addproject.js 认的是 id 而不是外观 —— 把节点搬进我们的卡片，
+   onsubmit/onclick 属性和已经绑定好的处理器都还在，所以我们不重实现上传逻辑。
+   下面先抹掉原站 Bootstrap 给这些节点的外观，再按我们的规矩重画。 */
+
+/* 局部接管：#sp 不再铺满视口，只占它替换掉的那一段。
+   **自带底色**是必须的，不是装饰：站点那一页有自己的主题（实测站点在浅色主题下、
+   而我们的主题跟随系统是深色），文字色是从我们的 token 里来的 —— 不自带底色就会
+   出现"浅色文字落在站点白色背景上"的隐形标题。接管的那一段自己成一块，两边都不靠。 */
+#sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
+#sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
+
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
+#sp .up-col{display:flex;flex-direction:column;gap:16px;min-width:0}
+@media (max-width:900px){#sp .up-grid{grid-template-columns:minmax(0,1fr)}}
+#sp .up .panel{padding:0}
+#sp .up-body{padding:14px 20px 18px}
+#sp .up-body > :last-child{margin-bottom:0}
+#sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
+#sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
+#sp .up-body .sign-in-wr,#sp .up-body .blog-post{
+  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+}
+#sp .up-body .row{margin:0}
+#sp .up-body h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .up-body p{margin:0 0 14px;font-size:13px;color:var(--text-2);line-height:1.75}
+#sp .up-body ul{margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+#sp .up-body ul li{position:relative;padding-left:15px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
+#sp .up-body strong{color:var(--text);font-weight:600}
+#sp .up-body a{color:var(--accent)}
+#sp .up-body #addproject_warning_zero_frame{font-size:13px}
+
+/* 上传表单：原站是 <table> 三行（标签 / 文件框+进度 / 提交）。
+   表格在这里没有语义，摊平成一格一行。 */
+#sp .up-body form table,
+#sp .up-body form tbody,
+#sp .up-body form tr,
+#sp .up-body form td{display:block;width:auto;padding:0}
+#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
+#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
+#sp .up-body form td + td{margin-bottom:16px}
+#sp .up-body form td:last-child{margin-bottom:0}
+#sp .up-body form br + strong{color:var(--text-2)}
+
+/* 文件框：原生 file input 只有 ::file-selector-button 是可塑的 */
+#sp .up-body input[type=file]{
+  display:block;width:100%;padding:11px 12px;margin:0 0 10px;
+  background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--r-sm);
+  color:var(--text-3);font-size:12.5px;cursor:pointer;transition:border-color .12s,color .12s;
+}
+#sp .up-body input[type=file]:hover{border-color:var(--accent);color:var(--text-2)}
+#sp .up-body input[type=file]::file-selector-button{
+  font:inherit;font-weight:600;margin:0 12px 0 0;padding:6px 12px;border-radius:var(--r-sm);
+  border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
+}
+#sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
+#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
+
+#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+  transition:filter .12s;
+}
+#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
+
+/* 上传进度：站点用 jQuery UI progressbar，并且**内联**写死了 #EEB0A0 的底色 ——
+   内联样式只能在样式表里用 !important 压过去，这是必要的例外。 */
+#sp .up-body #upload_progress_bar{
+  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
+  background:var(--surface-2) !important;border:1px solid var(--border) !important;
+}
+#sp .up-body #upload_progress_bar .ui-progressbar-value{
+  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
+}
+#sp .up-body #upload_progress_label{
+  position:static !important;text-shadow:none !important;text-align:right;
+  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
+}
+
+/* 估算器：两个数字输入 + 一个设备名搜索框 */
+#sp .up-body input[type=text]{
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);width:92px;
+}
+#sp .up-body input[type=text]:focus{outline:none;border-color:var(--accent)}
+#sp .up-body form.form-inline{display:block;margin:0 0 14px}
+#sp .up-body .input-group{display:flex;gap:8px;align-items:stretch}
+#sp .up-body .input-group .form-control{flex:1;min-width:0;width:auto}
+#sp .up-body .input-group-btn{display:flex;flex:none}
+#sp .up-body #addproject_estimator_result{
+  font-size:12.5px;color:var(--text-2);line-height:1.7;
+  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
+}
+#sp .up-body #addproject_estimator_result:empty{display:none}
+
+/* ---- 分析等待页 ---- */
+#sp .an-card{padding:0}
+#sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
+#sp .an-head .spin{flex:none;margin-top:2px}
+#sp .an-state{font-size:15px;font-weight:600;color:var(--text)}
+#sp .an-sub{font-size:12.5px;color:var(--text-3);line-height:1.75;margin-top:7px;max-width:640px}
+#sp .an-track{height:6px;margin:18px 20px 0;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
+#sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
+@keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
+#sp .an-done{padding:20px 20px 0}
+#sp .an-done .an-sub{margin-bottom:14px}
+#sp .an-foot{padding:0 20px 20px}
+
+/* 分析完成后，站点把它自己那套「新增项目」表单塞进 #sp-an-result。
+   这一步本版没有重制（卡片里已经写明），所以这里只做**可读性兜底**：
+   不让 2013 版 Bootstrap 的栅格和表单控件在我们的卡片里散架。不求好看，求能用。 */
+#sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
+#sp .sp-siteform section,#sp .sp-siteform .slice,
+#sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
+#sp .sp-siteform .form-light,#sp .sp-siteform .padding-15{
+  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+}
+#sp .sp-siteform .row{margin:0}
+#sp .sp-siteform [class*="col-md-"],#sp .sp-siteform [class*="col-sm-"]{float:none;width:auto;padding:0}
+#sp .sp-siteform h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
+#sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
+#sp .sp-siteform .form-group{margin-bottom:14px}
+#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
+#sp .sp-siteform select,#sp .sp-siteform textarea{
+  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
+#sp .sp-siteform input[type=submit],#sp .sp-siteform button{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
+#sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+
 /* ---------------------------------------------------------------- 一次编排的动效
    曲线的绘制由 JS 用 getTotalLength() 精确驱动，这里只管其余块的一次性入场。
    "一次性"是字面意思：只有换视图（或刷新）才播。筛选项、排序、显示更多这些只改列表的
@@ -4009,7 +4205,153 @@ ${Theme.css('#sp')}
 
   /* ======================================================== 挂载后补丁
      视图本身是纯字符串；只有总览的积分曲线需要拿到真实像素宽度才能画。 */
+  /* ================================================== 项目上传页 / 分析等待页
+     这两页与前面六个视图不是一回事，写清楚免得后来人改错：
+
+     前六个是"整页重建" —— 数据从站点页面解析出来，界面由字符串模板画出来。
+     这两页是**局部换装**：卡片骨架我们画，但**能干活的节点从原站搬过来**。
+
+     为什么搬而不是重画：上传表单靠 `onsubmit="addproject_upload_progress_fct(uid)"`
+     触发站点自己的 addproject.js，估算器靠一段内联 `jQuery(...).autocomplete()` 绑定
+     设备名搜索，进度条由站点的轮询喂。这些绑的都是 **id 和事件属性**，不是外观 ——
+     节点搬进我们的卡片，处理器全都还在；重画就等于把上传、进度轮询、设备自动补全
+     在客户端再实现一遍，而且站点一改就得跟着改。
+
+     搬运的另一个前提：文案已经翻译过了。DomI18n 明确**不进 #sp**，所以搬运必须发生在
+     它跑完之后 —— 顺序是"先让站点页面在原地翻好，再把节点搬进来"，见 80-app.js 的 boot。 */
+
+  /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
+  function upload() {
+    return `<div class="wrap up">
+      <div class="sechead">
+        <h2>${esc(t('up.title'))}</h2>
+        <span class="sub">${esc(t('up.sub'))}</span>
+      </div>
+      <div class="up-grid">
+        <div class="up-col">
+          <div class="panel">
+            <div class="phead"><h2>${esc(t('up.formTitle'))}</h2></div>
+            <div class="up-body" data-up="form"></div>
+          </div>
+          <div class="panel" data-up="estPanel">
+            <div class="phead"><h2>${esc(t('up.estTitle'))}</h2></div>
+            <div class="up-body" data-up="est"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="phead"><h2>${esc(t('up.rulesTitle'))}</h2></div>
+          <div class="up-body" data-up="rules"></div>
+        </div>
+      </div>
+      <div class="up-src">${esc(t('up.origin'))}</div>
+    </div>`;
+  }
+
+  /**
+   * 站点那句「Max: 2,048 MB before ZIP compression / Blender compression is recommended
+   * and supported.」和 `<input type="file">` 挤在同一个 `<td>` 里。
+   *
+   * 这一格正是「翻译层不能整块替换」那条安全规则被踩出来的地方（见 70-i18n-dom.js）：
+   * 整块替换会把文件框一起删掉。但那一格被 `<br>`/`<strong>` 切成了好几个文本节点，
+   * 逐节点翻译也拼不回一句中文 —— 所以这句话由卡片自己说，**大小从站点原文里读**
+   * （上限是站点配置，不写死）。认不出站点那句话就原样留着，不猜。
+   */
+  function rewordFileLimit(scope) {
+    const file = scope.querySelector('input[type=file]');
+    if (!file) return;
+    const cell = file.closest('td') || file.parentElement;
+    if (!cell) return;
+    const txt = cell.textContent || '';
+    const m = txt.match(/Max:\s*([\d.,]+\s*[KMGT]?B)/i) || txt.match(/上限：\s*([\d.,]+\s*[KMGT]?B)/);
+    if (!m) return;
+    [...cell.childNodes].forEach((n) => { if (n !== file) n.remove(); });
+    const note = document.createElement('span');
+    note.className = 'note';
+    note.textContent = t('up.maxNote', { size: m[1] });
+    file.after(note);
+  }
+
+  /**
+   * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
+   *
+   * 三个可能的现场，都要认：
+   *   1. 站点给了上传表单（正常）；
+   *   2. 站点给了 `#addproject_warning_zero_frame`（渲染帧数不够，站点自己拦住不让传）；
+   *   3. 两个都没有 —— 站点渲染的是 printError（未登录 / 维护中 / 管理员关了上传）。
+   * 第 3 种**原样还给用户**：这一页本来就不是我们能接管的，退回"只补翻译"。
+   *
+   * 返回 false 表示什么都没动过（调用方据此退回原站界面）。
+   */
+  function wireUpload(root) {
+    const slotForm = root.querySelector('[data-up="form"]');
+    const slotEst = root.querySelector('[data-up="est"]');
+    const slotRules = root.querySelector('[data-up="rules"]');
+    const estPanel = root.querySelector('[data-up="estPanel"]');
+    const main = document.querySelector('#addproject_main_div');
+    const blocked = document.querySelector('#addproject_warning_zero_frame');
+    // 先判定、再动手：走第 3 条路时不能留下半搬的状态
+    if (!main && !blocked) return false;
+
+    if (main) {
+      // 结构：#addproject_main_div > .row > [.col-md-5（表单块 + 估算器块）, .col-md-6（须知）]
+      const left = main.querySelector(':scope > .row > .col-md-5');
+      const right = main.querySelector(':scope > .row > .col-md-6');
+      const blocks = left ? [...left.children] : [];
+      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
+      const estBlock = blocks.find((b) => b !== formBlock) || null;
+      if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
+      if (estBlock && slotEst) slotEst.appendChild(estBlock);
+      else if (estPanel) estPanel.remove();
+      if (right && slotRules) slotRules.appendChild(right);
+    } else if (slotForm) {
+      // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
+      slotForm.appendChild(blocked);
+      if (estPanel) estPanel.remove();
+    }
+
+    // 站点那个 <h3>Add your project</h3> 连同它那一节一起让位：现在这一段的标题在我们的卡片上
+    const section = (main || blocked).closest('section');
+    if (section && section.parentElement) section.replaceWith(root);
+    else (document.body || document.documentElement).appendChild(root);
+    return true;
+  }
+
+  /* ------------------------------------------------------------ 分析等待页 */
+
+  /** 上传后的等待页。整页归我们：站点那一版就是一个转圈圈加一句英文。
+   *  真正在跑的是 80-app.js 里的轮询 —— 它认的是 `#sp-an-*` 这几个钩子。 */
+  function analyse() {
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('an.title'))}</h2>
+        <span class="sub">${esc(t('an.sub'))}</span>
+      </div>
+      <div class="panel an-card">
+        <div class="an-head">
+          <div class="spin" data-an="spin"></div>
+          <div>
+            <div class="an-state" data-an="state">${esc(t('an.waiting'))}</div>
+            <div class="an-sub" data-an="sub">${esc(t('an.slow'))}</div>
+          </div>
+        </div>
+        <div class="an-track" data-an="track"><i data-an="bar"></i></div>
+        <div class="an-done" data-an="done" hidden>
+          <div class="an-sub">${esc(t('an.doneNote'))}</div>
+          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
+        </div>
+        <div id="sp-an-result" class="sp-siteform" hidden></div>
+      </div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
   function mount(root, state) {
+    // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
+    // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
+    if (state && state.view === 'upload' && root && !root.dataset.spWired) {
+      root.dataset.spWired = '1';
+      if (!wireUpload(root)) return false;
+    }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
     if (box && pts && pts.length > 1) SP.Charts.points(box, pts);
@@ -4038,7 +4380,7 @@ ${Theme.css('#sp')}
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
 })();
 
 /* ===== src/70-i18n-dom.js ===== */
@@ -4046,7 +4388,7 @@ ${Theme.css('#sp')}
  * 70-i18n-dom.js — 原站页面的翻译层
  *
  * 为什么需要单独一层：重建过的视图里文案是我写的，天然多语言；但未接管的页面
- * （/getstarted、/faq、/servers、/team、/project/*…）是 PHP 服务端渲染的英文，
+ * （/faq、/servers、/team、/project/*…）是 PHP 服务端渲染的英文，
  * 只能在客户端翻译。
  *
  * 三层匹配，对应站点文案的三种形态：
@@ -4175,6 +4517,13 @@ ${Theme.css('#sp')}
       const cands = [];
       for (const el of root.querySelectorAll(BLOCK_SELECTOR)) {
         if (el.closest('#sp') || el.closest('[data-sp-block]')) continue;
+        /* 整块替换 = `el.innerHTML = 译文`，这个容器里的东西**全部**没了。
+           所以只要子树里有一件"能干活或能画"的东西就必须放手 —— 实测踩过：
+           /getstarted 的上传表单里，站点那句 "Max: 2,048 MB before ZIP compression…"
+           和 `<input type="file">` 同在一个 <td> 里，整块替换把文件框直接删掉了，
+           而开着翻译的正好就是中文用户 —— 一翻译就不能上传。链接（<a>）不算：
+           整块译文本就是为"被 <a>/<strong> 切碎的句子"写的，译文里带着链接。 */
+        if (el.querySelector('input,select,textarea,button,label,form,svg,canvas,video,iframe')) continue;
         const kidCount = el.querySelectorAll('*').length;
         if (kidCount > 14) continue;                     // 太大了，是容器不是段落
         const norm = normalizeBlock(el.textContent);
@@ -4329,11 +4678,21 @@ ${Theme.css('#sp')}
     // 会话页（一台机器的档案）。实测别人的会话编号直接 404 —— 站点只让自己的机器可见。
     // 这里仍然按"能读到就接管"处理：接手的是站点已经给了我们的那一份页面。
     if (/^\/session\/\d+$/.test(p)) return 'session';
+    // 项目上传页。**注意 /getstarted 同时是「下载客户端」指南页** —— 上传表单只是它三段里
+    // 的最后一段，所以这一页只做局部接管（见 INLINE_VIEWS）。
+    if (p === '/getstarted') return 'upload';
+    // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
+    // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
+    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
     return null;
   }
 
+  /** 局部接管的视图：#sp 不铺满视口，只顶掉站点的那一段，页面其余部分保持原站。 */
+  const INLINE_VIEWS = new Set(['upload']);
+
   const pathView = viewForPath(location.pathname);
   const uiMode = Util.store.get('uiMode', 'modern');
+  const inlineView = pathView ? INLINE_VIEWS.has(pathView) : false;
 
   /* ------------------------------------------------- 原版界面 / 现代化 开关
      用户要一条退路：习惯旧界面的人、以及脚本还没覆盖到的功能，都能一键回去。
@@ -4363,7 +4722,7 @@ ${Theme.css('#sp')}
   /* -------------------------------------------- 未接管的页面：只补国际化 */
 
   /**
-   * 未重建的页面（/getstarted、/faq、/servers、/project/*…）保持原站界面，
+   * 未重建的页面（/faq、/servers、/project/*…）保持原站界面，
    * 只在本地把 UI 文案翻成当前语言。与"重做界面"是两件独立的事。
    */
   function startSiteTranslation() {
@@ -4390,17 +4749,23 @@ ${Theme.css('#sp')}
     return;
   }
 
-  SP.injectGuard();
+  // 局部接管的页面**不能**压住整页 —— 它要的是"页面其余部分照常显示，只有那一段换成我们的"，
+  // 所以守卫只在整页接管时注入。
+  if (!inlineView) SP.injectGuard();
   SP.injectStyle();
 
   /** 提前注入了守卫、但后来发现不该接管时，把页面原样还给用户 */
   function release() {
+    released = true;
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
     if (s) s.remove();
+    const host = document.getElementById('sp');
+    if (host) host.remove();   // 局部接管时它只是个还没派上用场的空壳
     startSiteTranslation();
   }
+  let released = false;
 
   /* ------------------------------------------------------- 2. 状态 */
 
@@ -4415,6 +4780,7 @@ ${Theme.css('#sp')}
     account: null,
     session: null,
     sessionId: null,       // /session/<数字>，从地址里读
+    analyseToken: null,    // /project/add/<token>，同样是地址的一部分
     myAvatar: '',          // 顶栏那张：**自己**的头像，从站点导航栏读（不是正在看的档案）
     loading: false,
     error: null,
@@ -4489,9 +4855,28 @@ ${Theme.css('#sp')}
   let painted = false;
 
   function render() {
+    if (released) return;
     const host = mount();
     applyTheme();
     const scrollY = host.scrollTop;
+
+    /* 局部接管的页面（目前只有 /getstarted 的上传段）：没有顶栏、没有 #sp-body，
+       卡片本身就是 #sp 的内容，而且**画一次就不再重画** —— 里面装着从站点搬过来的
+       活节点（上传表单、估算器），重画一次就连它们的处理器一起扔了。 */
+    if (inlineView) {
+      host.classList.add('sp-inline');
+      if (host.dataset.spWired) return;
+      host.innerHTML = Views.upload(state);
+      if (Views.mount(host, state) === false) { release(); return; }
+      host.classList.add('sp-anim');
+      return;
+    }
+
+    /* 分析等待页同理只画一次，但它是**整页接管**，所以照常给外壳 ——
+       站点那一版的导航被守卫藏了，用户得有顶栏和出口。
+       只能画一次是因为 #sp-an-result 里会被站点注入下一步的表单，
+       重画就把站点刚塞进来的东西抹掉了；状态更新走 paintAnalyse() 的定点改。 */
+    if (state.view === 'analyse' && host.dataset.spWired) return;
 
     // 注意：#sp-body 必须在外壳创建之后才查，否则首次渲染拿到 null
     if (!host.querySelector('.top')) {
@@ -4529,6 +4914,7 @@ ${Theme.css('#sp')}
     else if (state.error) html = UI.state.error(state.error, 'sp-retry');
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
+    else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -4537,6 +4923,8 @@ ${Theme.css('#sp')}
     else html = UI.state.empty();
 
     body.innerHTML = html;
+    // 画完这一次就不再画：见上面分析等待页那一段。（错误态不锁，重试要能重画）
+    if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染，字符串表达不了
@@ -4549,6 +4937,118 @@ ${Theme.css('#sp')}
     if (el) el.textContent = `${t('top.updated')} ${new Date().toLocaleTimeString()}`;
   }
 
+  /* ------------------------------------- 3.5 上传后的「正在分析」轮询
+
+     站点自己的 addproject.js 就是这么轮的：GET /project/add_analyse/<token>，
+     等待中回 {"status":"RETRY"}，分析中回 {"status":"PROCESSING","analysed":n,"total":m}，
+     分析完成则**直接把「新增项目」表单当 HTML 吐回来**（那个片段没有布局，本来就是给
+     JS 塞进容器用的）。
+
+     我们自己轮一次、而不是调站点的 doAnalyseUploadedProject()：它的状态文案是写死的英文，
+     而且它把结果写进站点那个容器 —— 那一屏已经被我们接管了。接口和状态机照抄站点，
+     没有自己发明协议；多出来的一次 GET 也不算浪费：站点自己那一版也是一样的频率。
+
+     为了让**只有一个**轮询器在打这个接口，站点的那个函数在这里摘掉 —— 它挂在
+     google.charts 的 onLoadCallback 上，什么时候跑不确定，留着就是两个轮询器。 */
+  let analyseTimer = null;
+  let siteAnalyseNeutralised = false;
+  const fmtN = (n) => Number(n).toLocaleString('en-US');
+
+  function stopAnalysePoll() {
+    if (analyseTimer) { clearTimeout(analyseTimer); analyseTimer = null; }
+  }
+
+  function startAnalysePoll() {
+    stopAnalysePoll();
+    if (!siteAnalyseNeutralised) {
+      siteAnalyseNeutralised = true;
+      try { window.doAnalyseUploadedProject = function () { /* 见上：这一页的轮询归我们 */ }; } catch (e) { /* 站点没定义就算了 */ }
+    }
+    // 先让首屏画出来再开始轮（render() 刚写完卡片，马上 repaint 会抢掉入场动效）
+    analyseTimer = setTimeout(analyseTick, 400);
+  }
+
+  async function analyseTick() {
+    const token = state.analyseToken;
+    if (!token) return;
+    let raw;
+    try {
+      // ttl 0：这一页轮的就是"现在"，缓存下来等于永远停在第一次的结果
+      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+    } catch (e) {
+      // 接口没回应就停下，不再自己重试 —— 卡片上那句文案已经说了"重新载入这一页"
+      paintAnalyse({ failed: (e && e.message) || String(e) });
+      return;
+    }
+    let json = null;
+    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
+    if (json === null) {
+      /* 分析完成时站点吐的是**一段没有布局的片段**（给 JS 塞进容器用的）；
+         而"这个编号找不到"它吐的是整页 error.html.twig。用形状把两者分开 ——
+         否则会把一整页错误当成"填表去吧"塞进卡片里。 */
+      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
+      paintAnalyse({ html: raw });
+      return;
+    }
+    if (json && json.status === 'PROCESSING') {
+      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
+    } else {
+      paintAnalyse({ waiting: true });
+    }
+    analyseTimer = setTimeout(analyseTick, 5000);
+  }
+
+  /** 只改卡片里那几个节点，不整页重画 —— 重画会把站点注入的下一步表单一起抹掉。 */
+  function paintAnalyse(s) {
+    const host = document.getElementById('sp');
+    if (!host) return;
+    const q = (k) => host.querySelector(`[data-an="${k}"]`);
+    const say = (k, text) => { const el = q(k); if (el) el.textContent = text; };
+
+    if (s.failed) {
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.failed', { err: s.failed }));
+      say('sub', '');   // "几分钟是正常的"是等待中的话，收尾了就不该再挂着
+      const track = q('track'); if (track) track.hidden = true;
+      return;
+    }
+    if (s.gone) {
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.gone'));
+      say('sub', '');
+      const track = q('track'); if (track) track.hidden = true;
+      return;
+    }
+    if (s.waiting) {
+      say('state', t('an.waiting'));
+      const track = q('track'); if (track) track.classList.add('indet');
+      const bar = q('bar'); if (bar) bar.style.width = '';
+      return;
+    }
+    if (s.html !== undefined) {
+      // 分析完成了：站点那份「新增项目」表单进来。本版没有重制它（卡片上已经写明），
+      // 所以只把它放进来做可读性兜底，功能原样可用 —— 提交走站点自己的 doAddProject。
+      stopAnalysePoll();
+      const spin = q('spin'); if (spin) spin.remove();
+      say('state', t('an.doneTitle'));
+      say('sub', '');
+      const track = q('track'); if (track) track.hidden = true;
+      const done = q('done'); if (done) done.hidden = false;
+      const box = document.getElementById('sp-an-result');
+      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      return;
+    }
+    // PROCESSING
+    say('state', s.total
+      ? t('an.processing', { done: fmtN(s.done), total: fmtN(s.total) })
+      : t('an.reading'));
+    const track = q('track'); if (track) track.classList.remove('indet');
+    const bar = q('bar');
+    if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
+  }
+
   /* ------------------------------------------------------- 4. 数据编排 */
 
   async function ensureData(view) {
@@ -4557,6 +5057,17 @@ ${Theme.css('#sp')}
     if (view === 'account') {
       if (!state.userName) throw new Error(t('account.only'));
       state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`));
+      return;
+    }
+
+    if (view === 'upload') {
+      // 上传页没有要取的东西：表单、上限、须知都在站点那一页的 DOM 上，我们只是把它搬进卡片。
+      return;
+    }
+
+    if (view === 'analyse') {
+      if (!state.analyseToken) throw new Error(t('an.noToken'));
+      startAnalysePoll();
       return;
     }
 
@@ -4977,6 +5488,25 @@ ${Theme.css('#sp')}
     const se = location.pathname.match(/^\/session\/(\d+)/);
     state.sessionId = se ? se[1] : null;
 
+    // 分析等待页的 token 同理：地址就是身份。
+    const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
+    state.analyseToken = an ? decodeURIComponent(an[1]) : null;
+
+    /* 上传页要先确认这一页**真的有**可接管的东西。站点在这一段上有四种现场：
+     有表单 / 用"渲染帧数不够"拦住 / 未登录 / 维护中。后三种它渲染的是 printError 或
+     一句提示，那种页面原样还回去 —— 不接管，也不留半搬的状态。 */
+    if (pathView === 'upload') {
+      if (!document.querySelector('#addproject_main_div, #addproject_warning_zero_frame')) {
+        startSiteTranslation();
+        mountModePill('enter');
+        return;
+      }
+      /* 站点那一段的文案必须**先原地翻好**，再搬进我们的卡片 ——
+         DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
+         mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
+      startSiteTranslation();
+    }
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
@@ -4985,6 +5515,9 @@ ${Theme.css('#sp')}
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 
     if (!state.userName && !state.profileName) {
+      // 局部接管的页面上不摆"请先登录"这一屏：站点自己的页面还在，它自己会说这句话
+      // （/getstarted 未登录时就写着 "You need to be logged in to add a project."）。
+      if (inlineView) { startSiteTranslation(); mountModePill('enter'); return; }
       mount().innerHTML = `<div class="wrap">${UI.state.loggedOut()}</div>`;
       return;
     }

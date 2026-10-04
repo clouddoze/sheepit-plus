@@ -388,6 +388,34 @@
       'sess.tl.rendering': '渲染', 'sess.tl.request': '领任务', 'sess.tl.validate': '校验',
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
+
+      /* ---- 项目上传页（/getstarted 的「Add your project」那一段） ----
+         这一页是「下载客户端」和「上传项目」两件事共用一个地址。我们只接管上传那一段，
+         下载指南保持原站 —— 所以下面这段文案是**局部接管**的标题，不是整页标题。 */
+      'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
+      'up.formTitle': '选择文件',
+      'up.estTitle': '渲染用时估算',
+      'up.rulesTitle': '交之前先过一遍',
+      /* 这一句很重要：说明这块为什么长着原站的样子但数字是真的 */
+      'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
+      'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
+      'up.blocked': '站点当前不允许这个账号上传项目',
+      /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
+         那句话和文件框在同一个 <td> 里，翻译层一旦整块替换就会把文件框删掉。 */
+      'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
+      /* ---- 上传后的「正在分析」等待页 ---- */
+      'an.title': '正在分析你的项目',
+      'an.sub': '站点要先读一遍存档，才知道里面有几个 .blend、帧区间和分辨率是多少',
+      'an.waiting': '排队等分析器接手…',
+      'an.processing': '分析器正在读：{done} / {total} 个文件',
+      'an.reading': '分析器正在读存档…',
+      'an.slow': '几分钟是正常的，存档越大越久。这一页可以一直开着；关掉也不会中断分析，回头再打开接着看。',
+      'an.failed': '分析接口没回应（{err}）。这不是你的存档出了问题 —— 重新载入这一页就能接着等。',
+      'an.noToken': '地址里没有分析编号，这一页打不开。',
+      'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
+      'an.doneTitle': '分析完成',
+      'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
+
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* 站点原文是 "Over user's time limit"。这里的 user 是**机器主人**、time limit 是他在
@@ -574,6 +602,29 @@
       'sess.tl.rendering': 'Rendering', 'sess.tl.request': 'Request', 'sess.tl.validate': 'Validate',
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
+
+      /* Project upload (/getstarted) and the "analysing" screen after it.
+         /getstarted is two pages in one address — the client download guide and the upload
+         form — and only the upload half is rebuilt; see up.origin. */
+      'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
+      'up.formTitle': 'Choose a file',
+      'up.estTitle': 'Render time estimator',
+      'up.rulesTitle': 'Check before you upload',
+      'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
+      'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
+      'up.blocked': 'The site is not letting this account upload a project at the moment',
+      'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
+      'an.title': 'Analysing your project',
+      'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
+      'an.waiting': 'Waiting for an analyser to pick it up…',
+      'an.processing': 'Analyser is reading: {done} / {total} files',
+      'an.reading': 'Analyser is reading the archive…',
+      'an.slow': 'A few minutes is normal, and a big archive takes longer. Leaving the page open is fine; closing it does not stop the analysis — come back and it picks up again.',
+      'an.failed': 'The analysis endpoint did not answer ({err}). Nothing is wrong with your archive — reloading this page resumes the wait.',
+      'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
+      'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
+      'an.doneTitle': 'Analysis finished',
+      'an.doneNote': 'The next step (engine, frame range, tiles, samples, resolution…) is not rebuilt in this version, so it is the site\u2019s own form: fully functional, in the site\u2019s own look. Submitting it lands on the project management page.',
     },
   };
 

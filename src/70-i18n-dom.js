@@ -2,7 +2,7 @@
  * 70-i18n-dom.js — 原站页面的翻译层
  *
  * 为什么需要单独一层：重建过的视图里文案是我写的，天然多语言；但未接管的页面
- * （/getstarted、/faq、/servers、/team、/project/*…）是 PHP 服务端渲染的英文，
+ * （/faq、/servers、/team、/project/*…）是 PHP 服务端渲染的英文，
  * 只能在客户端翻译。
  *
  * 三层匹配，对应站点文案的三种形态：
@@ -131,6 +131,13 @@
       const cands = [];
       for (const el of root.querySelectorAll(BLOCK_SELECTOR)) {
         if (el.closest('#sp') || el.closest('[data-sp-block]')) continue;
+        /* 整块替换 = `el.innerHTML = 译文`，这个容器里的东西**全部**没了。
+           所以只要子树里有一件"能干活或能画"的东西就必须放手 —— 实测踩过：
+           /getstarted 的上传表单里，站点那句 "Max: 2,048 MB before ZIP compression…"
+           和 `<input type="file">` 同在一个 <td> 里，整块替换把文件框直接删掉了，
+           而开着翻译的正好就是中文用户 —— 一翻译就不能上传。链接（<a>）不算：
+           整块译文本就是为"被 <a>/<strong> 切碎的句子"写的，译文里带着链接。 */
+        if (el.querySelector('input,select,textarea,button,label,form,svg,canvas,video,iframe')) continue;
         const kidCount = el.querySelectorAll('*').length;
         if (kidCount > 14) continue;                     // 太大了，是容器不是段落
         const norm = normalizeBlock(el.textContent);

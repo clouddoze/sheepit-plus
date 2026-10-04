@@ -81,8 +81,10 @@ session — the script reads data through your existing session. No extra permis
 **Known limitations**
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/getstarted`, `/faq`, `/project/*`, `/servers`, `/team`, `/forum`, …)
+- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/team`, `/forum`, …)
   keep their original layout; the translation layer only rewrites text it has a translation for.
+  `/getstarted` is half taken over: its "Add your project" section is rebuilt, its client-download
+  half is left alone.
 - If the site is redesigned a parser can stop matching. The worst case is that one view says
   "no data" — the site itself is never affected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
@@ -145,8 +147,9 @@ SheepIt Plus 是一个油猴脚本，用新前端接管站点自己的数据 —
 **已知限制**
 
 - 原站 CSS/JS 仍会下载，只是被隐藏；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/getstarted`、`/faq`、`/project/*`、`/servers`、`/team`、`/forum` 等）保持
-  原版界面，翻译层只在有译文时替换文案。
+- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/team`、`/forum` 等）保持原版界面，
+  翻译层只在有译文时替换文案。`/getstarted` 是**半接管**：上传那一段换成新界面，
+  客户端下载那一半保持原站。
 - 站点改版可能让某个解析器失效，最坏结果是那一个视图显示「无数据」，不会影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
 - 未登录时脚本会提示你先在原站登录。
