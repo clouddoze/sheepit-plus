@@ -1183,7 +1183,9 @@
     }
 
     /* 排队那一组（说明 + CPU/GPU + 项目总数）原来整组竖着摞在左边，右边半张卡片空着。
-       把它拆成"说明在左、数字在右"的横带 —— 只是把已有节点分到两个盒子里，不碰文字。 */
+       把它拆成"说明在左、数字在右"的横带 —— 只是把已有节点分到两个盒子里，不碰文字。
+       另外站点把「预计排队位置：」和那三个数字写在同一段里、用 <br> 隔开；
+       既然数字搬到了右边，这条引子也跟着数字走 —— 留在正文末尾就是一句吊着的话。 */
     const h4s = [...col.querySelectorAll(':scope > h4')];
     const head = h4s[0];
     if (head) {
@@ -1199,6 +1201,22 @@
         data.className = 'qdata';
         band.appendChild(text);
         band.appendChild(data);
+
+        let lead = null;
+        const para = group.find((n) => n.nodeType === 1 && n.tagName === 'P');
+        const br = para ? [...para.childNodes].find((n) => n.nodeType === 1 && n.tagName === 'BR') : null;
+        if (para && br) {
+          const tail = [];
+          for (let n = br.nextSibling; n; n = n.nextSibling) tail.push(n);
+          if (tail.some((n) => n.nodeValue && n.nodeValue.trim())) {
+            lead = document.createElement('p');
+            lead.className = 'qlead';
+            for (const n of tail) lead.appendChild(n);
+          }
+          br.remove();
+        }
+        if (lead) data.appendChild(lead);
+
         for (const n of group) {
           const isData = n.nodeType === 1 && (n.classList.contains('qpos') || n.classList.contains('qtotal'));
           (isData ? data : text).appendChild(n);

@@ -692,23 +692,27 @@ ${Theme.css('#sp')}
 }
 #sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
 #sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
-/* 排队那一组：说明在左、数字在右 —— 从前整组竖着摞在左边，右边半张卡片是空的。
-   数字是"我在队列里排第几"，给它自己的小块，靠右停住。 */
-#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:4px 44px;align-items:start;margin-bottom:6px}
-#sp .up-rules .qtext p{margin:0;max-width:62ch}
-#sp .up-rules .qdata{display:flex;flex-direction:column;gap:5px;min-width:126px;padding-top:1px}
-#sp .up-rules .qdata .qtotal{margin:3px 0 0}
-@media (max-width:860px){#sp .up-rules .qband{grid-template-columns:minmax(0,1fr);gap:14px}}
+/* 排队那一组：说明在上、数字紧跟其后一行。
+   这里试过两个错的做法，都留在注释里免得再犯：
+     · 把数字钉到卡片最右边 —— 中间空出 686px，比"全左对齐"更难看；
+     · 给说明分两栏填满整行 —— CSS 分栏会在任意位置断行，实测把「积分」劈成
+       上栏「积」+ 下栏「分的额外加成。」，用户的原话是"截断得好奇怪"。
+   正解是别跟宽度较劲：说明限宽到能读的程度（44em ≈ 44 个汉字），数字排成紧跟其后的一行。
+   这一组的宽度本就不该铺满 1400px —— 铺满整行的是下面那三栏清单。 */
+#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:6px}
+#sp .up-rules .qtext p{margin:0;max-width:44em}
+#sp .up-rules .qdata{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 30px;min-width:0;padding-top:1px}
+#sp .up-rules .qdata .qlead{margin:0;font-size:12px;color:var(--text-3);max-width:none}
+#sp .up-rules .qdata .qtotal{margin:0}
 
-/* 排队那一行：两个 <li> 本质是两个数，不该画成项目符号 */
-#sp .up-rules .up-body .qpos{display:flex;flex-direction:column;flex-wrap:wrap;gap:5px;margin:0}
-#sp .up-rules .up-body .qdata .qpos{gap:5px}
+/* 排队那一行：两个 <li> 本质是两个数，不该画成项目符号；数字排成一行 */
+#sp .up-rules .up-body .qpos{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px 26px;margin:0}
 #sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
 #sp .up-rules .up-body .qpos li::before{display:none}
 #sp .up-rules .up-body .qpos li strong{
   margin-left:6px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
 }
-#sp .up-rules .up-body .qtotal{display:block;margin-bottom:4px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .up-rules .up-body .qtotal{display:inline;margin:0;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
 
 /* 须知整行宽了，十几条横排会拉出很长的行 —— 分栏，读到哪儿跟到哪儿。列宽由视口决定：
    窄了两栏、宽了三栏（一栏 400 多 px，中文一行三十来字，是能读的长度）。
