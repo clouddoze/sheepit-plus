@@ -391,9 +391,9 @@
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
       'sess.noId': '地址里没有会话编号', 'sess.parseFailed': '这一页没读到机器信息',
       'sess.kpi.frames': '已渲染帧数', 'sess.kpi.points': '获得积分',
-      'sess.kpi.maxTime': '单帧上限',
+      'sess.kpi.maxTime': '单帧渲染时长上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
-      'sess.kpi.powerLink': '各机型算力榜', 'sess.kpi.longest': '实测最长一帧 {v}',
+      'sess.kpi.powerLink': '各机型算力榜',
       'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
       'sess.f.cpu': '处理器',
       // 算力那一格的标签跟着站点印的是哪一行走（见 50-views.js 的 powerFacts）
@@ -426,7 +426,10 @@
       'sess.tl.error': '错误',
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
-      'why.over-user-s-time-limit': '超出发布者的时限',
+      /* 站点原文是 "Over user's time limit"。这里的 user 是**机器主人**、time limit 是他在
+         客户端里设的「单帧渲染时长上限」—— 不是发布者的时限（早先就译错成"超出发布者的时限"）。
+         站点判定：这一帧在参考机上的用时超过本机上限，于是不派给它。 */
+      'why.over-user-s-time-limit': '预计超过本机单帧上限',
       // 站点把"能渲染"也写成这一列的一个值（不是留空），而且可渲染的全排在表的最前面 ——
       // 那些行的顺序就是优先级，见 50-views.js 里可渲染项目表的注释。
       'why.renderable': '现在可渲染',
@@ -574,9 +577,9 @@
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
       'sess.kpi.frames': 'Frames rendered', 'sess.kpi.points': 'Points earned',
-      'sess.kpi.maxTime': 'Max time per frame',
+      'sess.kpi.maxTime': 'Per-frame render time limit',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
-      'sess.kpi.powerLink': 'Power by machine model', 'sess.kpi.longest': 'longest frame {v}',
+      'sess.kpi.powerLink': 'Power by machine model',
       'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
       'sess.f.cpu': 'Processor',
       // the power cell's label follows whichever row the site printed (see 50-views.js powerFacts)
@@ -2068,6 +2071,9 @@ ${Theme.css('#sp')}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
 #sp .pn{font-weight:550;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 项目名后面挂标签（会话页的「正在渲染」）时的排法：名字负责截断，标签不参与收缩 */
+#sp .pnwrap{display:flex;align-items:center;gap:7px;min-width:0}
+#sp .pnwrap .pn{flex:0 1 auto;min-width:0}
 #sp .ow{display:flex;align-items:center;gap:8px;color:var(--text-2)}
 #sp .ow img{width:20px;height:20px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .ow .ini{
@@ -2293,8 +2299,13 @@ ${Theme.css('#sp')}
   flex:none;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:4px;
   background:var(--surface-3);color:var(--text-2);white-space:nowrap;
 }
-/* 暂停是要紧的状态，但状态不是动作：只加边框权重，不动品牌橙 */
-#sp .sesshead .chip.off{border:1px solid var(--border-strong);color:var(--text)}
+/* 会话页的状态徽章：运行中 / 已暂停**要一眼分出来**，所以两者都上色。
+   用户 2026-10-04 拍板。这破了本系统原来那条"状态一律中性、橙只留给动作"的规矩
+   （DESIGN.md 的 Don't 里已记为一次具名例外），但没破"只用一个色相"：
+   两个状态在同一个橙色上靠强度分——实心说"开着"，浅底说"要你处理"。
+   运行中用实心橙 + 近黑墨，与主按钮同一套（白字压不住品牌橙，见 --btn-ink）。 */
+#sp .sesshead .chip.on{background:var(--accent);color:var(--btn-ink);border:1px solid var(--accent)}
+#sp .sesshead .chip.off{background:var(--accent-weak);color:var(--accent);border:1px solid transparent}
 
 #sp .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 #sp .fact{
@@ -2334,6 +2345,10 @@ ${Theme.css('#sp')}
    早先这里是按原因分组的 chip 墙（.wgroup/.wname）—— 站点把同一句原因重复 27 遍，
    当时认为原因本身才是能读的那层信息。用户反馈那一坨不直观，改成表之后原因进了
    「状态」列：同因的行按排序天然相邻，不必再印分组标题，那一列自己就是那层信息。 */
+/* 「正在渲染」标记：可渲染项目那张表里，这是唯一"此刻正在进行"的一行，
+   所以用 accent 的浅底 + 强调字色点出来 —— 与设置页按下分段、账户页在用的键
+   是同一套词汇（accent-weak 底 + accent 字），不是新色相。 */
+#sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
 #sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
@@ -3703,7 +3718,7 @@ ${Theme.css('#sp')}
     const chip = note
       ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
       : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : s.running === true ? `<span class="chip">${esc(t('sess.on'))}</span>`
+        : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
           : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
@@ -3715,6 +3730,11 @@ ${Theme.css('#sp')}
        否则会和旁边那枚「已暂停」徽章自相矛盾。 */
     const cur = val('currentFrames');
     const cm = cur.match(/^project:\s*(.+?)\s+frame:\s*(\S+)\s+Request time:/i);
+    // 正在跑哪个项目的哪一帧。项目名后面还要用一次 —— 可渲染项目表里给那一行挂「正在渲染」。
+    // 站点在「Current frames」里写的是**文件名**（1002.blend），可渲染项目表里写的是
+    // **项目名**（1002），所以比对时把 .blend 后缀剥掉。
+    const curProject = cm ? cm[1] : '';
+    const curProjectBase = curProject.replace(/\.blend\d*$/i, '');
     if (cm) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cm[1])}</b> · ${esc(t('sess.frame'))} <b class="num">${esc(cm[2])}</b></span>`);
     } else if (cur) {
@@ -3746,8 +3766,6 @@ ${Theme.css('#sp')}
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    // 它自己报的单帧上限，和它实际跑过的最长一帧放在一起：这两个数不一致时，用户该知道
-    const longest = tl.reduce((a, e) => Math.max(a, Math.max(0, e.end - e.start)), 0);
     const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
 
     /* 算力那一格跟着站点印了哪一行走：这台机器启用了哪个计算设备，站点就印哪一行 ——
@@ -3775,8 +3793,9 @@ ${Theme.css('#sp')}
         d: f.href ? `<a href="${esc(f.href)}" target="_self">${esc(t('sess.kpi.powerLink'))}</a>` : '',
       })),
       {
-        k: t('sess.kpi.maxTime'), v: val('maxTime') || '—',
-        d: longest ? t('sess.kpi.longest', { v: spanText(longest) }) : '',
+        // 只说上限。早先这里还挂一句"实测最长一帧"，但两者本就不可比（一个是参考机上的
+        // 预估上限，一个是本机实际耗时），摆在一起只会让人以为哪个数不对，已按用户要求去掉。
+        k: t('sess.kpi.maxTime'), v: val('maxTime') || '—', d: '',
       },
     ];
 
@@ -3936,6 +3955,7 @@ ${Theme.css('#sp')}
     const prjRows = s.projects.map((p) => ({
       n: p.name,
       label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
+      p: own.get(p.name) || null,
     }));
 
     // 发布者那一格用与项目页同一个 ownerCell：头像 + 名字 + 常驻名单标记 + 3 点菜单。
@@ -3946,6 +3966,9 @@ ${Theme.css('#sp')}
     const openP = projState.menu ? [...own.values()].find((x) => x.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
+    /* 列与项目页对齐：项目 / 发布者 / 状态 / 进度（条 + 分数两列）/ 设备 / 内存。
+       进度那两列是分开的 —— 分数挂在条子后面会让每行的轨道长度随数字宽度变来变去，
+       这条规矩见 docs/DESIGN.md 的 Progress Bar 一节。 */
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
         <h2>${esc(t('sess.projects'))}</h2>
@@ -3956,15 +3979,26 @@ ${Theme.css('#sp')}
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
           <th>${esc(t('proj.col.status'))}</th>
+          <th colspan="2">${esc(t('proj.col.progress'))}</th>
+          <th>${esc(t('proj.col.device'))}</th>
+          <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
-        <tbody>${prjRows.map(({ n, label }) => {
-          const p = own.get(n);
+        <tbody>${prjRows.map(({ n, label, p }) => {
           // 关联得到就用项目页那一格；关联不到留一个破折号 —— 缺一个事实就让它缺着，不猜。
           const who = p && (p.ownerId || p.owner) ? ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';
+          // 这台机器此刻正在跑的那一行：站点在「Current frames」里给的是文件名，
+          // 表里是项目名，所以连剥掉 .blend 后的名字一起比。
+          const isCur = !!curProject && (curProject === n || curProjectBase === n);
+          const frac = p ? UI.progressText(p.pct, p.done, p.total) : '';
           return `<tr>
-            <td><div class="pn" title="${esc(n)}">${esc(n)}</div></td>
+            <td><div class="pnwrap"><div class="pn" title="${esc(n)}">${esc(n)}</div>${
+              isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
             <td><span class="st">${esc(label)}</span></td>
+            <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
+            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
+            <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}

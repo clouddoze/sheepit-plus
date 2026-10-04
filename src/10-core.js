@@ -355,9 +355,9 @@
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
       'sess.noId': '地址里没有会话编号', 'sess.parseFailed': '这一页没读到机器信息',
       'sess.kpi.frames': '已渲染帧数', 'sess.kpi.points': '获得积分',
-      'sess.kpi.maxTime': '单帧上限',
+      'sess.kpi.maxTime': '单帧渲染时长上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
-      'sess.kpi.powerLink': '各机型算力榜', 'sess.kpi.longest': '实测最长一帧 {v}',
+      'sess.kpi.powerLink': '各机型算力榜',
       'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
       'sess.f.cpu': '处理器',
       // 算力那一格的标签跟着站点印的是哪一行走（见 50-views.js 的 powerFacts）
@@ -390,7 +390,10 @@
       'sess.tl.error': '错误',
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
-      'why.over-user-s-time-limit': '超出发布者的时限',
+      /* 站点原文是 "Over user's time limit"。这里的 user 是**机器主人**、time limit 是他在
+         客户端里设的「单帧渲染时长上限」—— 不是发布者的时限（早先就译错成"超出发布者的时限"）。
+         站点判定：这一帧在参考机上的用时超过本机上限，于是不派给它。 */
+      'why.over-user-s-time-limit': '预计超过本机单帧上限',
       // 站点把"能渲染"也写成这一列的一个值（不是留空），而且可渲染的全排在表的最前面 ——
       // 那些行的顺序就是优先级，见 50-views.js 里可渲染项目表的注释。
       'why.renderable': '现在可渲染',
@@ -538,9 +541,9 @@
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
       'sess.kpi.frames': 'Frames rendered', 'sess.kpi.points': 'Points earned',
-      'sess.kpi.maxTime': 'Max time per frame',
+      'sess.kpi.maxTime': 'Per-frame render time limit',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
-      'sess.kpi.powerLink': 'Power by machine model', 'sess.kpi.longest': 'longest frame {v}',
+      'sess.kpi.powerLink': 'Power by machine model',
       'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
       'sess.f.cpu': 'Processor',
       // the power cell's label follows whichever row the site printed (see 50-views.js powerFacts)

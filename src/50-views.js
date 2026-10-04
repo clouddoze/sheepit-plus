@@ -787,7 +787,7 @@
     const chip = note
       ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
       : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : s.running === true ? `<span class="chip">${esc(t('sess.on'))}</span>`
+        : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
           : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
@@ -799,6 +799,11 @@
        否则会和旁边那枚「已暂停」徽章自相矛盾。 */
     const cur = val('currentFrames');
     const cm = cur.match(/^project:\s*(.+?)\s+frame:\s*(\S+)\s+Request time:/i);
+    // 正在跑哪个项目的哪一帧。项目名后面还要用一次 —— 可渲染项目表里给那一行挂「正在渲染」。
+    // 站点在「Current frames」里写的是**文件名**（1002.blend），可渲染项目表里写的是
+    // **项目名**（1002），所以比对时把 .blend 后缀剥掉。
+    const curProject = cm ? cm[1] : '';
+    const curProjectBase = curProject.replace(/\.blend\d*$/i, '');
     if (cm) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cm[1])}</b> · ${esc(t('sess.frame'))} <b class="num">${esc(cm[2])}</b></span>`);
     } else if (cur) {
@@ -830,8 +835,6 @@
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    // 它自己报的单帧上限，和它实际跑过的最长一帧放在一起：这两个数不一致时，用户该知道
-    const longest = tl.reduce((a, e) => Math.max(a, Math.max(0, e.end - e.start)), 0);
     const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
 
     /* 算力那一格跟着站点印了哪一行走：这台机器启用了哪个计算设备，站点就印哪一行 ——
@@ -859,8 +862,9 @@
         d: f.href ? `<a href="${esc(f.href)}" target="_self">${esc(t('sess.kpi.powerLink'))}</a>` : '',
       })),
       {
-        k: t('sess.kpi.maxTime'), v: val('maxTime') || '—',
-        d: longest ? t('sess.kpi.longest', { v: spanText(longest) }) : '',
+        // 只说上限。早先这里还挂一句"实测最长一帧"，但两者本就不可比（一个是参考机上的
+        // 预估上限，一个是本机实际耗时），摆在一起只会让人以为哪个数不对，已按用户要求去掉。
+        k: t('sess.kpi.maxTime'), v: val('maxTime') || '—', d: '',
       },
     ];
 
@@ -1020,6 +1024,7 @@
     const prjRows = s.projects.map((p) => ({
       n: p.name,
       label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
+      p: own.get(p.name) || null,
     }));
 
     // 发布者那一格用与项目页同一个 ownerCell：头像 + 名字 + 常驻名单标记 + 3 点菜单。
@@ -1030,6 +1035,9 @@
     const openP = projState.menu ? [...own.values()].find((x) => x.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
+    /* 列与项目页对齐：项目 / 发布者 / 状态 / 进度（条 + 分数两列）/ 设备 / 内存。
+       进度那两列是分开的 —— 分数挂在条子后面会让每行的轨道长度随数字宽度变来变去，
+       这条规矩见 docs/DESIGN.md 的 Progress Bar 一节。 */
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
         <h2>${esc(t('sess.projects'))}</h2>
@@ -1040,15 +1048,26 @@
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
           <th>${esc(t('proj.col.status'))}</th>
+          <th colspan="2">${esc(t('proj.col.progress'))}</th>
+          <th>${esc(t('proj.col.device'))}</th>
+          <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
-        <tbody>${prjRows.map(({ n, label }) => {
-          const p = own.get(n);
+        <tbody>${prjRows.map(({ n, label, p }) => {
           // 关联得到就用项目页那一格；关联不到留一个破折号 —— 缺一个事实就让它缺着，不猜。
           const who = p && (p.ownerId || p.owner) ? ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';
+          // 这台机器此刻正在跑的那一行：站点在「Current frames」里给的是文件名，
+          // 表里是项目名，所以连剥掉 .blend 后的名字一起比。
+          const isCur = !!curProject && (curProject === n || curProjectBase === n);
+          const frac = p ? UI.progressText(p.pct, p.done, p.total) : '';
           return `<tr>
-            <td><div class="pn" title="${esc(n)}">${esc(n)}</div></td>
+            <td><div class="pnwrap"><div class="pn" title="${esc(n)}">${esc(n)}</div>${
+              isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
             <td><span class="st">${esc(label)}</span></td>
+            <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
+            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
+            <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}

@@ -324,6 +324,9 @@ ${Theme.css('#sp')}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
 #sp .pn{font-weight:550;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 项目名后面挂标签（会话页的「正在渲染」）时的排法：名字负责截断，标签不参与收缩 */
+#sp .pnwrap{display:flex;align-items:center;gap:7px;min-width:0}
+#sp .pnwrap .pn{flex:0 1 auto;min-width:0}
 #sp .ow{display:flex;align-items:center;gap:8px;color:var(--text-2)}
 #sp .ow img{width:20px;height:20px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .ow .ini{
@@ -549,8 +552,13 @@ ${Theme.css('#sp')}
   flex:none;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:4px;
   background:var(--surface-3);color:var(--text-2);white-space:nowrap;
 }
-/* 暂停是要紧的状态，但状态不是动作：只加边框权重，不动品牌橙 */
-#sp .sesshead .chip.off{border:1px solid var(--border-strong);color:var(--text)}
+/* 会话页的状态徽章：运行中 / 已暂停**要一眼分出来**，所以两者都上色。
+   用户 2026-10-04 拍板。这破了本系统原来那条"状态一律中性、橙只留给动作"的规矩
+   （DESIGN.md 的 Don't 里已记为一次具名例外），但没破"只用一个色相"：
+   两个状态在同一个橙色上靠强度分——实心说"开着"，浅底说"要你处理"。
+   运行中用实心橙 + 近黑墨，与主按钮同一套（白字压不住品牌橙，见 --btn-ink）。 */
+#sp .sesshead .chip.on{background:var(--accent);color:var(--btn-ink);border:1px solid var(--accent)}
+#sp .sesshead .chip.off{background:var(--accent-weak);color:var(--accent);border:1px solid transparent}
 
 #sp .facts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
 #sp .fact{
@@ -590,6 +598,10 @@ ${Theme.css('#sp')}
    早先这里是按原因分组的 chip 墙（.wgroup/.wname）—— 站点把同一句原因重复 27 遍，
    当时认为原因本身才是能读的那层信息。用户反馈那一坨不直观，改成表之后原因进了
    「状态」列：同因的行按排序天然相邻，不必再印分组标题，那一列自己就是那层信息。 */
+/* 「正在渲染」标记：可渲染项目那张表里，这是唯一"此刻正在进行"的一行，
+   所以用 accent 的浅底 + 强调字色点出来 —— 与设置页按下分段、账户页在用的键
+   是同一套词汇（accent-weak 底 + accent 字），不是新色相。 */
+#sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
 #sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
