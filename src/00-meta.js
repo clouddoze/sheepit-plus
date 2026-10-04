@@ -17,16 +17,4 @@
 // @downloadURL  https://update.greasyfork.org/scripts/598624/SheepIt%20Plus%20%C2%B7%20%E6%B8%B2%E6%9F%93%E5%86%9C%E5%9C%BA%E7%95%8C%E9%9D%A2%E9%87%8D%E5%88%B6.user.js
 // ==/UserScript==
 
-/* 回填记录（清单见 docs/PUBLISHING.md 的「四」，2026-10-04 首次发布时填妥）：
- *
- *   @namespace   https://github.com/clouddoze —— 首次上传前定死，此后不可再改。
- *                Tampermonkey 与 Violentmonkey 用 @name + @namespace 认脚本身份，
- *                发布后改动会让已装用户收不到更新，并在他们那里变成两个脚本。
- *
- *   @updateURL / @downloadURL 里的中文 slug 是 GreasyFork 给的那一条（脚本页「安装此脚本」
- *                的原样地址）。服务端按 /scripts/<id>/ 取脚本，slug 只影响可读性 ——
- *                实测换成 SheepIt%20Plus.user.js 也能取到，但跟站点保持一致最稳。
- *
- *   以后发新版：改上面的 @version → node build.mjs → 在 GreasyFork 脚本页点「更新」。
- *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
- */
+/* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */

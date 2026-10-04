@@ -1,10 +1,4 @@
-/* ==========================================================================
- * 40-ui.js — 组件层
- *
- * 大部分是纯函数：输入数据，输出 HTML 字符串。
- * 只有最后一段（图表）是命令式的 —— 面积图要按实测像素渲染、要挂悬停十字线，
- * 没法用字符串表达。它同样只依赖传进来的数据，不读全局状态。
- * ========================================================================== */
+/* ==== 40-ui.js：组件层（数据 → HTML 字符串）+ 命令式图表 ==== */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -12,13 +6,9 @@
   const esc = Util.esc;
   const fmt = (n) => Number(n).toLocaleString('en-US');
 
-  /** 分位色阶的五个档位。按绝对值分档会让集中在 500–2000 的日常
-   *  全挤进最低两档、整片糊成一个红块；按分位数分档才看得见分布。
-   *  颜色走 token（--heat-1..5），这样暗/亮两套主题各自取自己的橙。 */
+  /** 分位色阶五档：绝对值分档会把日常帧数挤进最低两档、整片一色；颜色走 token --heat-1..5 */
   const SHADE = ['--heat-1', '--heat-2', '--heat-3', '--heat-4', '--heat-5'];
   const HEAT = (i) => `var(${SHADE[i]})`;
-
-  /* ------------------------------------------------------------ 图标 */
 
   const ICONS = {
     refresh: '<path d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"/>',
@@ -26,37 +16,25 @@
     user: '<path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.34 0-10 1.67-10 5v3h20v-3c0-3.33-6.66-5-10-5z"/>',
     gear: '<path d="M19.14 12.94a7.5 7.5 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.86a.5.5 0 0 0 .12.62l2.03 1.58a7.5 7.5 0 0 0 0 1.88L2.82 14.52a.5.5 0 0 0-.12.62l1.92 3.32c.12.22.38.3.6.22l2.39-.96c.5.39 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/>',
     sheep: '<path d="M17 4a3 3 0 0 0-2.82 2H9.82A3 3 0 1 0 4 8.83V15a4 4 0 0 0 4 4h8a2 2 0 0 0 2-2v-2.2A3 3 0 0 0 17 4zm0 2a1 1 0 1 1-1 1 1 1 0 0 1 1-1z"/>',
-    // 排序箭头是画出来的，不是 ▲▼ 两个字符 —— 字符的磅重、基线和字号都不归我们管
     caretUp: '<path d="M12 8.5l5.5 7h-11z"/>',
     caretDown: '<path d="M12 15.5l-5.5-7h11z"/>',
-    // 实心星：标记"这个发布者已经在你的渲染优先级名单里了"
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
-    // 三个点：发布者那一格的动作菜单。字符"⋯"的磅重与基线不归我们管，所以画出来
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
-    // 勾：菜单里"已经在名单里"的那一项。有它才看得出这一项是状态而不是动作
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
-    // 捐赠积分：一颗心。与禁止符的轮廓差得够远，两个图标不会看混
     heart: '<path d="M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z"/>',
-    // 黑名单：禁止符。这里用描边画 —— 填充式"挖空"路径在小尺寸下容易糊成一团
     ban: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2"/>',
   };
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
-  /* ------------------------------------------------------------ 基础块 */
-
   const initial = (name) => String(name || '?').trim().slice(0, 1).toUpperCase();
 
-  /** 头像：取不到图（跨域、懒加载未完成）就退回首字母，不留破图。
-   *  站点自己的头像 URL 是 /media/image/avatar/... 的同源路径，不需要额外处理。 */
+  /** 头像：取不到图（懒加载未完成）就退回首字母，不留破图 */
   const avatar = (src, name, cls) => (src
     ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : `<span class="${cls || ''}">${esc(initial(name))}</span>`);
 
-  /* ------------------------------------------------------------ 指标带 */
-
-  /** 指标带。默认 4 格；账号有发布者身份时会到 5–6 格，所以把格数写进 data-n 交给
-   *  CSS（见 30-style.js 的 .kpis[data-n]）去重排栅格与内边线，别在这里写死列数。 */
+  /** 指标带：格数写进 data-n 交给 CSS（30-style.js 的 .kpis[data-n]），别在这里写死列数 */
   const kpis = (items) => `<div class="kpis" data-n="${items.length}">${items.map((it) => `
     <div class="kpi">
       <div class="k">${esc(it.k)}</div>
@@ -64,16 +42,8 @@
       ${it.d ? `<div class="d">${it.d}</div>` : ''}
     </div>`).join('')}</div>`;
 
-  /* ------------------------------------------------------------ 产出格 */
-
-  /**
-   * 日历热力图（近 53 周 × 7），带月份与星期轴。
-   * @param {Array<{d:string,v:number}>} daily 逐日产出
-   * @param {number} weeks 周数
-   * @param {string} lang 当前界面语言，决定月份怎么写（10月 / Oct）
-   * @param {{unit?:'frames'|'days'}} [opts] 数据口径。站点只在自己的主页内联逐日帧数；
-   *   别人的主页只有"这天有没有渲染"的日历，那份数据只能按二值画，计数文案也得跟着换口径。
-   */
+  /** 日历热力图（近 53 周 × 7）。lang 决定月份怎么写；opts.unit='days' 时只能按二值画
+   *  （别人的主页只有「这天有没有渲染」），计数文案也跟着换口径。 */
   function heatmap(daily, weeks, lang, opts) {
     const byDays = !!(opts && opts.unit === 'days');
     const WEEKS = weeks || 53;
@@ -91,8 +61,7 @@
     const nz = cells.map((x) => x.v).filter((v) => v > 0).sort((a, b) => a - b);
     const q = (p) => (nz.length ? nz[Math.min(nz.length - 1, Math.floor(nz.length * p))] : 0);
     const T = [q(0.2), q(0.4), q(0.6), q(0.8)];
-    // 退化保护：非零值全都一样大时（站点只记"有没有渲染"），分位档会全部落进最低档，
-    // 整片糊成一个颜色。此时统一用中间档，至少把"有没有"读出来。
+    // 退化保护：非零值全一样大时分位档会全落进最低档、整片一色，统一用中间档
     const flat = nz.length > 0 && T[0] === T[3];
     const shade = (v) => {
       if (!v) return 'var(--surface-3)';
@@ -101,18 +70,16 @@
       return HEAT(i);
     };
 
-    // 首日对齐到真实的星期列，否则整片格子错行
+    // 首日对齐真实星期列，否则整片错行
     const pad = (new Date(`${start}T00:00:00Z`).getUTCDay() + 6) % 7;
     const cols = Math.ceil((pad + span) / 7);
 
-    // 星期轴：只标一/三/五，七行全标会挤成一团
+    // 星期轴只标一/三/五
     const wdNames = String(t('heat.weekday')).split(',');
     const wd = [0, 1, 2, 3, 4, 5, 6]
       .map((r) => `<span>${r % 2 === 0 && wdNames[Math.floor(r / 2)] ? esc(wdNames[Math.floor(r / 2)]) : ''}</span>`).join('');
 
-    // 月份轴：每个自然月在第一列出现的地方落一个标签，跨列显示。
-    // 两条规则来自实际排版：一列宽的残月不标（它会和隔壁撞在一起），
-    // 年号只在第一个标签和跨年那一格出现（十三个"九月"分不清是哪个九月）。
+    // 月份轴：每个自然月在第一列出现处落标签、跨列显示；一列宽的残月与挨太近的都跳过
     const monthFmt = (d, withYear) => {
       try {
         const opt = { month: lang === 'zh' ? 'long' : 'short', timeZone: 'UTC' };
@@ -129,7 +96,6 @@
       const m = Util.mkey(first.d);
       if (m === lastMonth) continue;
       lastMonth = m;
-      // 这个月从本列开始，占到它最后一次出现为止
       let end = c;
       while (end + 1 < cols && flatCells[(end + 1) * 7] && Util.mkey(flatCells[(end + 1) * 7].d) === m) end++;
       const w = end - c + 1;
@@ -147,9 +113,7 @@
 
     const total = cells.reduce((a, b) => a + b.v, 0);
     const peak = nz.length ? nz[nz.length - 1] : 0;
-    // 图例必须和数据用同一套档位：空 + 五档，多一个少一个都是在骗人。
-    // 二值时档位本身退化成单档（见上面的 flat 保护），图例也跟着退成"没渲染 / 有渲染"。
-    // 顺带修掉一处老问题：这两个词以前是写死的中文，英文界面下也照印"少 / 多"。
+    // 图例必须和数据用同一套档位（多一档少一档都是在骗人）；二值时退成没渲染 / 有渲染
     const legend = byDays
       ? `${esc(t('heat.legendOff'))} <i style="background:var(--surface-3)"></i><i style="background:${HEAT(2)}"></i> ${esc(t('heat.legendOn'))}`
       : `${esc(t('heat.legendLow'))} <i style="background:var(--surface-3)"></i>${SHADE.map((_, i) => `<i style="background:${HEAT(i)}"></i>`).join('')} ${esc(t('heat.legendHigh'))}`;
@@ -168,14 +132,11 @@
     };
   }
 
-  /**
-   * 热力图的悬停提示。原生 title 又慢又不可控，而"这个格子是哪一天"正是
-   * 这张图最该回答的问题，值得一个真正的浮层 —— 和积分曲线共用同一套外观。
-   */
+  /** 热力图悬停提示：原生 title 又慢又不可控；「这格是哪一天」正是这张图该回答的问题 */
   function bindHeatTips(wrap, lang) {
     if (!wrap || wrap.dataset.tips === 'on') return;
     wrap.dataset.tips = 'on';
-    // 二值热力图（别人的主页）每格只有"有没有渲染"，不能说成"几帧"
+    // 二值热力图每格只有「有没有渲染」，不能说成「几帧」
     const byDays = wrap.dataset.unit === 'days';
     const tip = document.createElement('div');
     tip.className = 'tip';
@@ -197,7 +158,7 @@
       tip.innerHTML = byDays
         ? `<b>${esc(v ? t('heat.tipOn') : t('heat.tipOff'))}</b><i>${esc(pretty)}</i>`
         : `<b class="num">${esc(t('heat.tip', { n: fmt(v) }))}</b><i>${esc(pretty)}</i>`;
-      // 界面缩放不为 100% 时，rect 给的是物理像素，而 left/top 要 CSS 像素 —— 除一下
+      // 界面缩放不为 100% 时 rect 是物理像素、left/top 要 CSS 像素，要除一下
       const z = Util.zoomOf(wrap);
       tip.style.left = `${(r.left - box.left) / z + r.width / z / 2}px`;
       tip.style.top = `${(r.top - box.top) / z - 6}px`;
@@ -208,9 +169,6 @@
     wrap.addEventListener('pointerleave', () => { tip.style.opacity = '0'; });
   }
 
-  /* ------------------------------------------------------------ 月度产出 */
-
-  /** 逐日产出 → 按月汇总的柱状图（含最高月 / 最低月） */
   function months(daily) {
     const buckets = new Map();
     for (const x of daily || []) {
@@ -236,10 +194,7 @@
     };
   }
 
-  /* ------------------------------------------------------------ 全站实时 */
-
-  /** 首页的 4 张站点统计 → 一条通栏（一个整面 + 内部 1px 分隔）。
-   *  flush：当它是一屏的第一个元素时去掉上外边距。 */
+  /** 首页 4 张站点统计 → 一条通栏；flush 去掉上外边距 */
   function farm(stats, opts) {
     if (!stats || !stats.length) return '';
     const flush = opts && opts.flush;
@@ -259,9 +214,6 @@
     }).join('')}</div>`;
   }
 
-  /* ------------------------------------------------------------ 已连接的机器 */
-
-  /** 已连接机器的总览：一行一台，客户端名做徽章，机型安静地跟在后面 */
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
@@ -272,12 +224,8 @@
       </div>`).join('')}</div>`;
   }
 
-  /* ------------------------------------------------------------ 进度条 / 设备 */
-
-  /**
-   * 进度分数文案。原站把「1216 / 12000」直接压在半填充的条子上，白字横跨橙/灰两色，
-   * 还容易被截断；这里把数字移到条子外面，回落时用百分比。
-   */
+  /** 进度分数文案：原站把「1216 / 12000」压在条子上（白字横跨橙/灰、易截断），故移到条外；
+   *  取不到分数时回落成百分比。 */
   function progressText(pct, done, total) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return Number.isFinite(done) && Number.isFinite(total) && total > 0
@@ -285,14 +233,8 @@
       : `${p.toFixed(0)}%`;
   }
 
-  /**
-   * 6px 轨道 + 强调色填充。
-   *
-   * 分数**不在这里**：它作为独立的一列跟在这个格子后面（见 50-views.js 的项目表）。
-   * 早先把 `<span class="n">` 挂在条子后面，`flex:1` 的轨道就被每行不同的数字宽度挤得
-   * 长短不一 —— 一张表里十条进度条十个长度，整列看着参差不齐。数字一旦进了自己的列，
-   * 表格布局保证每行的轨道宽度完全一致，顺带让分数右对齐成一条线。
-   */
+  /** 6px 轨道 + 强调色填充。分数**不在这里**（见 50-views.js 的项目表）：挂在条子后面时
+   *  `flex:1` 的轨道会被每行不同的数字宽度挤成长短不一，独立成列才对得齐。 */
   function progress(pct, label) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
@@ -305,8 +247,6 @@
       <span class="${gpu ? 'on' : ''}">${esc(t('proj.gpu'))}</span>
     </span>`;
   }
-
-  /* ------------------------------------------------------------ 状态页 */
 
   const state = {
     loading: (msg) => `<div class="state"><div class="spin"></div><div class="small">${esc(msg || t('state.loading'))}</div></div>`,
@@ -323,10 +263,7 @@
       </div>`,
   };
 
-  /**
-   * 新用户空状态。
-   * 不是"暂无数据"，是"你还没开始，这是怎么开始"：一句为什么 + 三步怎么开始 + 两个出口。
-   */
+  /** 新用户空状态：一句为什么 + 三步怎么开始 + 两个出口（不是「暂无数据」） */
   const newUser = () => `<div class="empty"><div class="inner">
       <h2>${esc(t('empty.title'))}</h2>
       <p>${esc(t('empty.body'))}</p>
@@ -342,17 +279,14 @@
       </div>
     </div></div>`;
 
-  /* ------------------------------------------------------------ 骨架屏 */
-
   const skeleton = (rows) => `<div class="state" style="padding:40px 20px">
       ${[...Array(rows || 4)].map((_, i) => `<div class="sk" style="width:100%;height:${i === 0 ? 22 : 46}px"></div>`).join('')}
     </div>`;
 
   /* ============================================================ 图表（命令式）
-     面积图按实测像素渲染。绝不用 preserveAspectRatio="none" ——
-     它会把 SVG 里的轴标签一起非等比拉伸，字会糊掉。 */
+     **按实测像素**渲染。绝不用 preserveAspectRatio="none"：它会把轴标签一起**非等比拉伸**。 */
 
-  let chartObs = null;   // 模块级单例：重渲染时必须先断开旧的，否则观察器会挂在已摘除的节点上
+  let chartObs = null;   // 模块级单例：重渲染必须先断开旧的，否则观察器挂在已摘除的节点上
 
   function pointsChart(box, series) {
     if (!box || !series || series.length < 2) return;
@@ -443,7 +377,7 @@
     }
   }
 
-  /** 轴上大数：3.6e8 → 360M（与样张一致，不带空格） */
+  /** 轴上大数：3.6e8 → 360M */
   const compact = (v) => {
     const n = Number(v) || 0;
     const abs = Math.abs(n);

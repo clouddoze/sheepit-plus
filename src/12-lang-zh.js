@@ -1,15 +1,5 @@
-/* ==========================================================================
- * 12-lang-zh.js — 中文语言包
- *
- * 三层结构，对应三类站点文案：
- *   site     短词条，精确匹配单个文本节点（导航、按钮、标题、表头）
- *   blocks   整块替换：被 <a>/<strong>/<em> 切碎的句子。键是整块归一化文本，
- *            值是 HTML（可以保留链接）。纯文本节点替换救不了这类句子，
- *            因为语序会碎掉。
- *   patterns 带变量的文案（"13 Rendering frames"），用捕获组回填。
- *
- * 加一门语言就是照着这个文件再写一个 —— 不需要改任何逻辑代码。
- * ========================================================================== */
+/* ==== 12-lang-zh.js：中文语言包 ====
+   site = 短词条精确匹配；blocks = 整块替换（值可含链接）；patterns = 带变量，捕获组回填 */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -18,7 +8,7 @@
   SP.I18n.register('zh', {
     label: '中文',
 
-    /* ------------------------------------------------ 短词条 */
+    /* 短词条 */
     site: {
       /* 导航 / 顶栏 */
       'Toggle navigation': '切换导航',
@@ -203,8 +193,7 @@
       'PayPal - The safer, easier way to pay online!': 'PayPal —— 更安全、更便捷的在线支付方式',
       'Donate with PayPal button': '使用 PayPal 捐赠',
       'Become a Patron': '成为赞助者',
-      /* 估算器返回的那段结果：站点渲染的英文片段，落进我们的卡片里。
-         用 DomI18n.translateSubtree() 翻 —— 它允许翻译器走进 #sp。 */
+      /* 估算器返回的英文片段落在卡片里，用 DomI18n.translateSubtree() 翻。 */
       'How much your project will cost you': '你的项目会花掉多少积分',
       'How you could split your project': '可以怎么拆分',
       'Your project will cost you up to': '你的项目最多会花掉',
@@ -215,11 +204,8 @@
       'No split': '不拆分',
     },
 
-    /* ------------------------------------------------ 整块替换（值是 HTML，可保留链接）
-     * 键是「翻译前」的整块归一化文本，必须与页面实际拼接结果一致。
-     * 获取真实键的办法：把 translateSite 设为 false 打开页面，控制台执行
-     *   __SHEEPIT_PLUS__.DomI18n.reportUnmatched(20)
-     */
+    /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
+       取键：把 translateSite 设为 false 打开页面，控制台跑 DomI18n.reportUnmatched(20)。 */
     blocks: {
       "The render farm relies on you to live; the more computers that are connected to the system, the better the service will be. You don't need to have Blender installed, it will be downloaded for you. Your own project will be rendered first, then your computer will help other users. If you don't want to share your computer, but still help SheepIt, you should consider donating.":
         '渲染农场靠你而活：接入的机器越多，服务质量就越好。<br>你不需要安装 Blender，客户端会自动为你下载。<br>你自己的项目会优先渲染，之后你的电脑再帮助其他用户。<br>如果你不想共享电脑，但仍想支持 SheepIt，可以考虑<a href="/donation">捐赠</a>。',
@@ -242,9 +228,7 @@
         '请注意：如果输出格式设为 RGBA，生成的 MP4 会带上 alpha 图层，部分播放器将无法播放，可能需要在剪辑软件里做特殊处理。',
     },
 
-    /* ------------------------------------------------ 整块模式规则
-     * 段落里含动态数字时没法用静态键，改用正则整块替换。捕获组按 $1…$9 回填。
-     */
+    /* 整块模式规则：段落含动态数字 → 用正则整块替换，捕获组按 $1…$9 回填。 */
     blockPatterns: [
       [/^Max:\s*([\d,]+)\s*MB\s*before ZIP compression\s*Blender compression is recommended and supported\.$/i,
         '上限：$1 MB（ZIP 压缩前）<br>推荐并支持 Blender 压缩。'],
@@ -253,7 +237,7 @@
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
     ],
 
-    /* ------------------------------------------------ 模式规则（带变量的文案） */
+    /* 模式规则（带变量的文案） */
     patterns: [
       [/^Connected as (.+)$/, '已登录：$1'],
       [/^(\d[\d,]*)\s+machines rendering right now\.$/, '当前有 $1 台机器在渲染。'],
@@ -269,10 +253,10 @@
       [/^(\d[\d,]*)\s+connected clients?$/i, '在线客户端 $1'],
       [/^(\d[\d,]*)\s+processing frames?$/i, '正在处理 $1 帧'],
       [/^(\d[\d,]*)\s+active projects?$/i, '进行中项目 $1'],
-      /* 序数：既用于排行榜名次，也用于排队位置（CPU: 1st） */
+      /* 序数：排行榜名次与排队位置（CPU: 1st）共用 */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
-      /* 估算器结果里的两句带变量的文案 */
+      /* 估算器结果 */
       [/^([\d,]+)\s+points$/, '$1 积分'],
       [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
         '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],

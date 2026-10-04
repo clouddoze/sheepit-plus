@@ -1,18 +1,4 @@
-/* ==========================================================================
- * 30-style.js — 样式层
- *
- * 视觉来源：docs/DESIGN.md 的 "Insight Metric Band" 与 "Data Table" 两节。
- * 这里把样张里的样式原样搬过来，只做必要改动：
- *  - 选择器统一加 #sp 前缀，把原站 CSS 完全挡在外面
- *    （id + 类 的选择器优先级高于站点绝大多数规则）
- *  - :root / html[data-theme=light] 的 token 块由 Theme.css('#sp') 生成
- *  - 样张底部的 .demo 切换条是样张专用，不带进产品
- *
- * 三个不能丢的东西，写在最前面：
- *  1) 品牌橙 #e06d58 只用于三处：可操作元素 / 当前选中 / 数据序列中代表"你"。
- *  2) 数值一律制表对齐（.num）。
- *  3) 焦点环、选区、光标、滚动条都要带设计 —— 没画的部分也是被建造的。
- * ========================================================================== */
+/* ==== 30-style.js：整份 CSS ==== */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -20,14 +6,11 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
-/* .sp-acmenu 单独生成一份：那是唯一一件长在 #sp 外面的家具（jQuery UI 的自动补全菜单，
-   被它挂在 <body> 上，见 injectGuard 里的说明）。
-   **不能写成 Theme.css('#sp, ul.sp-acmenu')** —— Theme.css 生成的是
-   scope:not([data-theme="dark"]) 与 scope[data-theme="light"] 两处条件选择器，写成列表时
-   它们只绑在最后一项上，#sp 会无条件吃到亮色 token（实测：用户选暗色，整壳变白、菜单却还是暗的）。 */
+/* .sp-acmenu 单独生成一份：唯一长在 #sp 外面的家具（jQuery UI 的补全菜单挂在 <body> 上）。
+   不能合并成选择器列表 Theme.css('#sp, ul.sp-acmenu') —— 两处条件选择器只绑最后一项，实测暗色下整壳变白。 */
 ${Theme.css('ul.sp-acmenu')}
 
-/* ---------------------------------------------------------------- 骨架 */
+/* ==== 骨架 ==== */
 #sp{
   position:fixed;inset:0;z-index:2147483000;overflow-y:auto;overflow-x:hidden;
   background:var(--bg);color:var(--text);
@@ -37,7 +20,6 @@ ${Theme.css('ul.sp-acmenu')}
 }
 #sp *{box-sizing:border-box;margin:0;padding:0;font-family:inherit;line-height:inherit}
 
-/* 浏览器表面：选区 / 光标 / 滚动条 / 焦点环 / 下划线偏移 */
 #sp{caret-color:var(--accent);scrollbar-color:var(--border-strong) transparent;scrollbar-width:thin}
 #sp ::selection{background:var(--accent-weak);color:var(--text)}
 #sp ::-webkit-scrollbar{width:10px;height:10px}
@@ -57,7 +39,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .wrap{max-width:1240px;margin:0 auto;padding:0 24px 72px}
 @media (max-width:760px){#sp .wrap{padding:0 16px 56px}}
 
-/* ---------------------------------------------------------------- 顶栏 */
+/* ==== 顶栏 ==== */
 #sp .top{
   position:sticky;top:0;z-index:20;min-height:56px;
   display:flex;align-items:center;gap:28px;padding:8px 0;
@@ -79,8 +61,6 @@ ${Theme.css('ul.sp-acmenu')}
 }
 #sp nav button:hover{background:var(--surface-2);color:var(--text)}
 #sp nav button[aria-current="page"]{background:var(--surface-2);color:var(--text);font-weight:550}
-/* 窄屏用短标签（排行榜→排行、账户设置→账户）。与其把控件藏起来或者让导航横向滚，
-   不如让标签本身短一点 —— 五项在 390px 上全都看得见、点得到。 */
 #sp nav .navshort{display:none}
 #sp .top .spacer{flex:1}
 #sp .metaline{font-size:12px;color:var(--text-3);white-space:nowrap}
@@ -89,8 +69,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .who .ini{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-3);flex:none}
 
-/* 窄屏顶栏：nav 默认 flex-shrink:1，会被压到 148px 让按钮互相盖住 —— 必须显式禁掉。
-   时间戳先让位（刷新按钮已经表达了同一件事），用户名再让位（身份条里有）。 */
+/* nav 默认 flex-shrink:1，窄屏被压到 148px、按钮互相盖住 —— 必须显式 flex:none。 */
 @media (max-width:860px){
   #sp .top{gap:12px}
   #sp nav{flex:none}
@@ -100,19 +79,16 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .top{gap:8px}
   #sp .brand{font-size:14px}
   #sp .brand .sheep{width:18px;height:18px}
-  /* 导航到 5 项之后，390px 上必须让出 PLUS 徽章的位置 —— 标识由羊标 + "SheepIt" 承担 */
   #sp .brand em{display:none}
   #sp nav{gap:0}
   #sp nav button{padding:6px 7px;font-size:13px}
   #sp nav .navfull{display:none}
   #sp nav .navshort{display:inline}
-  /* 头像整个撤掉，而不是只藏名字：品牌+导航+刷新已经占满，
-     硬塞进来只会把头像挤出视口，在右边缘留下一条 1px 的断边框。
-     身份条里有一个 46px 的同款头像，就紧贴在下面。 */
+  /* 头像整个撤掉而不是只藏名字：硬塞会被挤出视口，在右缘留下一条 1px 断边框。 */
   #sp .who{display:none}
 }
 
-/* ---------------------------------------------------------------- 图标按钮 */
+/* ==== 图标按钮 ==== */
 #sp .iconbtn{
   width:30px;height:30px;flex:none;display:grid;place-items:center;border-radius:var(--r-sm);
   border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;
@@ -122,7 +98,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .iconbtn .icon{width:14px;height:14px}
 #sp .icon{width:15px;height:15px;flex:none}
 
-/* ---------------------------------------------------------------- 按钮 */
+/* ==== 按钮 ==== */
 #sp .btn{
   display:inline-flex;align-items:center;gap:7px;padding:8px 15px;border-radius:8px;font-size:13px;
   border:1px solid var(--border);background:var(--surface);color:var(--text-2);cursor:pointer;
@@ -131,12 +107,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .btn:hover{border-color:var(--border-strong);color:var(--text)}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
-/* 行内维护动作（移除 / 删除）用的小号：它们是次级动作，尺寸上也该退一步，
-   否则一列实心同宽的按钮会把列表读成按钮墙。 */
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
-/* ---------------------------------------------------------------- 身份条 */
+/* ==== 身份条 ==== */
 #sp .identity{display:flex;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap}
 #sp .identity .av,#sp .identity img{
   width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;
@@ -149,9 +123,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .meta span:first-child{padding-left:0;border-left:none}
 #sp .meta b{font-weight:600;color:var(--text)}
 
-/* ---------------------------------------------------------------- 指标带
-   一个整面 + 内部 1px 分隔，不是四张各自为政的卡片 ——
-   卡片是最懒的容器，嵌套卡片永远是错的。 */
+/* ==== 指标带 ==== */
 #sp .kpis{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
@@ -162,8 +134,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .kpi .k{font-size:11.5px;font-weight:500;color:var(--text-3);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .v{margin-top:8px;font-size:27px;font-weight:600;letter-spacing:-.6px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .d{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-/* 强调不作上色：这里只是一个更重的数字，不再给第二支色相。
-   全页只有一处绿、且没有第二次使用，那不叫语义色，那叫杂色。 */
 #sp .kpi .d b{color:var(--text);font-weight:600}
 @media (max-width:860px){
   #sp .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -174,10 +144,8 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .kpi{padding:15px 14px}
   #sp .kpi .v{font-size:22px;letter-spacing:-.4px}
 }
-/* 格数不是常数：多数账号 4 格，建过项目的账号 5–6 格（多出来的是"建的项目 / 订的帧"）。
-   4 格的带子（含会话页）一个像素都不动；5–6 格按宽度分三档折行，
-   每折一次都要重新分配"哪条内边线该画"—— 否则折行处左边缘会多一条竖线、
-   或行与行之间少一条横线。 */
+/* 格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n）。
+   每折一次都要重算该画哪条内边线，否则折行处多一条竖线、或少一条横线。 */
 #sp .kpis[data-n="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
 #sp .kpis[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
 @media (max-width:1200px){
@@ -185,15 +153,14 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .kpis[data-n="5"] .kpi:nth-child(3n+1),#sp .kpis[data-n="6"] .kpi:nth-child(3n+1){border-left:none}
   #sp .kpis[data-n="5"] .kpi:nth-child(n+4),#sp .kpis[data-n="6"] .kpi:nth-child(n+4){border-top:1px solid var(--border)}
 }
-/* ≤860 折成 2 列（和别的带子一致）。上一档"3n+1 不画左边框"在 2 列下会把第 4 格也去掉，
-   而 2 列的行首是奇数格（1/3/5）—— 所以这一档整块重算左边线；上边线沿用上面那条 n+3 的规则。 */
+/* ≤860 折 2 列：上一档 3n+1 会连第 4 格一起去掉，所以整块重算左边线。 */
 @media (max-width:860px){
   #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(2,minmax(0,1fr))}
   #sp .kpis[data-n="5"] .kpi:nth-child(n),#sp .kpis[data-n="6"] .kpi:nth-child(n){border-left:1px solid var(--border)}
   #sp .kpis[data-n="5"] .kpi:nth-child(odd),#sp .kpis[data-n="6"] .kpi:nth-child(odd){border-left:none}
 }
 
-/* ---------------------------------------------------------------- 主区 */
+/* ==== 主区 ==== */
 #sp .grid{display:grid;grid-template-columns:8fr 4fr;gap:16px;margin-top:16px}
 @media (max-width:1000px){#sp .grid{grid-template-columns:minmax(0,1fr)}}
 #sp .panel{
@@ -206,7 +173,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .phead .sub b{color:var(--text-2);font-weight:600}
 #sp .phead .spacer{flex:1}
 
-/* ---------------------------------------------------------------- 图表 */
+/* ==== 图表 ==== */
 #sp .chart{position:relative;padding:14px 20px 16px}
 #sp .chart svg{display:block;width:100%;overflow:visible}
 #sp .tip{
@@ -218,22 +185,16 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .tip b{font-weight:600}
 #sp .tip i{display:block;font-style:normal;color:var(--text-3);font-size:11px;margin-top:2px}
 
-/* ---------------------------------------------------------------- 产出格
-   格子随面板宽度等比缩放：53 周永远装得下，不会被 overflow 裁掉。
-   窄屏改成定宽 + 横向滚动 —— 7px 的格子只是噪点，读不出的可视化不算可视化。 */
-/* position:relative 是必须的：悬停浮层是 .heatwrap 的子元素，
-   而 .tip 是 position:absolute。这一格没有定位，包含块就会一路找到 #sp(fixed)，
-   于是浮层按"相对 #sp 内容原点"的坐标去放，实际落在离格子一千多像素的地方 —— 等于没有。 */
+/* ==== 产出格 ==== */
+/* .tip 是 .heatwrap 的绝对定位子元素：这一格不定位，包含块会一路找到 #sp(fixed)，
+   浮层实测落在离格子一千多像素的地方。 */
 #sp .heatwrap{display:flex;gap:8px;position:relative}
-/* 星期标签固定不动，只有格子横向滚。
-   左侧那一列顶部留一个和月份行等高的占位块，两张网格的行高就自动对齐了 ——
-   比"猜一个 padding-top"可靠，字体变了也不会错位。 */
+/* 左列顶部留一个与月份行等高的占位块（.pad），两张网格的行高就自动对齐。 */
 #sp .wdcol{display:flex;flex-direction:column;flex:none;font-size:11px;color:var(--text-3)}
 #sp .wdcol .pad{height:13px;margin-bottom:6px}
 #sp .wd{display:grid;grid-template-rows:repeat(7,minmax(0,1fr));gap:2px;flex:1;line-height:1}
 #sp .wd span{align-self:center;white-space:nowrap}
 #sp .heatscroll{flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;padding-bottom:2px}
-/* 月份标签与格子共用同一套列宽，所以永远对得齐 */
 #sp .mlabels{
   display:grid;grid-template-columns:repeat(var(--cols),minmax(0,1fr));gap:2px;
   font-size:11px;color:var(--text-3);height:13px;margin-bottom:6px;line-height:1;
@@ -256,7 +217,6 @@ ${Theme.css('ul.sp-acmenu')}
     grid-template-rows:repeat(7,14px);
     aspect-ratio:auto;gap:3px;width:max-content;
   }
-  /* 窄屏上星期标签挤不下就整列撤掉，日期信息由悬停/点按的浮层承担 */
   #sp .wdcol{display:none}
 }
 #sp .legend{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-3);margin-top:14px;flex-wrap:wrap}
@@ -264,7 +224,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .legend .spacer{flex:1}
 #sp .legend b{color:var(--text-2);font-weight:600}
 
-/* ---------------------------------------------------------------- 产出面板与月份条 */
+/* ==== 产出面板与月份条 ==== */
 #sp .produce{padding:16px 20px 18px}
 #sp .months{display:flex;align-items:flex-end;gap:3px;height:132px}
 #sp .months i{flex:1;background:var(--accent);opacity:.34;border-radius:2px 2px 0 0;min-height:2px;transition:opacity .12s}
@@ -280,22 +240,19 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .mstat .v{font-size:14px}
 }
 
-/* ---------------------------------------------------------------- 全站实时 */
+/* ==== 全站实时 ==== */
 #sp .farm{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;margin-top:16px;box-shadow:var(--shadow);
 }
-/* 直系子元素选择器是必须的：写成 .farm div 会把内边距加到 .k 和 .row 上，
-   一个标签自己就撑成 43px、数值行撑成 83px，整格 159px —— 看着空，其实是内耗。
-   注意要用 > 而不是后代选择器。 */
+/* 必须用 > 而不是后代选择器：.farm div 会把内边距加到 .k / .row 上，整格撑到 159px。 */
 #sp .farm > div{padding:13px 18px;border-left:1px solid var(--border);min-width:0}
 #sp .farm > div:first-child{border-left:none}
 #sp .farm .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 #sp .farm .row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
 #sp .farm .v{font-size:18px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;line-height:1.1}
-/* 走势给一个上限宽度。让它 flex:1 撑满整格，一条 300px 宽、20px 高的线会被拉成
-   一道 12:1 的划痕 —— 那是纹理不是趋势。160px / 24px 才看得出起伏。 */
+/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。 */
 #sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:none}
 @media (max-width:860px){
   #sp .farm{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -307,7 +264,7 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .farm .v{font-size:16px}
 }
 
-/* ---------------------------------------------------------------- 表格 */
+/* ==== 表格 ==== */
 #sp .tablewrap{overflow-x:auto}
 #sp .tbl{width:100%;border-collapse:collapse;font-size:13px}
 #sp .tbl th{
@@ -315,8 +272,7 @@ ${Theme.css('ul.sp-acmenu')}
   padding:0 14px 10px;border-bottom:1px solid var(--border);white-space:nowrap;
 }
 #sp .tbl th.r,#sp .tbl td.r{text-align:right}
-/* 数值列收紧到内容宽度：留白交给名称列，而不是把三个数字摊到半个屏幕上。
-   th 和 td 都要 nowrap —— 只给 th 加，列会被压到"32.6"就换行，"GB"掉到第二行。 */
+/* 数值列收紧到内容宽度：th 和 td 都要 nowrap —— 只给 th 加，列会被压窄换行、单位掉到第二行。 */
 #sp .tbl th.r{width:1%;white-space:nowrap}
 #sp .tbl th.r,#sp .tbl td.r{white-space:nowrap}
 #sp .tbl th.tight{width:1%;white-space:nowrap}
@@ -330,7 +286,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
 #sp .pn{font-weight:550;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 项目名后面挂标签（会话页的「正在渲染」）时的排法：名字负责截断，标签不参与收缩 */
 #sp .pnwrap{display:flex;align-items:center;gap:7px;min-width:0}
 #sp .pnwrap .pn{flex:0 1 auto;min-width:0}
 #sp .ow{display:flex;align-items:center;gap:8px;color:var(--text-2)}
@@ -340,30 +295,19 @@ ${Theme.css('ul.sp-acmenu')}
   display:grid;place-items:center;font-size:11.5px;color:var(--text-3);flex:none;
 }
 #sp .ow span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 名字进主页：项目页的发布者与排行榜的用户名都是链接。读数沿用原来那一格，
-   只在悬停时给品牌橙 + 下划线 —— 一整列名字都染成链接色，这页就成了链接墙。 */
 #sp .ow a.nm{color:inherit;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 #sp .ow a.nm:hover{color:var(--accent);text-decoration:underline}
 #sp .ow em{font-style:normal;color:var(--accent);font-weight:600}
-/* 发布者那一格：名字 + 「已在优先级名单里」的星 + 一个行内动作。
-   星是常驻的（这件事不该等鼠标移上来才知道）；动作按钮默认藏着，
-   鼠标移到这一行、或键盘焦点落进这一行时才现身 —— 让整张表在静止时是安静的。
-   min-width:0 让发布者名字继续能被截断，而不是把这一列越撑越宽。 */
 #sp .ow span{min-width:0}
-/* 名字后面那排状态标记：星 = 在渲染优先级名单，心 = 在捐赠名单，禁止符 = 在黑名单。
-   常驻显示 —— "我是不是已经把他放进某份名单了"不该等鼠标移上来才知道。 */
+/* .mk 常驻显示：星 = 在渲染优先级名单，心 = 在捐赠名单，禁止符 = 在黑名单。 */
 #sp .ow .mk{flex:none;display:inline-flex;margin-left:4px;color:var(--accent)}
 #sp .ow .mk .icon{width:13px;height:13px}
 #sp .ow .btn{margin-left:6px;flex:none}
-/* 3 点按钮：「优先 / 移出」怎么藏它就怎么藏（同一套 hover/:focus-within 规则）。
-   菜单开着的时候必须一直看得见 —— 鼠标移到浮层上时这一行已经不是 hover 状态了。 */
 #sp .ow .kebab{padding:4px 7px}
 #sp .ow .kebab .icon{width:13px;height:13px}
 #sp .ow .kebab[aria-expanded="true"]{opacity:1;border-color:var(--border-strong);color:var(--text)}
 
-/* 3 点菜单的浮层。它挂在 #sp 里而不是表格里 —— .tablewrap 是 overflow:auto，
-   绝对定位的子元素会被它裁掉（最后几行尤其明显）；坐标由 Views.mount() 量一次。
-   外观沿用其它浮层：surface 底 + 发丝边 + 环境阴影 + 小圆角。 */
+/* .omenu 挂在 #sp 里而不是表格里：.tablewrap 是 overflow:auto，绝对定位子元素会被它裁掉。 */
 #sp .omenu{
   position:absolute;z-index:30;min-width:224px;padding:5px;
   background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);
@@ -376,18 +320,15 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .omenu .mi:hover .mi-ic{color:var(--accent)}
 #sp .omenu .mi .mi-ic .icon{width:15px;height:15px}
 #sp .omenu .mi .mi-tx{flex:1;min-width:0}
-/* 勾放最右边：左边那格留给"这是什么动作"的图标，两个含义不要挤在一个槽里 */
+
 #sp .omenu .mi .mi-ck{width:15px;height:15px;flex:none;color:var(--accent)}
 #sp .omenu .mi .mi-ck .icon{width:15px;height:15px}
 @media (hover:hover) and (pointer:fine){
-  /* 藏的是透明度而不是 display：display:none 会把这个按钮从 Tab 顺序里摘掉。
-     触屏（没有 hover）上一直显示，否则这个动作永远点不到。 */
+  /* 藏的是 opacity 不是 display：display:none 会把按钮从 Tab 顺序里摘掉；触屏没有 hover，一直显示。 */
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-/* 进度条。分数在**自己的列**里（td.frac），不挂在条子后面 —— 挂上去会让每行的轨道长度
-   随数字宽度变来变去，一整列参差不齐；进了列，表格布局保证每行轨道等长，分数也右对齐成线。
-   .bar 仍被活动汇总表的表头当弹性占位用（见 .acthead .bar），所以这里不给它定 display。 */
+/* 分数放自己的列（td.frac）：挂在条子后面，轨道长度会随数字宽度变化、整列参差不齐。 */
 #sp .bar{min-width:180px}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
@@ -395,8 +336,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
-/* 状态文案保持中性 —— 品牌橙只留给可操作元素、当前选中、以及数据序列里代表"你"的那条。
-   给"渲染中"上橙色会把它变成一堵橙墙，也会稀释橙色本身的意义。 */
 #sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
 @media (max-width:760px){
@@ -404,7 +343,7 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .tbl th,#sp .tbl td{padding-left:12px;padding-right:12px}
 }
 
-/* ---------------------------------------------------------------- 工具条 */
+/* ==== 工具条 ==== */
 #sp .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:0 0 14px}
 #sp .more{display:flex;justify-content:center;padding:14px 0 6px}
 #sp .more .btn{gap:9px}
@@ -414,10 +353,8 @@ ${Theme.css('ul.sp-acmenu')}
   border:1px solid var(--border);min-width:220px;flex:1;max-width:340px;color:var(--text-3);
 }
 #sp .input input{flex:1;min-width:0;border:none;background:none;color:var(--text);font-size:13px}
-/* 焦点环画在整只控件上，而不是里面的输入框上。
-   注意：这里绝不能给 input 写 outline:none —— 它的优先级(#sp .input input)
-   高过全局的 #sp :focus-visible，会把键盘焦点环整个吃掉，输入框就成了
-   键盘用户找不到的控件。改成 :focus-within 让容器亮起来。 */
+/* 焦点环画在整只控件上，绝不能给 input 写 outline:none —— #sp .input input 优先级高过
+   全局的 #sp :focus-visible，会把键盘焦点环整个吃掉；改用 :focus-within 让容器亮起来。 */
 #sp .input:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
 #sp .input input:focus-visible{outline:none}
 #sp .input input::placeholder{color:var(--text-3)}
@@ -430,8 +367,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .sechead .sub{font-size:12px;color:var(--text-3)}
 #sp .sechead .spacer{flex:1}
 
-/* ---------------------------------------------------------------- 空状态
-   不是"暂无数据"。是"你还没开始，这是怎么开始"。 */
+/* ==== 空状态 ==== */
 #sp .empty{margin-top:16px}
 #sp .empty .inner{
   padding:40px 28px;text-align:center;background:var(--surface);
@@ -451,9 +387,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .empty .cta{margin-top:26px;display:inline-flex;gap:9px;flex-wrap:wrap;justify-content:center}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
-/* ---------------------------------------------------------------- 已连接的机器
-   一台机器一行：客户端名做成徽章，机型是安静的灰，出口在右边。
-   不做成一排卡片 —— 机器数量会变，卡片网格一多就成了"仪表盘壁纸"。 */
+/* ==== 已连接的机器 ==== */
 #sp .machines{display:flex;flex-direction:column}
 #sp .machine{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
 #sp .machine:last-child{border-bottom:none}
@@ -467,7 +401,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
 @media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
-/* ---------------------------------------------------------------- 顶栏模式开关 */
+/* ==== 顶栏模式开关 ==== */
 #sp .modebtn{
   height:30px;flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;
   border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface);
@@ -477,12 +411,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .modebtn .icon{width:13px;height:13px}
 @media (max-width:1000px){#sp .modebtn .txt{display:none}#sp .modebtn{padding:0 7px}}
 
-/* ---------------------------------------------------------------- 账户设置 */
+/* ==== 账户设置 ==== */
 #sp .acct{max-width:820px}
 #sp .acct .panel{padding:0}
 #sp .acct .phead{padding:16px 20px 0}
-/* pbody / hint 是账户设置和会话页共用的两个块，不做两份。
-   .settings 里的 .hint 有自己的一条规则，优先级更高，不受这里影响。 */
 #sp .pbody{padding:14px 20px 18px}
 #sp .hint{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 12px}
 #sp .sw{display:flex;align-items:flex-start;gap:11px;padding:9px 0;cursor:pointer}
@@ -521,9 +453,7 @@ ${Theme.css('ul.sp-acmenu')}
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
 #sp .keyrow .c{flex:none;font-size:12px;color:var(--text-3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* 渲染密钥的状态徽章。「空闲」这一档原来用三级墨色压在下沉层上 —— 实测 4.39:1，
-   差 0.11 没到 AA 的 4.5:1（机检在账户页产物上检出来的）。徽章本来也不属于三级墨色
-   的用法（那是轴标签/表头/说明的地方），提到二级墨色，约 7.4:1。 */
+/* 状态徽章的墨色：三级墨实测 4.39:1、差 0.11 没到 AA，提到二级墨约 7.4:1。 */
 #sp .keyrow .use{flex:none;font-size:11px;padding:1px 6px;border-radius:4px;background:var(--surface-3);color:var(--text-2)}
 #sp .keyrow .use.on{background:var(--accent-weak);color:var(--accent)}
 #sp .avatarline{display:flex;align-items:center;gap:14px}
@@ -536,9 +466,7 @@ ${Theme.css('ul.sp-acmenu')}
   border:1px solid var(--border);background:var(--surface);color:var(--text-2);font-size:13px;cursor:pointer;
 }
 #sp .filepick:hover{border-color:var(--border-strong);color:var(--text)}
-/* 原生的 file input 没法打扮成细边框控件，所以让 label 当按钮。
-   但这里绝不能用 display:none —— 那会把它从 Tab 顺序里摘掉，整个产品就多出一个
-   键盘够不到、也读屏不到的控件。改成"看不见但还在"：1px、透明、绝对定位。 */
+/* file input 让 label 当按钮，但绝不能 display:none —— 那会把它从 Tab 顺序里摘掉；改成 1px 透明。 */
 #sp .filepick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 #sp .filepick:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
 #sp .toast.ok{border-color:var(--border-strong);color:var(--text)}
@@ -551,18 +479,13 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .sk{background:linear-gradient(90deg,var(--surface) 25%,var(--surface-2) 37%,var(--surface) 63%);background-size:400% 100%;animation:sp-sk 1.3s ease infinite;border-radius:8px}
 @keyframes sp-sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
 
-/* ---------------------------------------------------------------- 会话页
-   一台机器的一屏：身份条 → 指标带 → 机器信息 → 机器控制 → 时间线 → 可渲染项目。
-   新类名都以 .sess / .fact / .tl / .w 打头，避开 .row 那种撞名（设置页正用着 .row）。 */
+/* ==== 会话页 ==== */
 #sp .sesshead .chip{
   flex:none;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:4px;
   background:var(--surface-3);color:var(--text-2);white-space:nowrap;
 }
-/* 会话页的状态徽章：运行中 / 已暂停**要一眼分出来**，所以两者都上色。
-   用户 2026-10-04 拍板。这破了本系统原来那条"状态一律中性、橙只留给动作"的规矩
-   （DESIGN.md 的 Don't 里已记为一次具名例外），但没破"只用一个色相"：
-   两个状态在同一个橙色上靠强度分——实心说"开着"，浅底说"要你处理"。
-   运行中用实心橙 + 近黑墨，与主按钮同一套（白字压不住品牌橙，见 --btn-ink）。 */
+/* 会话页的状态徽章两者都上色（用户 2026-10-04 拍板，DESIGN.md 里记为一次具名例外）：
+   实心说「开着」、浅底说「要你处理」，没破「只用一个色相」—— 靠强度分。 */
 #sp .sesshead .chip.on{background:var(--accent);color:var(--btn-ink);border:1px solid var(--accent)}
 #sp .sesshead .chip.off{background:var(--accent-weak);color:var(--accent);border:1px solid transparent}
 
@@ -585,12 +508,10 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .fact .k{min-width:76px}
 }
 
-/* 时间线：761 条事件是日志不是表格，行距收紧到能扫读的密度 */
+
 #sp .tlbar{padding:12px 20px 0}
 #sp .tlwrap{padding:12px 6px 6px}
-/* 时间线：761 条事件是日志，不是页面正文。给它自己的滚动区，表头才不会跟着滚没
-   （两个日期列一旦失去表头就分不清谁是开始谁是结束）；页面也从 5000px 落回 1800px，
-   底下的「可渲染项目」才够得着。tabindex 让键盘也能滚这段。 */
+/* 事件表给独立滚动区：表头 sticky 才不跟着滚没，页面高度从 5000px 落回 1800px。 */
 #sp .tablewrap.log{max-height:min(58vh,560px);overflow:auto}
 #sp .tablewrap.log th{position:sticky;top:0;z-index:1;background:var(--surface)}
 #sp .tablewrap.log:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
@@ -600,20 +521,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .tbl.dense .job{color:var(--text-2)}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
-/* 可渲染项目：与项目页同构的表（项目 / 发布者 / 状态）。
-   早先这里是按原因分组的 chip 墙（.wgroup/.wname）—— 站点把同一句原因重复 27 遍，
-   当时认为原因本身才是能读的那层信息。用户反馈那一坨不直观，改成表之后原因进了
-   「状态」列：同因的行按排序天然相邻，不必再印分组标题，那一列自己就是那层信息。 */
-/* 「正在渲染」标记：可渲染项目那张表里，这是唯一"此刻正在进行"的一行，
-   所以用 accent 的浅底 + 强调字色点出来 —— 与设置页按下分段、账户页在用的键
-   是同一套词汇（accent-weak 底 + accent 字），不是新色相。 */
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
 #sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
-/* 活动汇总：时间线的默认视图。一段一行、四个数、一条按渲染时长画的条。
-   761 条事件不该占满一屏，它只该回答"这台机器哪天在干活"。
-   用 flex 而不是 grid：末尾那列（发送失败）有没有是看数据决定的。 */
 #sp .acts{padding:2px 0 0}
 #sp .acthead,#sp .actrow{display:flex;align-items:center;gap:12px;padding:0 20px}
 #sp .acthead{font-size:11.5px;color:var(--text-3);padding-bottom:8px;border-bottom:1px solid var(--border)}
@@ -638,11 +549,9 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .actrow .an,#sp .actrow .aj,#sp .actrow .af,#sp .acthead .h.s{width:34px}
 }
 
-/* ---------------------------------------------------------------- 设置 */
+/* ==== 设置 ==== */
 #sp .settings{max-width:680px;padding:4px 20px}
-/* 注意：这些必须限定在 .settings 里。row 这个名字同时被全站实时那条带子
-   （.farm .row，数值 + 走势的一行）用着，不加限定的话设置页的 padding:16px 0
-   会套到那条带子上，把 24px 的一行撑成 56px。 */
+/* 必须限定在 .settings 里：.farm .row 也叫 row，不加限定设置页的 padding 会套过去、把一行撑成 56px。 */
 #sp .settings .row{display:flex;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--border);flex-wrap:wrap}
 #sp .settings .row:last-child{border-bottom:none}
 #sp .settings .row .lbl{font-size:13px;font-weight:550;color:var(--text);min-width:104px}
@@ -656,20 +565,10 @@ ${Theme.css('ul.sp-acmenu')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
-/* --------------------------------------------- 上传页 / 分析等待页（第三类页面）
-   前两类是"整页重建"和"只补翻译"。这两页是**局部换装**：
-     · /getstarted 同时是「下载客户端」指南页，所以只有「Add your project」那一段归我们，
-       页面的其余部分（介绍、四个下载入口、页脚）保持原站不动；
-     · /project/add/<token> 是上传后的纯等待页，整页归我们。
-   共同点：**能干活的东西原样搬过来，不重写**。上传表单、估算器、进度条都是站点自己
-   渲染的节点，站点挂的 addproject.js 认的是 id 而不是外观 —— 把节点搬进我们的卡片，
-   onsubmit/onclick 属性和已经绑定好的处理器都还在，所以我们不重实现上传逻辑。
-   下面先抹掉原站 Bootstrap 给这些节点的外观，再按我们的规矩重画。 */
+/* ==== 上传页 / 分析等待页（局部换装）====
+   站点渲染的表单 / 估算器 / 进度条原样搬过来：addproject.js 认 id 不认外观，不重实现上传逻辑。 */
 
-/* 版式：第一行两张卡（选文件 / 估算器），须知整行跨两列。
-   注意这里是 **align-items:start 而不是 stretch**：估算器下方会出现站点返回的估算结果，
-   一旦它把卡片撑高，stretch 会把左边那张"选择文件"一起拉长、下面留一大片空的
-   （用户实报"会把左侧的框拉长"）。每张卡按自己的内容定高，长短不齐就长短不齐。 */
+/* 必须 align-items:start 而不是 stretch：估算结果撑高右卡时，stretch 会把左卡一起拉长（用户实报）。 */
 #sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
 #sp .up-col{display:contents}
 #sp .up-grid .panel{min-width:0}
@@ -679,38 +578,25 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
-/* 实验性提示条：这是应用内的兼容界面顶上那句话。它要显眼到"读得到"，但**不能**用警示色 ——
-   这个产品没有红也没有黄，说明一件事不靠颜色靠措辞（见 DESIGN.md 的 One Voice Rule）。 */
 #sp .expnote{
   margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
 }
 
-/* 须知那一块是**从站点搬来的散文**：结构是站点的，观感必须是我们的。
-   实测它原来的样子：三个句子连成一大段、数字埋在句子里、CPU/GPU 在一个 <ul> 里而
-   「项目总数」是个裸文本节点、三个分组的小标题跟面板标题同级 —— 一坨，读不出层次。
-   这里按"分组的参考条目"重新立规矩：组标题降一级、组间发丝线、正文限宽、数据排成一行。
-   文字一个字都没改，数字仍旧是站点当场渲染的值。 */
 #sp .up-rules .up-body h4{
   font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.02em;
   margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--border);
 }
 #sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
 #sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
-/* 排队那一组：说明在上、数字紧跟其后一行。
-   这里试过两个错的做法，都留在注释里免得再犯：
-     · 把数字钉到卡片最右边 —— 中间空出 686px，比"全左对齐"更难看；
-     · 给说明分两栏填满整行 —— CSS 分栏会在任意位置断行，实测把「积分」劈成
-       上栏「积」+ 下栏「分的额外加成。」，用户的原话是"截断得好奇怪"。
-   正解是别跟宽度较劲：说明限宽到能读的程度（44em ≈ 44 个汉字），数字排成紧跟其后的一行。
-   这一组的宽度本就不该铺满 1400px —— 铺满整行的是下面那三栏清单。 */
+/* 试过把数字钉到卡片最右（空出 686px）、给说明分两栏（「积分」被劈开），都不行；
+   正解：说明限宽 44em、数字紧跟其后一行。 */
 #sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:6px}
 #sp .up-rules .qtext p{margin:0;max-width:44em}
 #sp .up-rules .qdata{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 30px;min-width:0;padding-top:1px}
 #sp .up-rules .qdata .qlead{margin:0;font-size:12px;color:var(--text-3);max-width:none}
 #sp .up-rules .qdata .qtotal{margin:0}
 
-/* 排队那一行：两个 <li> 本质是两个数，不该画成项目符号；数字排成一行 */
 #sp .up-rules .up-body .qpos{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px 26px;margin:0}
 #sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
 #sp .up-rules .up-body .qpos li::before{display:none}
@@ -719,10 +605,7 @@ ${Theme.css('ul.sp-acmenu')}
 }
 #sp .up-rules .up-body .qtotal{display:inline;margin:0;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
 
-/* 须知整行宽了，十几条横排会拉出很长的行 —— 分栏，读到哪儿跟到哪儿。列宽由视口决定：
-   窄了两栏、宽了三栏（一栏 400 多 px，中文一行三十来字，是能读的长度）。
-   注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block；
-   排队那一行（.qpos）是数据不是条目，排除在外。 */
+/* 多栏只对块级容器生效：ul 在别处是 flex 列，这里要还原成 block（.qpos 是数据，排除）。 */
 @media (min-width:820px){
   #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
   #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:9px}
@@ -731,17 +614,15 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .up-rules .up-body ul:not(.qpos){columns:3}
 }
 
-/* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
+/* ==== 抹掉原站外观 ==== */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
 #sp .up-body .sign-in-wr,#sp .up-body .blog-post{
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
 }
 #sp .up-body .row{margin:0}
-/* 站点那套栅格也要一起抹掉。搬过来的「须知」那一列是站点栅格的 col-md-6，Bootstrap 给它
-   float:left + width:50% —— 于是内容只占卡片左半边、右半边整片空着，看起来就是
-   "全是左对齐、右边一大块空的"（实测那一列 744px，而卡片正文 1488px）。
-   这一类"宿主页面的家具"已经踩过三次：翻译的整块替换、.input-group、现在是栅格。
-   （注意：本文件整段 CSS 是一个模板字符串，注释里**不能出现反引号**。） */
+/* 站点那套栅格也要一起抹掉：搬来的「须知」列是 col-md-6，Bootstrap 给它 float:left +
+   width:50%，内容只占卡片左半边（实测那列 744px，卡片正文 1488px）。.input-group 同类坑已
+   踩三次。（本文件整段 CSS 是一个模板字符串，注释里不能出现反引号。） */
 #sp .up-body [class*="col-md-"],#sp .up-body [class*="col-sm-"],
 #sp .up-body [class*="col-xs-"],#sp .up-body [class*="col-lg-"]{float:none;width:auto;max-width:none;padding:0;margin:0}
 #sp .up-body h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
@@ -753,8 +634,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body a{color:var(--accent)}
 #sp .up-body #addproject_warning_zero_frame{font-size:13px}
 
-/* 上传表单：原站是 <table> 三行（标签 / 文件框+进度 / 提交）。
-   表格在这里没有语义，摊平成一格一行。 */
 #sp .up-body form table,
 #sp .up-body form tbody,
 #sp .up-body form tr,
@@ -765,7 +644,7 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body form td:last-child{margin-bottom:0}
 #sp .up-body form br + strong{color:var(--text-2)}
 
-/* 文件框：原生 file input 只有 ::file-selector-button 是可塑的 */
+
 #sp .up-body input[type=file]{
   display:block;width:100%;padding:11px 12px;margin:0 0 10px;
   background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--r-sm);
@@ -786,8 +665,7 @@ ${Theme.css('ul.sp-acmenu')}
 }
 #sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
 
-/* 上传进度：站点用 jQuery UI progressbar，并且**内联**写死了 #EEB0A0 的底色 ——
-   内联样式只能在样式表里用 !important 压过去，这是必要的例外。 */
+/* 站点内联写死了 #EEB0A0 的底色，只能用 !important 压过去 —— 必要的例外。 */
 #sp .up-body #upload_progress_bar{
   height:7px !important;margin:2px 0 8px !important;border-radius:4px;
   background:var(--surface-2) !important;border:1px solid var(--border) !important;
@@ -800,21 +678,16 @@ ${Theme.css('ul.sp-acmenu')}
   display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
 }
 
-/* 估算器：两个数字输入 + 一个设备名搜索框。
-   设备名是"找一个名字"，不该占满整行 —— 而且站点这一行用的是 2013 版 Bootstrap 的
-   .input-group（table-cell + float），我们没管住它，实测等效宽度 949px 时 OK 的右缘
-   超出视口 5px、整页横向溢出。所以这一行**整行重新声明**成普通 flex，并给输入封顶：
-   OK 永远跟在框后面，再窄也挤不出去。 */
+/* 这一行用的是 2013 版 Bootstrap 的 .input-group（table-cell + float），没管住时等效宽度
+   949px、OK 的右缘超出视口 5px；整行重声明成普通 flex 并给输入封顶。 */
 #sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
 #sp .up-body table input[type=text]{width:92px}
-/* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
-   一大截。这里把 tbody/tr 摊平（display:contents）变成规整的两列网格。
-   标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
-   只认 .numband（wireUploadDoc 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
-   个形状，被这条规则误伤过一次：它的单元格被摊成网格项，分块数和耗时对调了。 */
+/* 估算器那两个数字是「标签 + 值」两列，站点用的是内容自适应 <table>，这里摊平成两列网格
+   （标签列必须 max-content）。只认 .numband：站点稍后返回的结果表格是另一个形状，被误伤过
+   一次 —— 单元格被摊成网格项，分块数和耗时对调了。 */
 #sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
 #sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
 #sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
@@ -829,12 +702,10 @@ ${Theme.css('ul.sp-acmenu')}
   padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
 }
 #sp .up-body #addproject_estimator_result:empty{display:none}
-/* 站点返回的那段估算结果是它自己渲染的 HTML —— 里面带着 Bootstrap 的 .table 类，
-   在我们这张深色卡片里就是白底白字（用户实报"白色背景、白色文字，看不清楚"）。
-   这里把它整段按我们的表格重画：底色、表头、单元格全部接管。 */
+/* 站点返回的结果表带 Bootstrap 的 .table，在深色卡片里白底白字（用户实报），整段按我们的表格重画。 */
 #sp .up-body #addproject_estimator_result table{
   width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
-  border:none !important;   /* Bootstrap 的 .table-bordered 给表格本身也画了一圈边框 */
+  border:none !important;   /* .table-bordered 表格本身也画了一圈边框 */
 }
 #sp .up-body #addproject_estimator_result thead th,
 #sp .up-body #addproject_estimator_result th{
@@ -855,31 +726,27 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
 #sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
 #sp .up-body #addproject_estimator_result > br:first-child{display:none}
-/* 站点给耗时套了 Bootstrap 的绿色小标签。这个调色板里没有绿色，而且"能不能接受"
-   不该靠颜色说 —— 把标签拆掉，只留数字本身。
-   （2026-10-04 用户确认：保持中性，不恢复红/绿语义。这条已经拍过板，别再翻回去。） */
+/* 站点给耗时套了 Bootstrap 绿色小标签。调色板里没有绿色，2026-10-04 用户确认保持中性、
+   不恢复红 / 绿语义，别再翻回去。 */
 #sp .up-body #addproject_estimator_result .label{
   background:none !important;border:none !important;color:var(--text) !important;
   font-size:12.5px !important;font-weight:600;padding:0 !important;
   text-shadow:none;border-radius:0;
 }
-/* 单元格只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
+/* 只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
 #sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
 #sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
   border:none;border-bottom:1px solid var(--border);
 }
-/* Bootstrap 的斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
+/* 斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
 #sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
-/* 站点给这些单元格写了内联的 text-align:center —— 内联样式只能用 !important 压过去，
-   和上传进度条那里是同一类例外。 */
+/* 站点给这些单元格写了内联的 text-align:center，只能用 !important 压过去（同类例外） */
 #sp .up-body #addproject_estimator_result th,
 #sp .up-body #addproject_estimator_result td{text-align:left !important}
 
-/* 设备名自动补全的下拉菜单。它是 jQuery UI 的 widget，被挂在 <body> 上 —— 也就是**唯一一件
-   长在 #sp 外面的家具**（原因见 injectGuard 的注释：挂进 #sp 会因为 CSS zoom 把定位算成 0）。
-   所以这里的选择器不带 #sp，改用我们自己的类名 .sp-acmenu 划边界：只认我们自己贴的类，
-   不碰站点可能有的其他 .ui-autocomplete。站点那套 jQuery UI 主题是浅灰底 + 15.4px，
-   落在深色卡片上就是一块外来物 —— 按我们的规矩重画：一条发丝边、圆角、悬停走 surface-2。 */
+/* 设备名补全菜单是 jQuery UI 的 widget，挂在 <body> 上 —— 唯一一件长在 #sp 外面的家具
+   （见 injectGuard：挂进 #sp 会被 CSS zoom 把定位算成 0）。选择器因此不带 #sp，用我们
+   自己的类名 .sp-acmenu 划边界，不碰站点可能有的其他 .ui-autocomplete。 */
 body > ul.sp-acmenu{
   position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
   max-height:280px;overflow:auto;
@@ -891,7 +758,7 @@ body > ul.sp-acmenu{
 body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
 body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
 
-/* ---- 分析等待页 ---- */
+/* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
 #sp .an-head .spin{flex:none;margin-top:2px}
@@ -905,9 +772,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-done .an-sub{margin-bottom:14px}
 #sp .an-foot{padding:0 20px 20px}
 
-/* 分析完成后，站点把它自己那套「新增项目」表单塞进 #sp-an-result。
-   这一步本版没有重制（卡片里已经写明），所以这里只做**可读性兜底**：
-   不让 2013 版 Bootstrap 的栅格和表单控件在我们的卡片里散架。不求好看，求能用。 */
+/* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
 #sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
 #sp .sp-siteform section,#sp .sp-siteform .slice,
 #sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
@@ -933,11 +798,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
 #sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
 
-/* ---------------------------------------------------------------- 一次编排的动效
-   曲线的绘制由 JS 用 getTotalLength() 精确驱动，这里只管其余块的一次性入场。
-   "一次性"是字面意思：只有换视图（或刷新）才播。筛选项、排序、显示更多这些只改列表的
-   render() 不再重放 —— 加一个筛选条件却让上面那条实时状态带重新淡入一次，
-   看起来就像整页在重载（用户报的就是这个）。开关是 #sp 上的 .sp-anim，由 render() 决定。 */
+/* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
+   重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
 @keyframes sp-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:no-preference){
   #sp .chart .area{animation:sp-rise .7s cubic-bezier(.16,1,.3,1) .15s both}
@@ -947,18 +809,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 }
 `;
 
-  /**
-   * 原版界面模式下的"切回现代化"小开关的样式。
-   * 单独注入，因为那种模式下整套 SP.CSS 是故意不加载的 —— 它是给 #sp 用的，
-   * 而 #sp 在原版模式下根本不存在。这条只有 30 行，也只作用于自己的 id。
-   */
-  /**
-   * 左下角那两个开关（「进入新界面 / 切回新界面」与「译 ZH」）共用一个竖排容器。
-   *
-   * 从前一个钉在左下、一个钉在右下，用户的原话是"按钮分散得到处都是"。现在都收在左下角：
-   * 翻译在上、进出新界面在下。上下用 CSS 的 order 决定，**谁先挂载都不影响顺序** ——
-   * 两个开关由两条不同的代码路径挂载（一个在应用层、一个在翻译层），靠插入顺序排是赌运气。
-   */
+  /* 原版界面模式下「切回现代化」小开关的样式：那种模式下整套 SP.CSS 故意不加载（它给 #sp 用）。 */
+  /* 左下角两个开关（「进入 / 切回新界面」与「译 ZH」）共用一个竖排容器，上下顺序由 CSS 的 order 决定 —— 两者由不同代码路径挂载，靠插入顺序排是赌运气。 */
   SP.cornerHost = function cornerHost() {
     const host = document.getElementById('sp-corner');
     if (host) return host;
@@ -989,9 +841,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         box-shadow:0 2px 6px rgba(0,0,0,.35), 0 8px 24px rgba(0,0,0,.3);
         transition:transform .12s, box-shadow .12s;
       }
-      /* 原版模式下整页都是站点自己的样式，这个按钮是唯一属于我们的东西 ——
-         它必须一眼看得见：之前是 opacity:.62 的深色小条，实测等于隐形。
-         品牌橙在这里用得正当：它是可操作元素。 */
+      /* 原版模式下这个按钮是唯一属于我们的东西，必须一眼看得见：之前 opacity:.62 的深色小条实测等于隐形。 */
       #sp-mode-pill:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.34)}
       #sp-mode-pill:focus-visible{outline:2px solid #fff;outline-offset:2px}
       #sp-mode-pill svg{width:15px;height:15px;flex:none;fill:#fff}
@@ -999,7 +849,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     (document.head || document.documentElement).appendChild(s);
   };
 
-  /** 注入样式（幂等） */
   SP.injectStyle = function injectStyle() {
     if (document.getElementById('sp-style')) return;
     const s = document.createElement('style');
@@ -1008,20 +857,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     (document.head || document.documentElement).appendChild(s);
   };
 
-  /**
-   * 页面一开始就压住原站 UI，避免闪烁。
-   * 用 display:none 而不是 visibility —— 原站的 2013 版 Bootstrap 表头是 fixed 的，
-   * 只藏可见性仍会挡住我们。背景色与 token 里的 --bg 一致，避免接管瞬间闪白。
-   */
+  /* 一开始压住原站 UI 防闪烁：用 display:none 而非 visibility —— 原站 2013 版 Bootstrap 表头是 fixed 的，只藏可见性仍会挡住我们。 */
   SP.injectGuard = function injectGuard() {
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
-    /* `.sp-acmenu` 是唯一的例外：那是 jQuery UI 的自动补全菜单，它由**我们的**控件创建、
-       却被 jQuery UI 挂在 <body> 上（设备名搜索那个）。不放开的话表现是"输入了没反应" ——
-       实测菜单已经生成好、里面就是 GeForce RTX 2060，只是被这条规则 display:none 掉了。
-       为什么不把它 appendTo 到 #sp 里：实测在 #sp 的 CSS zoom 下 jQuery 的 offset() 会把
-       差值算成 0，菜单落到左上角。所以留它在 body，用我们自己的类名和 token 打扮。 */
+    /* 唯一的例外 .sp-acmenu：jQuery UI 的补全菜单由我们的控件创建，却被它挂在 <body> 上，
+       不放开的表现是「输入了没反应」。不 appendTo 进 #sp 的原因：实测在 #sp 的 CSS zoom 下
+       jQuery 的 offset() 会把差值算成 0，菜单落到左上角。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}

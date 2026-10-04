@@ -1,9 +1,4 @@
-/* ==========================================================================
- * 50-views.js — 视图层：总览 / 项目 / 排行榜 / 设置
- *
- * 视觉与 DOM 结构照 docs/DESIGN.md 落地；数据全部来自解析器
- * 已经给出的真实字段，没有任何占位符。
- * ========================================================================== */
+/* ==== 50-views.js：视图层（六个视图 + 上传卡片 + 分析等待页） ==== */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -11,14 +6,10 @@
   const esc = Util.esc;
   const fmt = (n) => Number(n).toLocaleString('en-US');
 
-  /** 页脚：数据来源声明。每一屏都要有 —— 这是本产品对用户的承诺。 */
   const foot = () => `<div class="foot">${esc(t('footer.source'))}</div>`;
 
-  /* ======================================================== 逐日真实产出
-     站点内联的 line_frames_timeline 是**累积**帧数曲线。把它当阶梯函数做逐日差分，
-     得到"每天到底渲染了多少帧"——原站那张热力图只记"当天有没有渲染"（count 恒为 1），
-     对全勤用户是整块纯色、零信息量。
-     保守起见先判单调：万一站点哪天改成逐日值，就直接用它，绝不硬差分出负数。 */
+  /* line_frames_timeline 是站点内联的**累积**帧数曲线，按阶梯函数差分才是逐日帧数（原站热力图只记
+     "当天有没有渲染"，count 恒为 1）；先判单调，站点改成逐日值就直接用，绝不硬差出负数。 */
   function dailySeries(cum) {
     const rows = (cum || []).filter((p) => p && p.d && Number.isFinite(p.v)).slice()
       .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
@@ -31,7 +22,7 @@
     const out = [];
     let prev = null;
     for (let d = rows[0].d, guard = 0; d <= rows[rows.length - 1].d && guard < 20000; d = Util.dshift(d, 1), guard++) {
-      const v = at.has(d) ? at.get(d) : prev;   // 阶梯函数：没有采样点的日子沿用上一次的值
+      const v = at.has(d) ? at.get(d) : prev;   // 阶梯函数：没采样点的日子沿用上一次的值
       if (prev !== null) out.push({ d, v: Math.max(0, v - prev) });
       prev = v;
     }
@@ -51,8 +42,6 @@
 
   const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
 
-  /** 站点把注册日期写成 "January 31st, 2024"。中文界面里要的是 2024-01-31。
-   *  认不出来的形状原样返回 —— 宁可显示站点原文，也不要猜错日期。 */
   function isoDate(raw) {
     const s = String(raw || '').trim();
     if (!s) return '';
@@ -67,7 +56,6 @@
     return s;
   }
 
-  /** 站点原文 → 当前语言。词表里没有的一律回落站点原文，绝不显示半个键名。 */
   function packLabel(prefix, raw, upper) {
     const s = String(raw || '').trim();
     if (!s) return '';
@@ -77,13 +65,10 @@
     return upper ? s.toUpperCase() : s;
   }
 
-  /** 客户端状态是站点给的英文句子。能对上模式的翻成中文，对不上的原样保留。 */
   const STATUS_RULES = [
     [/^waiting to render/i, () => t('status.idle')],
     [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
     [/^rendering\b/i, () => t('status.rendering')],
-    // 站点在这行还会说 "Disconnected"（客户端离线）。不认识的原样显示等于在中文界面里
-    // 露一句英文，所以补上；以后站点再添新词也仍然只回落原文，不会瞎猜。
     [/^(disconnected|not connected|offline)/i, () => t('status.disconnected')],
   ];
   function statusText(raw) {
@@ -96,7 +81,7 @@
     return s;
   }
 
-  /* ============================================================== 总览 */
+  /* ==== 总览 ==== */
 
   function identity(p, st) {
     const rank = rankOf(st);
@@ -109,8 +94,6 @@
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (team) bits.push(`<span><b>${esc(team)}</b> ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
-    // 站点原文挂 title：这句说的是"你自己客户端"的状态，不是全站队列，
-    // 想查证的人一眼能看到站点的原话。
     if (status) bits.push(`<span title="${esc(t('hero.statusRaw', { raw: p.status }))}">${esc(status)}</span>`);
 
     return `<div class="identity">
@@ -131,14 +114,12 @@
     const hasData = (p.points && p.points.length > 1) || daily.length > 0 || (p.activity && p.activity.length > 0);
 
     if (!hasData) {
-      // 页面确实读到了（dl 里的统计在），只是还没有任何渲染记录 → 上新用户空状态：
-      // 不摆一排 0，直接告诉他这里会发生什么、怎么开始。
-      // 连统计都读不到，说明是解析失败，不能拿"你还没开始"糊弄人，如实说无数据。
+      // 统计读到了但没有任何渲染记录 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
       return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
     }
 
-    /* ---- 指标带：一个整面 + 内部 1px 分隔 ---- */
+    /* ---- 指标带 ---- */
     const total = daily.reduce((a, b) => a + b.v, 0);
     const avg = daily.length ? Math.round(total / daily.length) : null;
     const peak = daily.length ? daily.reduce((a, b) => Math.max(a, b.v), 0) : null;
@@ -147,7 +128,6 @@
     const days = Util.durDays(rawTime);
     const frames = statOf(st, ['Frames rendered']);
     const points = statOf(st, ['Points']);
-    // 发布者身份的两项：站点统计里本来就有，只是没建过项目的人一直是 0
     const created = statOf(st, ['Projects created']);
     const ordered = statOf(st, ['Frames ordered']);
     const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, ''));
@@ -169,12 +149,10 @@
       {
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
-        // 近 30 天满勤时直说"全勤"——"近 30 天活跃 30 天"是把同一个数字念了两遍
         d: d.best !== undefined
           ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
           : '',
       },
-      // 发布者身份的两格，只在非零时出现：没建过项目的人看到的仍是原来那四格。
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
       ...(asCount(ordered) > 0
@@ -184,8 +162,7 @@
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
-       站点只在**自己的主页**内联积分曲线与逐日帧数；别人的主页上这两块根本没有数据源。
-       那就不画（用户拍板：宁可少两块面板，也不摆两个"暂无数据"）。只剩一块时铺满整行。 */
+       只有**自己的主页**内联这两块；没有数据源就整块不画（不摆"暂无数据"），只剩一块时铺满整行。 */
     const hasPoints = !!(p.points && p.points.length > 1);
     const first = p.points[0], last = p.points[p.points.length - 1];
     const chartSub = t('chart.pointsSub', {
@@ -205,9 +182,6 @@
       ? `<div class="grid">${pointsPanel}${monthsPanel}</div>`
       : pointsPanel + monthsPanel;
 
-    /* ---- 通栏：渲染产出 ----
-       逐日帧数只有自己的主页有；别人的主页站点给的是"这天有没有渲染"的日历，
-       而原站也正是拿那份数据画这张图的 —— 所以照样画，但口径与计数文案全部换成天。 */
     const actDaily = (p.activity || []).map((x) => ({ d: x.d, v: Number(x.c) || 1 }));
     const byFrames = daily.length > 0;
     const heatDaily = byFrames ? daily : actDaily;
@@ -224,11 +198,7 @@
         : `<div class="produce" style="padding-top:0">${UI.state.empty(t('heat.none'))}</div>`}
     </div>`;
 
-    /* ---- 已连接的机器 ----
-       这里放自己的机器，不放"进行中的项目"：项目有它自己的视图，
-       在总览再铺一遍只是把同一个列表说了两遍。
-       全站实时（别人的机器、全站队列）也不在这里 —— 那是农场的事不是我的事，
-       在项目页顶部更合身。 */
+    /* ---- 已连接的机器（只放自己的机器；全站实时在项目页顶部） ---- */
     const mc = p.machines || { count: 0, list: [] };
     const machinesPanel = `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
@@ -246,15 +216,12 @@
       + foot();
   }
 
-  /* ============================================================== 项目 */
+  /* ==== 项目 ==== */
 
   const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null };
   const rankState = { limit: 100 };
-  // 账户页选项卡。不写进地址 —— 与项目页的筛选、排行榜的分页一致，刷新回到第一档。
   const acctState = { tab: 'sched' };
 
-  /** 「显示更多」：500 行排行榜如果一次性铺进 DOM，滚动会卡。分次渲染，
-   *  并且如实写出"已显示 n / 总数"，不做静默截断。 */
   function moreRow(shown, total, step) {
     if (shown >= total) return '';
     return `<div class="more">
@@ -263,7 +230,6 @@
     </div>`;
   }
 
-  /** 站点状态文案 → 本地化文案 */
   function statusLabel(p) {
     if (p.statusKind === 'rendering') {
       return p.statusCount != null ? t('proj.status.renderingN', { n: p.statusCount }) : t('proj.status.rendering');
@@ -273,9 +239,6 @@
     return p.status || '—';
   }
 
-  /** 三项名单动作各自要打的地址。加进去用站点的 add 前缀；已经在名单里就用名单行 onclick
-   *  里的撤回地址。优先级那条读不到时按形状兜底（历史行为，实测可用），
-   *  捐赠与黑名单没有样本就不猜 —— 读不到那一项直接不给。 */
   function ownerActions(p, maps) {
     const id = p.ownerId || p.owner;
     if (!maps || !id) return null;
@@ -285,7 +248,6 @@
     return {
       prio: {
         on: !!prio,
-        // 注意：maps.add.* 是**前缀**（站点 onclick 里读到的那一段），后面还要接用户名
         url: prio ? (prio.action || `/user/priority/remove/${encodeURIComponent(id)}`)
           : (maps.add.priority ? maps.add.priority + encodeURIComponent(id) : `/user/priority/add/${encodeURIComponent(id)}`),
       },
@@ -294,9 +256,6 @@
     };
   }
 
-  /** 发布者那一格：头像 + 名字（可点进主页）+ 常驻的状态标记 + 一个 3 点菜单。
-   *  标记说的是"你把他放进了哪份名单"—— 这件事不该等鼠标移上来才知道，所以它常驻；
-   *  三个动作（优先 / 捐赠 / 黑名单）全收进菜单，格子本身只有一个按钮。 */
   function ownerCell(p, me, maps) {
     const isMe = me && p.owner === me;
     const id = p.ownerId || p.owner;
@@ -306,10 +265,8 @@
     const marks = !act ? '' : (act.prio.on ? mark('prio', 'star', t('proj.prio.inList')) : '')
       + (act.gift.on ? mark('gift', 'heart', t('proj.menu.gifted')) : '')
       + (act.block.on ? mark('block', 'ban', t('proj.menu.blocked')) : '');
-    // 名字进主页。地址里的用户名优先（parseProjects 从站点 <a> 的 href 里读出来的），
-    // 读不到才回落显示名 —— 两者不一致时，只有 URL 里那个能打开对的人。
+    // 主页地址优先用 URL 里的用户名（parseProjects 从 <a> href 读的），读不到才回落显示名。
     const href = id ? `/user/${encodeURIComponent(id)}/profile` : '';
-    // 菜单至少要有一项能打才出现（与别处同一条规矩：状态不明的地方不给动作）
     const canMenu = !!(act && (act.prio.url || act.gift.url || act.block.url));
     const open = canMenu && projState.menu === p.id;
     return `<div class="ow">${UI.avatar(p.ownerAvatar, p.owner, 'ini')}
@@ -322,9 +279,6 @@
       : ''}</div>`;
   }
 
-  /** 3 点菜单的内容（浮层，挂在 #sp 里由 mount() 定位，不能放进表格 —— 会被 .tablewrap 裁掉）。
-   *  三项都是"把这个人放进某份名单"：前面一个图标说明这是什么动作，右边的勾说明你现在的状态，
-   *  已在名单里时文案翻成撤回。地址一律来自解析结果，读不到就不给那一项。 */
   function ownerMenu(p, me, maps) {
     const act = me && p.owner === me ? null : ownerActions(p, maps);
     if (!act) return '';
@@ -344,9 +298,6 @@
     </div>`;
   }
 
-  /** 三份名单（都是我自己的那份，来自账户设置页）：优先级决定「优先 / 移出」，
-   *  赞助名单与黑名单喂给发布者那格的 3 点菜单。任何一份读不到就整格不给按钮 ——
-   *  不猜状态，也不摆一个按下去必然出错的按钮。项目页与会话页共用同一份构造。 */
   function listsOf(state) {
     return state.account
       ? {
@@ -359,7 +310,6 @@
   }
 
   function projectRow(p, me, maps) {
-    // 分数单占一列：跟在条子后面会让每条轨道的长度随数字宽度变来变去（见 40-ui.js 的 progress）。
     const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
@@ -398,9 +348,6 @@
       return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
     };
 
-    // 三份名单（都是我自己那份，来自账户设置页）：优先级决定「优先 / 移出」，
-    // 赞助名单与黑名单喂给发布者那格的 3 点菜单。任何一份读不到就整格不给按钮 ——
-    // 不猜状态，也不摆一个按下去必然出错的按钮。
     const maps = listsOf(state);
     const prio = maps ? maps.prio : null;
 
@@ -412,13 +359,8 @@
       ['cpu', t('proj.cpu')],
     ];
 
-    // 全站实时放在这一页的顶上：它是"农场现在在干什么"，不是"我在干什么"。
-    // 总览是个人仪表盘，把这四个数字塞进去会喧宾夺主。
     const farmRow = state.home && state.home.stats && state.home.stats.length ? UI.farm(state.home.stats, { flush: true }) : '';
 
-    // 打开的 3 点菜单：浮层是 #sp 的直接定位子元素，**不能**放进表格里 ——
-    // .tablewrap 是 overflow:auto，绝对定位的浮层会被它裁掉（最后几行尤其明显）。
-    // 坐标由 Views.mount() 量一次触发按钮的位置再写进去。
     const openP = projState.menu ? all.find((p) => p.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
@@ -451,7 +393,7 @@
       ${menuHtml}`;
   }
 
-  /* ============================================================== 排行榜 */
+  /* ==== 排行榜 ==== */
 
   function ranking(state) {
     const rows = state.ranking || [];
@@ -487,13 +429,12 @@
       </div>`;
   }
 
-  /* ============================================================== 设置 */
+  /* ==== 设置 ==== */
 
   function settings(state) {
     const seg = (id, cur, opts) => `<div class="seg" id="${id}">${opts.map(([v, label]) =>
       `<button data-v="${v}" aria-pressed="${String(cur) === v}">${esc(label)}</button>`).join('')}</div>`;
 
-    // 语言列表由注册表动态生成 —— 新增一门语言不需要改这里
     const langOpts = [['auto', t('set.lang.auto')]]
       .concat(I18n.available().map((l) => [l.code, l.label]));
     const cov = I18n.coverage();
@@ -537,12 +478,9 @@
       </div>`;
   }
 
-  /* ============================================================== 账户设置 */
+  /* ==== 账户设置 ==== */
 
-  /** 用户列表：头像 + 用户名 + 移除。动作地址是解析器从站点 onclick 里读出来的，不自己拼。
-   *  移除是维护动作，用次级按钮 —— 实心主按钮留给每个面板里那个真正的"提交"。
-   *  opts.requiresAction：动作读不到时**不画按钮**。赞助名单就是这样 —— 我们自己的名单是空的、
-   *  站点不渲染这些行，没有样本可抄；宁可不给动作，也不猜一个 URL。 */
+  /** 动作地址一律从站点 onclick 读出、不自己拼；requiresAction 时读不到就**不画按钮**（不猜 URL）。 */
   function userList(items, emptyText, opts) {
     if (!items || !items.length) return `<div class="ulist"><div class="none">${esc(emptyText)}</div></div>`;
     const needAction = !!(opts && opts.requiresAction);
@@ -563,8 +501,6 @@
       <span class="txt"><b>${esc(title)}</b>${hint ? `<small>${esc(hint)}</small>` : ''}</span>
     </label>`;
 
-    /* 赞助开关：状态与动作都来自站点（checked + onclick 里的 URL）。点了就 POST 到那个地址、
-       成功后整页重取 —— 与账户页别的开关走同一条收口，动作地址不自己拼。 */
     const swAction = (o, title, hint) => (!o ? '' : `<label class="sw">
       <input type="checkbox" data-act="sponsor-set" data-url="${esc(o.action)}" ${o.on ? 'checked' : ''}>
       <span class="track"><span class="knob"></span></span>
@@ -592,9 +528,7 @@
         <button class="btn primary" data-act="prio-add" data-input="sp-prio">${esc(t('account.add'))}</button>
       </div>`);
 
-    /* 捐赠积分（站点叫 Sponsorship）：你渲染挣到的积分会给名单里的随机一位。
-       两个开关的地址、名单的增删地址全部来自解析结果；拿不到就不画那一块 ——
-       状态不明的地方不给动作，这条规矩和项目页的优先级开关是同一条。 */
+    /* 捐赠积分（站点叫 Sponsorship）：积分会给名单里的随机一位；地址全来自解析结果，拿不到就不画。 */
     const spon = a.sponsor || { give: null, receive: null, addUrl: '', list: [] };
     const sponsor = panel(t('account.sponsor'), t('account.sponsorSub'), `
       <p class="hint">${esc(t('account.sponsorHint'))}</p>
@@ -656,9 +590,6 @@
         <button class="btn primary" data-act="block-add" data-kind="owner" data-input="sp-block-owner">${esc(t('account.add'))}</button>
       </div>`);
 
-    // 七块面板堆成一列太长，按"一次只想看一件事"分三档。复用设置页那套分段控件（.seg）——
-    // 它本来就是"同一件事的不同视图"的控件，不必再造一个 tab 组件。调度与名单合并成一档：
-    // 用户反馈"调度那块太空"，而"谁的项目我渲染 / 谁的项目我不渲染"本来就是一件事。
     const acctTabs = [['sched', t('account.tab.sched')],
       ['sponsor', t('account.tab.sponsor')], ['account', t('account.tab.account')]];
     const acctPanels = {
@@ -676,16 +607,12 @@
       ${foot()}`;
   }
 
-  /* ====================================================== 会话页（一台机器）
-     入口：总览「已连接的机器」→「查看会话」。
-     三块数据各自独立：机器信息与可渲染项目在同一份 HTML 里，时间线是站点自己的
-     AJAX JSON。任何一块拿不到，只让那一块说"没有数据"，其余照常显示。 */
+  /* ==== 会话页（一台机器）：机器信息 + 可渲染项目在同一份 HTML 里，时间线是站点自己的 AJAX JSON；
+     任何一块拿不到，只让那一块说"没有数据"，其余照常显示。 */
   const sessState = { type: 'all', limit: 100 };
 
-  // 已经在身份条/指标带里说过的项，不再进事实清单 —— 同一件事在一屏里说两遍就是噪音
   const sessElsewhere = new Set(['hostname', 'os', 'owner', 'version', 'frames', 'points', 'power', 'powerGpu', 'maxTime', 'status', 'action', 'currentFrames']);
 
-  /** 事实清单的标签：站点原文 → 当前语言；站点新加的行不认识也照样显示，不吞数据 */
   function sessLabel(f) {
     if (!f.key) return f.label;
     const k = `sess.f.${f.key}`;
@@ -693,7 +620,6 @@
     return hit === k ? f.label : hit;
   }
 
-  /** 站点的事件类型词 → 本地化文案；认不出来的原样显示，绝不露出半个键名 */
   function typeLabel(raw) {
     const s = String(raw || '').trim();
     if (!s) return '—';
@@ -704,9 +630,7 @@
 
   const pad2 = (n) => String(n).padStart(2, '0');
 
-  /** 毫秒时间戳 → 本地 MM-DD HH:mm。不走 toLocaleString：时间线是一列要对齐的
-   *  数字，形状必须可预期（中文环境下 "10月3日 21:32" 会让整列参差不齐）。
-   *  withYear：区间跨年时才带上年份 —— 不跨年时年份是噪音。 */
+  /** 毫秒 → 本地 MM-DD HH:mm。不走 toLocaleString：整列要对齐，中文环境会把它撑得参差不齐。 */
   function stamp(ms, withYear) {
     const d = new Date(Number(ms));
     if (!Number.isFinite(d.getTime())) return '—';
@@ -714,7 +638,7 @@
     return `${y}${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
 
-  /** 事件时长。Util.duration 是给"机时"设计的，几秒的事件会被它读成 0m，这里单独写。 */
+  /** 事件时长单独写：Util.duration 是给"机时"设计的，几秒的事件会被它读成 0m。 */
   function spanText(ms) {
     const s = Math.max(0, Math.round(Number(ms) / 1000));
     if (s < 60) return `${s}s`;
@@ -725,8 +649,7 @@
     return `${Math.floor(h / 24)}d${pad2(h % 24)}h`;
   }
 
-  /** 站点数字文案 → 数值（"21,544" / "271" / "22 %"）。没有数字返回 null。
-   *  真实的 0 要如实返回 0 —— 新机器就是 0 帧，那和"读不到"是两回事。 */
+  /** 站点数字文案 → 数值，没有数字返回 null；真实的 0 要如实返回 0（与"读不到"是两回事）。 */
   const numOf = (s) => {
     const raw = String(s === undefined || s === null ? '' : s);
     if (!/\d/.test(raw)) return null;
@@ -734,23 +657,16 @@
     return Number.isFinite(n) ? n : null;
   };
 
-  /** 毫秒 → 本地日期键。汇总按"这台机器本地的天"分桶，和行里的时间戳用同一套时区。 */
   function lkey(ms) {
     const d = new Date(Number(ms));
     return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
   }
 
-  /**
-   * 事件流 → 活动汇总：跨度超过 31 天按月，否则按天，最近的在前。
-   * 每条只留能回答"这台机器在不在干活"的四个数：真正用于渲染的时长、事件数、
-   * 涉及作业数、发送失败数。原始的 761 条事件不是不要，是不默认铺出来（见下面的完整日志）。
-   */
+  /** 事件流 → 活动汇总：跨度 >31 天按月、否则按天，最近的在前。 */
   function activity(list) {
-    // 自己先排一遍倒序：这个方法只该依赖"事件数组"，不该依赖调用方已经排好
     const ev = (list || []).filter((e) => Number.isFinite(e.start)).slice().sort((a, b) => b.start - a.start);
     if (!ev.length) return { rows: [], byMonth: false, anyRender: false, anyFail: false, crossYear: false };
     const byMonth = Util.ddiff(lkey(ev[ev.length - 1].start), lkey(ev[0].start)) + 1 > 31;
-    // 跨年时日期键要带年份：一屏 "12-28 → 02-10" 谁也说不清是哪一年
     const crossYear = new Date(ev[0].start).getFullYear() !== new Date(ev[ev.length - 1].start).getFullYear();
     const map = new Map();
     for (const e of ev) {
@@ -764,8 +680,6 @@
       if (/error/.test(e.type)) b.failed++;
     }
     const rows = [...map.values()].sort((a, b) => (a.key < b.key ? 1 : -1));
-    // 条的分子只有一个：渲染时长。一条渲染事件都没有时**不换口径**（不拿事件数冒充），
-    // 只把填充留空 —— 一排空轨道读出来就是"这台机器没在渲染"。见视图里的 showBar。
     const anyRender = rows.some((b) => b.render > 0);
     const scale = Math.max(...rows.map((b) => b.render)) || 1;
     return {
@@ -780,12 +694,8 @@
     const val = (k) => (s.info[k] ? s.info[k].value : '');
     const owner = s.info.owner || null;
 
-    /* ---- 身份条：状态徽章 + 主机名 + OS / 属主 / 客户端版本 ----
-       状态徽章先说站点那行没有标签的状态行：**两种暂停是不同的两件事**。
-       服务器端点暂停 → "Paused server side"；客户端自己暂停 → "Paused client side"。
-       它才是权威说法 —— Action 那格只说明"服务器认不认它在跑"，而客户端本地暂停时
-       服务器仍然认为它在跑（Status 也照样写着 Enable），只看 Action 会把本地暂停
-       报成「运行中」。认得出的译成中文，认不出的原样显示，站点原文一律挂 title 备查。 */
+    /* **两种暂停是两件事**："Paused server side" 与客户端自己的 "Paused client side" 以站点那行为准；
+       Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），只看 Action 会报成「运行中」。 */
     const status = val('status');
     const note = s.info.note ? s.info.note.value : '';
     const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
@@ -798,17 +708,11 @@
           : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
-    /* 这台机器此刻在跑什么。站点写在 "Current frames"，形如
-       "project: 1002.blend frame: 194 Request time: 1m"（空闲时它不印这一行）。
-       它是**活的** —— 几分钟就变 —— 所以放在身份条上，不留在「机器信息」那张表里：
-       那张表的副标题正是"站点报告的原值，未做换算"，把一个马上过期的数字混进静态
-       原值里，读者会拿它当档案看。暂停时说"当前作业"而不是"正在渲染"，
-       否则会和旁边那枚「已暂停」徽章自相矛盾。 */
+    /* "Current frames"：这台机器此刻在跑什么（空闲不印）。它是**活的**，留身份条、不进「机器信息」表；
+       暂停时文案说"当前作业"，免得和「已暂停」徽章自相矛盾。 */
     const cur = val('currentFrames');
     const cm = cur.match(/^project:\s*(.+?)\s+frame:\s*(\S+)\s+Request time:/i);
-    // 正在跑哪个项目的哪一帧。项目名后面还要用一次 —— 可渲染项目表里给那一行挂「正在渲染」。
-    // 站点在「Current frames」里写的是**文件名**（1002.blend），可渲染项目表里写的是
-    // **项目名**（1002），所以比对时把 .blend 后缀剥掉。
+    // 「Current frames」写**文件名**（1002.blend）、项目表写**项目名**（1002），比对时剥后缀。
     const curProject = cm ? cm[1] : '';
     const curProjectBase = curProject.replace(/\.blend\d*$/i, '');
     if (cm) {
@@ -831,27 +735,19 @@
       ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
     </div>`;
 
-    /* 时间线先算出来：指标带要用它取"起算时刻"，下面那块还要用它的汇总 */
     const tl = s.timeline || [];
     const acts = activity(tl);
 
-    /* ---- 指标带：这台机器干了多少活 ----
-       起算时间用日志里最早那一条的**本地**时刻，不用站点原文：站点把 Creation Time 写在自己的
-       时钟上（实测 UTC+2），而下面时间线是我们的本地时区 —— 同一个瞬间在一屏里差 6 小时
-       会读成"创建 6 小时后才干活"。站点原文照旧留在机器信息里（那里标了"未做换算"）。 */
+    /* ---- 指标带 ----
+       起算时间取日志最早那条的**本地**时刻：**时区**不同（Creation Time 实测站点 UTC+2），与本地时间线
+       同屏差 6 小时，会读成"创建 6 小时后才干活"。 */
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
     const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
 
-    /* 算力那一格跟着站点印了哪一行走：这台机器启用了哪个计算设备，站点就印哪一行 ——
-       CPU 机器给 "Power CPU"，GPU 机器给 "Power GPU"，两个都开就两行都在，于是这一带
-       从 4 格变 5 格（.kpis[data-n="5"] 在 5 / 3 / 2 三档宽度下都验过，见 30-style.js）。
-       这里**不写死 CPU 或 GPU**，只遍历站点真的印了哪几行：站点哪天再添第三种设备，
-       多出来的那行会照既有规矩落进「机器信息」（标签原样显示），不会被吞。
-       早先写死读 Power CPU，于是纯 GPU 机器（只开 GPU 渲染）上那格永远是"—" ——
-       那不是"没数据"，是这台机器根本不用 CPU 渲染，摆一格空的会被读成"CPU 有问题"。
-       一行都没给就整格不画：站点没给的不摆空壳。 */
+    /* 算力那格跟着站点印了哪一行走（"Power CPU" / "Power GPU" 都开就两行都在）；**不写死** —— 早先写死读
+       Power CPU，纯 GPU 机器上那格永远是"—"，被读成"CPU 有问题"。 */
     const powerFacts = s.facts.filter((f) => f.key === 'power' || f.key === 'powerGpu');
 
     const kpiItems = [
@@ -869,16 +765,12 @@
         d: f.href ? `<a href="${esc(f.href)}" target="_self">${esc(t('sess.kpi.powerLink'))}</a>` : '',
       })),
       {
-        // 只说上限。早先这里还挂一句"实测最长一帧"，但两者本就不可比（一个是参考机上的
-        // 预估上限，一个是本机实际耗时），摆在一起只会让人以为哪个数不对，已按用户要求去掉。
         k: t('sess.kpi.maxTime'), v: val('maxTime') || '—', d: '',
       },
     ];
 
-    /* ---- 机器控制：站点自己的那个按钮，同一批地址、同一套会话 ----
-       只在看自己的机器时出现。实测别人的会话页站点直接 404，所以这一条实际是兜底：
-       万一哪天站点放开了可见性，我们也不会摆一个按下去必然报错的按钮 —— 那时 Action
-       这一行会退回事实清单里按原文显示，而不是沉默地消失。 */
+    /* ---- 机器控制：站点自己的按钮、同一批地址；只在看自己的机器时出现（实测别人的会话页直接 404），
+       否则 Action 退回事实清单按原文显示。 */
     const act = s.info.action;
     const mine = !!(owner && owner.user && state.userName && owner.user === state.userName);
     const showControl = !!(act && act.action && mine);
@@ -891,7 +783,7 @@
       </div>
     </div>` : '';
 
-    /* ---- 事实清单：两列键值，一格一件事。密钥排最后：它是偶尔来查一次的东西 ---- */
+    /* ---- 事实清单 ---- */
     const rest = s.facts.filter((f) => !sessElsewhere.has(f.key) || (f.key === 'action' && !showControl))
       .sort((a, b) => (a.key === 'renderKey' ? 1 : 0) - (b.key === 'renderKey' ? 1 : 0));
     const factsPanel = rest.length ? `<div class="panel" style="margin-top:16px">
@@ -901,12 +793,9 @@
       <div class="facts">${rest.map((f) => {
         let v;
         if (f.key === 'renderKey' && f.secret) {
-          // 密钥：站点本来也是"点一下才显示"，照做。只落在属性里，不进可见文本。
           v = `<span class="num sec" data-key="${esc(f.secret)}">••••••••••••</span>` +
             `<button class="btn sm" data-act="reveal-key" aria-pressed="false">${esc(t('sess.reveal'))}</button>`;
         } else {
-          // 每个值都带 tabular：这里的量有单位（9.8 GB / 8h27m / 06:40 Sep 29），
-          // 按"能读成量"的规则走，别用启发式去猜哪个像数字
           const raw = f.value || '—';
           const txt = f.href ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>` : esc(raw);
           v = `<span class="num">${txt}</span>`;
@@ -915,11 +804,6 @@
       }).join('')}</div>
     </div>` : '';
 
-    /* ---- 时间线：默认给活动汇总，完整日志折叠在后面 ----
-       把 761 条事件铺成表格是"把日志当正文"：占掉整屏，每行却只有四个短字段，
-       五列还摊在整页宽上。默认给的是按天（跨度长时按月）的四个数——真正用于渲染的
-       时长、事件数、作业数、发送失败数——一眼看出这台机器哪天在干活；
-       要逐条看事件，再展开下面的完整日志。 */
     const openLog = !!sessState.open;
     const MAXB = 14;
     const buckets = acts.rows.slice(0, MAXB);
@@ -937,14 +821,11 @@
         from: stamp(tl[tl.length - 1].start, acts.crossYear),
         to: stamp(tl[0].start, acts.crossYear),
       })
-      // 接口没回应时不在这里说"站点没有返回记录"—— 正文已经说了"没取到"，
-      // 两句话在同一格里互相打脸（"没回"和"回了空"是两件事）
+      // 接口没回应时不在这里说"站点没返回记录"：正文已说"没取到"，两句会互相打脸。
       : (s.timelineFailed ? '' : t('sess.tlSubEmpty'));
 
-    /* 条只画"渲染时长"这一件事。一台机器从来没有渲染事件时（比如一直只领到校验），
-       渲染时长整列都是「—」—— 那时候按事件数画一条会把图形的含义偷偷换掉，列名却还是
-       "渲染时长"。这种情况不画填充（轨道照旧留着：一排空轨道读出来就是"零"），
-       但**条这一列必须留着占位** —— 它是这行的弹簧，抽掉它表头和数值列会各自靠左排。 */
+    /* 条只画"渲染时长"：没有渲染事件时不换口径（不拿事件数冒充），只把填充留空 —— 但**这一列必须留着
+       占位**，它是这行的弹簧，抽掉表头与数值列会各自靠左排。 */
     const showBar = acts.anyRender;
     const pct = (b) => Math.round(b.bar * 100);
     const actTable = buckets.length ? `<div class="acts" role="table">
@@ -1005,10 +886,7 @@
       <div class="pbody"><div class="none">${esc(s.timelineFailed ? t('sess.tlFailed') : t('sess.tlNone'))}</div></div>
     </div>`;
 
-    /* ---- 可渲染项目：按"为什么现在不派给它"分组。
-       站点给的是 27 行平铺、原因重复 27 遍；原因本身才是能读的那一层信息。 */
-    // 发布者：站点这张表只给项目名，发布者要去项目列表页按名字对（实测真站点 33/33 对得上）。
-    // 重名项目一律不挂 —— 两个同名的项目挂谁都可能是错的，宁可留空。
+    /* ---- 可渲染项目 ---- */
     const own = new Map();
     const dup = new Set();
     for (const p of state.projects || []) {
@@ -1018,33 +896,18 @@
     }
     for (const n of dup) own.delete(n);
 
-    /* ---- 可渲染项目。
-    
-       **站点的行序就是优先级，必须原样保留。** 实测一台机器：前 12 行写的是
-       "Renderable"（此刻真能渲染的），之后才是 "Over user's time limit"、
-       "Computer has previously failed to render project" 这些；而且第 1 行往往
-       就是这台机器此刻正在渲染的那个项目（实测 1. 1002 对 "project: 1002.blend"）。
-       换句话说，"越靠前越可能先渲染"这层信息只存在于顺序里，站点没用别的列表达它。
-       所以这里只做一次映射，不排序、不分组、不去重。
-
-       早先按原因分组、组内重排，等于把这层信息抹掉了 —— 表面更好看，代价是丢事实。 */
+    /* **站点的行序就是优先级，必须原样保留**：实测前 12 行是 "Renderable"，之后才是 "Over user's
+       time limit"、"Computer has previously failed to render project" —— 只做一次映射：不排序、不分组、不去重。 */
     const prjRows = s.projects.map((p) => ({
       n: p.name,
       label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
       p: own.get(p.name) || null,
     }));
 
-    // 发布者那一格用与项目页同一个 ownerCell：头像 + 名字 + 常驻名单标记 + 3 点菜单。
-    // 三份名单来自账户设置页 —— ensureData 为会话页也取一次，否则整格不给动作。
     const maps = listsOf(state);
-    // 打开的 3 点菜单：和项目页一样，浮层放在视图最外层（.tablewrap 是 overflow:auto，
-    // 放进去会被裁掉），坐标由 Views.mount() 量触发按钮的位置再写进去。
     const openP = projState.menu ? [...own.values()].find((x) => x.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
-    /* 列与项目页对齐：项目 / 发布者 / 状态 / 进度（条 + 分数两列）/ 设备 / 内存。
-       进度那两列是分开的 —— 分数挂在条子后面会让每行的轨道长度随数字宽度变来变去，
-       这条规矩见 docs/DESIGN.md 的 Progress Bar 一节。 */
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
         <h2>${esc(t('sess.projects'))}</h2>
@@ -1060,10 +923,7 @@
           <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
         <tbody>${prjRows.map(({ n, label, p }) => {
-          // 关联得到就用项目页那一格；关联不到留一个破折号 —— 缺一个事实就让它缺着，不猜。
           const who = p && (p.ownerId || p.owner) ? ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';
-          // 这台机器此刻正在跑的那一行：站点在「Current frames」里给的是文件名，
-          // 表里是项目名，所以连剥掉 .blend 后的名字一起比。
           const isCur = !!curProject && (curProject === n || curProjectBase === n);
           const frac = p ? UI.progressText(p.pct, p.done, p.total) : '';
           return `<tr>
@@ -1083,33 +943,10 @@
     return head + UI.kpis(kpiItems) + factsPanel + control + timelinePanel + prjPanel + foot() + menuHtml;
   }
 
-  /* ======================================================== 挂载后补丁
-     视图本身是纯字符串；只有总览的积分曲线需要拿到真实像素宽度才能画。 */
-  /* ================================================== 项目上传页 / 分析等待页
-     这两页与前面六个视图不是一回事，写清楚免得后来人改错：
+  /* ==== 挂载后补丁：只有总览的积分曲线需要真实像素宽度 ==== */
+  /* ==== 项目上传页 / 分析等待页：等待页整页重建；上传页是**换装** —— 骨架我们画，能干活的节点
+     从抓回来的 /getstarted 里搬进来，不接管那一页（Borrowed Controls Rule 见 docs/DESIGN.md）。 */
 
-     分析等待页是"整页重建"：数据从站点接口读，界面由字符串模板画出来。
-     上传页是**换装**：卡片骨架我们画，但**能干活的节点从站点那一页搬过来** ——
-     只不过搬之前先把 /getstarted *抓回来解析*（见 wireUploadDoc），不接管那一页本身。
-
-     为什么搬而不是重画：上传表单靠 `onsubmit="addproject_upload_progress_fct(uid)"`
-     触发站点自己的 addproject.js，估算器靠一段内联 `jQuery(...).autocomplete()` 绑定
-     设备名搜索，进度条由站点的轮询喂。这些绑的都是 **id 和事件属性**，不是外观 ——
-     节点搬进我们的卡片，处理器全都还在；重画就等于把上传、进度轮询、设备自动补全
-     在客户端再实现一遍，而且站点一改就得跟着改。
-
-     搬运的另一个前提：文案得先翻好。抓回来的那份 HTML 没经过页面翻译层（它压根不在
-     文档里），所以 wireUploadDoc 里自己调 DomI18n.translateSubtree()：顺序永远是
-     **先翻译、再整理**，见那里的注释。
-
-     验证状态（2026-10-04，别当成"已在真实安装路径下验过"）：
-     这些路径是对着**真实页面**验的，但验法是「先清掉已安装脚本的节点、再把 dist 产物注入
-     已加载的页面」。所以 `@run-at document-start` 那一段 —— 防闪、以及守卫在原站界面画出来
-     之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
-     详见 docs/PUBLISHING.md 的「五、验证状态」。 */
-
-  /** 卡片骨架。真正的内容由 wireUploadDoc() 装进来，所以这里只有空的插槽。
-   *  顶上那句话说明这一页的性质：站点控件 + 我们的外观，不是重制过的一页。 */
   function upload(state) {
     return `<div class="wrap up">
       <div class="sechead">
@@ -1137,15 +974,8 @@
     </div>`;
   }
 
-  /**
-   * 站点那句「Max: 2,048 MB before ZIP compression / Blender compression is recommended
-   * and supported.」和 `<input type="file">` 挤在同一个 `<td>` 里。
-   *
-   * 这一格正是「翻译层不能整块替换」那条安全规则被踩出来的地方（见 70-i18n-dom.js）：
-   * 整块替换会把文件框一起删掉。但那一格被 `<br>`/`<strong>` 切成了好几个文本节点，
-   * 逐节点翻译也拼不回一句中文 —— 所以这句话由卡片自己说，**大小从站点原文里读**
-   * （上限是站点配置，不写死）。认不出站点那句话就原样留着，不猜。
-   */
+  /** 站点那句「Max: 2,048 MB …」和 `<input type="file">` 挤在同一 `<td>`：**整块替换会把文件框删掉**
+      （见 70-i18n-dom.js），逐节点拼不回中文 —— 故由卡片自己说 `up.maxNote`，大小从站点原文里读。 */
   function rewordFileLimit(scope) {
     const file = scope.querySelector('input[type=file]');
     if (!file) return;
@@ -1161,17 +991,8 @@
     file.after(note);
   }
 
-  /**
-   * 须知那一块的收尾。**只贴标签、只去掉一个多余字符，不改写任何文字** ——
-   * 排版该由 CSS 干，这里只处理 CSS 够不着的两件事：
-   *
-   *   1. 站点把「项目总数: 29」写成一个**裸文本节点**直接挂在容器里（不是元素）。
-   *      裸文本节点没法给类名、没法排版，所以给它包一个 span。
-   *   2. CPU/GPU 那一行是 `<ul>`，但它的语义是"两个数"，给它 `.qpos` 让它排成一行数据。
-   *   3. 站点那句 `…<strong>3.0 or higher</strong>.` 的句号在 `<strong>` **外面**；
-   *      中文译文自带句号，于是渲染成「…或更高。.」这种双句号。孤立的一个 "." 去掉 ——
-   *      只在**前面已经以句末标点收尾**时才去，所以英文界面（不翻译）原样保留。
-   */
+  /** 须知块**只贴标签、只去掉多余字符**：站点把「项目总数: 29」写成裸文本节点（包 span 才能排版）；
+      `…3.0 or higher</strong>.` 的句号在 <strong> 外 → 中文译文双句号，只在前面已有句末标点时删 "."。 */
   function tidyRules(scope) {
     const col = scope.firstElementChild;
     if (!col) return;
@@ -1193,10 +1014,6 @@
       if (/[。．.！!？?]$/.test(before)) last.remove();
     }
 
-    /* 排队那一组（说明 + CPU/GPU + 项目总数）原来整组竖着摞在左边，右边半张卡片空着。
-       把它拆成"说明在左、数字在右"的横带 —— 只是把已有节点分到两个盒子里，不碰文字。
-       另外站点把「预计排队位置：」和那三个数字写在同一段里、用 <br> 隔开；
-       既然数字搬到了右边，这条引子也跟着数字走 —— 留在正文末尾就是一句吊着的话。 */
     const h4s = [...col.querySelectorAll(':scope > h4')];
     const head = h4s[0];
     if (head) {
@@ -1237,16 +1054,8 @@
     }
   }
 
-  /**
-   * 估算器的结果是**站点渲染的一段英文 HTML**，通过 AJAX 落进我们的卡片
-   * （`POST /project/estimator` → `<h4>` + 一句英文 + 一张 Bootstrap 表格）。
-   * 这里管两件事：
-   *   1. 用同一份词典把它翻成当前语言 —— `DomI18n.translateSubtree()` 允许翻译器
-   *      走进 #sp，因为这段 DOM 虽然在我们的容器里，文字却是站点的；
-   *   2. 去掉中文译文后面吊着的那个英文句号：站点原句是
-   *      `…up to <strong>10,958 points</strong>.`，句号在 <strong> 外面，
-   *      翻完就成了「…10,958 积分.」。
-   */
+  /** 估算器结果是站点 AJAX 回来的一段英文 HTML：`DomI18n.translateSubtree()` 允许翻译器走进 #sp
+      （DOM 在容器里、文字却是站点的）；另去掉中文译文后吊着的英文句号。 */
   function watchEstimatorResult(box) {
     if (!box) return;
     const fix = () => {
@@ -1261,19 +1070,8 @@
     if (box.innerHTML.trim()) fix();
   }
 
-  /**
-   * 上传卡片唯一的填充方式：把 `/getstarted` 抓回来，从**解析出的文档**里取那三块装进卡片。
-   *
-   * 为什么是"抓回来装"而不是"接管那一页"：/getstarted 同时是「下载客户端」指南页，接管它
-   * 只能做成半新半旧的一页 —— 而同一件"上传项目"因此会存在两种界面（站点原版 + 新版），
-   * 原版模式下点进去还会落到那个半新半旧的页面（用户 2026-10-04 指出的正是这个）。
-   * 现在那一页归站点，上传只在新界面里出现；这里的代价是 `<script>` 不会执行，所以估算器
-   * 的设备名自动补全要自己重新绑一次（这是唯一需要"再实现一遍"的东西，源地址仍从站点那段
-   * 脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，而 addproject.js 在每一页
-   * 都加载，函数是全局的。
-   *
-   * 译文同样走一份词典：这里用 DomI18n.translateSubtree()，它允许翻译器走进 #sp。
-   */
+  /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
+      （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
   function wireUploadDoc(root, html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const main = doc.querySelector('#addproject_main_div');
@@ -1305,28 +1103,17 @@
       if (estPanel) estPanel.remove();
     }
 
-    /* **先翻译、再整理**，顺序不能反。整块翻译的模式规则是按站点原句写的，
-       而 tidyRules 会把「排队情况」那段在 <br> 处切开（引子跟数字走），切完就不再有
-       "Predicted position in queue:" 结尾 —— 整块规则随即失配，那一段就永远是英文。
-       （就地搬的那条路径没这个问题：页面翻译层在搬运之前就跑过了。） */
+    /* **先翻译、再整理**，顺序不能反：整块翻译的规则按站点原句写，而 tidyRules 会把「排队情况」在 <br>
+       处切开，切完不再以 "Predicted position in queue:" 结尾 → 规则失配，那一段永远是英文。 */
     for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
     if (slotForm) rewordFileLimit(slotForm);
     if (slotRules) tidyRules(slotRules);
     return true;
   }
 
-  /**
-   * 估算器的设备名自动补全，站点是**内联脚本**绑的（`jQuery(...).autocomplete({...})`）。
-   * 抓回来的 HTML 里那段脚本不会执行，所以这里照它原来的参数重绑一次 ——
-   * 源地址从那段脚本里读，不写死。绑不上就让它做一个普通输入框（估算器会回
-   * "failed to import device"，用户看得见，不会静默出错）。
-   *
-   * 绑定本身一直是对的，出问题的是**菜单**：jQuery UI 把它挂在 `<body>` 上，而整页接管的
-   * 守卫有一条 `body > *:not(#sp){display:none}` —— 于是菜单生成好了、里面就是
-   * GeForce RTX 2060，用户看到的却是"输入了没反应"（2026-10-04 用户实报，实测菜单
-   * computed display 是 none）。所以这里做两件事：给菜单贴上我们自己的类名（守卫按它放行、
-   * 样式按它接管），并同步当前主题 —— token 块是按 `ul.sp-acmenu[data-theme=…]` 给的。
-   */
+  /** 设备名自动补全要自己重绑（内联脚本不执行），source 从站点脚本里读、不写死。**坑在菜单**：
+      jQuery UI 把菜单挂 `<body>`，被守卫 `body > *:not(#sp){display:none}` 挡成"输入了没反应"
+      （2026-10-04 实报）—— 所以贴类名 `ul.sp-acmenu` 放行并同步主题。 */
   function rebindDeviceSearch(estBlock, html) {
     const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
     const $ = window.jQuery;
@@ -1335,8 +1122,7 @@
     const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
     if (!label) return;
 
-    /* 每重画一次卡片就会绑一个新的 widget，而菜单元素挂在 <body> 上、不会跟着旧卡片一起
-       消失 —— 绑之前先清掉上一批，免得 body 上越堆越多（实测一次会话里堆到 4 个）。 */
+    /* 每次重画卡片都绑一个新 widget，而菜单挂 <body> 上不跟旧卡片消失 —— 绑之前先清上一批。 */
     document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
 
     const paintMenu = () => {
@@ -1357,15 +1143,24 @@
         if (value) $(value).val(ui.item.value);
         return false;
       },
-      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着的时候被换掉
+      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着时被换掉
     });
     paintMenu();
+
+    /* 关闭时机得自己管：这个 jQuery UI（1.10.2）实测**既不 blur 关、也不"点外面"关**
+       —— 打「2060」弹出菜单后点导航切走，那块菜单会留在屏幕上（display 还是 block）。
+       菜单又挂在 <body> 上、不跟卡片一起消失，所以失焦与点外面各补一次关闭。
+       点菜单项不会误关：jQuery UI 在菜单项 mousedown 里 preventDefault，输入框不失焦。 */
+    const closeMenu = () => { try { $(label).autocomplete('close'); } catch (e) { /* 没初始化就无所谓 */ } };
+    $(label).on('blur', () => setTimeout(closeMenu, 160));
+    $(document).off('mousedown.spacmenu').on('mousedown.spacmenu', (ev) => {
+      if (!$(ev.target).closest('ul.sp-acmenu, #addproject_estimator_device_form_search_text_label').length) closeMenu();
+    });
   }
 
-  /* ------------------------------------------------------------ 分析等待页 */
+  /* ---- 分析等待页 ---- */
 
-  /** 上传后的等待页。整页归我们：站点那一版就是一个转圈圈加一句英文。
-   *  真正在跑的是 80-app.js 里的轮询 —— 它认的是 `#sp-an-*` 这几个钩子。 */
+  /** 上传后的等待页整页归我们；真正在跑的是 80-app.js 的轮询，它认 `#sp-an-*` 这几个钩子。 */
   function analyse() {
     return `<div class="wrap">
       <div class="sechead">
@@ -1392,28 +1187,19 @@
   }
 
   function mount(root, state) {
-    /* 上传视图的接线。两道判据各拦一种"还没东西可接"的时刻：
-       · `.up-grid`：show() 先画一屏骨架再取数据，骨架里没有卡片。少了它会在这时候就把
-         body 标成"已接线"，等真正出内容的那次 render() 反而早退。（实测踩过一次。）
-       · `state.uploadHtml`：还要真有东西可搬。boot() 是**先 render() 再 show()** 的，
-         直接以 #/upload 载入时那一次 render 拿到的是"卡片外形 + 没有数据"（/getstarted
-         还没抓回来），`.up-grid` 判据拦不住它 —— 空卡片被标成已接线，之后 show() 的两次
-         render() 全被上面那条守卫早退，用户拿到的是一张没有表单、没有估算器、也交不出去
-         的空壳。 */
+    /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
+       render() 再 show()，直接开 #/upload 那次只拿到空卡片）。少了任一道就会把 body 早标成"已接线"，
+       之后 render() 全被守卫早退 —— 用户拿到空壳（实测踩过）。 */
     if (state && state.view === 'upload' && root && !root.dataset.spWired
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
-      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行
       SP.DomI18n.enabled = !!state.translateSite;
       if (wireUploadDoc(root, state.uploadHtml) === false) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
     if (box && pts && pts.length > 1) SP.Charts.points(box, pts);
-    // 热力图格子要能回答"这是哪一天"，原生 title 太慢，挂一个真正的浮层
     if (root) SP.UI.bindHeatTips(root.querySelector('.heatwrap'), I18n.lang);
-    // 3 点菜单的坐标：它挂在 #sp 里（表格容器是 overflow:auto，放表格里会被裁掉），
-    // 所以只能量一次触发按钮的位置再写进去。右对齐到按钮，靠视口下沿时向上翻。
     const menu = root && root.querySelector('#sp-omenu');
     const trigger = root && root.querySelector('[data-act="owner-menu"][aria-expanded="true"]');
     if (menu && trigger) {
@@ -1422,8 +1208,7 @@
       const hr = host.getBoundingClientRect();
       const z = Util.zoomOf(host);   // 界面缩放的补偿：rect 是物理像素，left/top 是 CSS 像素
       const mw = menu.offsetWidth, mh = menu.offsetHeight;
-      // 左缘对齐到**菜单按钮**（用户拍板）：菜单从按钮的左缘往右铺，而不是往左倒挂。
-      // 顶到视口右边界时整体左移，别溢出去。
+      // 左缘对齐到**菜单按钮**（用户拍板），不往左倒挂；顶到视口右边界时整体左移。
       let left = (b.left - hr.left) / z;
       left = Math.max(8, Math.min(left, host.clientWidth - mw - 8));
       const below = b.bottom + (6 + mh) * z <= window.innerHeight;

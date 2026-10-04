@@ -1,6 +1,4 @@
-/* ==========================================================================
- * 10-core.js — 基础设施：命名空间 / 工具函数 / i18n / 主题
- * ========================================================================== */
+/* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
 (function () {
   'use strict';
 
@@ -8,12 +6,10 @@
   const SP = (window.__SHEEPIT_PLUS__ = window.__SHEEPIT_PLUS__ || {});
   SP.NS = NS;
 
-  /* ---------------------------------------------------------------- 工具 */
+  /* ==== 工具 ==== */
 
   const Util = {
-    /** 界面整体缩放（设置里那个百分比）：#sp 上挂的是 CSS zoom，于是它的
-     *  getBoundingClientRect() 给的是**物理**像素，而它内部写 left/top 用的是 CSS 像素 ——
-     *  凡是按 rect 量出来的位移，都要除以这个比值才能当长度用。比值从宿主自己量，跟着设置走。 */
+    /** zoomOf：rect 是物理像素、内部 left/top 是 CSS 像素，按 rect 量的位移要除以它。 */
     zoomOf(el) {
       if (!el) return 1;
       const w = el.clientWidth;
@@ -21,17 +17,13 @@
       return w > 0 && r > 0 ? r / w : 1;
     },
 
-    /** 数字千分位；非数字原样返回 */
     num(v) {
       if (v === null || v === undefined || v === '') return '—';
       const n = typeof v === 'number' ? v : Number(String(v).replace(/[^\d.-]/g, ''));
       return Number.isFinite(n) ? n.toLocaleString('en-US') : String(v);
     },
 
-    /** 站点给的统计值 → 显示文本。带 K/M/G 这类量级后缀的**原样保留**。
-     *  站点对别人的积分只给 "342.6 M"（那一长串 title 只是"积分怎么算"的说明，不含精确值），
-     *  而 num() 会把非数字字符全剥掉 —— 342.6 M 就成了 342.6，少六个数量级。
-     *  所以：站点给什么就显示什么，既不换算、也不假装有它没给的精度。 */
+    /** statNum：带 K/M/G 后缀的原样保留、不归一 —— num() 会把 "342.6 M" 剥成 342.6（差六个数量级）。 */
     statNum(v) {
       const s = String(v === null || v === undefined ? '' : v).trim();
       if (!s) return '—';
@@ -40,7 +32,7 @@
       return Util.num(s);
     },
 
-    /** 把秒数渲染成 1y245d21h 这种紧凑格式（整点时不拖一个没意义的 0h） */
+    /** 秒数 → 1y245d21h 紧凑格式 */
     duration(sec) {
       const s = Number(sec);
       if (!Number.isFinite(s) || s <= 0) return '—';
@@ -66,24 +58,19 @@
       return String(n);
     },
 
-    /** Date → 'YYYY-MM-DD'（统一走 UTC，避免本地时区把日期挪一天） */
+    /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
     dkey(d) { return (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10); },
 
-    /** 日期键平移 n 天 */
     dshift(key, n) {
       const x = new Date(`${key}T00:00:00Z`);
       x.setUTCDate(x.getUTCDate() + n);
       return Util.dkey(x);
     },
 
-    /** 两个日期键之间的天数（b - a） */
     ddiff(a, b) { return Math.round((Date.parse(`${b}T00:00:00Z`) - Date.parse(`${a}T00:00:00Z`)) / 86400000); },
 
-    /** 'YYYY-MM-DD' → 'YYYY-MM' */
     mkey(key) { return String(key).slice(0, 7); },
 
-    /** 坐标轴上限：把最大值抬到一个「能被 3 整除的好数字」，供 4 条网格线等分。
-     *  与样张一致 —— 实测 3.547e8 → 3.6e8，曲线占满 98% 高度，而不是缩在下半截。 */
     niceTop(max) {
       const m = Number(max);
       if (!Number.isFinite(m) || m <= 0) return 1;
@@ -113,7 +100,7 @@
       return hit ? { y, d, h, m } : null;
     },
 
-    /** 站点时长文案 → 紧凑的 1y245d21h；解析不出返回 null（站点给纯秒数时由调用方走 duration()） */
+    /** 时长文案 → 1y245d21h；解析不出返回 null */
     compactTime(text) {
       const p = Util.timeParts(text);
       if (!p) return null;
@@ -128,7 +115,6 @@
       return out || `${Math.round(m)}m`;
     },
 
-    /** 把它渲染成人类读的紧凑时长：纯秒数走 duration()，其余走 compactTime() */
     renderTime(raw) {
       const s = String(raw === null || raw === undefined ? '' : raw).trim();
       if (!s) return '—';
@@ -136,7 +122,6 @@
       return Util.compactTime(s) || s;
     },
 
-    /** 站点时长文案 → 天数（"1y 245d 21h" / "1 year, 245 days"）；解析不出返回 null */
     durDays(text) {
       const p = Util.timeParts(text);
       if (!p) return null;
@@ -150,9 +135,7 @@
         .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     },
 
-    /** 只保留同站路径，避免把脚本注入的绝对 URL 带进来。
-     *  空串必须返回 null —— new URL('', origin) 会解析成当前页地址，
-     *  若不拦住，懒加载图片（只有 data-src、还没有 src）会被算成 "/"。 */
+    /** safePath：只留同站路径；空串必须返回 null —— new URL('', origin) 会解析成当前页，懒加载图会算成 "/"。 */
     safePath(u) {
       const s = String(u === null || u === undefined ? '' : u).trim();
       if (!s) return null;
@@ -163,7 +146,6 @@
       } catch (e) { return null; }
     },
 
-    /** 用 DOMParser 解析一段 HTML（不执行其中的脚本） */
     parse(html) {
       return new DOMParser().parseFromString(html, 'text/html');
     },
@@ -176,13 +158,12 @@
       return c.textContent.replace(/\s+/g, ' ').trim();
     },
 
-    /** 存储（带前缀，避免污染站点自己的 key） */
+    /** store：键带前缀避免污染站点 key；值走 JSON 读写 */
     store: {
       get(k, d) { try { const v = localStorage.getItem(`${NS}:${k}`); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
       set(k, v) { try { localStorage.setItem(`${NS}:${k}`, JSON.stringify(v)); } catch (e) { /* 隐私模式等 */ } },
     },
 
-    /** 简易请求去重：同一 URL 的并发请求合并 */
     once(map, key, fn) {
       if (map[key]) return map[key];
       const p = fn().finally(() => { delete map[key]; });
@@ -191,7 +172,7 @@
     },
   };
 
-  /* ---------------------------------------------------------------- i18n */
+  /* ==== 语言包注册表 ==== */
 
   const DICT = {
     zh: {
@@ -203,11 +184,9 @@
       'stat.streak': '当前连续', 'stat.days': '天',
       'stat.streakHint': '历史最长 {best} 天 · 近 30 天活跃 {d30} 天',
       'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
-      // 站点原文词条：身份条里的徽章与客户端状态。键由原文 slug 化得来（见 50-views.js packLabel）
+      // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 站点原文是 "Waiting to render projects" / "Rendering projects" / "Disconnected"，
-         说的是**这个用户自己客户端**的状态（站点把它写在 "Connected as 你" 那个框里），
-         不是全站队列 —— 原来译成"等待领取渲染任务"，容易被读成"农场在等活"。 */
+      /* 这几条说的是**这个用户自己客户端**的状态（"Connected as 你" 框里），不是全站队列。 */
       'status.idle': '客户端待命中',
       'status.rendering': '正在渲染',
       'status.renderingFor': '正在为 {user} 渲染',
@@ -216,7 +195,6 @@
       'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
-      // 发布者身份：只有建过项目的人才有非零值，0 时不占格子
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
       'stat.ordered': '订的帧', 'stat.orderedHint': '为你自己的项目下单的帧数',
       'site.title': '全站实时', 'site.frames': '待渲染帧', 'site.projects': '进行中项目',
@@ -231,8 +209,7 @@
       'heat.legendLow': '少', 'heat.legendHigh': '多',
       'heat.note': '{nz} 天有产出 · 峰值 {peak} 帧',
       'heat.total': '合计 {n} 帧', 'heat.frame': '帧',
-      // 站点只在自己的主页内联逐日帧数；别人的主页只有"这天有没有渲染"的日历（二值）。
-      // 那份数据原站也是拿来画热力图的，所以照样画 —— 但口径必须说清楚。
+      // 别人的主页只有二值日历，原站也拿它画热力图 —— 照样画，但口径必须说清。
       'heat.subDays': '近 53 周 · 每格一天 · 亮起 = 那天有渲染',
       'heat.noteDays': '{nz} 天有渲染',
       'heat.totalDays': '合计 {n} 天',
@@ -248,11 +225,8 @@
       'sessions.title': '最近会话', 'sessions.sub': '共 {n} 条记录',
       'news.title': '最新动态',
       'proj.title': '进行中项目', 'proj.count': '共 {n} 个',
-      /* 发布者那一格的渲染优先级开关（端点与账户设置页同一批） */
       'proj.prio.inList': '已在你的渲染优先级名单里',
-      /* 发布者那一格的 3 点菜单。三项都是"把这个人放进某份名单"：
-           优先 = 渲染优先级；捐赠积分 = 赞助名单（你挣的积分会给 TA）；黑名单 = 不渲染 TA 的项目。
-         已在名单里时文案翻成撤回、右边打勾；名字后面另有常驻标记（星 / 心 / 禁止符）。 */
+      /* 3 点菜单 = 放进某份名单：优先 / 捐赠积分（你挣的给 TA）/ 黑名单（不渲染 TA 的项目）。 */
       'proj.menu.open': '更多动作', 'proj.menu.title': '把这个发布者…',
       'proj.menu.prio': '优先渲染 TA 的项目', 'proj.menu.unprio': '移出渲染优先级',
       'proj.menu.gift': '捐赠积分给 TA', 'proj.menu.ungift': '不再捐赠给 TA',
@@ -266,10 +240,8 @@
       'proj.status.waiting': '等待中', 'proj.status.paused': '已暂停',
       'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}', 'proj.showingN': '显示前 {n} 个',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
-      /* 界面模式：给习惯旧界面的人一条退路，也给自己留一个"先关掉看看"的开关 */
       'mode.toClassic': '切回原版界面', 'mode.toModern': '切换到现代化界面',
-      // 悬浮 pill 上写的是**动作**而不是状态：原来写"原版界面 · 点此切回"，
-      // 前半句是状态、后半句是要做的事，读起来像个标签而不像按钮。
+      // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
       /* 已连接的机器 */
@@ -282,8 +254,6 @@
       /* 账户设置 */
       'nav.account': '账户设置',
       'account.title': '账户设置', 'account.sub': '这些表单直接提交到站点自己的接口，和你原来在这个页面上操作是同一件事。',
-      /* 账户页选项卡。站点自己那张页面也是分类切换的（Scheduler / Blacklist / Sponsorship / …），
-         这里按"一次只想看一件事"分四档 —— 七块面板堆成一列太长了。 */
       'account.tab.sched': '调度与名单',
       'account.tab.sponsor': '捐赠积分', 'account.tab.account': '账户',
       'account.only': '只能管理自己的账户',
@@ -295,9 +265,8 @@
       'account.sched.heavy': '重负载项目优先',
       'account.sched.heavyHint': '机器很强（> 200%）时开启，可以减少"下载解压"相对于渲染的占比。',
       'account.priority': '渲染优先级', 'account.priorityHint': '这些发布者的项目会被优先领取。',
-      // 站点自己那个输入框是按**用户名**自动补全的（source=/user/list_from_term），不是 ID
+      // 自动补全是按**用户名**、不是 ID（source=/user/list_from_term）
       'account.priorityAdd': '输入用户名后回车', 'account.add': '添加', 'account.remove': '移除',
-      // 捐赠积分（站点叫 Sponsorship）
       'account.sponsor': '捐赠积分', 'account.sponsorSub': '站点叫 Sponsorship',
       'account.sponsorHint': '把你在渲染中挣到的积分送出去：每渲染一帧，这一帧的积分会给名单里随机一位，而不是进你自己的账户。站点那句话说得对 —— SheepIt 靠的是社区。',
       'account.sponsor.give': '开启捐赠', 'account.sponsor.giveHint': '关掉之后，新挣的积分不再送给名单里的人。',
@@ -311,11 +280,8 @@
       'account.keys.comment': '备注（必填，便于分辨是哪台机器）',
       'account.keys.add': '新建密钥', 'account.keys.inUse': '使用中', 'account.keys.free': '空闲',
       'account.keys.del': '删除', 'account.keys.delConfirm': '删除这个渲染密钥？正在用它登录的客户端会掉线。',
-      /* 两个黑名单的原文（站点自己的说明）：
-           Blacklist renderer — "These users will not render my projects."
-           Blacklist owner    — "I will not render projects of these users."
-         之前这两块的中文名与提示**正好反了**（连"发布者/渲染者"两个词都互换了），
-         会让人往错的名单里拉人，2026-10-04 按站点原文改正。 */
+      /* 两个黑名单的原文曾经**正好反了**（发布者/渲染者互换），会让人往错的名单拉人：
+         renderer = "These users will not render my projects."，owner 是反过来那句。 */
       'account.block.renderer': '不让他们渲染我的项目', 'account.block.rendererHint': '名单里的人不能领取你的项目 —— 他们的机器不会渲染你的帧。',
       'account.block.owner': '不渲染这些人的项目', 'account.block.ownerHint': '名单里的发布者：他们的项目不会被派给你的机器。',
       'account.block.add': '加入黑名单',
@@ -338,8 +304,7 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
-      /* 实验性开关。文案要说清三件事：未经验证 / 只统一风格 / 没全部重写 ——
-         用户明确要求把这层说白，别让人以为这一页也是重制过的。 */
+      /* 文案要说清：未经验证 / 只统一风格 / 没全部重写。 */
       'set.exp': '实验性',
       'set.expUpload': '项目上传（兼容界面）',
       'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去是 /getstarted 上「Add your project」那一段。'
@@ -354,12 +319,9 @@
       /* 会话页：一台机器的档案 */
       'sess.owner': '属主', 'sess.client': '客户端', 'sess.unknownHost': '未命名主机',
       'sess.on': '运行中', 'sess.off': '已暂停',
-      // 站点那行无标签的状态行把两种暂停分开写了（见 20-api.js 的 info.note）：
-      // 服务器端点暂停是 "Paused server side"，客户端自己暂停是 "Paused client side"。
       'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
       'sess.statusRaw': '站点原文：{raw}',
-      // 身份条上那一句"这台机器此刻在跑什么"。暂停时说"当前作业"而不是"正在渲染"，
-      // 否则会和旁边那枚「已暂停」徽章自相矛盾。
+      // 暂停时说"当前作业"，否则和旁边的「已暂停」徽章自相矛盾。
       'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
       'sess.noId': '地址里没有会话编号', 'sess.parseFailed': '这一页没读到机器信息',
@@ -369,7 +331,6 @@
       'sess.kpi.powerLink': '各机型算力榜',
       'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
       'sess.f.cpu': '处理器',
-      // 算力那一格的标签跟着站点印的是哪一行走（见 50-views.js 的 powerFacts）
       'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
       'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
       'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
@@ -398,24 +359,18 @@
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
 
-      /* ---- 上传项目（应用内 #/upload）----
-         卡片里的三块是站点 /getstarted 上「Add your project」那一段搬过来的，
-         但**那一页本身不接管**（见 80-app.js 的 viewForPath）：它同时是「下载客户端」
-         指南页，半接管会让同一件事出现两种界面。 */
+      /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
-      /* 这一句很重要：说明这块为什么长着原站的样子但数字是真的 */
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      /* 顶上那句话：这一页是我们容器里的站点控件，说清楚它是什么，
-         免得被当成和六个视图一个标准重制过的东西。 */
       'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
         + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
-      /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
-         那句话和文件框在同一个 <td> 里，翻译层一旦整块替换就会把文件框删掉。 */
+      /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
+         <td> 里，翻译层整块替换会把文件框一起删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
-      /* ---- 上传后的「正在分析」等待页 ---- */
+      /* 上传后的分析等待页 */
       'an.title': '正在分析你的项目',
       'an.sub': '站点要先读一遍存档，才知道里面有几个 .blend、帧区间和分辨率是多少',
       'an.waiting': '排队等分析器接手…',
@@ -428,14 +383,9 @@
       'an.doneTitle': '分析完成',
       'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
 
-      /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
-      /* 站点原文是 "Over user's time limit"。这里的 user 是**机器主人**、time limit 是他在
-         客户端里设的「单帧渲染时长上限」—— 不是发布者的时限（早先就译错成"超出发布者的时限"）。
-         站点判定：这一帧在参考机上的用时超过本机上限，于是不派给它。 */
+      /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
       'why.over-user-s-time-limit': '预计超过本机单帧上限',
-      // 站点把"能渲染"也写成这一列的一个值（不是留空），而且可渲染的全排在表的最前面 ——
-      // 那些行的顺序就是优先级，见 50-views.js 里可渲染项目表的注释。
       'why.renderable': '现在可渲染',
       'why.computer-has-previously-failed-to-render-project': '这台机器之前渲染它失败过',
       'why.requires-gpu': '需要 GPU',
@@ -492,7 +442,6 @@
       'sessions.title': 'Recent sessions', 'sessions.sub': '{n} records',
       'news.title': 'Latest news',
       'proj.title': 'Active projects', 'proj.count': '{n} projects',
-      /* Render-priority toggle in the publisher cell (same endpoints as the account page) */
       'proj.prio.inList': 'Already in your render priority',
       'proj.menu.open': 'More actions', 'proj.menu.title': 'This publisher\u2026',
       'proj.menu.prio': 'Prioritise their projects', 'proj.menu.unprio': 'Remove from render priority',
@@ -575,15 +524,10 @@
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
       'footer.source': 'Data source: the site\u2019s own pages · no private endpoints',
-      /* Session page: one machine\u2019s record */
       'sess.owner': 'Owner', 'sess.client': 'Client', 'sess.unknownHost': 'Unnamed machine',
       'sess.on': 'Running', 'sess.off': 'Paused',
-      // the site's untitled status row separates the two pauses (see 20-api.js info.note):
-      // "Paused server side" when the server paused it, "Paused client side" when the client did
       'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
       'sess.statusRaw': 'the site writes: {raw}',
-      // the identity strip's "what is this machine on right now"; "current job" while paused,
-      // so it cannot contradict the Paused chip next to it
       'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
@@ -593,7 +537,6 @@
       'sess.kpi.powerLink': 'Power by machine model',
       'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
       'sess.f.cpu': 'Processor',
-      // the power cell's label follows whichever row the site printed (see 50-views.js powerFacts)
       'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
       'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
       'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
@@ -608,7 +551,6 @@
       'sess.timeline': 'Timeline', 'sess.tlSub': '{n} events · {from} → {to} · your local time',
       'sess.tlSubEmpty': 'the site returned no events', 'sess.tlNone': 'No events recorded for this machine yet',
       'sess.tlFailed': 'Timeline unavailable (the site\u2019s endpoint did not answer) \u2014 machine information is unaffected',
-      /* Activity summary (default) and the full log (folded away) */
       'sess.act.day': 'Date', 'sess.act.month': 'Month', 'sess.act.render': 'Render time',
       'sess.act.events': 'Events', 'sess.act.jobs': 'Jobs', 'sess.act.failed': 'Failed',
       'sess.act.moreDay': '{n} earlier days are not listed here', 'sess.act.moreMonth': '{n} earlier months are not listed here',
@@ -622,9 +564,6 @@
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
 
-      /* Project upload and the "analysing" screen after it.
-         The upload surface lives inside the app (#/upload); /getstarted itself is left to the
-         site — see the note on viewForPath. Its "Add your project" section is still the source. */
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
@@ -647,13 +586,10 @@
     },
   };
 
-  // ── 语言包注册表 ───────────────────────────────────────────────────────
-  // 语言是数据，不是代码。加一门语言 = SP.I18n.register('ja', {...}) 一次调用。
-  //  en 是基准语言（站点原文即英文），zh 的 UI 词表就在下面。
+  // 加一门语言 = SP.I18n.register('ja', {...})；en 是基准语言。
   const LANG_LABELS = { zh: '中文', en: 'English' };
 
-  // code → { site: {原文:译文}, blocks: {整块原文:译文HTML}, patterns: [[正则, 替换]] }
-  // site 负责短词条；blocks 负责被内联标签切碎的句子；patterns 负责带变量的文案。
+  // SITE[code]：{原文:译文} / {整块原文:译文HTML} / [[正则, 替换]]
   const SITE = {};
 
   const I18n = {
@@ -663,7 +599,6 @@
     LANGS: DICT,
     SITE,
 
-    /** 注册/补充一门语言。dict 与基准语言合并，缺失键自动回落，所以可以分批补充。 */
     register(code, pack) {
       DICT[code] = Object.assign({}, DICT.en, DICT[code] || {}, pack.dict || {});
       SITE[code] = Object.assign({ site: {}, blocks: {}, patterns: [], blockPatterns: [] }, SITE[code] || {}, {
@@ -676,12 +611,10 @@
       return code;
     },
 
-    /** 供设置页动态生成语言列表 —— 新增语言后无需改 UI 代码 */
     available() {
       return Object.keys(DICT).map((c) => ({ code: c, label: LANG_LABELS[c] || c }));
     },
 
-    /** 'auto' 解析：先按浏览器语言精确匹配，再按主语言匹配，最后回落基准语言 */
     resolve(pref) {
       if (pref && pref !== 'auto' && DICT[pref]) return pref;
       const nav = (navigator.language || 'en').toLowerCase();
@@ -709,7 +642,7 @@
       return s;
     },
 
-    /** 翻译一段站点文本：精确词条 → 模式规则。返回 null 表示"无对应翻译，保持原样"。 */
+    /** 未命中返回 null = 原文保持原样 */
     siteText(text) {
       if (this.lang === this.BASE) return null;
       const pack = SITE[this.lang];
@@ -720,14 +653,13 @@
       return null;
     },
 
-    /** 整块翻译：用于被 <a>/<strong> 等内联标签切碎的句子。未命中返回 null。 */
+    /** 整块替换：被内联标签切碎的句子；未命中返回 null */
     blockText(text) {
       if (this.lang === this.BASE) return null;
       const pack = SITE[this.lang];
       return pack && pack.blocks[text] !== undefined ? pack.blocks[text] : null;
     },
 
-    /** 当前语言是否需要（并且有能力）翻译站点原文 */
     canTranslateSite() {
       const pack = SITE[this.lang];
       return this.lang !== this.BASE && !!pack
@@ -735,7 +667,6 @@
             || pack.patterns.length > 0 || pack.blockPatterns.length > 0);
     },
 
-    /** 覆盖度统计，供设置页显示 */
     coverage() {
       const pack = SITE[this.lang];
       if (!pack) return null;
@@ -747,22 +678,18 @@
     },
   };
 
-  /* ---------------------------------------------------------------- 主题 */
+  /* ==== 主题 token ==== */
 
-  // 两套设计 token —— 与 docs/DESIGN.md 的 "Colour" 一节逐值一致。
-  // 品牌橙 #e06d58 只用于三处：可操作元素 / 当前选中 / 数据序列中代表"你"。
-  // 亮色刻意不是暗色的简单反转：面更亮、边框更淡、强调色加深以保对比度。
+  // 品牌橙 #e06d58 只用于三处：可操作元素 / 当前选中 / 代表"你"的序列。
   const TOKENS = {
     dark: {
       '--bg': '#0b0d11', '--surface': '#111419', '--surface-2': '#161a21', '--surface-3': '#1c2129',
       '--border': '#22272f', '--border-strong': '#2f3640',
       '--text': '#e8eaed', '--text-2': '#a8b0bb', '--text-3': '#7c8695',
       '--accent': '#e06d58', '--accent-weak': 'rgba(224,109,88,.14)',
-      // 主按钮的文字色。白字压在 #e06d58 上只有 3.2:1，达不到 4.5:1；
-      // 品牌橙本身不能动，所以改文字：近黑墨在品牌橙上是 5.7:1。
+      // 白字压在品牌橙上只有 3.2:1（要 4.5:1），故按钮文字改用近黑墨（5.7:1）。
       '--btn-ink': '#0f1218', '--chart': '#e06d58',
-      // 热力图色阶。必须跟着 --chart 走：五档写死成暗色的橙，
-      // 亮色主题里就会比其他数据序列明显偏粉，一眼看出不是同一个世界。
+      // 热力图五档跟着 --chart 走：写死暗色的橙，亮色主题下会偏粉。
       '--heat-1': 'rgba(224,109,88,.16)', '--heat-2': 'rgba(224,109,88,.34)',
       '--heat-3': 'rgba(224,109,88,.55)', '--heat-4': 'rgba(224,109,88,.78)',
       '--heat-5': 'rgba(224,109,88,1)',
@@ -774,8 +701,7 @@
       '--border': '#e4e6ea', '--border-strong': '#d0d4da',
       '--text': '#14171c', '--text-2': '#4b5462', '--text-3': '#656d79',
       '--accent': '#b6472f', '--accent-weak': 'rgba(182,71,47,.10)',
-      // 亮色下品牌橙要压得更深：白字落在 #b6472f 上是 5.3:1，
-      // 顺带把"强调色文字落在浅底上"的对比度也一起提上去。
+      // 亮色下品牌橙压深：白字落在 #b6472f 上是 5.3:1。
       '--btn-ink': '#ffffff',
       '--chart': '#b6472f',
       '--heat-1': 'rgba(182,71,47,.16)', '--heat-2': 'rgba(182,71,47,.34)',
@@ -793,7 +719,8 @@
       return this.pref;
     },
     set(pref) { Util.store.set('theme', pref); this.pref = pref; },
-    /** 把 token 拼成 CSS 文本；manual 覆盖块放在 media query 之后以保证优先级 */
+    /** 拼 token 成 CSS 文本；覆盖块放 media query 之后保证优先级。
+     *  scope **不能传选择器列表** —— 生成的 :not 只绑最后一项，#sp 会无条件拿到亮色 token。 */
     css(scope) {
       const block = (sel, set) =>
         `${sel}{${Object.entries(set).map(([k, v]) => `${k}:${v}`).join(';')}}`;
@@ -805,7 +732,6 @@
         light,
       ].join('\n');
     },
-    /** 解析出当前实际生效的是暗还是亮（用于图表取色） */
     effective(pref) {
       if (pref === 'dark' || pref === 'light') return pref;
       return window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';

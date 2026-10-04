@@ -1,12 +1,4 @@
-/* ==========================================================================
- * 80-app.js — 应用层：接管判定 / 挂载 / 路由 / 数据编排 / 事件
- *
- * 接管策略（重要）：
- *   1) 重建过的 4 个视图所对应的路径 → 整个界面换成新的；
- *   2) 其余路径 → 界面保持原站不动，只把 UI 文案在本地翻成当前语言
- *      （官方没有做国际化，这一层是替它补的）；
- *   3) 两层互相独立：换界面不等于翻译，翻译也不依赖换界面。
- * ========================================================================== */
+/* ==== 80-app.js：应用层（接管判定 / 路由 / 事件） ==== */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -15,48 +7,34 @@
 
   const { Util, UI, Api, Theme, I18n, Views, t } = SP;
 
-  /* ------------------------------------------------------- 1. 接管判定 */
+  /* ---- 1. 接管判定 ---- */
 
-  /** 路径 → 视图。返回 null 表示不接管，原站界面照常显示。 */
+  /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
   function viewForPath(pathname) {
     const p = pathname.replace(/\/+$/, '') || '/home';
     if (p === '/home' || p === '/' || p === '/index.php') return 'overview';
     if (p === '/home/projects') return 'projects';
     if (p === '/ranking/user' || p === '/ranking') return 'ranking';
-    // 任意用户主页都接管：页面本身是公开可读的
+    // 主页公开可读 → 任意人都接管
     if (/^\/user\/[^/]+\/profile$/.test(p)) return 'overview';
-    // 账户设置页只接管自己的：别人的设置页站点自己会拦，我们放行
+    // 账户设置只接管自己的（别人的站点自己会拦）
     if (/^\/user\/[^/]+\/edit$/.test(p)) return 'account';
-    // 会话页（一台机器的档案）。实测别人的会话编号直接 404 —— 站点只让自己的机器可见。
-    // 这里仍然按"能读到就接管"处理：接手的是站点已经给了我们的那一份页面。
+    // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    /* /getstarted **不接管**（2026-10-04 用户拍板）。它同时是「下载客户端」指南页，上传表单只是
-       它三段里的最后一段；当年为此只做了局部接管，代价是同一件"上传项目"存在两种界面 ——
-       站点原版那一页，和新界面里的应用内上传页 —— 在原版模式下点那颗角落按钮还会落到一个
-       "半新半旧"的页面（站点头尾 + 我们的卡片），容易混淆。
-       现在这一页永远保持原站界面（只补翻译）；新版的上传只走应用内 `#/upload`，从顶栏进。 */
-    // 上传之后的「正在分析」等待页，token 就是这一页的身份，从地址里读。
-    // 站点把 /project/add/<任意串> 都指向同一个模板，所以这里也只认形状不认值。
+    /* /getstarted **不接管**（用户拍板）：上传表单只是那页最后一段，局部接手会让"上传项目"有两种
+       界面。上传只走应用内 `#/upload`。 */
+    // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
-    /* 还没接管的两页，写在这里免得下次重新摸一遍：
-       · 分析完成后的「新增项目」设置表单（官方 formAddProject()，约 490 行 PHP）——
-         它是 /project/add_analyse/<token> 的响应片段，由上面那一页的轮询接住再注入；
-       · 项目管理页 /project/<数字>（官方 manage.html.twig，六个功能区 + ACL 名单）。
-       两页都只对项目所有者开放，手上没有真实样本 —— 要做只能照官方源码写，
-       成品必须标注「未对真实页面验证」，并优先请有项目的人复核。 */
+    // 还没接管：新增项目表单、/project/<数字>（见 docs/PUBLISHING.md「五」）
     return null;
   }
 
   const pathView = viewForPath(location.pathname);
   const uiMode = Util.store.get('uiMode', 'modern');
 
-  /* ------------------------------------------------- 原版界面 / 现代化 开关
-     用户要一条退路：习惯旧界面的人、以及脚本还没覆盖到的功能，都能一键回去。
-     选了原版就一颗守卫都不注入 —— 页面必须是用户记忆里那个样子。 */
+  /* ---- 原版界面 / 现代化 开关 ---- */
 
-  /** 原版界面下挂在左下角的小开关。必须活在 #sp 之外：那种模式下 #sp 根本不存在。
-   *  two jobs：在能接管的页面上是"切回现代化"；在没有重制版的页面上（FAQ、服务器…）
-   *  是"进入现代化界面" —— 那些页面本身没有新版本，所以带去总览。 */
+  /** 原版界面下左下角的开关（必须活在 #sp 之外）：能接管的页"切回"，没重制版的页"进入" */
   function mountModePill(kind) {
     if (document.getElementById('sp-mode-pill')) return;
     SP.injectModePillStyle();
@@ -70,17 +48,13 @@
     b.addEventListener('click', () => {
       Util.store.set('uiMode', 'modern');
       if (classic) location.reload();
-      else location.href = '/home';   // 这一页没有重制版，去总览
+      else location.href = '/home';   // 没重制版 → 去总览
     });
     SP.cornerHost().appendChild(b);
   }
 
-  /* -------------------------------------------- 未接管的页面：只补国际化 */
+  /* ---- 未接管的页面：只补国际化 ---- */
 
-  /**
-   * 未重建的页面（/faq、/servers、/project/*…）保持原站界面，
-   * 只在本地把 UI 文案翻成当前语言。与"重做界面"是两件独立的事。
-   */
   function startSiteTranslation() {
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
@@ -93,29 +67,25 @@
         document.documentElement.lang = ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
         SP.DomI18n.run();
       }
-      /* 角落开关**不受 on 影响**，照挂 —— 关掉翻译之后如果连按钮一起没了，
-         页面上就再没有入口能把它开回来（0.1.6 用户实报的坑）。
-         只在"这门语言本来就有词表"时挂：英文是基准语言、翻译层不介入，挂了也没意义。 */
+      /* 角落开关**不受 on 影响**，否则关掉翻译就再没有入口开回来（用户实报） */
       if (I18n.canTranslateSite()) SP.DomI18n.mountPill();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();
   }
 
-  // 原版界面模式，或本来就不接管的页面：不注入守卫、不挂 #sp，只补国际化。
-  // 两种情况下都给一个左下角入口：原版模式是"切回"，没重制版的页面是"进入"。
+  // 不接管 / 原版界面：不注入守卫、不挂 #sp，只补国际化 + 左下角入口
   if (uiMode === 'classic' || !pathView) {
     startSiteTranslation();
     mountModePill(pathView ? 'classic' : 'enter');
     return;
   }
 
-  // 守卫在 document-start 就注入，为的是原站界面画出来之前就把它挡住（防闪）。
-  // 现在没有局部接管的页面了 —— 走到这里的都是整页接管。
+  // 守卫在 document-start 注入（防闪）；能走到这里的都是整页接管
   SP.injectGuard();
   SP.injectStyle();
 
-  /** 提前注入了守卫、但后来发现不该接管时，把页面原样还给用户 */
+  /** 守卫已注入、后来发现不该接管：把页面原样还给用户 */
   function release() {
     released = true;
     const g = document.getElementById('sp-guard');
@@ -123,33 +93,33 @@
     const s = document.getElementById('sp-style');
     if (s) s.remove();
     const host = document.getElementById('sp');
-    if (host) host.remove();   // 这时候界面还没画，通常不存在；存在就一起撤掉
+    if (host) host.remove();   // 界面还没画，通常不存在
     startSiteTranslation();
   }
   let released = false;
 
-  /* ------------------------------------------------------- 2. 状态 */
+  /* ---- 2. 状态 ---- */
 
   const state = {
     view: pathView,
-    userName: null,        // 当前登录用户
-    profileName: null,     // 正在查看的主页属主
+    userName: null,
+    profileName: null,     // 正在查看的档案属主
     profile: null,
     home: null,
     projects: null,
     ranking: null,
     account: null,
     session: null,
-    sessionId: null,       // /session/<数字>，从地址里读
-    analyseToken: null,    // /project/add/<token>，同样是地址的一部分
-    myAvatar: '',          // 顶栏那张：**自己**的头像，从站点导航栏读（不是正在看的档案）
+    sessionId: null,       // /session/<数字>
+    analyseToken: null,    // /project/add/<token>
+    myAvatar: '',          // 顶栏那张：**自己**的头像（不是正在看的档案）
     loading: false,
     error: null,
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    expUpload: false,      // 实验性：兼容界面（上传页）在顶栏的入口，设置里的开关，默认关
-    uiScale: 1,            // 界面整体缩放（设置里那个百分比）
+    expUpload: false,      // 实验性：顶栏的上传入口（设置里开，默认关）
+    uiScale: 1,            // 界面整体缩放
   };
 
   const ROUTES = { overview: '#/overview', projects: '#/projects', upload: '#/upload', ranking: '#/ranking', settings: '#/settings', account: '#/account' };
@@ -168,15 +138,13 @@
     const host = document.getElementById('sp');
     if (!host) return;
     host.setAttribute('data-theme', Theme.effective(state.themePref));
-    // 界面整体缩放。用 CSS zoom 而不是 transform:scale —— 实测它在"视口铺满"这件事上
-    // 不用收尾：物理宽仍是视口宽，clientWidth 变成 1/zoom，里面照旧按视口排版。
-    // 代价是 rect 量出来的是物理像素，凡是拿它写 left/top 的地方都要除以 zoom（Util.zoomOf）。
+    // 缩放用 CSS zoom 而非 transform:scale；rect 量出物理像素，写 left/top 要除以 zoom（Util.zoomOf）。
     host.style.zoom = state.uiScale === 1 ? '' : String(state.uiScale);
-    // 图表用 CSS 变量取色，这里同步一份给 SVG 里的 var() 生效
+    // 图表（SVG var()）也要这份颜色方案
     host.style.colorScheme = Theme.effective(state.themePref);
   }
 
-  /* ------------------------------------------------------- 3. 挂载 */
+  /* ---- 3. 挂载 ---- */
 
   function mount() {
     if (document.getElementById('sp')) return document.getElementById('sp');
@@ -192,9 +160,7 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口：走到**应用内**的上传视图（#/upload），不是跳去 /getstarted ——
-       那一页带着站点的头尾和下载指南，从新界面点进去会变成"新版→原版→卡片"的来回跳。
-       默认关，得用户在设置里点头（见 set.exp*）。 */
+    /* 实验性入口走**应用内** #/upload，不跳原站那页 */
     if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
@@ -216,9 +182,7 @@
     </div>`;
   }
 
-  /* 入场动效只在"换视图"时播一次（外加本页第一次真正出内容）。筛选项、排序、显示更多、
-     开关 3 点菜单、提交后重取 —— 这些只改内容的 render() 都不该让上面的块重新淡入，
-     那看起来就像整页在重载（用户为此报过两次：筛选按钮、3 点菜单）。 */
+  /* 入场动效只在"换视图"和本页首次出内容时播：只改内容的 render() 重放会像整页重载 */
   let animOnce = false;
   let painted = false;
 
@@ -228,27 +192,23 @@
     applyTheme();
     const scrollY = host.scrollTop;
 
-    /* 分析等待页只画一次：它是整页接管，站点那一版的导航被守卫藏了，用户得有顶栏和出口。
-       只能画一次是因为 #sp-an-result 里会被站点注入下一步的表单，
-       重画就把站点刚塞进来的东西抹掉了；状态更新走 paintAnalyse() 的定点改。 */
+    /* 分析等待页只画一次：重画会抹掉站点注入 #sp-an-result 的表单 */
     if (state.view === 'analyse' && host.dataset.spWired) return;
 
-    // 注意：#sp-body 必须在外壳创建之后才查，否则首次渲染拿到 null
+    // #sp-body 要等外壳创建之后才查得到
     if (!host.querySelector('.top')) {
       host.innerHTML = shell();
     } else {
-      // 只更新导航高亮与登录者头像，避免整壳重建导致滚动位置丢失
+      // 只更新高亮与头像：整壳重建会丢滚动位置
       host.querySelectorAll('nav [data-nav]').forEach((b) =>
         b.setAttribute('aria-current', b.dataset.nav === state.view ? 'page' : 'false'));
       const who = host.querySelector('.who');
       if (who && state.userName) {
-        // 顶栏那张必须是**你自己**的头像：从站点导航栏读（boot 时拿的）。
-        // 退路也只在"看的就是自己"时才用档案头像 —— 用正在看的那份档案，
-        // 去看别人主页时顶栏就会变成别人的脸（用户报的就是这个）。
+        // 退路只在看自己时才用档案头像，否则顶栏会变成别人的脸（用户实报）
         const src = state.myAvatar
           || (state.profileName === state.userName && state.profile ? state.profile.avatar : '');
         const cur = who.querySelector('img') || who.querySelector('span');
-        // 外壳先于数据渲染，所以这里可能是个字母占位 span，拿到头像后要换成 img
+        // 这里可能还是字母占位 span，拿到头像后换成 img
         if (src && cur && cur.tagName !== 'IMG') {
           const img = document.createElement('img');
           img.src = src;
@@ -262,16 +222,14 @@
     }
     const body = host.querySelector('#sp-body');
 
-    /* 应用内的上传视图：卡片里装着从 /getstarted 抓回来、已经装好的活节点（含一个表单），
-       再画一次就把用户填了一半的东西扔了。 */
+    /* 卡片里是抓回来装好的活节点（含表单）：再画会扔掉用户填的内容 */
     if (state.view === 'upload' && body && body.dataset.spWired) return;
 
     let html;
     if (state.view === 'settings') html = Views.settings(state);
-    // 错误态必须排在空态前面：取不到数据时说清楚原因并给一个重试，
-    // 而不是拿"暂无数据"糊弄 —— 那两种情况的含义完全不同。
+    // 错误态排在空态前：取不到数据要说原因并给重试
     else if (state.error) html = UI.state.error(state.error, 'sp-retry');
-    // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
+    // 骨架也排在空态前，否则首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
@@ -282,18 +240,14 @@
     else if (state.view === 'ranking') html = state.ranking ? Views.ranking(state) : UI.state.empty();
     else html = UI.state.empty();
 
-    /* 重画之前先把上面那枚"已接线"标记清掉：它标的是**这一次渲染装进 body 的东西**，
-       而 #sp-body 是常驻元素，标记会跟着元素活过整个会话。不清的话，从上传视图切到别的
-       视图、再切回上传，上面那条守卫会以为卡片还在、直接早退 —— 用户看到的是上一个视图
-       的内容，地址栏和导航高亮却写着"上传"（0.1.9 实测踩到，卡片和文件框都不见了）。
-       这里能安全清，是因为守卫排在前面：同一次上传访问里的静默重画都会在上面 return。 */
+    /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
     body.innerHTML = html;
-    // 画完这一次就不再画：见上面分析等待页那一段。（错误态不锁，重试要能重画）
+    // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
-    Views.mount(body, state);      // 面积图要按实测像素渲染，字符串表达不了
+    Views.mount(body, state);      // 面积图要按实测像素渲染
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -303,19 +257,8 @@
     if (el) el.textContent = `${t('top.updated')} ${new Date().toLocaleTimeString()}`;
   }
 
-  /* ------------------------------------- 3.5 上传后的「正在分析」轮询
-
-     站点自己的 addproject.js 就是这么轮的：GET /project/add_analyse/<token>，
-     等待中回 {"status":"RETRY"}，分析中回 {"status":"PROCESSING","analysed":n,"total":m}，
-     分析完成则**直接把「新增项目」表单当 HTML 吐回来**（那个片段没有布局，本来就是给
-     JS 塞进容器用的）。
-
-     我们自己轮一次、而不是调站点的 doAnalyseUploadedProject()：它的状态文案是写死的英文，
-     而且它把结果写进站点那个容器 —— 那一屏已经被我们接管了。接口和状态机照抄站点，
-     没有自己发明协议；多出来的一次 GET 也不算浪费：站点自己那一版也是一样的频率。
-
-     为了让**只有一个**轮询器在打这个接口，站点的那个函数在这里摘掉 —— 它挂在
-     google.charts 的 onLoadCallback 上，什么时候跑不确定，留着就是两个轮询器。 */
+  /* ---- 3.5 「正在分析」轮询：GET /project/add_analyse/<token> → RETRY（等待）/ PROCESSING（分析中，
+     带 analysed/total）/ 完成**直接把「新增项目」表单当 HTML 吐回来**；站点那个轮询函数（写死英文）摘掉。 */
   let analyseTimer = null;
   let siteAnalyseNeutralised = false;
   const fmtN = (n) => Number(n).toLocaleString('en-US');
@@ -328,9 +271,9 @@
     stopAnalysePoll();
     if (!siteAnalyseNeutralised) {
       siteAnalyseNeutralised = true;
-      try { window.doAnalyseUploadedProject = function () { /* 见上：这一页的轮询归我们 */ }; } catch (e) { /* 站点没定义就算了 */ }
+      try { window.doAnalyseUploadedProject = function () { /* 见上 */ }; } catch (e) { /* 站点没定义就算了 */ }
     }
-    // 先让首屏画出来再开始轮（render() 刚写完卡片，马上 repaint 会抢掉入场动效）
+    // 等首屏画完再轮，否则抢掉入场动效
     analyseTimer = setTimeout(analyseTick, 400);
   }
 
@@ -339,19 +282,18 @@
     if (!token) return;
     let raw;
     try {
-      // ttl 0：这一页轮的就是"现在"，缓存下来等于永远停在第一次的结果
+      // ttl 0：轮的就是"现在"，缓存会停在第一次的结果
       raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
     } catch (e) {
-      // 接口没回应就停下，不再自己重试 —— 卡片上那句文案已经说了"重新载入这一页"
+      // 不自己重试：卡片上的文案已说"重新载入这一页"
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
     let json = null;
     try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
     if (json === null) {
-      /* 分析完成时站点吐的是**一段没有布局的片段**（给 JS 塞进容器用的）；
-         而"这个编号找不到"它吐的是整页 error.html.twig。用形状把两者分开 ——
-         否则会把一整页错误当成"填表去吧"塞进卡片里。 */
+      /* 完成吐的是**没有布局的片段**，"找不到编号"吐的是整页 error.html.twig → 按形状分开
+         （否则整页错误会被当成表单）。 */
       if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
       paintAnalyse({ html: raw });
       return;
@@ -364,7 +306,7 @@
     analyseTimer = setTimeout(analyseTick, 5000);
   }
 
-  /** 只改卡片里那几个节点，不整页重画 —— 重画会把站点注入的下一步表单一起抹掉。 */
+  /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
   function paintAnalyse(s) {
     const host = document.getElementById('sp');
     if (!host) return;
@@ -375,7 +317,7 @@
       stopAnalysePoll();
       const spin = q('spin'); if (spin) spin.remove();
       say('state', t('an.failed', { err: s.failed }));
-      say('sub', '');   // "几分钟是正常的"是等待中的话，收尾了就不该再挂着
+      say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
       return;
     }
@@ -394,8 +336,7 @@
       return;
     }
     if (s.html !== undefined) {
-      // 分析完成了：站点那份「新增项目」表单进来。本版没有重制它（卡片上已经写明），
-      // 所以只把它放进来做可读性兜底，功能原样可用 —— 提交走站点自己的 doAddProject。
+      // 站点表单进来：本版没重制它，只做可读性兜底
       stopAnalysePoll();
       const spin = q('spin'); if (spin) spin.remove();
       say('state', t('an.doneTitle'));
@@ -406,7 +347,6 @@
       if (box) { box.innerHTML = s.html; box.hidden = false; }
       return;
     }
-    // PROCESSING
     say('state', s.total
       ? t('an.processing', { done: fmtN(s.done), total: fmtN(s.total) })
       : t('an.reading'));
@@ -415,7 +355,7 @@
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
 
-  /* ------------------------------------------------------- 4. 数据编排 */
+  /* ---- 4. 数据编排 ---- */
 
   async function ensureData(view) {
     if (view === 'settings') return;
@@ -427,8 +367,7 @@
     }
 
     if (view === 'upload') {
-      // 把 /getstarted 抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
-      // 站点没有给这一块单独的接口，页面就是它的数据源 —— 和别处的解析器一个路子。
+      // /getstarted 就是数据源（见 50-views.js wireUploadDoc）：站点没给单独接口
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
@@ -445,20 +384,15 @@
         state.session = Api.parseSession(await Api.fetchPage(`/session/${state.sessionId}`), state.sessionId);
         if (!state.session) throw new Error(t('sess.parseFailed'));
       }
-      // 时间线是站点自己的 AJAX JSON。它拿不到不该拖垮整屏 —— 机器信息照常显示，
-      // 只有时间线那一块说"没取到"。
+      // 时间线是站点 AJAX JSON：拿不到只让那一块说"没取到"
       if (state.session.timeline === undefined) {
         try { state.session.timeline = Api.parseTimeline(await Api.fetchJson(state.session.timelineUrl)); }
         catch (e) { state.session.timeline = []; state.session.timelineFailed = true; }
       }
-      // 「可渲染项目」那张表只有项目名，发布者要用项目列表页按名字对（实测 34/34 对得上）。
-      // 对不上就只显示项目名，整张列表拿不到也不影响这一屏。
       if (!state.projects) {
         try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); }
         catch (e) { state.projects = null; }
       }
-      // 发布者那格的名单标记与 3 点菜单要看我自己那三份名单（账户设置页里那份）。
-      // 读不到就整格不给动作 —— 与项目页同一条规矩：状态不明的地方不给按钮。
       if (!state.account && state.userName) {
         try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
         catch (e) { state.account = null; }
@@ -475,11 +409,9 @@
         SP.state = state;   // 供 shell 里取头像
       }
       if (!state.home) {
-        // 首页失败不该让整个总览挂掉
         try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
       }
       if (!state.projects) {
-        // 总览底部的「进行中的项目」是附加信息：拿不到就整块不显示，绝不拖垮这一屏
         try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); } catch (e) { /* 保持 null */ }
       }
     }
@@ -488,14 +420,12 @@
       state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
     }
 
-    // 项目页发布者那格的「优先 / 移出」要看我自己的渲染优先级名单（账户设置页里那份）。
-    // 拿不到就整列不给按钮 —— 不猜状态。
     if (view === 'projects' && !state.account && state.userName) {
       try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
       catch (e) { state.account = null; }
     }
 
-    // 项目页顶部那条全站实时来自首页；直接落到这一页时也得取一次，失败就不显示那条
+    // 顶部全站实时来自首页：直接落到这页也得取一次
     if (view === 'projects' && !state.home) {
       try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
     }
@@ -510,7 +440,6 @@
     state.view = view;
     state.error = null;
 
-    // 先渲染骨架，让交互立刻有反馈
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
@@ -529,22 +458,18 @@
       if (/401|403|signin/i.test(state.error)) state.error = t('state.loggedOut');
     } finally {
       state.loading = false;
-      // 只有"换了视图"或"本页第一次真正出内容"才播入场；刷新、提交后重取都不播
       animOnce = viewChanged || !painted;
       render();
       painted = true;
-      /* 地址栏只归**最后一次**导航写。这一次 show() 是异步的，取数据慢的时候它可能落在
-         更新的导航之后 —— 那种情况下再按自己的视图写 URL，就会把用户真正在看的那个
-         视图的地址改掉：实测"总览还在取 → 点了上传"这一串里，总览的收尾最后落盘，
-         地址写着 #/overview 而界面是上传页，用户一刷新就回不到上传视图。
-         （上一会话看到的"hash 还是 #/overview"就是这个，不是读数时机的问题。） */
+      /* 地址栏只归**最后一次**导航写：show() 异步，慢的收尾会落在更新的导航之后，按自己的视图写
+         URL 就会改掉用户在看的那页（实测：地址 #/overview 而界面是上传页）。 */
       if (state.view === view) history.replaceState(null, '', ROUTES[view] || location.pathname);
     }
   }
 
-  /* ------------------------------------------------------- 5. 事件 */
+  /* ---- 5. 事件 ---- */
 
-  /** 一次性提示。写操作的结果必须说出来，不能默默成功也不能默默失败。 */
+  /** 一次性提示：写操作的结果必须说出来，不能默默成功/失败 */
   let toastTimer = null;
   function toast(msg) {
     const host = document.getElementById('sp');
@@ -560,11 +485,7 @@
     toastTimer = setTimeout(() => { if (el.parentNode) el.remove(); }, 2600);
   }
 
-  /**
-   * 写操作的统一收口：提交 → 站点回 'OK' 就重取数据并重画，否则原样转述它的错误。
-   * 全部由用户点击触发，打的都是站点自己的端点。
-   * 重画的是"当前这一屏"：账户设置页的开关和会话页的暂停都走这里。
-   */
+  /** 写操作统一收口：回 'OK' 就重取重画，否则原样转述错误 */
   async function submit(fn, okMsg) {
     toast(t('account.saving'));
     try {
@@ -588,8 +509,7 @@
   };
 
   function onClick(ev) {
-    // 3 点菜单是浮层：点在任何别处都先把它关掉。这里不 return —— 这一次点击该干的事继续干
-    // （比如顺手切了筛选），listener 在宿主上，重画也不影响这次事件继续派发。
+    // 3 点菜单是浮层：点别处先关掉；不 return，该干的事继续干
     if (Views.projState.menu && !ev.target.closest('.omenu') && !ev.target.closest('[data-act="owner-menu"]')) {
       Views.projState.menu = null;
       render();
@@ -612,8 +532,7 @@
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
         state.session = null;
-        // 刷新时骨架会让内容瞬间变短、浏览器把 scrollTop 夹到 0，
-        // 长的页面（会话页 1800px+）刷新完就弹回顶部了。记一下，画完再放回去。
+        // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
         const keepY = host ? host.scrollTop : 0;
         show(state.view).then(() => {
@@ -623,31 +542,30 @@
         return;
       }
 
-      // ---- 账户设置：以下都是真实写操作 ----
+      // ---- 账户设置 ----
       if (kind === 'prio-add') {
         const name = valOf(act.dataset.input);
         if (!name) return;
-        // 动作前缀来自账户页解析结果（站点 onclick 里读的）；读不到才按形状兜底
+        // 前缀来自账户页解析（站点 onclick）；读不到才按形状兜底
         const base = (state.account && state.account.add && state.account.add.priority) || '/user/priority/add/';
         submit(() => Api.post(base + encodeURIComponent(name)));
         return;
       }
       if (kind === 'sponsor-add') {
         const name = valOf(act.dataset.input);
-        const base = act.dataset.url;   // /user/sponsor/add/ —— 从站点自己的 onclick 里读出来的
+        const base = act.dataset.url;
         if (!name || !base) return;
         submit(() => Api.post(base + encodeURIComponent(name)));
         return;
       }
       if (kind === 'sponsor-set') {
-        // 站点那个 checkbox 的 onclick 带的就是"这一下要打的地址"（含目标状态 0/1），照打即可。
-        // 失败时把界面重新拉回服务器上的真实状态 —— 勾选框不能停在一个没生效的位置上。
+        // onclick 带的就是"这一下要打的地址"（含目标状态）；失败要拉回真实状态
         const url = act.dataset.url;
         if (!url) return;
         submit(() => Api.post(url)).then((ok) => { if (!ok) show(state.view, { silent: true }); });
         return;
       }
-      // ---- 项目页发布者那格的 3 点菜单 ----
+      // ---- 发布者 3 点菜单 ----
       if (kind === 'owner-menu') {
         const id = act.dataset.id;
         Views.projState.menu = Views.projState.menu === id ? null : id;
@@ -655,9 +573,9 @@
         return;
       }
       if (kind === 'owner-gift' || kind === 'owner-block') {
-        const url = act.dataset.url;   // 站点的 add 前缀，或名单行 onclick 里的撤回地址
+        const url = act.dataset.url;   // add 前缀，或名单行 onclick 里的撤回地址
         if (!url) return;
-        Views.projState.menu = null;   // 先收起菜单；提交成功后整屏重取
+        Views.projState.menu = null;   // 提交成功后整屏重取
         submit(() => Api.post(url));
         return;
       }
@@ -692,16 +610,16 @@
         return;
       }
 
-      // ---- 会话页：暂停 / 恢复这台机器。动作地址是解析器从原站按钮的 onclick 里读出来的 ----
+      // ---- 会话页：暂停 / 恢复（地址读自原站 onclick） ----
       if (kind === 'sess-run') {
         const url = act.dataset.url;
         if (!url) return;
-        // 不加确认框：原站那个按钮也不确认，而且暂停是可逆的（再点一下就是恢复）
+        // 不加确认：原站也不确认，且暂停可逆
         submit(() => Api.post(url));
         return;
       }
 
-      // 密钥的显示/隐藏是纯本地动作：不写信、不联网，只是把已经在这页上的文字翻出来
+      // 密钥显隐纯本地：只把页上已有的文字翻出来
       if (kind === 'reveal-key') {
         const box = act.parentNode && act.parentNode.querySelector('.sec');
         if (!box) return;
@@ -712,11 +630,10 @@
         return;
       }
 
-      // 完整日志默认折叠：默认只给按天/按月的活动汇总，要逐条事件才展开
+      // 日志默认折叠：先给按天/按月汇总
       if (kind === 'sess-log') { Views.sessState.open = !Views.sessState.open; render(); return; }
 
-      // 会话页项目 chip 上的「优先 / 移出」：地址由视图算好（移出用站点 onclick 里读出来的那条），
-      // 这里只负责 POST —— 和账户设置页那个渲染优先级是同一批端点
+      // 地址由视图算好（移出那条读自 onclick），这里只 POST
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
@@ -726,7 +643,6 @@
       return;
     }
 
-    // 移除类操作：动作地址是解析器从站点自己的 onclick 里读出来的
     const del = ev.target.closest('[data-del]');
     if (del) {
       if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
@@ -758,19 +674,18 @@
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
 
-    // 账户页选项卡：只换显示哪几块面板，不重新取数（也不该重放上面那排块的入场动画）
+    // 账户选项卡：只换面板，不重新取数
     const tb = ev.target.closest('#sp-acct-tabs [data-tab]');
     if (tb) { Views.acctState.tab = tb.dataset.tab; render(); return; }
 
-    // 会话页时间线的类型筛选。换了筛选项就把分页收回第一屏 ——
-    // 否则从"全部"看完 500 条再切到只剩 9 条的"发送失败"，会看到一片空白。
+    // 换时间线类型要把分页收回第一屏，否则会是一片空白
     const tf = ev.target.closest('#sp-tl-types [data-t]');
     if (tf) { Views.sessState.type = tf.dataset.t; Views.sessState.limit = 100; render(); return; }
 
     const th = ev.target.closest('#sp-theme [data-v]');
     if (th) { Theme.set(th.dataset.v); syncPrefs(); show(state.view, { silent: true }); return; }
 
-    // 界面缩放：只改 #sp 自己（applyTheme 里写 zoom），不重取数据、也不播入场动画
+    // 缩放只改 #sp 自己（applyTheme 写 zoom）
     const sc = ev.target.closest('#sp-scale [data-v]');
     if (sc) {
       state.uiScale = Number(sc.dataset.v) || 1;
@@ -783,7 +698,6 @@
     if (lg) {
       I18n.set(lg.dataset.v);
       syncPrefs();
-      // 语言影响所有文案，整壳重建最省事
       const host = document.getElementById('sp');
       if (host) host.innerHTML = shell();
       show(state.view, { silent: true });
@@ -799,8 +713,7 @@
       return;
     }
 
-    /* 实验性开关：它决定顶栏有没有那个入口，所以要**重建整壳**（同语言开关）——
-       render() 只在 .top 已存在时更新高亮，不会增删导航项。 */
+    /* 开关决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
     const ex = ev.target.closest('#sp-exp [data-v]');
     if (ex) {
       const on = ex.dataset.v === 'on';
@@ -813,7 +726,7 @@
     }
   }
 
-  /** 复选框只走 change：开关的语义是"状态变了"，不是"被点了一下" */
+  /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
     if (sc) submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`));
@@ -844,24 +757,22 @@
     if (m && m[1] !== state.view) show(m[1]);
   });
 
-  // Esc 关掉 3 点菜单。浮层不能只靠"点外面"来关 —— 键盘用户没有"点外面"这个动作。
+  // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
   window.addEventListener('keydown', (ev) => {
     if (ev.key === 'Escape' && Views.projState.menu) { Views.projState.menu = null; render(); }
   });
 
-  /* ------------------------------------------------------- 6. 启动 */
+  /* ---- 6. 启动 ---- */
 
   function boot() {
     syncPrefs();
 
-    // 登录态与用户名：从原站导航栏读（此时它还在 DOM 里，只是被 CSS 隐藏了）
+    // 登录态与用户名从原站导航栏读（还在 DOM 里，只是被 CSS 隐藏）
     const who = Api.detectUser(document);
     state.userName = who.signedIn ? who.userName : null;
-    state.myAvatar = who.avatar || '';   // 顶栏那张是自己的脸，跟正在看的档案无关
+    state.myAvatar = who.avatar || '';
 
-    // 账户设置只接管自己的。守卫在 document-start 就注入了（为了不闪原站界面），
-    // 走到这里发现路径指向别人的账户，就把页面原样还回去。
-    // 注意只看路径：从应用内导航过来时 URL 还是 #/account，那种情况下账号必然是自己。
+    // 账户设置只接管自己的：守卫已在 document-start 注入（防闪），路径指向别人就还回页面
     const acct = location.pathname.match(/^\/user\/([^/]+)\/edit$/);
     if (acct && (!state.userName || decodeURIComponent(acct[1]) !== state.userName)) {
       release();
@@ -871,11 +782,10 @@
     const m = location.pathname.match(/^\/user\/([^/]+)\/profile/);
     state.profileName = m ? decodeURIComponent(m[1]) : (location.pathname === '/home' || location.pathname === '/' ? who.userName : null);
 
-    // 会话页的编号只从地址里来。地址就是这一页的身份，不从 DOM 里认。
+    // 会话页编号只从地址来：地址就是这一页的身份，不从 DOM 里认
     const se = location.pathname.match(/^\/session\/(\d+)/);
     state.sessionId = se ? se[1] : null;
 
-    // 分析等待页的 token 同理：地址就是身份。
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
@@ -887,8 +797,7 @@
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 
     if (!state.userName && !state.profileName) {
-      // 未接管的页面（/getstarted、/faq…）在上面就 return 了，不会走到这里；
-      // 所以这一屏只出现在"该接管但读不到登录态"的时候。
+      // 未接管的页面上面已 return：这一屏只在"该接管但读不到登录态"时出现
       mount().innerHTML = `<div class="wrap">${UI.state.loggedOut()}</div>`;
       return;
     }

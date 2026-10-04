@@ -1,23 +1,4 @@
-/* ==========================================================================
- * 70-i18n-dom.js — 原站页面的翻译层
- *
- * 为什么需要单独一层：重建过的视图里文案是我写的，天然多语言；但未接管的页面
- * （/faq、/servers、/team、/project/*…）是 PHP 服务端渲染的英文，
- * 只能在客户端翻译。
- *
- * 三层匹配，对应站点文案的三种形态：
- *   1) 精确词条  —— 单个文本节点就是一个完整词条（"Frames remaining"）
- *   2) 属性文案  —— title / placeholder / alt（"CPU disabled"）
- *   3) 整块替换  —— 被 <a>/<strong> 切碎的句子。纯文本节点逐段替换会把语序打碎，
- *                   所以这里对段落级元素做整体匹配，值可以是 HTML（保留链接）
- * 另有模式规则处理带变量的文案（"13 Rendering frames"）。
- *
- * 安全边界（很重要）：
- *   · 只替换"词典里有对应译文"的字符串 —— 项目名、用户名、新闻正文天然不会被
- *     误译，因为它们不在词典里。这是 exact-match 带来的天然保护。
- *   · 不进入 #sp（我自己的界面）、script/style/noscript/code/pre/svg/textarea。
- *   · 不做机器翻译，不向任何服务器发送文本。
- * ========================================================================== */
+/* ==== 70-i18n-dom.js：原站页面的翻译层 ==== */
 (function () {
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
@@ -28,8 +9,6 @@
   const BLOCK_SELECTOR = 'p,li,h1,h2,h3,h4,h5,h6,td,th,dt,dd,blockquote,figcaption,div,span';
   const ATTRS = ['title', 'placeholder', 'alt'];
 
-  /** 整块文本归一化：连续空白折叠、nbsp 归一、标点前空格去掉。
-   *  页面文本与词典键都过同一个函数，所以键写成自然写法也能对上。 */
   function normalizeBlock(s) {
     return String(s)
       .replace(/\u00a0/g, ' ')
@@ -62,7 +41,7 @@
 
     /* ---------------------------------------------------------- 翻译单点 */
 
-    /** 短词条：保留首尾空白（原文里常有缩进与 &nbsp;） */
+    /** 短词条：保留首尾空白 */
     textNodeValue(node) {
       const raw = node.nodeValue;
       if (!raw) return null;
@@ -110,7 +89,7 @@
           if (out !== null) { el.setAttribute(a, out); this.stats.attr++; }
         }
       }
-      // 提交按钮的 value 也是界面文案
+      // 提交按钮的文案写在 value 里，不翻会留英文
       for (const el of (root.querySelectorAll ? root.querySelectorAll('input[type="submit"],input[type="button"]') : [])) {
         const v = el.getAttribute('value');
         const out = this.attrValue(v);
@@ -118,10 +97,7 @@
       }
     },
 
-    /**
-     * 整块替换。只对「像一段话」的元素动手：文本 40–600 字符、后代元素 ≤ 14 个，
-     * 避免误伤包裹整页的容器。先查静态键，再走正则规则（段落里含动态数字时用）。
-     */
+    /** 整块替换：只对「像一段话」的元素动手（阈值见下），免得误伤包裹整页的容器 */
     patchBlocks(root) {
       const idx = this.blockIndex();
       const pack = I18n.SITE[I18n.lang];
@@ -131,12 +107,9 @@
       const cands = [];
       for (const el of root.querySelectorAll(BLOCK_SELECTOR)) {
         if (!this.insideSP && (el.closest('#sp') || el.closest('[data-sp-block]'))) continue;
-        /* 整块替换 = `el.innerHTML = 译文`，这个容器里的东西**全部**没了。
-           所以只要子树里有一件"能干活或能画"的东西就必须放手 —— 实测踩过：
-           /getstarted 的上传表单里，站点那句 "Max: 2,048 MB before ZIP compression…"
-           和 `<input type="file">` 同在一个 <td> 里，整块替换把文件框直接删掉了，
-           而开着翻译的正好就是中文用户 —— 一翻译就不能上传。链接（<a>）不算：
-           整块译文本就是为"被 <a>/<strong> 切碎的句子"写的，译文里带着链接。 */
+        /* 整块替换 = innerHTML 覆盖成译文，容器里的东西全部没了。子树里只要有一件「能干活或能画」
+           的东西就必须放手 —— 实测 /getstarted 站点那句 "Max: 2,048 MB…" 和 `<input type="file">`
+           同在一个 <td> 里，整块替换把**文件框**删掉了（用户实报：一翻译就不能上传）。 */
         if (el.querySelector('input,select,textarea,button,label,form,svg,canvas,video,iframe')) continue;
         const kidCount = el.querySelectorAll('*').length;
         if (kidCount > 14) continue;                     // 太大了，是容器不是段落
@@ -161,17 +134,8 @@
 
     /* ---------------------------------------------------------- 入口 */
 
-    /**
-     * 只翻**一棵子树**，而且**不跳过 #sp**。
-     *
-     * 为什么需要它：站点有时候会把一小段它自己渲染的 HTML 塞进我们的卡片里 ——
-     * 估算器返回的估算结果就是这种（`POST /project/estimator` → 一段带 `<h4>` 和
-     * Bootstrap 表格的英文片段，落进 #addproject_estimator_result）。那段 DOM 在我们的
-     * 容器里，按常规会被"不进 #sp"这条规矩挡掉，于是它一直是英文。
-     *
-     * 词典还是同一份（12-lang-zh.js），所以译文只有一处来源；区别只是这次允许
-     * 翻译器走进我们自己的地盘。将来重制「分析完成后的项目设置表单」时也是同一个需求。
-     */
+    /** translateSubtree：只翻一棵子树且**不跳过 #sp** —— 站点把估算结果 HTML（英文 + 表格）
+     *  塞进我们卡片里，按「不进 #sp」会被整段挡掉，于是它一直是英文。词典仍是同一份。 */
     translateSubtree(root) {
       if (!this.enabled || !I18n.canTranslateSite() || !root) return;
       const keep = this.insideSP;
@@ -205,7 +169,7 @@
     observe() {
       if (this.observer || !document.body) return;
       this.observer = new MutationObserver((records) => {
-        // 只关心"新增了节点"或"属性变了"，纯 characterData 多数是我自己改的
+        // 纯 characterData 多是我自己改的
         const relevant = records.some((r) =>
           r.type === 'childList' || (r.type === 'attributes' && ATTRS.includes(r.attributeName)));
         if (relevant) this.schedule();
@@ -229,8 +193,6 @@
       else { location.reload(); }   // 关掉最干净的方式是重载，避免半译状态
     },
 
-    /* ---------------------------------------------------------- 角落开关 */
-
     mountPill() {
       if (document.getElementById('sp-lang-pill') || document.querySelector('#sp')) return;
       const s = document.createElement('style');
@@ -246,11 +208,8 @@
       const b = document.createElement('button');
       b.id = 'sp-lang-pill';
       b.type = 'button';
-      /* 这个开关**必须一直在，而且必须能双向拨**。
-         踩过的坑（0.1.6，用户实报）：它原来只在"翻译开着"时挂载，点一下写
-         translateSite=false 再重载 —— 重载后它自己不会被挂载，于是页面上再没有任何
-         入口能把翻译开回来；标题里那句"再次开启需刷新"是假的，刷新恰恰会让它消失。
-         角落这颗是这一层的唯一出口，出口自己消失就不叫出口。 */
+      /* 这个开关必须一直在、且必须能双向拨：踩过的坑是只在「翻译开着」时挂载，关掉再重载后
+         它自己不再挂载，页面上再没有入口能把翻译开回来（0.1.6 用户实报）。 */
       const isOn = () => Util.store.get('translateSite', true) !== false;
       const paint = () => {
         const lit = isOn();
@@ -268,9 +227,8 @@
       SP.cornerHost().appendChild(b);
     },
 
-    /* ---------------------------------------------------------- 诊断 */
+    /* ---------------------------------------------------------- 诊断：核对词条覆盖率 */
 
-    /** 排查用：列出页面上"看起来是段落但词典里没有"的整块文本 */
     reportUnmatched(limit) {
       const idx = this.blockIndex() || new Map();
       const out = [];
