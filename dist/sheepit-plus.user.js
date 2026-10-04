@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.8
+// @version      0.1.9
 // @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
 // @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.8 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.9 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -449,6 +449,10 @@
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
       'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
       'up.blocked': '站点当前不允许这个账号上传项目',
+      /* 应用内版本（实验性入口点进来的那个）顶上的一句话：这一页是我们容器里的站点控件，
+         说清楚它是什么，免得被当成和六个视图一个标准重制过的东西。 */
+      'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
+        + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
       /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
          那句话和文件框在同一个 <td> 里，翻译层一旦整块替换就会把文件框删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
@@ -671,6 +675,8 @@
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
       'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
       'up.blocked': 'The site is not letting this account upload a project at the moment',
+      'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
+        + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
@@ -2514,6 +2520,12 @@ ${Theme.css('#sp')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+/* 实验性提示条：这是应用内的兼容界面顶上那句话。它要显眼到"读得到"，但**不能**用警示色 ——
+   这个产品没有红也没有黄，说明一件事不靠颜色靠措辞（见 DESIGN.md 的 One Voice Rule）。 */
+#sp .expnote{
+  margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
+}
 
 /* 须知那一块是**从站点搬来的散文**：结构是站点的，观感必须是我们的。
    实测它原来的样子：三个句子连成一大段、数字埋在句子里、CPU/GPU 在一个 <ul> 里而
@@ -4408,13 +4420,15 @@ ${Theme.css('#sp')}
      之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
      详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
-  /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
-  function upload() {
+  /** 卡片骨架。真正的内容由 wireUpload() / wireUploadDoc() 装进来，所以这里只有空的插槽。
+   *  opts.inApp：应用内版本（实验性入口点进来的那一个），顶上多一句话说明它的性质。 */
+  function upload(state, opts) {
     return `<div class="wrap up">
       <div class="sechead">
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
+      ${opts && opts.inApp ? `<div class="expnote">${esc(t('up.expNote'))}</div>` : ''}
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -4560,6 +4574,84 @@ ${Theme.css('#sp')}
   }
 
   /**
+   * 应用内版本：把 `/getstarted` 抓回来，从**解析出的文档**里取同样那三块装进卡片。
+   *
+   * 与 wireUpload()（就地搬活节点）的差别，以及为什么还得有这一条：
+   *   · 就地搬，绑定全都活着，但那一页带着站点的头尾和下载指南 —— 从新界面点进来会变成
+   *     "新界面 → 原版页面 → 卡片"的来回跳（用户报的正是这个）。
+   *   · 抓回来装，页面完全在新界面里；代价是 `<script>` 不会执行，所以估算器的设备名
+   *     自动补全要自己重新绑一次（这是这里唯一需要"再实现一遍"的东西，源地址仍从
+   *     站点那段脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，
+   *     而 addproject.js 在每一页都加载，函数是全局的。
+   *
+   * 译文同样走一份词典：这里用 DomI18n.translateSubtree()，它允许翻译器走进 #sp。
+   */
+  function wireUploadDoc(root, html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const main = doc.querySelector('#addproject_main_div');
+    const blocked = doc.querySelector('#addproject_warning_zero_frame');
+    if (!main && !blocked) return false;
+    const slotForm = root.querySelector('[data-up="form"]');
+    const slotEst = root.querySelector('[data-up="est"]');
+    const slotRules = root.querySelector('[data-up="rules"]');
+    const estPanel = root.querySelector('[data-up="estPanel"]');
+    const grab = (el) => (el ? el : null);
+
+    if (main) {
+      const left = main.querySelector(':scope > .row > .col-md-5');
+      const right = main.querySelector(':scope > .row > .col-md-6');
+      const blocks = left ? [...left.children] : [];
+      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
+      const estBlock = blocks.find((b) => b !== formBlock) || null;
+      if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
+      if (estBlock && slotEst) {
+        slotEst.appendChild(grab(estBlock));
+        const numTable = estBlock.querySelector('table');
+        if (numTable) numTable.classList.add('numband');
+        watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
+        rebindDeviceSearch(estBlock, html);
+      } else if (estPanel) estPanel.remove();
+      if (right && slotRules) slotRules.appendChild(grab(right));
+    } else if (slotForm) {
+      slotForm.appendChild(grab(blocked));
+      if (estPanel) estPanel.remove();
+    }
+
+    /* **先翻译、再整理**，顺序不能反。整块翻译的模式规则是按站点原句写的，
+       而 tidyRules 会把「排队情况」那段在 <br> 处切开（引子跟数字走），切完就不再有
+       "Predicted position in queue:" 结尾 —— 整块规则随即失配，那一段就永远是英文。
+       （就地搬的那条路径没这个问题：页面翻译层在搬运之前就跑过了。） */
+    for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
+    if (slotForm) rewordFileLimit(slotForm);
+    if (slotRules) tidyRules(slotRules);
+    return true;
+  }
+
+  /**
+   * 估算器的设备名自动补全，站点是**内联脚本**绑的（`jQuery(...).autocomplete({...})`）。
+   * 抓回来的 HTML 里那段脚本不会执行，所以这里照它原来的参数重绑一次 ——
+   * 源地址从那段脚本里读，不写死。绑不上就让它做一个普通输入框（估算器会回
+   * "failed to import device"，用户看得见，不会静默出错）。
+   */
+  function rebindDeviceSearch(estBlock, html) {
+    const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
+    const $ = window.jQuery;
+    if (!src || !$ || !$.fn || !$.fn.autocomplete) return;
+    const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
+    const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
+    if (!label) return;
+    $(label).autocomplete({
+      minLength: 3,
+      source: src,
+      select(event, ui) {
+        $(label).val(ui.item.label);
+        if (value) $(value).val(ui.item.value);
+        return false;
+      },
+    });
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -4644,9 +4736,15 @@ ${Theme.css('#sp')}
   function mount(root, state) {
     // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
     // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
-    if (state && state.view === 'upload' && root && !root.dataset.spWired) {
+    /* 上传视图的接线。注意那个 `.up-grid` 判断：show() 先画一屏骨架再取数据，而骨架里没有
+       卡片 —— 少了这个条件就会在骨架阶段就把 body 标成"已接线"，等真正出内容的那次
+       render() 反而早退，卡片永远不出现。（实测踩过一次。） */
+    if (state && state.view === 'upload' && root && !root.dataset.spWired && root.querySelector('.up-grid')) {
       root.dataset.spWired = '1';
-      if (!wireUpload(root)) return false;
+      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
+      SP.DomI18n.enabled = !!state.translateSite;
+      const ok = state.uploadHtml ? wireUploadDoc(root, state.uploadHtml) : wireUpload(root);
+      if (!ok) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -5133,7 +5231,7 @@ ${Theme.css('#sp')}
     uiScale: 1,            // 界面整体缩放（设置里那个百分比）
   };
 
-  const ROUTES = { overview: '#/overview', projects: '#/projects', ranking: '#/ranking', settings: '#/settings', account: '#/account' };
+  const ROUTES = { overview: '#/overview', projects: '#/projects', upload: '#/upload', ranking: '#/ranking', settings: '#/settings', account: '#/account' };
 
   function syncPrefs() {
     state.themePref = Theme.init();
@@ -5173,15 +5271,15 @@ ${Theme.css('#sp')}
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口：`@` 开头表示"这不是我们重建过的页面，是个真地址"，点了整页跳过去。
-       默认关 —— 兼容界面没重制完，进主导航得用户自己在设置里点头（见 set.exp*）。 */
-    if (state.expUpload) nav.push(['@/getstarted', t('nav.upload'), t('nav.upload')]);
+    /* 实验性入口：走到**应用内**的上传视图（#/upload），不是跳去 /getstarted ——
+       那一页带着站点的头尾和下载指南，从新界面点进去会变成"新版→原版→卡片"的来回跳。
+       默认关，得用户在设置里点头（见 set.exp*）。 */
+    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
-    const item = ([k, label, short]) => (k.charAt(0) === '@'
-      ? `<button data-href="${Util.esc(k.slice(1))}" title="${Util.esc(t('nav.uploadTip'))}">`
-      : `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`)
+    const item = ([k, label, short]) =>
+      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -5256,6 +5354,10 @@ ${Theme.css('#sp')}
     }
     const body = host.querySelector('#sp-body');
 
+    /* 应用内的上传视图：卡片里装着从 /getstarted 抓回来、已经装好的活节点（含一个表单），
+       再画一次就把用户填了一半的东西扔了。 */
+    if (state.view === 'upload' && body && body.dataset.spWired) return;
+
     let html;
     if (state.view === 'settings') html = Views.settings(state);
     // 错误态必须排在空态前面：取不到数据时说清楚原因并给一个重试，
@@ -5264,6 +5366,7 @@ ${Theme.css('#sp')}
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
+    else if (state.view === 'upload') html = Views.upload(state, { inApp: true });
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -5410,7 +5513,11 @@ ${Theme.css('#sp')}
     }
 
     if (view === 'upload') {
-      // 上传页没有要取的东西：表单、上限、须知都在站点那一页的 DOM 上，我们只是把它搬进卡片。
+      // 就地接管（用户真的打开了 /getstarted）：表单就在那一页的 DOM 上，没有要取的。
+      if (inlineView) return;
+      // 应用内版本：把那一页抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
+      // 站点没有给这一块单独的接口，页面就是它的数据源 —— 和别处的解析器一个路子。
+      if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
 
@@ -5496,6 +5603,7 @@ ${Theme.css('#sp')}
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
         || (view === 'ranking' && !state.ranking)
+        || (view === 'upload' && !inlineView && !state.uploadHtml)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -5572,10 +5680,6 @@ ${Theme.css('#sp')}
 
     const nav = ev.target.closest('[data-nav]');
     if (nav) { go(nav.dataset.nav); return; }
-
-    // 实验性入口是**真地址**（/getstarted 不是我们重建的视图，塞不进 SPA 路由），整页跳过去
-    const jump = ev.target.closest('[data-href]');
-    if (jump) { location.href = jump.dataset.href; return; }
 
     const act = ev.target.closest('[data-act]');
     if (act) {

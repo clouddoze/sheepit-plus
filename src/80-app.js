@@ -154,7 +154,7 @@
     uiScale: 1,            // 界面整体缩放（设置里那个百分比）
   };
 
-  const ROUTES = { overview: '#/overview', projects: '#/projects', ranking: '#/ranking', settings: '#/settings', account: '#/account' };
+  const ROUTES = { overview: '#/overview', projects: '#/projects', upload: '#/upload', ranking: '#/ranking', settings: '#/settings', account: '#/account' };
 
   function syncPrefs() {
     state.themePref = Theme.init();
@@ -194,15 +194,15 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口：`@` 开头表示"这不是我们重建过的页面，是个真地址"，点了整页跳过去。
-       默认关 —— 兼容界面没重制完，进主导航得用户自己在设置里点头（见 set.exp*）。 */
-    if (state.expUpload) nav.push(['@/getstarted', t('nav.upload'), t('nav.upload')]);
+    /* 实验性入口：走到**应用内**的上传视图（#/upload），不是跳去 /getstarted ——
+       那一页带着站点的头尾和下载指南，从新界面点进去会变成"新版→原版→卡片"的来回跳。
+       默认关，得用户在设置里点头（见 set.exp*）。 */
+    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
-    const item = ([k, label, short]) => (k.charAt(0) === '@'
-      ? `<button data-href="${Util.esc(k.slice(1))}" title="${Util.esc(t('nav.uploadTip'))}">`
-      : `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`)
+    const item = ([k, label, short]) =>
+      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -277,6 +277,10 @@
     }
     const body = host.querySelector('#sp-body');
 
+    /* 应用内的上传视图：卡片里装着从 /getstarted 抓回来、已经装好的活节点（含一个表单），
+       再画一次就把用户填了一半的东西扔了。 */
+    if (state.view === 'upload' && body && body.dataset.spWired) return;
+
     let html;
     if (state.view === 'settings') html = Views.settings(state);
     // 错误态必须排在空态前面：取不到数据时说清楚原因并给一个重试，
@@ -285,6 +289,7 @@
     // 骨架排在"有没有数据"之前：否则会话页/账户页首屏会闪一下"暂无数据"
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
+    else if (state.view === 'upload') html = Views.upload(state, { inApp: true });
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -431,7 +436,11 @@
     }
 
     if (view === 'upload') {
-      // 上传页没有要取的东西：表单、上限、须知都在站点那一页的 DOM 上，我们只是把它搬进卡片。
+      // 就地接管（用户真的打开了 /getstarted）：表单就在那一页的 DOM 上，没有要取的。
+      if (inlineView) return;
+      // 应用内版本：把那一页抓回来，从解析结果里取那三块（见 50-views.js 的 wireUploadDoc）。
+      // 站点没有给这一块单独的接口，页面就是它的数据源 —— 和别处的解析器一个路子。
+      if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
 
@@ -517,6 +526,7 @@
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
         || (view === 'ranking' && !state.ranking)
+        || (view === 'upload' && !inlineView && !state.uploadHtml)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -593,10 +603,6 @@
 
     const nav = ev.target.closest('[data-nav]');
     if (nav) { go(nav.dataset.nav); return; }
-
-    // 实验性入口是**真地址**（/getstarted 不是我们重建的视图，塞不进 SPA 路由），整页跳过去
-    const jump = ev.target.closest('[data-href]');
-    if (jump) { location.href = jump.dataset.href; return; }
 
     const act = ev.target.closest('[data-act]');
     if (act) {

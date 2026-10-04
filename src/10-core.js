@@ -413,6 +413,10 @@
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
       'up.noForm': '这一页现在没有可上传的表单 —— 多半是没登录，或者站点暂时关了上传。',
       'up.blocked': '站点当前不允许这个账号上传项目',
+      /* 应用内版本（实验性入口点进来的那个）顶上的一句话：这一页是我们容器里的站点控件，
+         说清楚它是什么，免得被当成和六个视图一个标准重制过的东西。 */
+      'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
+        + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
       /* 这一句顶掉的是站点原文（"Max: … before ZIP compression"）。它必须由我们来说：
          那句话和文件框在同一个 <td> 里，翻译层一旦整块替换就会把文件框删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
@@ -635,6 +639,8 @@
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
       'up.noForm': 'There is no upload form on this page right now — usually that means you are signed out, or the site has closed uploads.',
       'up.blocked': 'The site is not letting this account upload a project at the moment',
+      'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
+        + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',

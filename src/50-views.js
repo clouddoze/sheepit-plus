@@ -1106,13 +1106,15 @@
      之前注入的时机 —— **没有走完整安装路径**。补它只能靠用户更新到新版后直接看。
      详见 docs/PUBLISHING.md 的「五、验证状态」。 */
 
-  /** 卡片骨架。真正的内容由 wireUpload() 从原站搬进来，所以这里只有空的插槽。 */
-  function upload() {
+  /** 卡片骨架。真正的内容由 wireUpload() / wireUploadDoc() 装进来，所以这里只有空的插槽。
+   *  opts.inApp：应用内版本（实验性入口点进来的那一个），顶上多一句话说明它的性质。 */
+  function upload(state, opts) {
     return `<div class="wrap up">
       <div class="sechead">
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
+      ${opts && opts.inApp ? `<div class="expnote">${esc(t('up.expNote'))}</div>` : ''}
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -1258,6 +1260,84 @@
   }
 
   /**
+   * 应用内版本：把 `/getstarted` 抓回来，从**解析出的文档**里取同样那三块装进卡片。
+   *
+   * 与 wireUpload()（就地搬活节点）的差别，以及为什么还得有这一条：
+   *   · 就地搬，绑定全都活着，但那一页带着站点的头尾和下载指南 —— 从新界面点进来会变成
+   *     "新界面 → 原版页面 → 卡片"的来回跳（用户报的正是这个）。
+   *   · 抓回来装，页面完全在新界面里；代价是 `<script>` 不会执行，所以估算器的设备名
+   *     自动补全要自己重新绑一次（这是这里唯一需要"再实现一遍"的东西，源地址仍从
+   *     站点那段脚本里读，不写死）。表单本身不用管：它靠 `onsubmit` 属性提交，
+   *     而 addproject.js 在每一页都加载，函数是全局的。
+   *
+   * 译文同样走一份词典：这里用 DomI18n.translateSubtree()，它允许翻译器走进 #sp。
+   */
+  function wireUploadDoc(root, html) {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const main = doc.querySelector('#addproject_main_div');
+    const blocked = doc.querySelector('#addproject_warning_zero_frame');
+    if (!main && !blocked) return false;
+    const slotForm = root.querySelector('[data-up="form"]');
+    const slotEst = root.querySelector('[data-up="est"]');
+    const slotRules = root.querySelector('[data-up="rules"]');
+    const estPanel = root.querySelector('[data-up="estPanel"]');
+    const grab = (el) => (el ? el : null);
+
+    if (main) {
+      const left = main.querySelector(':scope > .row > .col-md-5');
+      const right = main.querySelector(':scope > .row > .col-md-6');
+      const blocks = left ? [...left.children] : [];
+      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
+      const estBlock = blocks.find((b) => b !== formBlock) || null;
+      if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
+      if (estBlock && slotEst) {
+        slotEst.appendChild(grab(estBlock));
+        const numTable = estBlock.querySelector('table');
+        if (numTable) numTable.classList.add('numband');
+        watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
+        rebindDeviceSearch(estBlock, html);
+      } else if (estPanel) estPanel.remove();
+      if (right && slotRules) slotRules.appendChild(grab(right));
+    } else if (slotForm) {
+      slotForm.appendChild(grab(blocked));
+      if (estPanel) estPanel.remove();
+    }
+
+    /* **先翻译、再整理**，顺序不能反。整块翻译的模式规则是按站点原句写的，
+       而 tidyRules 会把「排队情况」那段在 <br> 处切开（引子跟数字走），切完就不再有
+       "Predicted position in queue:" 结尾 —— 整块规则随即失配，那一段就永远是英文。
+       （就地搬的那条路径没这个问题：页面翻译层在搬运之前就跑过了。） */
+    for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
+    if (slotForm) rewordFileLimit(slotForm);
+    if (slotRules) tidyRules(slotRules);
+    return true;
+  }
+
+  /**
+   * 估算器的设备名自动补全，站点是**内联脚本**绑的（`jQuery(...).autocomplete({...})`）。
+   * 抓回来的 HTML 里那段脚本不会执行，所以这里照它原来的参数重绑一次 ——
+   * 源地址从那段脚本里读，不写死。绑不上就让它做一个普通输入框（估算器会回
+   * "failed to import device"，用户看得见，不会静默出错）。
+   */
+  function rebindDeviceSearch(estBlock, html) {
+    const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
+    const $ = window.jQuery;
+    if (!src || !$ || !$.fn || !$.fn.autocomplete) return;
+    const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
+    const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
+    if (!label) return;
+    $(label).autocomplete({
+      minLength: 3,
+      source: src,
+      select(event, ui) {
+        $(label).val(ui.item.label);
+        if (value) $(value).val(ui.item.value);
+        return false;
+      },
+    });
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -1342,9 +1422,15 @@
   function mount(root, state) {
     // 上传页的搬运放在这里，是因为它要等 #sp 已经进了 DOM、卡片骨架已经在里面。
     // 搬不动（这一页站点渲染的是 printError，没有表单）就回 false，让调用方把页面还回去。
-    if (state && state.view === 'upload' && root && !root.dataset.spWired) {
+    /* 上传视图的接线。注意那个 `.up-grid` 判断：show() 先画一屏骨架再取数据，而骨架里没有
+       卡片 —— 少了这个条件就会在骨架阶段就把 body 标成"已接线"，等真正出内容的那次
+       render() 反而早退，卡片永远不出现。（实测踩过一次。） */
+    if (state && state.view === 'upload' && root && !root.dataset.spWired && root.querySelector('.up-grid')) {
       root.dataset.spWired = '1';
-      if (!wireUpload(root)) return false;
+      // 抓回来的片段没经过页面翻译层，翻译开关要在这里自己执行（就地搬的那条路径已经翻过）
+      SP.DomI18n.enabled = !!state.translateSite;
+      const ok = state.uploadHtml ? wireUploadDoc(root, state.uploadHtml) : wireUpload(root);
+      if (!ok) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;

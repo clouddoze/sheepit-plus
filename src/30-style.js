@@ -680,6 +680,12 @@ ${Theme.css('#sp')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
+/* 实验性提示条：这是应用内的兼容界面顶上那句话。它要显眼到"读得到"，但**不能**用警示色 ——
+   这个产品没有红也没有黄，说明一件事不靠颜色靠措辞（见 DESIGN.md 的 One Voice Rule）。 */
+#sp .expnote{
+  margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
+}
 
 /* 须知那一块是**从站点搬来的散文**：结构是站点的，观感必须是我们的。
    实测它原来的样子：三个句子连成一大段、数字埋在句子里、CPU/GPU 在一个 <ul> 里而
