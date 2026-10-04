@@ -3,8 +3,8 @@
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
 // @version      0.1.10
-// @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
-// @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
+// @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
+// @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
 // @match        https://www.sheepit-renderfarm.com/*
 // @exclude      https://www.sheepit-renderfarm.com/forum/*
@@ -378,14 +378,13 @@
          用户明确要求把这层说白，别让人以为这一页也是重制过的。 */
       'set.exp': '实验性',
       'set.expUpload': '项目上传（兼容界面）',
-      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去就是 /getstarted 的上传那一段。'
-        + '这一页未经验证：只做了风格统一，没有全部重写改版 —— 上传表单、估算器、进度条都还是站点自己的控件，'
-        + '我们只换了外观；分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。'
-        + '因为我们手上没有可用的真实样本，个别地方可能与站点实际行为不一致。',
+      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去是 /getstarted 上「Add your project」那一段。'
+        + '这一页未经验证：只统一了风格，没有重写 —— 上传表单、估算器、进度条都还是站点自己的控件。'
+        + '分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。',
       'nav.upload': '上传项目',
       'nav.uploadTip': '实验性：兼容界面（未经验证，只统一了风格）',
       'set.about': '关于', 'set.aboutText':
-        'SheepIt Plus 是一个纯前端界面重制脚本。它读取你本已能看到的站点页面，用新界面渲染出来。不调用任何私有接口，不向任何第三方发送数据。仅有的三处会改动服务器状态的地方，都是你自己点下的按钮 —— 「账户设置」里的提交、机器会话页上的暂停/恢复，以及项目列表里发布者那格的「优先 / 移出」—— 它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
+        'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
       'footer.source': '数据来源：站点自身页面 · 未调用私有接口',
       /* 会话页：一台机器的档案 */
@@ -603,14 +602,13 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.expUpload': 'Project upload (compatibility surface)',
-      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the upload section of /getstarted. '
-        + 'That page is unverified: it is a style unification, not a rewrite \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls and only the look is ours. '
-        + 'The project settings form that follows the analysis, and the project management page, are still the original interface. '
-        + 'We have no usable real sample for those, so some details may not match what the site actually does.',
+      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the "Add your project" section of /getstarted. '
+        + 'It is unverified: the style is unified, the page is not rewritten \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls. '
+        + 'The project settings form that follows the analysis, and the project management page, are still the original interface.',
       'nav.upload': 'Upload a project',
       'nav.uploadTip': 'Experimental: compatibility surface (unverified, style only)',
       'set.about': 'About', 'set.aboutText':
-        'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface. No private endpoints, nothing sent to a third party. The only three places it changes server state are buttons you press yourself \u2014 the forms in Account settings, the pause/resume control on a machine\u2019s session page, and the priority toggle on a publisher in the project list \u2014 and all of them post to the site\u2019s own endpoints, exactly what the original pages do.',
+        'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
       'footer.source': 'Data source: the site\u2019s own pages · no private endpoints',
       /* Session page: one machine\u2019s record */

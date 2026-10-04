@@ -32,144 +32,129 @@
 
 ### English（先贴这段）
 
-**SheepIt Render Farm, with the 2013 interface replaced.**
+A new front end for SheepIt Render Farm.
 
-SheepIt Plus is a userscript that rebuilds six parts of the site with a modern front end. It is
-not a skin: it reads the site's own pages with a same-origin `fetch` + `DOMParser` and renders
-the data in a new interface.
+SheepIt Plus is a userscript. It reads the site's own pages with same-origin requests and renders
+the data in a new interface. It is not a CSS reskin — everything on screen comes from the site.
 
-**What it rebuilds**
+What it rebuilds
 
-- **Overview** — `/home` and your profile: stat cards, points/frames growth curves, a render-activity
+- Overview — `/home` and your profile: stat cards, points and frames curves, a render-activity
   calendar, connected machines, live site numbers.
-- **Projects** — `/home/projects`: searchable, filterable, sortable; publisher name and avatar visible;
-  progress numbers moved off the bar; a **render-priority toggle** on each publisher.
-- **Ranking** — `/ranking/user`: built from the site's raw `data-sort` values, so precision doesn't
-  suffer from "1.3 G" style abbreviations; your own row is highlighted.
-- **Session** — `/session/<number>`: one machine's record — 20 machine facts (the render key stays
-  masked until you reveal it), an activity summary per day (render time / events / jobs / failures)
-  with the full log one click away, the projects it can render grouped by reason with their
-  publishers, and **pause/resume for that machine**.
-- **Account settings** — `/user/<you>/edit`: scheduler switches, render priority, avatar, e-mail,
-  render keys, two blocklists. Submits go to the site's own endpoints.
-- **Settings** — in-app: theme (system / dark / light), interface language, and a switch for
-  translating the pages that keep their original layout.
+- Projects — `/home/projects`: search, filter, sort; publisher names and avatars visible;
+  a render-priority toggle on each publisher.
+- Ranking — `/ranking/user`: sorted by the values the site gives, so "1.3 G" style abbreviations
+  don't cost precision; your own row is highlighted.
+- Session — `/session/<number>`: one machine's record. 20 machine facts (the render key stays
+  masked), a per-day activity summary with the full log one click away, renderable projects
+  grouped by reason, and pause/resume for that machine.
+- Account settings — `/user/<you>/edit`: scheduler switches, render priority, avatar, e-mail,
+  render keys, two blocklists.
+- Settings — in-app: theme (system / dark / light), interface language, and whether to translate
+  the pages that keep their original layout.
 
-**Privacy — it talks to nothing but the site**
+Privacy
 
-Every piece of data comes from a page you could already see, read with a same-origin request. No
-private or undocumented endpoints. No analytics, no external fonts, no CDN, no requests to third
-parties of any kind — the stylesheet and every chart are self-contained. Your preferences live in
-`localStorage` under `sheepit-plus:*`.
+All data comes from pages you could already see, read with same-origin requests. No undocumented
+endpoints, and no requests to third parties. The stylesheet and every chart are self-contained:
+no analytics, no external fonts, no CDN. Your preferences live in `localStorage` under
+`sheepit-plus:*`.
 
-**Server state**
+Three things can change anything on the server, and each is a button you press, posting to the same
+endpoint the original page posts to: the forms in Account settings, pause/resume on a session page,
+and add/remove in your render priority. The script makes no scheduling decisions and does not touch
+points or frame accounting.
 
-Only three things can change anything on the server, and each is a button *you* press, posting to
-the very same endpoint the original page posts to:
+Prefer the old interface?
 
-1. the forms in Account settings,
-2. pause/resume on a machine's session page,
-3. add/remove a publisher in your render priority, from the project list.
+There is a one-click "switch to the original interface" in the top bar, and in the original
+interface a small button to come back.
 
-The script never makes scheduling decisions for you and never touches points or frame accounting.
+Requirements
 
-**Prefer the old interface?** There is a one-click "switch to the original interface" in the top
-bar — and in the original interface it leaves a small button to come back.
+Tampermonkey (Violentmonkey / Greasemonkey also work) and a signed-in SheepIt session — the script
+reads data through your own session. No extra permissions: `@grant none`.
 
-**Requirements:** Tampermonkey (Violentmonkey / Greasemonkey work too) and a signed-in SheepIt
-session — the script reads data through your existing session. No extra permissions: `@grant none`.
-
-**Known limitations**
+Known limitations
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/team`, `/getstarted`, `/forum`, …)
-  keep their original layout; the translation layer only rewrites text it has a translation for.
-  Uploading a project is a page inside the new interface of its own (`#/upload`, behind the
-  experimental switch); `/getstarted` itself is left to the site, so one task never has two
-  interfaces.
-- The last two steps of uploading a project are still the site's own interface: the project
-  settings form that appears once the analysis finishes (engine, frame range, tiles, samples,
-  resolution…), and the project management page `/project/<id>`. Both are functional, they just
-  have not been rebuilt yet.
-- If the site is redesigned a parser can stop matching. The worst case is that one view says
-  "no data" — the site itself is never affected.
+- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/getstarted`, …) keep their original
+  layout; text is replaced only where a translation exists. Uploading a project is its own page in
+  the new interface (`#/upload`, behind the experimental switch); `/getstarted` stays the site's page.
+- The last two steps of uploading a project are still the site's own interface: the project-settings
+  form that appears once the analysis finishes (engine, frame range, tiles, samples, resolution…),
+  and the project management page `/project/<id>`. They work; they just have not been rebuilt.
+- If the site is redesigned a parser can stop matching. The worst case is one view saying "no data";
+  the site itself is unaffected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
   own wording.
-- Signed out? The script tells you to sign in on the original site.
+- Signed out? The script asks you to sign in on the original site.
 
-**Not official.** This is a third-party interface rebuild, not affiliated with or endorsed by
-SheepIt Render Farm. The name, the sheep and the orange are kept on purpose, so it stays
-recognisable as *their* site.
+This is a third-party interface rebuild, not affiliated with or endorsed by SheepIt Render Farm.
+The name, the sheep and the orange are kept so it stays recognisable as their site.
 
-**Written by an AI.** The code, the interface copy and the docs were produced by an AI assistant
-(DeepSeek Harness) under a human's direction and item-by-item review — the human supplied the real
-site material, made every product call, and checked each view against a live account. This is
-stated so you can calibrate how much to trust it: if something breaks, tell me the page and what
-you saw, rather than assuming the author has read every line.
+The code, the interface copy and the docs were written by an AI assistant (DeepSeek Harness) under
+a human's direction and item-by-item review.
 
 MIT licensed. Feedback welcome — tell me which page and what you saw.
 
 ### 中文（接在后面贴）
 
-**把 SheepIt Render Farm 那套 2013 年风格的界面换掉。**
+给 SheepIt Render Farm 换一套新前端。
 
-SheepIt Plus 是一个油猴脚本，用新前端接管站点自己的数据 —— 不是叠一层皮肤：它用同源
-`fetch` + `DOMParser` 读取站点页面，再把数据渲染成新界面。
+SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页面，再把数据渲染成新界面 ——
+不是覆盖一层 CSS 的换肤，界面上显示的东西全部来自站点本身。
 
-**重建了这六处**
+重做了这几处：
 
-- **总览**（`/home`、你的个人主页）：统计卡、积分/帧数增长曲线、渲染活跃日历、已连接的机器、
+- 总览（`/home`、你的个人主页）：统计卡、积分与帧数曲线、渲染活跃日历、已连接的机器、
   全站实时数据。
-- **项目**（`/home/projects`）：可搜索、可筛选、可排序；发布者名字与头像可见；进度数字移到
-  进度条外；发布者那格带**渲染优先级开关**。
-- **排行榜**（`/ranking/user`）：用站点自带的 `data-sort` 原始数值排序，精度不受 "1.3 G"
-  这类缩写字面量影响；自动高亮你自己。
-- **会话页**（`/session/<数字>`）：一台机器的档案 —— 机器信息 20 项（渲染密钥默认遮住，点
-  「显示」才出现）、按天的活动汇总（渲染时长/事件/作业/失败）与一键展开的完整日志、可渲染
-  项目按原因分组并挂上发布者；**暂停/恢复这台机器**。
-- **账户设置**（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单；
-  提交打到站点自己的接口。
-- **设置**（应用内）：主题（跟随系统/暗/亮）、界面语言、以及「是否翻译保持原版的页面」开关。
+- 项目（`/home/projects`）：可搜索、可筛选、可排序；发布者名字与头像可见；发布者那格
+  带一个渲染优先级开关。
+- 排行榜（`/ranking/user`）：按站点给的原始数值排序，不受 "1.3 G" 这类缩写影响；
+  你自己那行会高亮。
+- 会话页（`/session/<数字>`）：一台机器的档案。机器信息 20 项（渲染密钥默认遮住）、
+  按天的活动汇总与完整日志、可渲染的项目按原因分组；可以在这里暂停或恢复这台机器。
+- 账户设置（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单。
+- 设置（应用内）：主题（跟随系统/暗/亮）、界面语言、是否翻译保持原版的页面。
 
-**隐私：它只和站点说话**
+关于隐私
 
-所有数据都来自你本已能看到的页面，用同源请求读取；不调用任何私有或未公开接口。没有统计，
-没有外部字体，没有 CDN，不向任何第三方发请求 —— 样式表和每一张图都是自带的。你的偏好存在
-`localStorage` 的 `sheepit-plus:*` 键下。
+所有数据都来自你本来就能看到的页面，用同源请求读取；不调用未公开的接口，也不向任何第三方
+发请求。样式和图表都是脚本自带的，没有统计代码、外部字体或 CDN。你的偏好存在 `localStorage`
+的 `sheepit-plus:*` 键下。
 
-**会改动服务器状态的只有三处**，而且每一处都是**你自己点下**的按钮，提交到原站同一个地址：
+只有三处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
+表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出。脚本不参与渲染调度，也不碰积分
+与帧数的计算。
 
-1. 账户设置里的表单；
-2. 机器会话页上的暂停/恢复；
-3. 项目列表里发布者那格的「优先 / 移出」（渲染优先级）。
+想用回原版
 
-脚本不参与渲染调度，也不触碰积分与帧数计算。
+顶栏有一键「切回原版界面」；原版模式下左下角留了一个切回来的入口。
 
-**想用回原版？** 顶栏有一键「切回原版界面」；原版模式下左下角也留了一个切回来的入口。
+前提
 
-**前提**：装 Tampermonkey（Violentmonkey / Greasemonkey 亦可），并且在 SheepIt 上已登录 ——
-数据靠你自己的会话读取。不需要额外权限，`@grant none`。
+装 Tampermonkey（Violentmonkey / Greasemonkey 也可以），并且在 SheepIt 上已登录 ——
+数据靠你自己的会话读取。不需要额外权限（`@grant none`）。
 
-**已知限制**
+已知限制
 
-- 原站 CSS/JS 仍会下载，只是被隐藏；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/team`、`/getstarted`、`/forum` 等）保持原版界面，
-  翻译层只在有译文时替换文案。上传项目在新界面里是独立的一页（`#/upload`，实验性开关），
-  `/getstarted` 归站点自己 —— 同一件事不留两种界面。
-- 项目上传的**后两步**仍是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、
-  切块、采样、分辨率…），以及项目管理页 `/project/<数字>`。功能都正常，只是还没重制。
-- 站点改版可能让某个解析器失效，最坏结果是那一个视图显示「无数据」，不会影响站点本身。
+- 原站的 CSS/JS 仍会下载，只是被隐藏了；油猴脚本没有扩展那样的网络层拦截能力。
+- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/getstarted` 等）保持原版界面，只在有译文
+  时替换文案。上传项目在新界面里是单独一页（`#/upload`，需要在设置里打开「实验性」）；
+  `/getstarted` 仍是原站页面。
+- 上传项目的后两步还是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、切块、
+  采样、分辨率…），以及项目管理页 `/project/<数字>`。功能正常，只是还没重做。
+- 站点改版可能让某个解析器失效，最坏情况是那一个视图显示「无数据」，不影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
-- 未登录时脚本会提示你先在原站登录。
+- 未登录时会提示你先在原站登录。
 
-**非官方。** 这是第三方界面重制，与 SheepIt Render Farm 官方无隶属或背书关系。保留名称、
-羊的形象与品牌橙，是为了让人一眼看出这是**他们的**站点 —— 不是另一个产品。
+这是第三方界面重制，与 SheepIt Render Farm 官方没有隶属或背书关系。保留名称、羊的形象与
+品牌橙，是为了让人一眼认得出这是他们的站点。
 
-**由 AI 写成。** 代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下产出 ——
-真实站点样本由人提供，产品取舍由人拍板，每一个视图都在真实账号上复核过。之所以写明白这一点，
-是让你知道该按什么标准去信任它：遇到问题请直接告诉我页面和现象，不必假设作者逐行读过这段代码。
+代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下写成。
 
-MIT 许可。欢迎反馈：告诉我哪个页面、你看到了什么。
+MIT 许可。有问题欢迎反馈：告诉我哪个页面、你看到了什么。
 
 ---
 

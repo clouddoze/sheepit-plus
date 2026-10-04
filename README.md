@@ -1,10 +1,9 @@
 # SheepIt Plus
 
-把 [SheepIt Render Farm](https://www.sheepit-renderfarm.com) 那套 2013 年风格的界面换掉的油猴脚本。
-**不是换肤** —— 脚本读取站点自己的页面，用新前端把数据重新渲染成现代仪表盘。中文优先，自带英文界面。
+把 [SheepIt Render Farm](https://www.sheepit-renderfarm.com) 的界面换成新前端的油猴脚本。
+它读取站点自己的页面，把数据渲染成仪表盘、项目列表、排行榜这些新界面。中文优先，自带英文。
 
-> **由 AI 写成。** 代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下产出：
-> 真实站点样本由人提供，产品取舍由人拍板，每一个视图都在真实账号上复核过。
+> 代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下写成。
 
 ## 安装
 
@@ -26,12 +25,12 @@
 | **会话页** | `/session/<数字>` | 一台机器的档案：状态与主机名、四个指标、机器信息 20 项（渲染密钥默认遮住）、活动汇总（按天/按月：渲染时长 / 事件 / 作业 / 失败，完整日志一键展开）、可渲染项目按原因分组并挂上发布者；**暂停 / 恢复这台机器** |
 | **账户设置** | `/user/<你>/edit` | 分三个选项卡（调度与名单 / 捐赠积分 / 账户）：调度开关、渲染优先级、两组黑名单、捐赠积分（把挣到的积分送给名单里的人）、头像、邮箱、渲染密钥 |
 | 设置 | 应用内 | 主题（跟随系统 / 暗 / 亮）、**界面缩放（90%–140%）**、界面语言、原站页面翻译开关 |
-| **上传项目** | 应用内 `#/upload`（顶栏入口，需在设置里打开「实验性」） | 上传表单、渲染用时估算、排队位置、上传前须知。这三块是从站点 `/getstarted` 的「Add your project」那一段抓回来装进卡片的；**`/getstarted` 本身不接管**，它仍是原站页面（只翻译） |
+| **上传项目** | 应用内 `#/upload`（顶栏入口，需在设置里打开「实验性」） | 上传表单、渲染用时估算、排队位置、上传前须知。这三块是从站点 `/getstarted` 的「Add your project」那一段抓回来装进卡片的；`/getstarted` 本身仍是原站页面（只翻译） |
 | **项目分析** | `/project/add/<token>` | 上传后的等待页：排队 / 分析进度 / 完成。分析完成后接上站点自己的项目设置表单（那一步本版未重制） |
 
 ### 多语言
 
-站点**没有任何 i18n 基础设施**（文案硬编码在 PHP 里，`Content-Language: en`）。脚本用两层补上：
+站点没有做国际化（文案硬编码在 PHP 里，`Content-Language: en`）。脚本用两层补上：
 
 - **重建视图**：文案由语言包驱动，加一门语言 = 注册一个词表（见 `src/12-lang-zh.js`）。
 - **未接管的页面**（`/faq`、`/servers`、`/project/*`…）：原站界面不动，只在本地把文案替换成当前语言。短词条精确匹配、带变量的走正则、被内联标签切碎的句子走整块替换（纯文本逐段替换会把语序打碎）。整块替换**不会碰含表单控件的容器** —— 那会把控件本身删掉（`/getstarted` 的文件框就这么被删过一次）。
@@ -39,9 +38,9 @@
 翻译全程不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）原样保留。
 **英文是基准语言**，也是站点原文语言，所以选英文时翻译层完全不介入；缺失的键一律回落英文。
 
-### 顺带修掉的原站缺陷
+### 顺带修掉的原站问题
 
-这些不是主观审美，是实测到的渲染问题：
+都是实测到的渲染问题，和审美无关：
 
 - 账户页统计标签被截断成 `Consecutive render d...`
 - 账户页机器列表里有个孤立的左括号
@@ -52,23 +51,22 @@
 
 新版账户页约 200 个节点，图表是自绘 SVG，零外部依赖。
 
-## 隐私与合规
+## 隐私
 
-**数据只来自你本已能看到的页面。** 同源 `fetch` + `DOMParser` 读取站点自己的 HTML，不调用任何未公开接口，
-不向任何第三方发送数据（没有统计、没有外部字体、没有 CDN，样式表与每张图都是自带的）。
+数据只来自你本来就能看到的页面：同源 `fetch` + `DOMParser` 读取站点自己的 HTML，不调用未公开接口，
+也不向任何第三方发请求。样式表与每张图都是脚本自带的，没有统计代码、外部字体或 CDN。
 你的偏好存在 `localStorage` 的 `sheepit-plus:*` 键下。
 
-**只有三处会改动服务器状态**，且每一处都是**你自己点下**的按钮，提交到原站同一个地址：
+只有三处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：
 
 1. 账户设置页的表单（调度开关、渲染优先级、捐赠积分、头像、邮箱、渲染密钥、黑名单）
 2. 会话页的暂停 / 恢复
 3. 项目页发布者那格的动作（优先 / 移出、捐赠积分、加入黑名单）
 
-脚本**不参与渲染调度，也不触碰积分计算**。SheepIt 的服务条款禁止的是"作弊的自定义客户端 /
-注入恶意代码 / 多账号绕过限制"，本脚本是纯前端界面重制，与那些都不沾边。
+脚本不参与渲染调度，也不碰积分与帧数的计算方式 —— 它只是把页面重新画一遍。
 
-**非官方。** 这是第三方界面重制，与 SheepIt Render Farm 官方无隶属或背书关系。
-保留名称、羊的形象与品牌橙 `#e06d58`，是为了让人一眼看出这是**他们的**站点，而不是另一个产品。
+这是第三方界面重制，与 SheepIt Render Farm 官方没有隶属或背书关系。
+保留名称、羊的形象与品牌橙 `#e06d58`，是为了让人一眼认得出这是他们的站点。
 
 ## 随时可以切回原版
 
@@ -90,7 +88,7 @@
 - 站点只在**你自己的主页**内联积分曲线与逐日帧数，所以别人的主页上没有这两块面板（那里显示的是站点给的活跃日历）。
 - 翻译长尾：FAQ / News / 服务条款这类**长正文**不翻译（那是内容不是界面）。
 - **项目上传的后两步仍是原站界面**：分析完成后出现的项目设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…），以及项目管理页 `/project/<数字>`。功能正常，只是还没重制。
-- **本批新页面的验证方式**：上传页与分析等待页是**对着真实页面**验的，但验法是「清掉已装脚本 + 注入新构建」，不是"更新到新版后再打开"。差在 `@run-at document-start` 那一段（防闪与守卫注入的时机）—— 详见 `docs/PUBLISHING.md` 的「五、验证状态」。
+- 上传页与分析等待页是对着真实页面验的，但验法是「清掉已装脚本 + 注入新构建」，不是"更新到新版后再打开"；差在 `@run-at document-start` 那一段（防闪与守卫注入的时机）。详见 [`docs/PUBLISHING.md`](docs/PUBLISHING.md) 的「五、验证状态」。
 
 ## 开发
 
@@ -127,21 +125,21 @@ node serve-test.mjs       # 静态服务器，把产物喂给浏览器实测
 
 ## English
 
-A userscript that rebuilds the [SheepIt Render Farm](https://www.sheepit-renderfarm.com) interface.
-It is not a skin: it reads the site's own pages with a same-origin `fetch` + `DOMParser` and renders
-the data in a modern front end — dashboard, project list, ranking, machine session page and account
-settings — in Chinese and English, dark and light.
+A userscript that gives [SheepIt Render Farm](https://www.sheepit-renderfarm.com) a new front end.
+It reads the site's own pages with same-origin requests and renders the data as a dashboard, a
+project list, a ranking, a machine session page and account settings — in Chinese and English,
+dark and light.
 
-- **Privacy:** talks to nothing but the site itself. No analytics, no external fonts, no CDN.
-- **Server state changes in exactly three places**, all of them buttons you press, posting to the
-  site's own endpoints: the account-settings forms, pause/resume on a machine's session page, and
-  the publisher actions on the project list.
-- Never makes scheduling decisions for you, never touches points accounting.
-- **Written by an AI** (DeepSeek Harness) under a human's direction and item-by-item review.
+- Privacy: it only talks to the site itself. No analytics, no external fonts, no CDN.
+- Three things can change anything on the server, all of them buttons you press: the
+  account-settings forms, pause/resume on a session page, and the publisher actions on the project
+  list. Each posts to the site's own endpoint.
+- It makes no scheduling decisions and does not touch points accounting.
+- Written by an AI assistant (DeepSeek Harness) under a human's direction and item-by-item review.
 - Third-party rebuild, not affiliated with SheepIt Render Farm.
 - MIT licensed.
 
-See [`README`](#) above for install steps and the full feature list (Chinese).
+Install steps and the full feature list are above (in Chinese).
 
 ## License
 
