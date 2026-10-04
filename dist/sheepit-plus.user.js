@@ -2483,12 +2483,32 @@ ${Theme.css('#sp')}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
 
-/* 须知整行宽了，19 条横排会拉出很长的行 —— 分两栏，读到哪儿跟到哪儿。
-   注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block。 */
+/* 须知那一块是**从站点搬来的散文**：结构是站点的，观感必须是我们的。
+   实测它原来的样子：三个句子连成一大段、数字埋在句子里、CPU/GPU 在一个 <ul> 里而
+   「项目总数」是个裸文本节点、三个分组的小标题跟面板标题同级 —— 一坨，读不出层次。
+   这里按"分组的参考条目"重新立规矩：组标题降一级、组间发丝线、正文限宽、数据排成一行。
+   文字一个字都没改，数字仍旧是站点当场渲染的值。 */
+#sp .up-rules .up-body h4{
+  font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.02em;
+  margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--border);
+}
+#sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
+#sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
+/* 排队那一行：两个 <li> 本质是两个数，不该画成项目符号 */
+#sp .up-rules .up-body .qpos{display:flex;flex-wrap:wrap;gap:6px 30px;margin:0 0 8px}
+#sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
+#sp .up-rules .up-body .qpos li::before{display:none}
+#sp .up-rules .up-body .qpos li strong{
+  margin-left:4px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
+}
+#sp .up-rules .up-body .qtotal{display:block;margin-bottom:4px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+
+/* 须知整行宽了，十几条横排会拉出很长的行 —— 分两栏，读到哪儿跟到哪儿。
+   注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block；
+   排队那一行（.qpos）是数据不是条目，排除在外。 */
 @media (min-width:820px){
-  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:8px}
-  #sp .up-rules .up-body > h4{columns:1}
+  #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:8px}
 }
 
 /* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
@@ -2553,16 +2573,29 @@ ${Theme.css('#sp')}
   display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
 }
 
-/* 估算器：两个数字输入 + 一个设备名搜索框 */
-#sp .up-body input[type=text]{
+/* 估算器：两个数字输入 + 一个设备名搜索框。
+   设备名是"找一个名字"，不该占满整行 —— 而且站点这一行用的是 2013 版 Bootstrap 的
+   .input-group（table-cell + float），我们没管住它，实测等效宽度 949px 时 OK 的右缘
+   超出视口 5px、整页横向溢出。所以这一行**整行重新声明**成普通 flex，并给输入封顶：
+   OK 永远跟在框后面，再窄也挤不出去。 */
+#sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);width:92px;
+  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
-#sp .up-body input[type=text]:focus{outline:none;border-color:var(--accent)}
+#sp .up-body table input[type=text]{width:92px}
+/* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
+   一大截。只对这一块把 tbody/tr 摊平（display:contents），让那一行变成规整的两列网格。
+   标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
+   范围限定在 [data-up="est"]：上传表单里那张 table 有 colspan，不能一起摊。 */
+#sp [data-up="est"] table{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
+#sp [data-up="est"] table tbody,#sp [data-up="est"] table tr{display:contents}
+#sp [data-up="est"] table td{display:block;padding:0;text-align:left !important;white-space:nowrap}
+#sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
-#sp .up-body .input-group{display:flex;gap:8px;align-items:stretch}
-#sp .up-body .input-group .form-control{flex:1;min-width:0;width:auto}
-#sp .up-body .input-group-btn{display:flex;flex:none}
+#sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
+#sp .up-body .input-group .form-control{flex:1 1 auto;min-width:0;width:auto;max-width:320px}
+#sp .up-body .input-group-btn{display:flex;flex:0 0 auto;width:auto;white-space:nowrap}
+#sp .up-body .input-group-btn > *{flex:0 0 auto}
 #sp .up-body #addproject_estimator_result{
   font-size:12.5px;color:var(--text-2);line-height:1.7;
   padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
@@ -4296,6 +4329,39 @@ ${Theme.css('#sp')}
   }
 
   /**
+   * 须知那一块的收尾。**只贴标签、只去掉一个多余字符，不改写任何文字** ——
+   * 排版该由 CSS 干，这里只处理 CSS 够不着的两件事：
+   *
+   *   1. 站点把「项目总数: 29」写成一个**裸文本节点**直接挂在容器里（不是元素）。
+   *      裸文本节点没法给类名、没法排版，所以给它包一个 span。
+   *   2. CPU/GPU 那一行是 `<ul>`，但它的语义是"两个数"，给它 `.qpos` 让它排成一行数据。
+   *   3. 站点那句 `…<strong>3.0 or higher</strong>.` 的句号在 `<strong>` **外面**；
+   *      中文译文自带句号，于是渲染成「…或更高。.」这种双句号。孤立的一个 "." 去掉 ——
+   *      只在**前面已经以句末标点收尾**时才去，所以英文界面（不翻译）原样保留。
+   */
+  function tidyRules(scope) {
+    const col = scope.firstElementChild;
+    if (!col) return;
+    for (const n of [...col.childNodes]) {
+      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
+      const span = document.createElement('span');
+      span.className = 'qtotal';
+      span.textContent = n.nodeValue.trim();
+      n.replaceWith(span);
+    }
+    const firstUl = col.querySelector('ul');
+    if (firstUl) firstUl.classList.add('qpos');
+    for (const li of scope.querySelectorAll('li')) {
+      const last = li.lastChild;
+      if (!last || last.nodeType !== 3) continue;
+      const tail = last.nodeValue.trim();
+      if (!/^[.．。]+$/.test(tail)) continue;
+      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
+      if (/[。．.！!？?]$/.test(before)) last.remove();
+    }
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -4326,7 +4392,7 @@ ${Theme.css('#sp')}
       if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
       if (estBlock && slotEst) slotEst.appendChild(estBlock);
       else if (estPanel) estPanel.remove();
-      if (right && slotRules) slotRules.appendChild(right);
+      if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
     } else if (slotForm) {
       // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
       slotForm.appendChild(blocked);

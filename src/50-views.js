@@ -1151,6 +1151,39 @@
   }
 
   /**
+   * 须知那一块的收尾。**只贴标签、只去掉一个多余字符，不改写任何文字** ——
+   * 排版该由 CSS 干，这里只处理 CSS 够不着的两件事：
+   *
+   *   1. 站点把「项目总数: 29」写成一个**裸文本节点**直接挂在容器里（不是元素）。
+   *      裸文本节点没法给类名、没法排版，所以给它包一个 span。
+   *   2. CPU/GPU 那一行是 `<ul>`，但它的语义是"两个数"，给它 `.qpos` 让它排成一行数据。
+   *   3. 站点那句 `…<strong>3.0 or higher</strong>.` 的句号在 `<strong>` **外面**；
+   *      中文译文自带句号，于是渲染成「…或更高。.」这种双句号。孤立的一个 "." 去掉 ——
+   *      只在**前面已经以句末标点收尾**时才去，所以英文界面（不翻译）原样保留。
+   */
+  function tidyRules(scope) {
+    const col = scope.firstElementChild;
+    if (!col) return;
+    for (const n of [...col.childNodes]) {
+      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
+      const span = document.createElement('span');
+      span.className = 'qtotal';
+      span.textContent = n.nodeValue.trim();
+      n.replaceWith(span);
+    }
+    const firstUl = col.querySelector('ul');
+    if (firstUl) firstUl.classList.add('qpos');
+    for (const li of scope.querySelectorAll('li')) {
+      const last = li.lastChild;
+      if (!last || last.nodeType !== 3) continue;
+      const tail = last.nodeValue.trim();
+      if (!/^[.．。]+$/.test(tail)) continue;
+      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
+      if (/[。．.！!？?]$/.test(before)) last.remove();
+    }
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -1181,7 +1214,7 @@
       if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
       if (estBlock && slotEst) slotEst.appendChild(estBlock);
       else if (estPanel) estPanel.remove();
-      if (right && slotRules) slotRules.appendChild(right);
+      if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
     } else if (slotForm) {
       // 站点自己写明了为什么不能传，把那一段原样搬过来 —— 理由由站点负责，我们只换外观
       slotForm.appendChild(blocked);
