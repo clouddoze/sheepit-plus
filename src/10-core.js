@@ -272,6 +272,9 @@
       // 前半句是状态、后半句是要做的事，读起来像个标签而不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
+      /* /getstarted 那种**半接管**页：这一页确实有重制过的部分（上传那一段），
+         所以不能说"没有重制版" —— 浮窗是去完整界面的入口，不是"这一页没做"。 */
+      'mode.partialTip': '这一页只有上传那一段是新界面 —— 点此打开完整的新界面',
       /* 已连接的机器 */
       'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
@@ -498,6 +501,7 @@
       'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
+      'mode.partialTip': 'Only the upload section of this page is rebuilt \u2014 open the full interface instead',
       'machines.title': 'Connected machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',

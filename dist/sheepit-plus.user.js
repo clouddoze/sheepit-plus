@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.6
+// @version      0.1.7
 // @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
 // @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.6 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.7 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -308,6 +308,9 @@
       // 前半句是状态、后半句是要做的事，读起来像个标签而不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
+      /* /getstarted 那种**半接管**页：这一页确实有重制过的部分（上传那一段），
+         所以不能说"没有重制版" —— 浮窗是去完整界面的入口，不是"这一页没做"。 */
+      'mode.partialTip': '这一页只有上传那一段是新界面 —— 点此打开完整的新界面',
       /* 已连接的机器 */
       'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
@@ -534,6 +537,7 @@
       'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
+      'mode.partialTip': 'Only the upload section of this page is rebuilt \u2014 open the full interface instead',
       'machines.title': 'Connected machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
@@ -4630,10 +4634,23 @@ ${Theme.css('#sp')}
       const b = document.createElement('button');
       b.id = 'sp-lang-pill';
       b.type = 'button';
-      b.textContent = `译 ${I18n.lang.toUpperCase()}`;
-      b.title = '点击临时关闭本页翻译 / 再次开启需刷新';
+      /* 这个开关**必须一直在，而且必须能双向拨**。
+         踩过的坑（0.1.6，用户实报）：它原来只在"翻译开着"时挂载，点一下写
+         translateSite=false 再重载 —— 重载后它自己不会被挂载，于是页面上再没有任何
+         入口能把翻译开回来；标题里那句"再次开启需刷新"是假的，刷新恰恰会让它消失。
+         角落这颗是这一层的唯一出口，出口自己消失就不叫出口。 */
+      const isOn = () => Util.store.get('translateSite', true) !== false;
+      const paint = () => {
+        const lit = isOn();
+        b.textContent = `译 ${I18n.lang.toUpperCase()}` + (lit ? '' : ' 关');
+        b.title = lit
+          ? '本页文案已译成当前语言 —— 点击关闭翻译（随时可以再开）'
+          : '本页翻译已关闭 —— 点击重新开启';
+        b.setAttribute('aria-pressed', lit ? 'true' : 'false');
+      };
+      paint();
       b.addEventListener('click', () => {
-        Util.store.set('translateSite', false);
+        Util.store.set('translateSite', !isOn());
         location.reload();
       });
       document.body.appendChild(b);
@@ -4734,7 +4751,7 @@ ${Theme.css('#sp')}
     b.id = 'sp-mode-pill';
     b.type = 'button';
     const classic = kind === 'classic';
-    b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
+    b.title = classic ? t('mode.classicTip') : (kind === 'partial' ? t('mode.partialTip') : t('mode.enterTip'));
     b.setAttribute('aria-label', b.title);
     b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
@@ -4755,13 +4772,18 @@ ${Theme.css('#sp')}
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!on || !I18n.canTranslateSite() || !SP.DomI18n) return;
+    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
-      document.documentElement.lang = ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
-      SP.DomI18n.run();
-      SP.DomI18n.mountPill();
+      if (on && I18n.canTranslateSite()) {
+        document.documentElement.lang = ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
+        SP.DomI18n.run();
+      }
+      /* 角落开关**不受 on 影响**，照挂 —— 关掉翻译之后如果连按钮一起没了，
+         页面上就再没有入口能把它开回来（0.1.6 用户实报的坑）。
+         只在"这门语言本来就有词表"时挂：英文是基准语言、翻译层不介入，挂了也没意义。 */
+      if (I18n.canTranslateSite()) SP.DomI18n.mountPill();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();
@@ -5531,6 +5553,11 @@ ${Theme.css('#sp')}
          DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
          mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
       startSiteTranslation();
+      /* 局部接管的页面**必须**留着角落这颗「进入新界面」：卡片是刻意没有顶栏的
+         （这一页的其余部分还是原站的，不该再叠一层我们自己的导航），所以这一页上
+         属于我们的入口只有它。0.1.6 漏了这一步 —— /getstarted 从"未接管"变成
+         "半接管"之后就走了另一条分支，原来那颗按钮随之消失（用户实报）。 */
+      mountModePill('partial');
     }
 
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {

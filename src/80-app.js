@@ -66,7 +66,7 @@
     b.id = 'sp-mode-pill';
     b.type = 'button';
     const classic = kind === 'classic';
-    b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
+    b.title = classic ? t('mode.classicTip') : (kind === 'partial' ? t('mode.partialTip') : t('mode.enterTip'));
     b.setAttribute('aria-label', b.title);
     b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
@@ -87,13 +87,18 @@
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!on || !I18n.canTranslateSite() || !SP.DomI18n) return;
+    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
-      document.documentElement.lang = ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
-      SP.DomI18n.run();
-      SP.DomI18n.mountPill();
+      if (on && I18n.canTranslateSite()) {
+        document.documentElement.lang = ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
+        SP.DomI18n.run();
+      }
+      /* 角落开关**不受 on 影响**，照挂 —— 关掉翻译之后如果连按钮一起没了，
+         页面上就再没有入口能把它开回来（0.1.6 用户实报的坑）。
+         只在"这门语言本来就有词表"时挂：英文是基准语言、翻译层不介入，挂了也没意义。 */
+      if (I18n.canTranslateSite()) SP.DomI18n.mountPill();
     };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', go, { once: true });
     else go();
@@ -863,6 +868,11 @@
          DomI18n 明确不进 #sp（那是我们自己的界面），搬完再翻就翻不到了。
          mountPill() 自己会跳过已经有 #sp 的情况，这里 #sp 还没建，所以照常给出口。 */
       startSiteTranslation();
+      /* 局部接管的页面**必须**留着角落这颗「进入新界面」：卡片是刻意没有顶栏的
+         （这一页的其余部分还是原站的，不该再叠一层我们自己的导航），所以这一页上
+         属于我们的入口只有它。0.1.6 漏了这一步 —— /getstarted 从"未接管"变成
+         "半接管"之后就走了另一条分支，原来那颗按钮随之消失（用户实报）。 */
+      mountModePill('partial');
     }
 
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {

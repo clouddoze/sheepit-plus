@@ -224,10 +224,23 @@
       const b = document.createElement('button');
       b.id = 'sp-lang-pill';
       b.type = 'button';
-      b.textContent = `译 ${I18n.lang.toUpperCase()}`;
-      b.title = '点击临时关闭本页翻译 / 再次开启需刷新';
+      /* 这个开关**必须一直在，而且必须能双向拨**。
+         踩过的坑（0.1.6，用户实报）：它原来只在"翻译开着"时挂载，点一下写
+         translateSite=false 再重载 —— 重载后它自己不会被挂载，于是页面上再没有任何
+         入口能把翻译开回来；标题里那句"再次开启需刷新"是假的，刷新恰恰会让它消失。
+         角落这颗是这一层的唯一出口，出口自己消失就不叫出口。 */
+      const isOn = () => Util.store.get('translateSite', true) !== false;
+      const paint = () => {
+        const lit = isOn();
+        b.textContent = `译 ${I18n.lang.toUpperCase()}` + (lit ? '' : ' 关');
+        b.title = lit
+          ? '本页文案已译成当前语言 —— 点击关闭翻译（随时可以再开）'
+          : '本页翻译已关闭 —— 点击重新开启';
+        b.setAttribute('aria-pressed', lit ? 'true' : 'false');
+      };
+      paint();
       b.addEventListener('click', () => {
-        Util.store.set('translateSite', false);
+        Util.store.set('translateSite', !isOn());
         location.reload();
       });
       document.body.appendChild(b);
