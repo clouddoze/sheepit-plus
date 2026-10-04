@@ -523,6 +523,13 @@
         </div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.exp'))}</div>
+          ${seg('sp-exp', state.expUpload ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
+          <div class="hint" style="margin-top:9px"><b>${esc(t('set.expUpload'))}</b></div>
+          <div class="hint">${esc(t('set.expUploadHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.about'))}</div>
           <div class="hint" style="margin-top:0">${esc(t('set.aboutText'))}</div>
           <div class="hint">${esc(t('set.dangerHint'))}</div>
@@ -1227,6 +1234,30 @@
   }
 
   /**
+   * 估算器的结果是**站点渲染的一段英文 HTML**，通过 AJAX 落进我们的卡片
+   * （`POST /project/estimator` → `<h4>` + 一句英文 + 一张 Bootstrap 表格）。
+   * 这里管两件事：
+   *   1. 用同一份词典把它翻成当前语言 —— `DomI18n.translateSubtree()` 允许翻译器
+   *      走进 #sp，因为这段 DOM 虽然在我们的容器里，文字却是站点的；
+   *   2. 去掉中文译文后面吊着的那个英文句号：站点原句是
+   *      `…up to <strong>10,958 points</strong>.`，句号在 <strong> 外面，
+   *      翻完就成了「…10,958 积分.」。
+   */
+  function watchEstimatorResult(box) {
+    if (!box) return;
+    const fix = () => {
+      if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+      for (const n of [...box.childNodes]) {
+        if (n.nodeType !== 3 || n.nodeValue.trim() !== '.') continue;
+        const before = n.previousSibling ? (n.previousSibling.textContent || '') : '';
+        if (/[\u4e00-\u9fff]$/.test(before.replace(/\s+$/, ''))) n.remove();
+      }
+    };
+    new MutationObserver(fix).observe(box, { childList: true });
+    if (box.innerHTML.trim()) fix();
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -1255,7 +1286,15 @@
       const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
       const estBlock = blocks.find((b) => b !== formBlock) || null;
       if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
-      if (estBlock && slotEst) slotEst.appendChild(estBlock);
+      if (estBlock && slotEst) {
+        slotEst.appendChild(estBlock);
+        /* 估算器自己那张「渲染耗时 / 帧数」表要单独标出来：它和站点稍后返回的结果表格
+           不是一回事 —— 前者是两列标签值，后者是带表头的真表格。没有这个类名，
+           针对前者的网格规则会连后者一起命中，把列序搞乱（实测把分块数和耗时对调了）。 */
+        const numTable = estBlock.querySelector('table');
+        if (numTable) numTable.classList.add('numband');
+        watchEstimatorResult(slotEst.querySelector('#addproject_estimator_result'));
+      }
       else if (estPanel) estPanel.remove();
       if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
     } else if (slotForm) {

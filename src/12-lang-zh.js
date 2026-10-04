@@ -203,6 +203,16 @@
       'PayPal - The safer, easier way to pay online!': 'PayPal —— 更安全、更便捷的在线支付方式',
       'Donate with PayPal button': '使用 PayPal 捐赠',
       'Become a Patron': '成为赞助者',
+      /* 估算器返回的那段结果：站点渲染的英文片段，落进我们的卡片里。
+         用 DomI18n.translateSubtree() 翻 —— 它允许翻译器走进 #sp。 */
+      'How much your project will cost you': '你的项目会花掉多少积分',
+      'How you could split your project': '可以怎么拆分',
+      'Your project will cost you up to': '你的项目最多会花掉',
+      'Having a very low render time is not necessarily a good thing. Please keep the render time over 1 minute.':
+        '渲染时间太短未必是好事 —— 请把单块渲染时间保持在 1 分钟以上。',
+      'Number of tiles': '分块数',
+      'Expected render time': '预计耗时',
+      'No split': '不拆分',
     },
 
     /* ------------------------------------------------ 整块替换（值是 HTML，可保留链接）
@@ -262,6 +272,10 @@
       /* 序数：既用于排行榜名次，也用于排队位置（CPU: 1st） */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
+      /* 估算器结果里的两句带变量的文案 */
+      [/^([\d,]+)\s+points$/, '$1 积分'],
+      [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
+        '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],
     ],
   });
 })();

@@ -150,6 +150,7 @@
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
+    expUpload: false,      // 实验性：兼容界面（上传页）在顶栏的入口，设置里的开关，默认关
     uiScale: 1,            // 界面整体缩放（设置里那个百分比）
   };
 
@@ -159,6 +160,7 @@
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
+    state.expUpload = Util.store.get('expUpload', false) === true;
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -191,16 +193,21 @@
 
   function shell() {
     const u = state.userName;
-    const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), ''],
-      ['ranking', t('nav.ranking'), t('nav.rankingShort')],
+    const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
+    /* 实验性入口：`@` 开头表示"这不是我们重建过的页面，是个真地址"，点了整页跳过去。
+       默认关 —— 兼容界面没重制完，进主导航得用户自己在设置里点头（见 set.exp*）。 */
+    if (state.expUpload) nav.push(['@/getstarted', t('nav.upload'), t('nav.upload')]);
+    nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
-      ['settings', t('nav.settings'), '']];
+      ['settings', t('nav.settings'), '']);
+    const item = ([k, label, short]) => (k.charAt(0) === '@'
+      ? `<button data-href="${Util.esc(k.slice(1))}" title="${Util.esc(t('nav.uploadTip'))}">`
+      : `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`)
+      + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
         <a class="brand" href="#/overview">${UI.icon('sheep', 'sheep')}SheepIt <em>PLUS</em></a>
-        <nav>${nav.map(([k, label, short]) =>
-          `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>` +
-          `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`).join('')}</nav>
+        <nav>${nav.map(item).join('')}</nav>
         <span class="spacer"></span>
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
@@ -587,6 +594,10 @@
     const nav = ev.target.closest('[data-nav]');
     if (nav) { go(nav.dataset.nav); return; }
 
+    // 实验性入口是**真地址**（/getstarted 不是我们重建的视图，塞不进 SPA 路由），整页跳过去
+    const jump = ev.target.closest('[data-href]');
+    if (jump) { location.href = jump.dataset.href; return; }
+
     const act = ev.target.closest('[data-act]');
     if (act) {
       const kind = act.dataset.act;
@@ -785,6 +796,19 @@
       Util.store.set('translateSite', on);
       state.translateSite = on;
       render();
+      return;
+    }
+
+    /* 实验性开关：它决定顶栏有没有那个入口，所以要**重建整壳**（同语言开关）——
+       render() 只在 .top 已存在时更新高亮，不会增删导航项。 */
+    const ex = ev.target.closest('#sp-exp [data-v]');
+    if (ex) {
+      const on = ex.dataset.v === 'on';
+      Util.store.set('expUpload', on);
+      state.expUpload = on;
+      const host = document.getElementById('sp');
+      if (host) host.innerHTML = shell();
+      show(state.view, { silent: true });
       return;
     }
   }

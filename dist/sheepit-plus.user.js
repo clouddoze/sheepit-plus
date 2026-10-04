@@ -377,6 +377,16 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
+      /* 实验性开关。文案要说清三件事：未经验证 / 只统一风格 / 没全部重写 ——
+         用户明确要求把这层说白，别让人以为这一页也是重制过的。 */
+      'set.exp': '实验性',
+      'set.expUpload': '项目上传（兼容界面）',
+      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去就是 /getstarted 的上传那一段。'
+        + '这一页未经验证：只做了风格统一，没有全部重写改版 —— 上传表单、估算器、进度条都还是站点自己的控件，'
+        + '我们只换了外观；分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。'
+        + '因为我们手上没有可用的真实样本，个别地方可能与站点实际行为不一致。',
+      'nav.upload': '上传项目',
+      'nav.uploadTip': '实验性：兼容界面（未经验证，只统一了风格）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端界面重制脚本。它读取你本已能看到的站点页面，用新界面渲染出来。不调用任何私有接口，不向任何第三方发送数据。仅有的三处会改动服务器状态的地方，都是你自己点下的按钮 —— 「账户设置」里的提交、机器会话页上的暂停/恢复，以及项目列表里发布者那格的「优先 / 移出」—— 它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -592,6 +602,14 @@
       'set.langHint': 'Language packs are data, not code: register a dictionary and the UI lists it automatically. No logic changes needed.',
       'set.translate': 'Translate original pages', 'set.on': 'On', 'set.off': 'Off',
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
+      'set.exp': 'Experimental',
+      'set.expUpload': 'Project upload (compatibility surface)',
+      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the upload section of /getstarted. '
+        + 'That page is unverified: it is a style unification, not a rewrite \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls and only the look is ours. '
+        + 'The project settings form that follows the analysis, and the project management page, are still the original interface. '
+        + 'We have no usable real sample for those, so some details may not match what the site actually does.',
+      'nav.upload': 'Upload a project',
+      'nav.uploadTip': 'Experimental: compatibility surface (unverified, style only)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface. No private endpoints, nothing sent to a third party. The only three places it changes server state are buttons you press yourself \u2014 the forms in Account settings, the pause/resume control on a machine\u2019s session page, and the priority toggle on a publisher in the project list \u2014 and all of them post to the site\u2019s own endpoints, exactly what the original pages do.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -1046,6 +1064,16 @@
       'PayPal - The safer, easier way to pay online!': 'PayPal —— 更安全、更便捷的在线支付方式',
       'Donate with PayPal button': '使用 PayPal 捐赠',
       'Become a Patron': '成为赞助者',
+      /* 估算器返回的那段结果：站点渲染的英文片段，落进我们的卡片里。
+         用 DomI18n.translateSubtree() 翻 —— 它允许翻译器走进 #sp。 */
+      'How much your project will cost you': '你的项目会花掉多少积分',
+      'How you could split your project': '可以怎么拆分',
+      'Your project will cost you up to': '你的项目最多会花掉',
+      'Having a very low render time is not necessarily a good thing. Please keep the render time over 1 minute.':
+        '渲染时间太短未必是好事 —— 请把单块渲染时间保持在 1 分钟以上。',
+      'Number of tiles': '分块数',
+      'Expected render time': '预计耗时',
+      'No split': '不拆分',
     },
 
     /* ------------------------------------------------ 整块替换（值是 HTML，可保留链接）
@@ -1105,6 +1133,10 @@
       /* 序数：既用于排行榜名次，也用于排队位置（CPU: 1st） */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
+      /* 估算器结果里的两句带变量的文案 */
+      [/^([\d,]+)\s+points$/, '$1 积分'],
+      [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
+        '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],
     ],
   });
 })();
@@ -2469,11 +2501,11 @@ ${Theme.css('#sp')}
 #sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
 #sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
 
-/* 版式：第一行两张卡（选文件 / 估算器）等高，须知整行跨两列。
-   之前是"左列两张卡 vs 右列须知"的两栏，而须知有 19 条 —— 左边必然空出半屏。
-   现在由 grid 直接排三张卡：.up-col 用 display:contents 让它的两个孩子成为 grid 项，
-   不再需要"列"这一层。 */
-#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch;margin-top:16px}
+/* 版式：第一行两张卡（选文件 / 估算器），须知整行跨两列。
+   注意这里是 **align-items:start 而不是 stretch**：估算器下方会出现站点返回的估算结果，
+   一旦它把卡片撑高，stretch 会把左边那张"选择文件"一起拉长、下面留一大片空的
+   （用户实报"会把左侧的框拉长"）。每张卡按自己的内容定高，长短不齐就长短不齐。 */
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
 #sp .up-col{display:contents}
 #sp .up-grid .panel{min-width:0}
 #sp .up-rules{grid-column:1 / -1}
@@ -2608,12 +2640,13 @@ ${Theme.css('#sp')}
 }
 #sp .up-body table input[type=text]{width:92px}
 /* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
-   一大截。只对这一块把 tbody/tr 摊平（display:contents），让那一行变成规整的两列网格。
+   一大截。这里把 tbody/tr 摊平（display:contents）变成规整的两列网格。
    标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
-   范围限定在 [data-up="est"]：上传表单里那张 table 有 colspan，不能一起摊。 */
-#sp [data-up="est"] table{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
-#sp [data-up="est"] table tbody,#sp [data-up="est"] table tr{display:contents}
-#sp [data-up="est"] table td{display:block;padding:0;text-align:left !important;white-space:nowrap}
+   只认 .numband（wireUpload 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
+   个形状，被这条规则误伤过一次：它的单元格被摊成网格项，分块数和耗时对调了。 */
+#sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
+#sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
+#sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
 #sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
@@ -2625,6 +2658,50 @@ ${Theme.css('#sp')}
   padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
 }
 #sp .up-body #addproject_estimator_result:empty{display:none}
+/* 站点返回的那段估算结果是它自己渲染的 HTML —— 里面带着 Bootstrap 的 .table 类，
+   在我们这张深色卡片里就是白底白字（用户实报"白色背景、白色文字，看不清楚"）。
+   这里把它整段按我们的表格重画：底色、表头、单元格全部接管。 */
+#sp .up-body #addproject_estimator_result table{
+  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
+  border:none !important;   /* Bootstrap 的 .table-bordered 给表格本身也画了一圈边框 */
+}
+#sp .up-body #addproject_estimator_result thead th,
+#sp .up-body #addproject_estimator_result th{
+  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
+  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+#sp .up-body #addproject_estimator_result td{
+  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
+  color:var(--text-2);vertical-align:baseline;
+}
+#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
+#sp .up-body #addproject_estimator_result td:last-child,
+#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
+#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
+#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
+  font-variant-numeric:tabular-nums;
+}
+#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
+#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
+#sp .up-body #addproject_estimator_result > br:first-child{display:none}
+/* 站点给耗时套了 Bootstrap 的绿色小标签。这个调色板里没有绿色，而且"能不能接受"
+   不该靠颜色说 —— 把标签拆掉，只留数字本身。 */
+#sp .up-body #addproject_estimator_result .label{
+  background:none !important;border:none !important;color:var(--text) !important;
+  font-size:12.5px !important;font-weight:600;padding:0 !important;
+  text-shadow:none;border-radius:0;
+}
+/* 单元格只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
+#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
+#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
+  border:none;border-bottom:1px solid var(--border);
+}
+/* Bootstrap 的斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
+#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
+/* 站点给这些单元格写了内联的 text-align:center —— 内联样式只能用 !important 压过去，
+   和上传进度条那里是同一类例外。 */
+#sp .up-body #addproject_estimator_result th,
+#sp .up-body #addproject_estimator_result td{text-align:left !important}
 
 /* ---- 分析等待页 ---- */
 #sp .an-card{padding:0}
@@ -3748,6 +3825,13 @@ ${Theme.css('#sp')}
         </div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.exp'))}</div>
+          ${seg('sp-exp', state.expUpload ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
+          <div class="hint" style="margin-top:9px"><b>${esc(t('set.expUpload'))}</b></div>
+          <div class="hint">${esc(t('set.expUploadHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.about'))}</div>
           <div class="hint" style="margin-top:0">${esc(t('set.aboutText'))}</div>
           <div class="hint">${esc(t('set.dangerHint'))}</div>
@@ -4452,6 +4536,30 @@ ${Theme.css('#sp')}
   }
 
   /**
+   * 估算器的结果是**站点渲染的一段英文 HTML**，通过 AJAX 落进我们的卡片
+   * （`POST /project/estimator` → `<h4>` + 一句英文 + 一张 Bootstrap 表格）。
+   * 这里管两件事：
+   *   1. 用同一份词典把它翻成当前语言 —— `DomI18n.translateSubtree()` 允许翻译器
+   *      走进 #sp，因为这段 DOM 虽然在我们的容器里，文字却是站点的；
+   *   2. 去掉中文译文后面吊着的那个英文句号：站点原句是
+   *      `…up to <strong>10,958 points</strong>.`，句号在 <strong> 外面，
+   *      翻完就成了「…10,958 积分.」。
+   */
+  function watchEstimatorResult(box) {
+    if (!box) return;
+    const fix = () => {
+      if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+      for (const n of [...box.childNodes]) {
+        if (n.nodeType !== 3 || n.nodeValue.trim() !== '.') continue;
+        const before = n.previousSibling ? (n.previousSibling.textContent || '') : '';
+        if (/[\u4e00-\u9fff]$/.test(before.replace(/\s+$/, ''))) n.remove();
+      }
+    };
+    new MutationObserver(fix).observe(box, { childList: true });
+    if (box.innerHTML.trim()) fix();
+  }
+
+  /**
    * 把 /getstarted 上「Add your project」那一段的节点搬进卡片，然后用 #sp 顶掉原站那一段。
    *
    * 三个可能的现场，都要认：
@@ -4480,7 +4588,15 @@ ${Theme.css('#sp')}
       const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
       const estBlock = blocks.find((b) => b !== formBlock) || null;
       if (formBlock && slotForm) { slotForm.appendChild(formBlock); rewordFileLimit(formBlock); }
-      if (estBlock && slotEst) slotEst.appendChild(estBlock);
+      if (estBlock && slotEst) {
+        slotEst.appendChild(estBlock);
+        /* 估算器自己那张「渲染耗时 / 帧数」表要单独标出来：它和站点稍后返回的结果表格
+           不是一回事 —— 前者是两列标签值，后者是带表头的真表格。没有这个类名，
+           针对前者的网格规则会连后者一起命中，把列序搞乱（实测把分块数和耗时对调了）。 */
+        const numTable = estBlock.querySelector('table');
+        if (numTable) numTable.classList.add('numband');
+        watchEstimatorResult(slotEst.querySelector('#addproject_estimator_result'));
+      }
       else if (estPanel) estPanel.remove();
       if (right && slotRules) { slotRules.appendChild(right); tidyRules(slotRules); }
     } else if (slotForm) {
@@ -4653,7 +4769,7 @@ ${Theme.css('#sp')}
         acceptNode: (n) => {
           const p = n.parentElement;
           if (!p || SKIP_TAGS.test(p.tagName)) return NodeFilter.FILTER_REJECT;
-          if (p.closest('#sp')) return NodeFilter.FILTER_REJECT;
+          if (!this.insideSP && p.closest('#sp')) return NodeFilter.FILTER_REJECT;
           if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
@@ -4668,7 +4784,7 @@ ${Theme.css('#sp')}
     patchAttributes(root) {
       const els = root.querySelectorAll ? root.querySelectorAll(`[${ATTRS.join('],[')}]`) : [];
       for (const el of els) {
-        if (el.closest('#sp')) continue;
+        if (!this.insideSP && el.closest('#sp')) continue;
         for (const a of ATTRS) {
           const v = el.getAttribute(a);
           if (!v) continue;
@@ -4696,7 +4812,7 @@ ${Theme.css('#sp')}
 
       const cands = [];
       for (const el of root.querySelectorAll(BLOCK_SELECTOR)) {
-        if (el.closest('#sp') || el.closest('[data-sp-block]')) continue;
+        if (!this.insideSP && (el.closest('#sp') || el.closest('[data-sp-block]'))) continue;
         /* 整块替换 = `el.innerHTML = 译文`，这个容器里的东西**全部**没了。
            所以只要子树里有一件"能干活或能画"的东西就必须放手 —— 实测踩过：
            /getstarted 的上传表单里，站点那句 "Max: 2,048 MB before ZIP compression…"
@@ -4726,6 +4842,28 @@ ${Theme.css('#sp')}
     },
 
     /* ---------------------------------------------------------- 入口 */
+
+    /**
+     * 只翻**一棵子树**，而且**不跳过 #sp**。
+     *
+     * 为什么需要它：站点有时候会把一小段它自己渲染的 HTML 塞进我们的卡片里 ——
+     * 估算器返回的估算结果就是这种（`POST /project/estimator` → 一段带 `<h4>` 和
+     * Bootstrap 表格的英文片段，落进 #addproject_estimator_result）。那段 DOM 在我们的
+     * 容器里，按常规会被"不进 #sp"这条规矩挡掉，于是它一直是英文。
+     *
+     * 词典还是同一份（12-lang-zh.js），所以译文只有一处来源；区别只是这次允许
+     * 翻译器走进我们自己的地盘。将来重制「分析完成后的项目设置表单」时也是同一个需求。
+     */
+    translateSubtree(root) {
+      if (!this.enabled || !I18n.canTranslateSite() || !root) return;
+      const keep = this.insideSP;
+      this.insideSP = true;
+      try {
+        this.patchBlocks(root);
+        this.patchTextNodes(root);
+        this.patchAttributes(root);
+      } finally { this.insideSP = keep; }
+    },
 
     run() {
       if (!this.enabled || !I18n.canTranslateSite()) return;
@@ -4991,6 +5129,7 @@ ${Theme.css('#sp')}
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
+    expUpload: false,      // 实验性：兼容界面（上传页）在顶栏的入口，设置里的开关，默认关
     uiScale: 1,            // 界面整体缩放（设置里那个百分比）
   };
 
@@ -5000,6 +5139,7 @@ ${Theme.css('#sp')}
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
+    state.expUpload = Util.store.get('expUpload', false) === true;
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -5032,16 +5172,21 @@ ${Theme.css('#sp')}
 
   function shell() {
     const u = state.userName;
-    const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), ''],
-      ['ranking', t('nav.ranking'), t('nav.rankingShort')],
+    const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
+    /* 实验性入口：`@` 开头表示"这不是我们重建过的页面，是个真地址"，点了整页跳过去。
+       默认关 —— 兼容界面没重制完，进主导航得用户自己在设置里点头（见 set.exp*）。 */
+    if (state.expUpload) nav.push(['@/getstarted', t('nav.upload'), t('nav.upload')]);
+    nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
-      ['settings', t('nav.settings'), '']];
+      ['settings', t('nav.settings'), '']);
+    const item = ([k, label, short]) => (k.charAt(0) === '@'
+      ? `<button data-href="${Util.esc(k.slice(1))}" title="${Util.esc(t('nav.uploadTip'))}">`
+      : `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`)
+      + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
         <a class="brand" href="#/overview">${UI.icon('sheep', 'sheep')}SheepIt <em>PLUS</em></a>
-        <nav>${nav.map(([k, label, short]) =>
-          `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>` +
-          `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`).join('')}</nav>
+        <nav>${nav.map(item).join('')}</nav>
         <span class="spacer"></span>
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
@@ -5428,6 +5573,10 @@ ${Theme.css('#sp')}
     const nav = ev.target.closest('[data-nav]');
     if (nav) { go(nav.dataset.nav); return; }
 
+    // 实验性入口是**真地址**（/getstarted 不是我们重建的视图，塞不进 SPA 路由），整页跳过去
+    const jump = ev.target.closest('[data-href]');
+    if (jump) { location.href = jump.dataset.href; return; }
+
     const act = ev.target.closest('[data-act]');
     if (act) {
       const kind = act.dataset.act;
@@ -5626,6 +5775,19 @@ ${Theme.css('#sp')}
       Util.store.set('translateSite', on);
       state.translateSite = on;
       render();
+      return;
+    }
+
+    /* 实验性开关：它决定顶栏有没有那个入口，所以要**重建整壳**（同语言开关）——
+       render() 只在 .top 已存在时更新高亮，不会增删导航项。 */
+    const ex = ev.target.closest('#sp-exp [data-v]');
+    if (ex) {
+      const on = ex.dataset.v === 'on';
+      Util.store.set('expUpload', on);
+      state.expUpload = on;
+      const host = document.getElementById('sp');
+      if (host) host.innerHTML = shell();
+      show(state.view, { silent: true });
       return;
     }
   }

@@ -667,11 +667,11 @@ ${Theme.css('#sp')}
 #sp.sp-inline{position:static;inset:auto;z-index:auto;overflow:visible;background:var(--bg);padding:24px 0 26px}
 #sp.sp-inline .wrap{max-width:1240px;padding:0 24px}
 
-/* 版式：第一行两张卡（选文件 / 估算器）等高，须知整行跨两列。
-   之前是"左列两张卡 vs 右列须知"的两栏，而须知有 19 条 —— 左边必然空出半屏。
-   现在由 grid 直接排三张卡：.up-col 用 display:contents 让它的两个孩子成为 grid 项，
-   不再需要"列"这一层。 */
-#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:stretch;margin-top:16px}
+/* 版式：第一行两张卡（选文件 / 估算器），须知整行跨两列。
+   注意这里是 **align-items:start 而不是 stretch**：估算器下方会出现站点返回的估算结果，
+   一旦它把卡片撑高，stretch 会把左边那张"选择文件"一起拉长、下面留一大片空的
+   （用户实报"会把左侧的框拉长"）。每张卡按自己的内容定高，长短不齐就长短不齐。 */
+#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
 #sp .up-col{display:contents}
 #sp .up-grid .panel{min-width:0}
 #sp .up-rules{grid-column:1 / -1}
@@ -806,12 +806,13 @@ ${Theme.css('#sp')}
 }
 #sp .up-body table input[type=text]{width:92px}
 /* 估算器那两个数字是"标签 + 值"两列，但站点用的是内容自适应的 <table>，实测列间空出
-   一大截。只对这一块把 tbody/tr 摊平（display:contents），让那一行变成规整的两列网格。
+   一大截。这里把 tbody/tr 摊平（display:contents）变成规整的两列网格。
    标签列必须用 max-content：auto 轨道会把容器剩余空间吸进去，标签照样离输入框老远。
-   范围限定在 [data-up="est"]：上传表单里那张 table 有 colspan，不能一起摊。 */
-#sp [data-up="est"] table{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
-#sp [data-up="est"] table tbody,#sp [data-up="est"] table tr{display:contents}
-#sp [data-up="est"] table td{display:block;padding:0;text-align:left !important;white-space:nowrap}
+   只认 .numband（wireUpload 给站点那张表贴的类名）—— 站点稍后返回的**结果表格**是另一
+   个形状，被这条规则误伤过一次：它的单元格被摊成网格项，分块数和耗时对调了。 */
+#sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
+#sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
+#sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
 #sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
@@ -823,6 +824,50 @@ ${Theme.css('#sp')}
   padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
 }
 #sp .up-body #addproject_estimator_result:empty{display:none}
+/* 站点返回的那段估算结果是它自己渲染的 HTML —— 里面带着 Bootstrap 的 .table 类，
+   在我们这张深色卡片里就是白底白字（用户实报"白色背景、白色文字，看不清楚"）。
+   这里把它整段按我们的表格重画：底色、表头、单元格全部接管。 */
+#sp .up-body #addproject_estimator_result table{
+  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
+  border:none !important;   /* Bootstrap 的 .table-bordered 给表格本身也画了一圈边框 */
+}
+#sp .up-body #addproject_estimator_result thead th,
+#sp .up-body #addproject_estimator_result th{
+  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
+  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+#sp .up-body #addproject_estimator_result td{
+  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
+  color:var(--text-2);vertical-align:baseline;
+}
+#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
+#sp .up-body #addproject_estimator_result td:last-child,
+#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
+#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
+#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
+  font-variant-numeric:tabular-nums;
+}
+#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
+#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
+#sp .up-body #addproject_estimator_result > br:first-child{display:none}
+/* 站点给耗时套了 Bootstrap 的绿色小标签。这个调色板里没有绿色，而且"能不能接受"
+   不该靠颜色说 —— 把标签拆掉，只留数字本身。 */
+#sp .up-body #addproject_estimator_result .label{
+  background:none !important;border:none !important;color:var(--text) !important;
+  font-size:12.5px !important;font-weight:600;padding:0 !important;
+  text-shadow:none;border-radius:0;
+}
+/* 单元格只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
+#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
+#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
+  border:none;border-bottom:1px solid var(--border);
+}
+/* Bootstrap 的斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
+#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
+/* 站点给这些单元格写了内联的 text-align:center —— 内联样式只能用 !important 压过去，
+   和上传进度条那里是同一类例外。 */
+#sp .up-body #addproject_estimator_result th,
+#sp .up-body #addproject_estimator_result td{text-align:left !important}
 
 /* ---- 分析等待页 ---- */
 #sp .an-card{padding:0}

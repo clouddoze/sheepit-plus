@@ -87,7 +87,7 @@
         acceptNode: (n) => {
           const p = n.parentElement;
           if (!p || SKIP_TAGS.test(p.tagName)) return NodeFilter.FILTER_REJECT;
-          if (p.closest('#sp')) return NodeFilter.FILTER_REJECT;
+          if (!this.insideSP && p.closest('#sp')) return NodeFilter.FILTER_REJECT;
           if (p.isContentEditable) return NodeFilter.FILTER_REJECT;
           return NodeFilter.FILTER_ACCEPT;
         },
@@ -102,7 +102,7 @@
     patchAttributes(root) {
       const els = root.querySelectorAll ? root.querySelectorAll(`[${ATTRS.join('],[')}]`) : [];
       for (const el of els) {
-        if (el.closest('#sp')) continue;
+        if (!this.insideSP && el.closest('#sp')) continue;
         for (const a of ATTRS) {
           const v = el.getAttribute(a);
           if (!v) continue;
@@ -130,7 +130,7 @@
 
       const cands = [];
       for (const el of root.querySelectorAll(BLOCK_SELECTOR)) {
-        if (el.closest('#sp') || el.closest('[data-sp-block]')) continue;
+        if (!this.insideSP && (el.closest('#sp') || el.closest('[data-sp-block]'))) continue;
         /* 整块替换 = `el.innerHTML = 译文`，这个容器里的东西**全部**没了。
            所以只要子树里有一件"能干活或能画"的东西就必须放手 —— 实测踩过：
            /getstarted 的上传表单里，站点那句 "Max: 2,048 MB before ZIP compression…"
@@ -160,6 +160,28 @@
     },
 
     /* ---------------------------------------------------------- 入口 */
+
+    /**
+     * 只翻**一棵子树**，而且**不跳过 #sp**。
+     *
+     * 为什么需要它：站点有时候会把一小段它自己渲染的 HTML 塞进我们的卡片里 ——
+     * 估算器返回的估算结果就是这种（`POST /project/estimator` → 一段带 `<h4>` 和
+     * Bootstrap 表格的英文片段，落进 #addproject_estimator_result）。那段 DOM 在我们的
+     * 容器里，按常规会被"不进 #sp"这条规矩挡掉，于是它一直是英文。
+     *
+     * 词典还是同一份（12-lang-zh.js），所以译文只有一处来源；区别只是这次允许
+     * 翻译器走进我们自己的地盘。将来重制「分析完成后的项目设置表单」时也是同一个需求。
+     */
+    translateSubtree(root) {
+      if (!this.enabled || !I18n.canTranslateSite() || !root) return;
+      const keep = this.insideSP;
+      this.insideSP = true;
+      try {
+        this.patchBlocks(root);
+        this.patchTextNodes(root);
+        this.patchAttributes(root);
+      } finally { this.insideSP = keep; }
+    },
 
     run() {
       if (!this.enabled || !I18n.canTranslateSite()) return;
