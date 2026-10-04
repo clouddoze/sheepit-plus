@@ -1181,6 +1181,31 @@
       const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
       if (/[。．.！!？?]$/.test(before)) last.remove();
     }
+
+    /* 排队那一组（说明 + CPU/GPU + 项目总数）原来整组竖着摞在左边，右边半张卡片空着。
+       把它拆成"说明在左、数字在右"的横带 —— 只是把已有节点分到两个盒子里，不碰文字。 */
+    const h4s = [...col.querySelectorAll(':scope > h4')];
+    const head = h4s[0];
+    if (head) {
+      const stop = h4s[1] || null;
+      const group = [];
+      for (let n = head.nextSibling; n && n !== stop; n = n.nextSibling) group.push(n);
+      if (group.length) {
+        const band = document.createElement('div');
+        band.className = 'qband';
+        const text = document.createElement('div');
+        text.className = 'qtext';
+        const data = document.createElement('div');
+        data.className = 'qdata';
+        band.appendChild(text);
+        band.appendChild(data);
+        for (const n of group) {
+          const isData = n.nodeType === 1 && (n.classList.contains('qpos') || n.classList.contains('qtotal'));
+          (isData ? data : text).appendChild(n);
+        }
+        head.after(band);
+      }
+    }
   }
 
   /**

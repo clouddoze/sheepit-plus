@@ -692,21 +692,34 @@ ${Theme.css('#sp')}
 }
 #sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
 #sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
+/* 排队那一组：说明在左、数字在右 —— 从前整组竖着摞在左边，右边半张卡片是空的。
+   数字是"我在队列里排第几"，给它自己的小块，靠右停住。 */
+#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr) max-content;gap:4px 44px;align-items:start;margin-bottom:6px}
+#sp .up-rules .qtext p{margin:0;max-width:62ch}
+#sp .up-rules .qdata{display:flex;flex-direction:column;gap:5px;min-width:126px;padding-top:1px}
+#sp .up-rules .qdata .qtotal{margin:3px 0 0}
+@media (max-width:860px){#sp .up-rules .qband{grid-template-columns:minmax(0,1fr);gap:14px}}
+
 /* 排队那一行：两个 <li> 本质是两个数，不该画成项目符号 */
-#sp .up-rules .up-body .qpos{display:flex;flex-wrap:wrap;gap:6px 30px;margin:0 0 8px}
+#sp .up-rules .up-body .qpos{display:flex;flex-direction:column;flex-wrap:wrap;gap:5px;margin:0}
+#sp .up-rules .up-body .qdata .qpos{gap:5px}
 #sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
 #sp .up-rules .up-body .qpos li::before{display:none}
 #sp .up-rules .up-body .qpos li strong{
-  margin-left:4px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
+  margin-left:6px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
 }
 #sp .up-rules .up-body .qtotal{display:block;margin-bottom:4px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
 
-/* 须知整行宽了，十几条横排会拉出很长的行 —— 分两栏，读到哪儿跟到哪儿。
+/* 须知整行宽了，十几条横排会拉出很长的行 —— 分栏，读到哪儿跟到哪儿。列宽由视口决定：
+   窄了两栏、宽了三栏（一栏 400 多 px，中文一行三十来字，是能读的长度）。
    注意 ul 在别处是 flex 列（见下），多栏排版只对块级容器生效，所以这里要还原成 block；
    排队那一行（.qpos）是数据不是条目，排除在外。 */
 @media (min-width:820px){
   #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:8px}
+  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:9px}
+}
+@media (min-width:1200px){
+  #sp .up-rules .up-body ul:not(.qpos){columns:3}
 }
 
 /* ---- 抹掉原站外观：搬过来的每个容器都不再是"一块原站的盒子" ---- */
@@ -715,6 +728,13 @@ ${Theme.css('#sp')}
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
 }
 #sp .up-body .row{margin:0}
+/* 站点那套栅格也要一起抹掉。搬过来的「须知」那一列是站点栅格的 col-md-6，Bootstrap 给它
+   float:left + width:50% —— 于是内容只占卡片左半边、右半边整片空着，看起来就是
+   "全是左对齐、右边一大块空的"（实测那一列 744px，而卡片正文 1488px）。
+   这一类"宿主页面的家具"已经踩过三次：翻译的整块替换、.input-group、现在是栅格。
+   （注意：本文件整段 CSS 是一个模板字符串，注释里**不能出现反引号**。） */
+#sp .up-body [class*="col-md-"],#sp .up-body [class*="col-sm-"],
+#sp .up-body [class*="col-xs-"],#sp .up-body [class*="col-lg-"]{float:none;width:auto;max-width:none;padding:0;margin:0}
 #sp .up-body h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .up-body p{margin:0 0 14px;font-size:13px;color:var(--text-2);line-height:1.75}
 #sp .up-body ul{margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
@@ -861,13 +881,36 @@ ${Theme.css('#sp')}
    * 单独注入，因为那种模式下整套 SP.CSS 是故意不加载的 —— 它是给 #sp 用的，
    * 而 #sp 在原版模式下根本不存在。这条只有 30 行，也只作用于自己的 id。
    */
+  /**
+   * 左下角那两个开关（「进入新界面 / 切回新界面」与「译 ZH」）共用一个竖排容器。
+   *
+   * 从前一个钉在左下、一个钉在右下，用户的原话是"按钮分散得到处都是"。现在都收在左下角：
+   * 翻译在上、进出新界面在下。上下用 CSS 的 order 决定，**谁先挂载都不影响顺序** ——
+   * 两个开关由两条不同的代码路径挂载（一个在应用层、一个在翻译层），靠插入顺序排是赌运气。
+   */
+  SP.cornerHost = function cornerHost() {
+    const host = document.getElementById('sp-corner');
+    if (host) return host;
+    const s = document.createElement('style');
+    s.id = 'sp-corner-style';
+    s.textContent = `
+      #sp-corner{position:fixed;left:14px;bottom:14px;z-index:2147482000;
+        display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+    `;
+    (document.head || document.documentElement).appendChild(s);
+    const box = document.createElement('div');
+    box.id = 'sp-corner';
+    (document.body || document.documentElement).appendChild(box);
+    return box;
+  };
+
   SP.injectModePillStyle = function injectModePillStyle() {
     if (document.getElementById('sp-mode-style')) return;
     const s = document.createElement('style');
     s.id = 'sp-mode-style';
     s.textContent = `
       #sp-mode-pill{
-        position:fixed;left:14px;bottom:14px;z-index:2147482000;
+        order:2;position:static;
         display:inline-flex;align-items:center;gap:8px;
         padding:10px 15px;border-radius:9px;cursor:pointer;
         background:#e06d58;color:#fff;border:1px solid rgba(0,0,0,.2);

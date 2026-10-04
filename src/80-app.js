@@ -74,7 +74,7 @@
       if (classic) location.reload();
       else location.href = '/home';   // 这一页没有重制版，去总览
     });
-    (document.body || document.documentElement).appendChild(b);
+    SP.cornerHost().appendChild(b);
   }
 
   /* -------------------------------------------- 未接管的页面：只补国际化 */

@@ -213,7 +213,7 @@
       if (document.getElementById('sp-lang-pill') || document.querySelector('#sp')) return;
       const s = document.createElement('style');
       s.textContent = `
-        #sp-lang-pill{position:fixed;right:14px;bottom:14px;z-index:2147482000;
+        #sp-lang-pill{order:1;position:static;
           display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;
           font:500 11px/1 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
           background:rgba(20,24,32,.82);color:#e6e9ef;border:1px solid rgba(255,255,255,.14);
@@ -243,7 +243,7 @@
         Util.store.set('translateSite', !isOn());
         location.reload();
       });
-      document.body.appendChild(b);
+      SP.cornerHost().appendChild(b);
     },
 
     /* ---------------------------------------------------------- 诊断 */
