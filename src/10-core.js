@@ -345,14 +345,25 @@
       /* 会话页：一台机器的档案 */
       'sess.owner': '属主', 'sess.client': '客户端', 'sess.unknownHost': '未命名主机',
       'sess.on': '运行中', 'sess.off': '已暂停',
+      // 站点那行无标签的状态行把两种暂停分开写了（见 20-api.js 的 info.note）：
+      // 服务器端点暂停是 "Paused server side"，客户端自己暂停是 "Paused client side"。
+      'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
+      'sess.statusRaw': '站点原文：{raw}',
+      // 身份条上那一句"这台机器此刻在跑什么"。暂停时说"当前作业"而不是"正在渲染"，
+      // 否则会和旁边那枚「已暂停」徽章自相矛盾。
+      'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
       'sess.noId': '地址里没有会话编号', 'sess.parseFailed': '这一页没读到机器信息',
       'sess.kpi.frames': '已渲染帧数', 'sess.kpi.points': '获得积分',
-      'sess.kpi.power': 'CPU 性能', 'sess.kpi.maxTime': '单帧上限',
+      'sess.kpi.maxTime': '单帧上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
       'sess.kpi.powerLink': '各机型算力榜', 'sess.kpi.longest': '实测最长一帧 {v}',
       'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
       'sess.f.cpu': '处理器',
+      // 算力那一格的标签跟着站点印的是哪一行走（见 50-views.js 的 powerFacts）
+      'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
+      'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
+      'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
       'sess.f.ramAllowed': '渲染可用内存', 'sess.f.ramAvailable': '物理内存',
       'sess.f.scheduler': '调度模式', 'sess.f.createdAt': '创建时间',
       'sess.f.lastRequest': '最后请求', 'sess.f.lastRequestJob': '最后请求作业',
@@ -380,6 +391,10 @@
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       'why.over-user-s-time-limit': '超出发布者的时限',
+      // 站点把"能渲染"也写成这一列的一个值（不是留空），而且可渲染的全排在表的最前面 ——
+      // 那些行的顺序就是优先级，见 50-views.js 里可渲染项目表的注释。
+      'why.renderable': '现在可渲染',
+      'why.computer-has-previously-failed-to-render-project': '这台机器之前渲染它失败过',
       'why.requires-gpu': '需要 GPU',
       'why.project-rate-limited-due-to-lack-of-points': '发布者积分不足被限流',
       'why.project-too-heavy-for-this-computer': '这台机器带不动这个项目',
@@ -513,14 +528,25 @@
       /* Session page: one machine\u2019s record */
       'sess.owner': 'Owner', 'sess.client': 'Client', 'sess.unknownHost': 'Unnamed machine',
       'sess.on': 'Running', 'sess.off': 'Paused',
+      // the site's untitled status row separates the two pauses (see 20-api.js info.note):
+      // "Paused server side" when the server paused it, "Paused client side" when the client did
+      'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
+      'sess.statusRaw': 'the site writes: {raw}',
+      // the identity strip's "what is this machine on right now"; "current job" while paused,
+      // so it cannot contradict the Paused chip next to it
+      'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
       'sess.kpi.frames': 'Frames rendered', 'sess.kpi.points': 'Points earned',
-      'sess.kpi.power': 'CPU power', 'sess.kpi.maxTime': 'Max time per frame',
+      'sess.kpi.maxTime': 'Max time per frame',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
       'sess.kpi.powerLink': 'Power by machine model', 'sess.kpi.longest': 'longest frame {v}',
       'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
       'sess.f.cpu': 'Processor',
+      // the power cell's label follows whichever row the site printed (see 50-views.js powerFacts)
+      'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
+      'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
+      'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
       'sess.f.ramAllowed': 'RAM allowed for rendering', 'sess.f.ramAvailable': 'RAM installed',
       'sess.f.scheduler': 'Scheduler', 'sess.f.createdAt': 'Created',
       'sess.f.lastRequest': 'Last request', 'sess.f.lastRequestJob': 'Last request job',

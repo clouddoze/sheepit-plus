@@ -160,10 +160,17 @@
     [/^os$/i, 'os'],
     [/^render\s*key$/i, 'renderKey'],
     [/^cpu$/i, 'cpu'],
+    // GPU 机器上站点多印这几行（CPU 机器上根本没有），原先都没有键 —— 于是中文界面里
+    // 它们原样露英文标签。Power 那两行是**二选一**的：站点按这台机器启用的计算设备印。
+    [/^gpu$/i, 'gpu'],
+    [/^vram$/i, 'vram'],
+    [/^driver$/i, 'driver'],
+    [/^compute\s*device$/i, 'computeDevice'],
     [/^ram\s*allowed$/i, 'ramAllowed'],
     [/^ram\s*available$/i, 'ramAvailable'],
     [/^max\s*render\s*time\s*per\s*frame$/i, 'maxTime'],
     [/^power\s*cpu$/i, 'power'],
+    [/^power\s*gpu$/i, 'powerGpu'],
     [/^scheduler$/i, 'scheduler'],
     [/^creation\s*time$/i, 'createdAt'],
     [/^rendered\s*frames$/i, 'frames'],
@@ -175,6 +182,9 @@
     [/^user\s*agent$/i, 'ua'],
     [/^status$/i, 'status'],
     [/^action$/i, 'action'],
+    // 这台机器此刻在跑哪一帧（空闲时站点不印这一行）。它是**活的**，所以界面不把它留在
+    // 「机器信息」那张静态原值表里，而是提到身份条上（见 50-views.js 的 sess.rendering）。
+    [/^current\s*frames$/i, 'currentFrames'],
   ];
 
   /** 某个标题之后、下一个标题之前的第一个表格。
@@ -214,7 +224,19 @@
         const td = tr.querySelector('td');
         if (!th || !td) continue;
         const label = text(th);
-        if (!label) continue;
+        if (!label) {
+          /* 站点用它写**没有标签的状态行**：实测服务器端暂停时写 "Paused server side"，
+             客户端自己暂停时写 "Paused client side"。两种暂停站点各有各的说法，
+             而它们都长这样 —— 一行没有 th 文字、只有值的行。
+             它是状态而不是机器规格，所以收进 info，不进「机器信息」那张静态原值表。
+             早先这里是 `if (!label) continue`，把整行丢了：于是两种暂停在界面上长得
+             一模一样，更糟的是 Status 那格在两种情况下都还写着 Enable，
+             本地暂停会被我们误报成「运行中」。
+             认不出的值照样留着 —— 与别处同一条规矩：不吞数据，界面按原文显示。 */
+          const note = text(td);
+          if (note) info.note = { value: note, key: 'note', href: '' };
+          continue;
+        }
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');

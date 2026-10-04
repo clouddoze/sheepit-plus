@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.4
+// @version      0.1.5
 // @description  把 SheepIt Render Farm 的老旧界面整个换掉：现代化仪表盘、可读的项目列表、精确排行榜，中英双语，明暗双主题。数据全部来自站内页面，不向任何第三方发送。
 // @description:en  Rebuild the outdated SheepIt Render Farm UI: a modern dashboard, a readable project list, an accurate ranking. Bilingual (zh/en), dark/light themes. All data is parsed from your own session; nothing is sent anywhere.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.4 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.5 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -381,14 +381,25 @@
       /* 会话页：一台机器的档案 */
       'sess.owner': '属主', 'sess.client': '客户端', 'sess.unknownHost': '未命名主机',
       'sess.on': '运行中', 'sess.off': '已暂停',
+      // 站点那行无标签的状态行把两种暂停分开写了（见 20-api.js 的 info.note）：
+      // 服务器端点暂停是 "Paused server side"，客户端自己暂停是 "Paused client side"。
+      'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
+      'sess.statusRaw': '站点原文：{raw}',
+      // 身份条上那一句"这台机器此刻在跑什么"。暂停时说"当前作业"而不是"正在渲染"，
+      // 否则会和旁边那枚「已暂停」徽章自相矛盾。
+      'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
       'sess.noId': '地址里没有会话编号', 'sess.parseFailed': '这一页没读到机器信息',
       'sess.kpi.frames': '已渲染帧数', 'sess.kpi.points': '获得积分',
-      'sess.kpi.power': 'CPU 性能', 'sess.kpi.maxTime': '单帧上限',
+      'sess.kpi.maxTime': '单帧上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
       'sess.kpi.powerLink': '各机型算力榜', 'sess.kpi.longest': '实测最长一帧 {v}',
       'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
       'sess.f.cpu': '处理器',
+      // 算力那一格的标签跟着站点印的是哪一行走（见 50-views.js 的 powerFacts）
+      'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
+      'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
+      'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
       'sess.f.ramAllowed': '渲染可用内存', 'sess.f.ramAvailable': '物理内存',
       'sess.f.scheduler': '调度模式', 'sess.f.createdAt': '创建时间',
       'sess.f.lastRequest': '最后请求', 'sess.f.lastRequestJob': '最后请求作业',
@@ -416,6 +427,10 @@
       /* 站点在「可渲染项目」里给的原因（键由原文 slug 化得来，见 50-views.js packLabel） */
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       'why.over-user-s-time-limit': '超出发布者的时限',
+      // 站点把"能渲染"也写成这一列的一个值（不是留空），而且可渲染的全排在表的最前面 ——
+      // 那些行的顺序就是优先级，见 50-views.js 里可渲染项目表的注释。
+      'why.renderable': '现在可渲染',
+      'why.computer-has-previously-failed-to-render-project': '这台机器之前渲染它失败过',
       'why.requires-gpu': '需要 GPU',
       'why.project-rate-limited-due-to-lack-of-points': '发布者积分不足被限流',
       'why.project-too-heavy-for-this-computer': '这台机器带不动这个项目',
@@ -549,14 +564,25 @@
       /* Session page: one machine\u2019s record */
       'sess.owner': 'Owner', 'sess.client': 'Client', 'sess.unknownHost': 'Unnamed machine',
       'sess.on': 'Running', 'sess.off': 'Paused',
+      // the site's untitled status row separates the two pauses (see 20-api.js info.note):
+      // "Paused server side" when the server paused it, "Paused client side" when the client did
+      'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
+      'sess.statusRaw': 'the site writes: {raw}',
+      // the identity strip's "what is this machine on right now"; "current job" while paused,
+      // so it cannot contradict the Paused chip next to it
+      'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
       'sess.kpi.frames': 'Frames rendered', 'sess.kpi.points': 'Points earned',
-      'sess.kpi.power': 'CPU power', 'sess.kpi.maxTime': 'Max time per frame',
+      'sess.kpi.maxTime': 'Max time per frame',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
       'sess.kpi.powerLink': 'Power by machine model', 'sess.kpi.longest': 'longest frame {v}',
       'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
       'sess.f.cpu': 'Processor',
+      // the power cell's label follows whichever row the site printed (see 50-views.js powerFacts)
+      'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
+      'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
+      'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
       'sess.f.ramAllowed': 'RAM allowed for rendering', 'sess.f.ramAvailable': 'RAM installed',
       'sess.f.scheduler': 'Scheduler', 'sess.f.createdAt': 'Created',
       'sess.f.lastRequest': 'Last request', 'sess.f.lastRequestJob': 'Last request job',
@@ -1188,10 +1214,17 @@
     [/^os$/i, 'os'],
     [/^render\s*key$/i, 'renderKey'],
     [/^cpu$/i, 'cpu'],
+    // GPU 机器上站点多印这几行（CPU 机器上根本没有），原先都没有键 —— 于是中文界面里
+    // 它们原样露英文标签。Power 那两行是**二选一**的：站点按这台机器启用的计算设备印。
+    [/^gpu$/i, 'gpu'],
+    [/^vram$/i, 'vram'],
+    [/^driver$/i, 'driver'],
+    [/^compute\s*device$/i, 'computeDevice'],
     [/^ram\s*allowed$/i, 'ramAllowed'],
     [/^ram\s*available$/i, 'ramAvailable'],
     [/^max\s*render\s*time\s*per\s*frame$/i, 'maxTime'],
     [/^power\s*cpu$/i, 'power'],
+    [/^power\s*gpu$/i, 'powerGpu'],
     [/^scheduler$/i, 'scheduler'],
     [/^creation\s*time$/i, 'createdAt'],
     [/^rendered\s*frames$/i, 'frames'],
@@ -1203,6 +1236,9 @@
     [/^user\s*agent$/i, 'ua'],
     [/^status$/i, 'status'],
     [/^action$/i, 'action'],
+    // 这台机器此刻在跑哪一帧（空闲时站点不印这一行）。它是**活的**，所以界面不把它留在
+    // 「机器信息」那张静态原值表里，而是提到身份条上（见 50-views.js 的 sess.rendering）。
+    [/^current\s*frames$/i, 'currentFrames'],
   ];
 
   /** 某个标题之后、下一个标题之前的第一个表格。
@@ -1242,7 +1278,19 @@
         const td = tr.querySelector('td');
         if (!th || !td) continue;
         const label = text(th);
-        if (!label) continue;
+        if (!label) {
+          /* 站点用它写**没有标签的状态行**：实测服务器端暂停时写 "Paused server side"，
+             客户端自己暂停时写 "Paused client side"。两种暂停站点各有各的说法，
+             而它们都长这样 —— 一行没有 th 文字、只有值的行。
+             它是状态而不是机器规格，所以收进 info，不进「机器信息」那张静态原值表。
+             早先这里是 `if (!label) continue`，把整行丢了：于是两种暂停在界面上长得
+             一模一样，更糟的是 Status 那格在两种情况下都还写着 Enable，
+             本地暂停会被我们误报成「运行中」。
+             认不出的值照样留着 —— 与别处同一条规矩：不吞数据，界面按原文显示。 */
+          const note = text(td);
+          if (note) info.note = { value: note, key: 'note', href: '' };
+          continue;
+        }
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');
@@ -3212,6 +3260,20 @@ ${Theme.css('#sp')}
     </div>`;
   }
 
+  /** 三份名单（都是我自己的那份，来自账户设置页）：优先级决定「优先 / 移出」，
+   *  赞助名单与黑名单喂给发布者那格的 3 点菜单。任何一份读不到就整格不给按钮 ——
+   *  不猜状态，也不摆一个按下去必然出错的按钮。项目页与会话页共用同一份构造。 */
+  function listsOf(state) {
+    return state.account
+      ? {
+        prio: new Map((state.account.priority || []).map((x) => [x.name, x])),
+        sponsor: new Map(((state.account.sponsor && state.account.sponsor.list) || []).map((x) => [x.name, x])),
+        blocked: new Map((state.account.blockedOwners || []).map((x) => [x.name, x])),
+        add: state.account.add || {},
+      }
+      : null;
+  }
+
   function projectRow(p, me, maps) {
     // 分数单占一列：跟在条子后面会让每条轨道的长度随数字宽度变来变去（见 40-ui.js 的 progress）。
     const frac = UI.progressText(p.pct, p.done, p.total);
@@ -3253,16 +3315,9 @@ ${Theme.css('#sp')}
     };
 
     // 三份名单（都是我自己那份，来自账户设置页）：优先级决定「优先 / 移出」，
-    // 赞助名单与黑名单喂给发布者那格的 3 点菜单。任何一份读不到就整列不给按钮 ——
+    // 赞助名单与黑名单喂给发布者那格的 3 点菜单。任何一份读不到就整格不给按钮 ——
     // 不猜状态，也不摆一个按下去必然出错的按钮。
-    const maps = state.account
-      ? {
-        prio: new Map((state.account.priority || []).map((x) => [x.name, x])),
-        sponsor: new Map(((state.account.sponsor && state.account.sponsor.list) || []).map((x) => [x.name, x])),
-        blocked: new Map((state.account.blockedOwners || []).map((x) => [x.name, x])),
-        add: state.account.add || {},
-      }
-      : null;
+    const maps = listsOf(state);
     const prio = maps ? maps.prio : null;
 
     const filters = [
@@ -3537,7 +3592,7 @@ ${Theme.css('#sp')}
   const sessState = { type: 'all', limit: 100 };
 
   // 已经在身份条/指标带里说过的项，不再进事实清单 —— 同一件事在一屏里说两遍就是噪音
-  const sessElsewhere = new Set(['hostname', 'os', 'owner', 'version', 'frames', 'points', 'power', 'maxTime', 'status', 'action']);
+  const sessElsewhere = new Set(['hostname', 'os', 'owner', 'version', 'frames', 'points', 'power', 'powerGpu', 'maxTime', 'status', 'action', 'currentFrames']);
 
   /** 事实清单的标签：站点原文 → 当前语言；站点新加的行不认识也照样显示，不吞数据 */
   function sessLabel(f) {
@@ -3634,13 +3689,37 @@ ${Theme.css('#sp')}
     const val = (k) => (s.info[k] ? s.info[k].value : '');
     const owner = s.info.owner || null;
 
-    /* ---- 身份条：状态徽章 + 主机名 + OS / 属主 / 客户端版本 ---- */
+    /* ---- 身份条：状态徽章 + 主机名 + OS / 属主 / 客户端版本 ----
+       状态徽章先说站点那行没有标签的状态行：**两种暂停是不同的两件事**。
+       服务器端点暂停 → "Paused server side"；客户端自己暂停 → "Paused client side"。
+       它才是权威说法 —— Action 那格只说明"服务器认不认它在跑"，而客户端本地暂停时
+       服务器仍然认为它在跑（Status 也照样写着 Enable），只看 Action 会把本地暂停
+       报成「运行中」。认得出的译成中文，认不出的原样显示，站点原文一律挂 title 备查。 */
     const status = val('status');
-    const chip = s.running === true ? `<span class="chip">${esc(t('sess.on'))}</span>`
+    const note = s.info.note ? s.info.note.value : '';
+    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
+      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
+    const noteTitle = note ? ` title="${esc(t('sess.statusRaw', { raw: note }))}"` : '';
+    const chip = note
+      ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
       : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
+        : s.running === true ? `<span class="chip">${esc(t('sess.on'))}</span>`
+          : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
+    /* 这台机器此刻在跑什么。站点写在 "Current frames"，形如
+       "project: 1002.blend frame: 194 Request time: 1m"（空闲时它不印这一行）。
+       它是**活的** —— 几分钟就变 —— 所以放在身份条上，不留在「机器信息」那张表里：
+       那张表的副标题正是"站点报告的原值，未做换算"，把一个马上过期的数字混进静态
+       原值里，读者会拿它当档案看。暂停时说"当前作业"而不是"正在渲染"，
+       否则会和旁边那枚「已暂停」徽章自相矛盾。 */
+    const cur = val('currentFrames');
+    const cm = cur.match(/^project:\s*(.+?)\s+frame:\s*(\S+)\s+Request time:/i);
+    if (cm) {
+      bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cm[1])}</b> · ${esc(t('sess.frame'))} <b class="num">${esc(cm[2])}</b></span>`);
+    } else if (cur) {
+      bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cur)}</b></span>`);
+    }
     if (val('os')) bits.push(`<span>${esc(val('os'))}</span>`);
     if (owner) {
       const href = owner.href || (owner.user ? `/user/${encodeURIComponent(owner.user)}/profile` : '');
@@ -3671,6 +3750,16 @@ ${Theme.css('#sp')}
     const longest = tl.reduce((a, e) => Math.max(a, Math.max(0, e.end - e.start)), 0);
     const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
 
+    /* 算力那一格跟着站点印了哪一行走：这台机器启用了哪个计算设备，站点就印哪一行 ——
+       CPU 机器给 "Power CPU"，GPU 机器给 "Power GPU"，两个都开就两行都在，于是这一带
+       从 4 格变 5 格（.kpis[data-n="5"] 在 5 / 3 / 2 三档宽度下都验过，见 30-style.js）。
+       这里**不写死 CPU 或 GPU**，只遍历站点真的印了哪几行：站点哪天再添第三种设备，
+       多出来的那行会照既有规矩落进「机器信息」（标签原样显示），不会被吞。
+       早先写死读 Power CPU，于是纯 GPU 机器（只开 GPU 渲染）上那格永远是"—" ——
+       那不是"没数据"，是这台机器根本不用 CPU 渲染，摆一格空的会被读成"CPU 有问题"。
+       一行都没给就整格不画：站点没给的不摆空壳。 */
+    const powerFacts = s.facts.filter((f) => f.key === 'power' || f.key === 'powerGpu');
+
     const kpiItems = [
       {
         k: t('sess.kpi.frames'), v: framesN === null ? '—' : Util.num(framesN),
@@ -3680,11 +3769,11 @@ ${Theme.css('#sp')}
         k: t('sess.kpi.points'), v: pointsN === null ? '—' : Util.num(pointsN),
         d: perFrame ? t('sess.kpi.perFrame', { n: fmt(perFrame) }) : '',
       },
-      {
-        k: t('sess.kpi.power'), v: val('power') || '—',
-        d: s.info.power && s.info.power.href
-          ? `<a href="${esc(s.info.power.href)}" target="_self">${esc(t('sess.kpi.powerLink'))}</a>` : '',
-      },
+      ...powerFacts.map((f) => ({
+        k: sessLabel(f),
+        v: f.value || '—',
+        d: f.href ? `<a href="${esc(f.href)}" target="_self">${esc(t('sess.kpi.powerLink'))}</a>` : '',
+      })),
       {
         k: t('sess.kpi.maxTime'), v: val('maxTime') || '—',
         d: longest ? t('sess.kpi.longest', { v: spanText(longest) }) : '',
@@ -3823,14 +3912,6 @@ ${Theme.css('#sp')}
 
     /* ---- 可渲染项目：按"为什么现在不派给它"分组。
        站点给的是 27 行平铺、原因重复 27 遍；原因本身才是能读的那一层信息。 */
-    const groups = new Map();
-    for (const p of s.projects) {
-      const k = p.reason || '';
-      if (!groups.has(k)) groups.set(k, []);
-      groups.get(k).push(p.name);
-    }
-    const ordered = [...groups.entries()].sort((a, b) => b[1].length - a[1].length);
-
     // 发布者：站点这张表只给项目名，发布者要去项目列表页按名字对（实测真站点 33/33 对得上）。
     // 重名项目一律不挂 —— 两个同名的项目挂谁都可能是错的，宁可留空。
     const own = new Map();
@@ -3842,15 +3923,28 @@ ${Theme.css('#sp')}
     }
     for (const n of dup) own.delete(n);
 
-    /* ---- 可渲染项目：站点给的是平铺的 27 行、原因重复 27 遍。
-       最早按原因把名字排成一片 chip、原因当分组标题；用户反馈"不直观"，
-       改成与项目页同构的表：项目 / 发布者 / 状态（= 为什么现在不派给这台机器）。
-       行仍按原因聚在一起 —— 同因的行天然相邻，所以不用再印一遍分组标题，
-       那一列自己就是那层信息。 */
-    const prjRows = ordered.flatMap(([reason, names]) => {
-      const label = reason ? packLabel('why', reason) : t('sess.whyNone');
-      return names.map((n) => ({ n, label }));
-    });
+    /* ---- 可渲染项目。
+    
+       **站点的行序就是优先级，必须原样保留。** 实测一台机器：前 12 行写的是
+       "Renderable"（此刻真能渲染的），之后才是 "Over user's time limit"、
+       "Computer has previously failed to render project" 这些；而且第 1 行往往
+       就是这台机器此刻正在渲染的那个项目（实测 1. 1002 对 "project: 1002.blend"）。
+       换句话说，"越靠前越可能先渲染"这层信息只存在于顺序里，站点没用别的列表达它。
+       所以这里只做一次映射，不排序、不分组、不去重。
+
+       早先按原因分组、组内重排，等于把这层信息抹掉了 —— 表面更好看，代价是丢事实。 */
+    const prjRows = s.projects.map((p) => ({
+      n: p.name,
+      label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
+    }));
+
+    // 发布者那一格用与项目页同一个 ownerCell：头像 + 名字 + 常驻名单标记 + 3 点菜单。
+    // 三份名单来自账户设置页 —— ensureData 为会话页也取一次，否则整格不给动作。
+    const maps = listsOf(state);
+    // 打开的 3 点菜单：和项目页一样，浮层放在视图最外层（.tablewrap 是 overflow:auto，
+    // 放进去会被裁掉），坐标由 Views.mount() 量触发按钮的位置再写进去。
+    const openP = projState.menu ? [...own.values()].find((x) => x.id === projState.menu) : null;
+    const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
     const prjPanel = s.hasProjects !== false ? `<div class="panel" style="margin-top:16px">
       <div class="phead" style="padding-bottom:14px">
@@ -3865,11 +3959,8 @@ ${Theme.css('#sp')}
         </tr></thead>
         <tbody>${prjRows.map(({ n, label }) => {
           const p = own.get(n);
-          // 链接用 URL 里的用户名（ownerId），显示用站点给的名字 —— 站点哪天渲染显示名也不会拼出坏链接。
-          // 对不上就留一个破折号：缺一个事实就让它缺着，不猜。
-          const who = p && (p.ownerId || p.owner)
-            ? `<a href="/user/${encodeURIComponent(p.ownerId || p.owner)}/profile" target="_self" title="${esc(`${t('sess.publisher')} · ${p.owner || p.ownerId}`)}">${esc(p.owner || p.ownerId)}</a>`
-            : '<span class="dash">—</span>';
+          // 关联得到就用项目页那一格；关联不到留一个破折号 —— 缺一个事实就让它缺着，不猜。
+          const who = p && (p.ownerId || p.owner) ? ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';
           return `<tr>
             <td><div class="pn" title="${esc(n)}">${esc(n)}</div></td>
             <td>${who}</td>
@@ -3879,7 +3970,7 @@ ${Theme.css('#sp')}
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}
     </div>` : '';
 
-    return head + UI.kpis(kpiItems) + factsPanel + control + timelinePanel + prjPanel + foot();
+    return head + UI.kpis(kpiItems) + factsPanel + control + timelinePanel + prjPanel + foot() + menuHtml;
   }
 
   /* ======================================================== 挂载后补丁
@@ -4452,6 +4543,12 @@ ${Theme.css('#sp')}
       if (!state.projects) {
         try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); }
         catch (e) { state.projects = null; }
+      }
+      // 发布者那格的名单标记与 3 点菜单要看我自己那三份名单（账户设置页里那份）。
+      // 读不到就整格不给动作 —— 与项目页同一条规矩：状态不明的地方不给按钮。
+      if (!state.account && state.userName) {
+        try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
+        catch (e) { state.account = null; }
       }
       return;
     }

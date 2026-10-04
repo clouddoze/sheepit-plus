@@ -279,6 +279,12 @@
         try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); }
         catch (e) { state.projects = null; }
       }
+      // 发布者那格的名单标记与 3 点菜单要看我自己那三份名单（账户设置页里那份）。
+      // 读不到就整格不给动作 —— 与项目页同一条规矩：状态不明的地方不给按钮。
+      if (!state.account && state.userName) {
+        try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
+        catch (e) { state.account = null; }
+      }
       return;
     }
 
