@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.10
+// @version      0.1.11
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -31,7 +31,7 @@
  *   已装用户由 @updateURL 拉 .meta.js 比对版本号，所以 @version 必须往上走。
  */
 
-/* sheepit-plus v0.1.10 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.11 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==========================================================================
@@ -1851,6 +1851,12 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
+/* .sp-acmenu 单独生成一份：那是唯一一件长在 #sp 外面的家具（jQuery UI 的自动补全菜单，
+   被它挂在 <body> 上，见 injectGuard 里的说明）。
+   **不能写成 Theme.css('#sp, ul.sp-acmenu')** —— Theme.css 生成的是
+   scope:not([data-theme="dark"]) 与 scope[data-theme="light"] 两处条件选择器，写成列表时
+   它们只绑在最后一项上，#sp 会无条件吃到亮色 token（实测：用户选暗色，整壳变白、菜单却还是暗的）。 */
+${Theme.css('ul.sp-acmenu')}
 
 /* ---------------------------------------------------------------- 骨架 */
 #sp{
@@ -2700,6 +2706,22 @@ ${Theme.css('#sp')}
 #sp .up-body #addproject_estimator_result th,
 #sp .up-body #addproject_estimator_result td{text-align:left !important}
 
+/* 设备名自动补全的下拉菜单。它是 jQuery UI 的 widget，被挂在 <body> 上 —— 也就是**唯一一件
+   长在 #sp 外面的家具**（原因见 injectGuard 的注释：挂进 #sp 会因为 CSS zoom 把定位算成 0）。
+   所以这里的选择器不带 #sp，改用我们自己的类名 .sp-acmenu 划边界：只认我们自己贴的类，
+   不碰站点可能有的其他 .ui-autocomplete。站点那套 jQuery UI 主题是浅灰底 + 15.4px，
+   落在深色卡片上就是一块外来物 —— 按我们的规矩重画：一条发丝边、圆角、悬停走 surface-2。 */
+body > ul.sp-acmenu{
+  position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
+  max-height:280px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  box-shadow:0 14px 30px rgba(0,0,0,.30);
+  font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
+  color:var(--text-2);
+}
+body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
+body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
+
 /* ---- 分析等待页 ---- */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -2826,10 +2848,15 @@ ${Theme.css('#sp')}
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
+    /* `.sp-acmenu` 是唯一的例外：那是 jQuery UI 的自动补全菜单，它由**我们的**控件创建、
+       却被 jQuery UI 挂在 <body> 上（设备名搜索那个）。不放开的话表现是"输入了没反应" ——
+       实测菜单已经生成好、里面就是 GeForce RTX 2060，只是被这条规则 display:none 掉了。
+       为什么不把它 appendTo 到 #sp 里：实测在 #sp 的 CSS zoom 下 jQuery 的 offset() 会把
+       差值算成 0，菜单落到左上角。所以留它在 body，用我们自己的类名和 token 打扮。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp){display:none !important}
+      body > *:not(#sp):not(.sp-acmenu){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);
@@ -4619,6 +4646,12 @@ ${Theme.css('#sp')}
    * 抓回来的 HTML 里那段脚本不会执行，所以这里照它原来的参数重绑一次 ——
    * 源地址从那段脚本里读，不写死。绑不上就让它做一个普通输入框（估算器会回
    * "failed to import device"，用户看得见，不会静默出错）。
+   *
+   * 绑定本身一直是对的，出问题的是**菜单**：jQuery UI 把它挂在 `<body>` 上，而整页接管的
+   * 守卫有一条 `body > *:not(#sp){display:none}` —— 于是菜单生成好了、里面就是
+   * GeForce RTX 2060，用户看到的却是"输入了没反应"（2026-10-04 用户实报，实测菜单
+   * computed display 是 none）。所以这里做两件事：给菜单贴上我们自己的类名（守卫按它放行、
+   * 样式按它接管），并同步当前主题 —— token 块是按 `ul.sp-acmenu[data-theme=…]` 给的。
    */
   function rebindDeviceSearch(estBlock, html) {
     const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
@@ -4627,6 +4660,21 @@ ${Theme.css('#sp')}
     const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
     const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
     if (!label) return;
+
+    /* 每重画一次卡片就会绑一个新的 widget，而菜单元素挂在 <body> 上、不会跟着旧卡片一起
+       消失 —— 绑之前先清掉上一批，免得 body 上越堆越多（实测一次会话里堆到 4 个）。 */
+    document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
+
+    const paintMenu = () => {
+      const inst = $(label).data('uiAutocomplete') || $(label).data('ui-autocomplete');
+      const menu = inst && inst.menu && inst.menu.element;
+      if (!menu || !menu.length) return;
+      menu.addClass('sp-acmenu');
+      const host = document.getElementById('sp');
+      const th = host && host.getAttribute('data-theme');
+      if (th) menu.attr('data-theme', th);
+    };
+
     $(label).autocomplete({
       minLength: 3,
       source: src,
@@ -4635,7 +4683,9 @@ ${Theme.css('#sp')}
         if (value) $(value).val(ui.item.value);
         return false;
       },
+      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着的时候被换掉
     });
+    paintMenu();
   }
 
   /* ------------------------------------------------------------ 分析等待页 */

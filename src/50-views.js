@@ -1320,6 +1320,12 @@
    * 抓回来的 HTML 里那段脚本不会执行，所以这里照它原来的参数重绑一次 ——
    * 源地址从那段脚本里读，不写死。绑不上就让它做一个普通输入框（估算器会回
    * "failed to import device"，用户看得见，不会静默出错）。
+   *
+   * 绑定本身一直是对的，出问题的是**菜单**：jQuery UI 把它挂在 `<body>` 上，而整页接管的
+   * 守卫有一条 `body > *:not(#sp){display:none}` —— 于是菜单生成好了、里面就是
+   * GeForce RTX 2060，用户看到的却是"输入了没反应"（2026-10-04 用户实报，实测菜单
+   * computed display 是 none）。所以这里做两件事：给菜单贴上我们自己的类名（守卫按它放行、
+   * 样式按它接管），并同步当前主题 —— token 块是按 `ul.sp-acmenu[data-theme=…]` 给的。
    */
   function rebindDeviceSearch(estBlock, html) {
     const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
@@ -1328,6 +1334,21 @@
     const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
     const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
     if (!label) return;
+
+    /* 每重画一次卡片就会绑一个新的 widget，而菜单元素挂在 <body> 上、不会跟着旧卡片一起
+       消失 —— 绑之前先清掉上一批，免得 body 上越堆越多（实测一次会话里堆到 4 个）。 */
+    document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
+
+    const paintMenu = () => {
+      const inst = $(label).data('uiAutocomplete') || $(label).data('ui-autocomplete');
+      const menu = inst && inst.menu && inst.menu.element;
+      if (!menu || !menu.length) return;
+      menu.addClass('sp-acmenu');
+      const host = document.getElementById('sp');
+      const th = host && host.getAttribute('data-theme');
+      if (th) menu.attr('data-theme', th);
+    };
+
     $(label).autocomplete({
       minLength: 3,
       source: src,
@@ -1336,7 +1357,9 @@
         if (value) $(value).val(ui.item.value);
         return false;
       },
+      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着的时候被换掉
     });
+    paintMenu();
   }
 
   /* ------------------------------------------------------------ 分析等待页 */

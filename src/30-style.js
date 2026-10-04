@@ -20,6 +20,12 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
+/* .sp-acmenu 单独生成一份：那是唯一一件长在 #sp 外面的家具（jQuery UI 的自动补全菜单，
+   被它挂在 <body> 上，见 injectGuard 里的说明）。
+   **不能写成 Theme.css('#sp, ul.sp-acmenu')** —— Theme.css 生成的是
+   scope:not([data-theme="dark"]) 与 scope[data-theme="light"] 两处条件选择器，写成列表时
+   它们只绑在最后一项上，#sp 会无条件吃到亮色 token（实测：用户选暗色，整壳变白、菜单却还是暗的）。 */
+${Theme.css('ul.sp-acmenu')}
 
 /* ---------------------------------------------------------------- 骨架 */
 #sp{
@@ -869,6 +875,22 @@ ${Theme.css('#sp')}
 #sp .up-body #addproject_estimator_result th,
 #sp .up-body #addproject_estimator_result td{text-align:left !important}
 
+/* 设备名自动补全的下拉菜单。它是 jQuery UI 的 widget，被挂在 <body> 上 —— 也就是**唯一一件
+   长在 #sp 外面的家具**（原因见 injectGuard 的注释：挂进 #sp 会因为 CSS zoom 把定位算成 0）。
+   所以这里的选择器不带 #sp，改用我们自己的类名 .sp-acmenu 划边界：只认我们自己贴的类，
+   不碰站点可能有的其他 .ui-autocomplete。站点那套 jQuery UI 主题是浅灰底 + 15.4px，
+   落在深色卡片上就是一块外来物 —— 按我们的规矩重画：一条发丝边、圆角、悬停走 surface-2。 */
+body > ul.sp-acmenu{
+  position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
+  max-height:280px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
+  box-shadow:0 14px 30px rgba(0,0,0,.30);
+  font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
+  color:var(--text-2);
+}
+body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
+body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
+
 /* ---- 分析等待页 ---- */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -995,10 +1017,15 @@ ${Theme.css('#sp')}
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
+    /* `.sp-acmenu` 是唯一的例外：那是 jQuery UI 的自动补全菜单，它由**我们的**控件创建、
+       却被 jQuery UI 挂在 <body> 上（设备名搜索那个）。不放开的话表现是"输入了没反应" ——
+       实测菜单已经生成好、里面就是 GeForce RTX 2060，只是被这条规则 display:none 掉了。
+       为什么不把它 appendTo 到 #sp 里：实测在 #sp 的 CSS zoom 下 jQuery 的 offset() 会把
+       差值算成 0，菜单落到左上角。所以留它在 body，用我们自己的类名和 token 打扮。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp){display:none !important}
+      body > *:not(#sp):not(.sp-acmenu){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);
