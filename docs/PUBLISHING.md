@@ -554,6 +554,13 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
   `div.alert` 四段全部变中文。
 - 体积：`dist` 321,161 字节（注释 48,899 = 15.2%）。构建提示线从 320,000 抬到 **360,000**
   （0.1.13 抬到 320,000 之后 0.1.15 正好贴线 —— 提示线贴着现状就等于每次构建都报）。
+- **真装路径已复验（2026-10-06，用户点过重新安装后，真站点 `/project/1224486`）**：页面里跑的是用户装的那份，
+  `SP.I18n.siteText()` 对 0.1.15 才有的词条全部命中（`Scheduler` → 调度器 / `Current position: 1st` →
+  当前排位：第 1 位 / `Tasks for this project: 1` → 本项目任务数：1 / `Total tasks on Shepherd: 50` →
+  Shepherd 上的任务总数：50 / `Connected machines:` → 已连接机器： / 两句 packed / `Generating archive.` /
+  `More information about …` / `Pause` → 暂停 / 限速提示 / 封禁那句 / 缩略图 Note）；三个动作按钮
+  label = 查看帧图像 / 下载帧图像 / 删除项目，**没有一个是含 `<` 的原始标签**（0.1.14 那个字面标签缺陷
+  在真装路径上确实没了）；页面文本除 `Tab widget`（`display:none`）外全中文。
 - **仍未验证**：等待/渲染中态的调度器那一段（测试项目 1224486 已经渲染完，只能靠 `.tmp/check-dict.mjs`
   在词典层逐条验证）；私有 / 封禁 / 限速那几句同理（测试账号没有这些状态）。
 
