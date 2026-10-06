@@ -256,6 +256,51 @@
       'Caution!': '注意！',
       'not all the rendering features are supported by GPUs': 'GPU 并不支持站点全部的渲染特性。',
       'You might have different results depending on the rendering technology.': '换一种渲染技术，结果可能有差异。',
+
+      /* 项目管理页：调度器那一段（只在项目「等待中 / 渲染中」时渲染）。
+         注意 site 表是**短词条精确匹配**，值放在子 <b> 里的整句要用下面的 patterns。 */
+      'Scheduler': '调度器',
+      'How many machines can actually render the project?': '有多少台机器能真正渲染这个项目？',
+      'Connected machines:': '已连接机器：',
+      'Connected machines for CPU:': 'CPU 已连接机器：',
+      'Potential rendering machines:': '潜在渲染机器：',
+      'Pause': '暂停',
+      'Resume': '继续',
+
+      /* 项目管理页：项目「已渲染」状态下的提示块与动作按钮
+         （站点把两句话直接拼在一起，中间**没有空格**，所以带空格的变体也留一份） */
+      'Your project has finished rendering, the frames are being packed.The server hosting your project will soon create a zip with your frames.':
+        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
+      'Your project has finished rendering, the frames are being packed. The server hosting your project will soon create a zip with your frames.':
+        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
+      'Generating archive.': '正在打包存档。',
+      'More information about SheepIt network on the servers page': '关于 SheepIt 网络的更多信息见「服务器」页面。',
+
+      /* 项目管理页：其它状态（渲染中／暂停／私有／封禁／限速／服务器不可用）
+         注意 site 表是短词条精确匹配：被 <strong> 拆开的整句（如 "Your project is <strong>private</strong>, …"）
+         这里只能盖住不含标签的那几截，所以单词 "private" 故意不加（全站误伤面太大）。 */
+      'Rendering': '渲染中',
+      'Paused': '已暂停',
+      'Current renderers:': '正在渲染的成员：',
+      'Resume is disabled because you have too many active projects': '继续已被禁用：你的进行中项目太多',
+      'Ask for a partial Archive Frame': '申请部分帧压缩包',
+      'Your project has finished rendering, the frames are being packed.': '项目已经渲染完成，正在打包帧文件。',
+      'Download video': '下载视频',
+      'Statistics about the render': '渲染统计',
+      'Note: this is not the final image. It is a thumbnail of the on going render.': '注意：这不是最终画面，而是渲染中的缩略图。',
+      'Note: this is not the final video. It is a reduced thumbnail.': '注意：这不是最终视频，而是降质缩略图。',
+      "To make it renderable by everyone, check 'Renderable by all members' on the renderers options.": '想让所有人都能渲染，请在渲染者选项里勾选「所有成员均可渲染」。',
+      'Your project has been blocked.': '你的项目已被封禁。',
+      'Members can not render your project BUT you still can.': '其他成员无法渲染你的项目，但你仍然可以。',
+      'Members (including you) can not render your project.': '包括你在内的成员都无法渲染你的项目。',
+      'You can remove this limitation by connecting your machine to the farm.': '把你的机器接入农场即可解除这个限制。',
+      'As long as you are rendering, your project will be unthrottled.': '只要你在参与渲染，你的项目就不会被限速。',
+      'The server hosting your project is currently not available.': '托管你项目的服务器当前不可用。',
+      'No download or rendering is possible.': '无法下载，也无法渲染。',
+      'Add a user to renderer list': '输入用户名，加入渲染者名单',
+      'Add a team to renderer list': '输入团队名，加入渲染者名单',
+      'If you are using Eevee, CPU rendering is not available.': '使用 Eevee 时无法使用 CPU 渲染。',
+      'MP4 generation disabled': 'MP4 生成已禁用',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
@@ -328,6 +373,26 @@
       [/^Project will be automatically deleted on\s*(.+)$/i,
         (m, rest) => '项目将于 ' + farmDate(rest) + ' 自动删除'],
       [/^Connected machines:\s*(.+)$/i, '已连接机器：$1'],
+      /* 项目管理页：调度器那一段（值常被站点放在子 <b> 里，纯标签的走 site 表） */
+      [/^Connected machines for CPU:\s*(.+)$/i, 'CPU 已连接机器：$1'],
+      [/^Potential rendering machines:\s*(.+)$/i, '潜在渲染机器：$1'],
+      /* 版本号会随站点升级变（Blender 4.5+），带值的写法必须排在纯标签那行之前 */
+      [/^Machines who can use ([^:]+):\s*(.+)$/i, '能用 $1 的机器：$2'],
+      [/^Machines who can use ([^:]+):\s*$/i, '能用 $1 的机器：'],
+      /* 项目管理页：项目「已渲染」时状态块里被 <br> 分行的几行 */
+      [/^Current position:\s*(\d+)(st|nd|rd|th)$/i, '当前排位：第 $1 位'],
+      [/^Tasks for this project:\s*([\d,]+)$/i, '本项目任务数：$1'],
+      [/^Total tasks on Shepherd:\s*([\d,]+)$/i, 'Shepherd 上的任务总数：$1'],
+      [/^Cumulated time of render:\s*(.+)$/i, '累计渲染用时：$1'],
+      [/^Points spent:\s*([\d,]+) points$/i, '已消耗积分：$1'],
+      [/^(\d+)\/([\d,]+) \(remaining (.+)\)$/, '$1/$2（剩余 $3）'],
+      /* 齿轮按钮的 title 属性：站点把整段状态 HTML 塞在里面（attr 只查 site + patterns） */
+      [/^<strong>Generating archive\.<\/strong>$/, '<strong>正在打包存档。</strong>'],
+      [/^<strong>Generating archive\.<\/strong><br>Current position: (\d+)(?:st|nd|rd|th)<br>Tasks for this project: ([\d,]+)<br>Total tasks on Shepherd: ([\d,]+)$/,
+        '<strong>正在打包存档。</strong><br>当前排位：第 $1 位<br>本项目任务数：$2<br>Shepherd 上的任务总数：$3'],
+      /* 封禁 / 限速（点位不够的账号） */
+      [/^Your project has been blocked because '(.+)'\.$/, '你的项目已被封禁，原因：「$1」。'],
+      [/^You are currently rated? limited to ([\d,]+) machines? because you have 0 points\.$/i, '你因为 0 积分被限速到 $1 台机器。'],
       /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
       [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
         '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],

@@ -406,14 +406,32 @@
       if (SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(mgNode);
     }
     /* 站点这几个动作按钮只有 FA4 的图标类名，而站点装的是 Font Awesome 6 —— ::before 没内容，
-       屏幕上就是三个空心圆。title 已经被上面翻成中文，直接拿来当按钮文字（图标由 CSS 藏掉）。 */
+       屏幕上就是三个空心圆。title 是唯一的文字来源，直接拿来当按钮文字（图标由 CSS 藏掉）。
+       注意 title 有两种：一种本身就是动作名（"删除项目"，上面已被 translateSubtree 翻过）；
+       另一种是站点塞进去的**状态 HTML**（"<strong>Generating archive.</strong><br>Current position: 1st…"）
+       —— 后者要去标签、只取第一行当按钮文字，整段净化后逐行翻译再放回 title 当悬停提示。
+       这一段要能重复跑（render() 会重入、搬回来的活节点还带着上次那个 span）：判据是
+       「title 里还有 HTML」而不是「有没有 span」，这样第二次跑是空操作、旧 span 也会被纠正。 */
+    const cutLines = s => s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '')
+      .split('\n').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
+    const zhText = s => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
     for (const a of mgNode.querySelectorAll('[id$="_div_actions"] .btn')) {
-      const label = (a.getAttribute('title') || '').trim();
-      if (!label || a.querySelector('.sp-mg-act')) continue;
-      const span = document.createElement('span');
-      span.className = 'sp-mg-act';
-      span.textContent = label;
-      a.appendChild(span);
+      const raw = (a.getAttribute('title') || '').trim();
+      const span = a.querySelector('.sp-mg-act');
+      let label = null;
+      if (raw.indexOf('<') >= 0) {
+        const lines = cutLines(raw);
+        label = zhText(lines[0] || '');
+        if (lines.length) a.setAttribute('title', lines.map(zhText).join('\n'));
+      } else if (!span) {
+        label = raw;
+      }
+      if (!label) continue;
+      if (span) { span.textContent = label; continue; }
+      const el = document.createElement('span');
+      el.className = 'sp-mg-act';
+      el.textContent = label;
+      a.appendChild(el);
     }
     /* 帧缩略图：站点把 <img> 塞在 title 属性里（给它自己的 tooltip 用），方块本身没有背景，
        于是每帧都是一个空白小方块。把 src 抠出来当真正的图放进方块里。 */

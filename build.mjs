@@ -28,7 +28,8 @@ const checkOnly = process.argv.includes('--check');
 // 变大，构建不该替人挡路 —— 提醒一下，变大是否接受由人决定。
 // 提示线本来就该是「离现状一截」，不是「贴着现状」——贴着现状就变成每次构建都报，报久了没人看。
 // 0.1.13 加了第三步翻译与管理页接管（+21 KB），所以从 285000 抬到 320000，留约 10% 余量。
-const BUDGET_OUT_BYTES = 320000;   // 产物 UTF-8 字节提示线
+// 0.1.15 补管理页/调度器文案（12-lang-zh.js +3.5 KB）后到 321,161，正好贴线 —— 抬到 360000。
+const BUDGET_OUT_BYTES = 360000;   // 产物 UTF-8 字节提示线
 const BUDGET_COMMENT_RATIO = 0.25; // 注释字节 / 产物字节 的提示线
 
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();

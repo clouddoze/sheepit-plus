@@ -496,9 +496,66 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 | 指纹卡片 | "站点资源版本：9b13032c … 与本脚本验证过的版本一致"；"上次提交前点名：34 个控件全部在位" |
 | 野 token | `/project/add/bogus1234` → 服务端回 HTML 错误片段 → 走既有的"分析编号已经找不到了"，`#sp-an-result` 保持空、无异常 |
 
-**仍未验证**：真装路径（等用户点一次重新安装再复验）；新版第三步在真账号上**真提交**一次（要用户先点头）；
-上游指纹只钉了 `9b13032c` 这一个版本，站点下次改上传链路时应当"卡片变红 + 建议切回兼容界面"，
-这条提示本身还没在真实改版场景里见过。
+**真装路径已复验（2026-10-06，用户点过一次重新安装后）**：`/home#/settings` 上 `#sp` 建好、
+`SP.Step3` 存在（这是"装的是 0.1.14"的判据）、`Step3.upstreamVersion()` 从活页面读到 `9b13032c`
+并与 `verifiedUpstream` 一致、设置页三档为 `off compat new*`、指纹卡片三行都在、顶栏含「上传项目」。
+**这一版页面侧 `SP.CSS.length = 56791`**（旧值 0.1.7=47615 / 0.1.8=51407 / 0.1.9=51763）。
+截图：`.tmp/upload-test/install-0114-settings.png`。
+
+**真流程 + 真提交已跑通（2026-10-06，测试账号 `muwyelkoai3k`，2 帧测试项目）**：
+`/getstarted` 用站点自己的第一步表单（`action=/project/internal/upload`，`bsk upload` 送
+`sptest.blend` 90,936 字节，点译成「发送此文件」的提交键）→ 落到 `/project/add/dB5Sq6`，
+分析页接管并走完"排队等分析器接手… → 分析完成"；第三步画出 `.up3-sec` 四块、
+`#addproject_content_0` 里 27 个控件、提交键「添加这个 blend」，服务端默认值逐项核对无误
+（`changeType=animation`、start=1 / end=2 / step=1、`exe=blender405`、`path=sptest.blend`、
+站点那个畸形的 `split_tiles` hidden 仍为空、cpu 选中 / gpu 未选、`public_render` 选中、
+`generate_mp4` 未选、高级选项 `display:none`）。容器链完好：
+`#addproject_content_0 → .form-light → .w-box → .w-section → .col-md-6 → .row → .container → section.slice`
+—— 我们只在**容器内部**重排，没有把站点容器搬出站点结构。
+
+点提交后站点真函数发出请求、浏览器跳到 `/project/1224486`（我们的管理页接管），
+`up3Report = {stage:'submit', ok:true, n:34, missing:[], upstream:'9b13032c', verified:'9b13032c'}`
+—— 真实提交那一刻 34 个控件全部在位。项目随后渲染完成（`已渲染 2/2`、已用存储 51.0 kB、
+实际渲染用时 0m、自动删除日 `10月20日 06:10`）。截图：`.tmp/upload-test/up3-real-step3.png`、
+`.tmp/upload-test/up3-real-project1224486.png`。
+
+**仍未验证**：上游指纹只钉了 `9b13032c` 这一个版本，站点下次改上传链路时应当"卡片变红 +
+建议切回兼容界面"，这条提示本身还没在真实改版场景里见过。
+
+**0.1.15（2026-10-06 起，尚未发布）**：`@version` 0.1.14 → 0.1.15。管理页（`/project/<数字>`）的文案
+收尾，外加一个真实缺陷的修复。
+
+- **修：动作按钮的文字变成了一串原始标签**。管理页那几个动作按钮只带 FA4 的图标类名（站点装的是
+  FA6，`::before` 没内容），所以 `wireManageDoc` 一直拿 `title` 属性当按钮文字；可站点给"生成压缩包"
+  那个按钮的 `title` 里塞的是**状态 HTML**（`<strong>Generating archive.</strong><br>Current position: 1st…`），
+  于是屏幕上出现字面标签。现在：`title` 里还有标签 → 去标签、取第一行当按钮文字、整段净化后逐行翻译
+  再放回 `title` 当悬停提示；判据是"title 里还有没有 HTML"而不是"有没有 span"，所以重复跑是空操作
+  （`render()` 会重入，搬回来的活节点还带着上一次那个 span）。实测（真站点 `/project/1224486`，
+  注入 `dist`）：label 现在是「正在打包存档。」，`title` 是
+  「正在打包存档。\n当前排位：第 1 位\n本项目任务数：1\nShepherd 上的任务总数：50」。
+- **词条落错了表（自己踩的）**：0.1.14 之后补的那 11 条短词条被写进了 `blocks:`（长句整块表），
+  而 `patchBlocks` 要求整块归一化文本 **40–600 字**（`src/70-i18n-dom.js:117`），
+  `title`/`placeholder`/`value` 又只查 `site`+`patterns`（`src/70-i18n-dom.js:57-60`）—— 短句永远不会命中。
+  已搬进 `site:`。这条结构性事实值得记住：**<40 字的词条只能进 `site:`；属性值只查 `site`+`patterns`**。
+  为了让这类错误可回归，新增只读体检脚本 `.tmp/check-dict.mjs`（vm 沙箱里跑 `10-core` + `12-lang-zh`，
+  对着一串真实页面文本问 `I18n.siteText()`；沙箱里 `navigator.language` 不生效，必须先手动 `I18n.init()`）。
+- 新增词条（zh）：调度器那一段（`Scheduler` / `How many machines can actually render the project?` /
+  `Connected machines:` / `Connected machines for CPU:` / `Potential rendering machines:` / `Pause` /
+  `Resume` / `Current renderers:` / `Rendering` / `Paused` / 限速提示 / `Ask for a partial Archive Frame`）、
+  已渲染状态（两句 packed 的**无空格拼接形态**加带空格变体、`Download video`、`Statistics about the render`、
+  两张缩略图 Note、`Generating archive.`、`More information about …`）、以及私有/封禁/服务器不可用那几句
+  （**故意不加单词 `private`** —— 全站任何独立的 `private` 文本节点都会被误伤，宁可那一句留半截英文）。
+- 新增 patterns：`Current position`（输出「第 N 位」）/ `Tasks for this project` / `Total tasks on Shepherd` /
+  `Cumulated time of render` / `Points spent` / `n/m (remaining …)` / 封禁原因 / 限速，以及**两条齿轮 tooltip
+  的 HTML 形态**（属性值是带 `<strong>`/`<br>` 的原文，先例是帧缩略图那条 tooltip）。`Connected machines:`
+  这类**值在兄弟 `<strong>` 里**的行，文本节点只到冒号，所以既有 pattern 永远不命中，靠 `site:` 短键兜住。
+- 实测：真站点 `/project/1224486`（已渲染态）注入后，`#sp` 内未译英文从 7 条降到 6 条，其中 4 条是数据
+  （用户名 `muwyelkoai3k`、文件名 `sptest.blend`）或探针白名单误报，`Tab widget` 那条实测 `display:none`；
+  `div.alert` 四段全部变中文。
+- 体积：`dist` 321,161 字节（注释 48,899 = 15.2%）。构建提示线从 320,000 抬到 **360,000**
+  （0.1.13 抬到 320,000 之后 0.1.15 正好贴线 —— 提示线贴着现状就等于每次构建都报）。
+- **仍未验证**：等待/渲染中态的调度器那一段（测试项目 1224486 已经渲染完，只能靠 `.tmp/check-dict.mjs`
+  在词典层逐条验证）；私有 / 封禁 / 限速那几句同理（测试账号没有这些状态）。
 
 ---
 
