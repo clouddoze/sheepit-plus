@@ -289,7 +289,9 @@
 
       /* 项目管理页：其它状态（渲染中／暂停／私有／封禁／限速／服务器不可用）
          注意 site 表是短词条精确匹配：被 <strong> 拆开的整句（如 "Your project is <strong>private</strong>, …"）
-         这里只能盖住不含标签的那几截，所以单词 "private" 故意不加（全站误伤面太大）。 */
+         site 表盖不住（单词 "private" 又太泛、全站误伤面太大），所以那句走下面的 blockPatterns ——
+         patchBlocks 是按**整块 textContent** 匹配的，正则只吃英文前半句、替换值里带 <strong>，
+         后半句（另一句，已有 site 词条）原样留着给 patchTextNodes 翻（0.1.18）。 */
       'Rendering': '渲染中',
       'Paused': '已暂停',
       'Current renderers:': '正在渲染的成员：',
@@ -345,6 +347,12 @@
 
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
+
+      /* 项目是私有的时候那句提醒：站点写成 "Your project is <strong>private</strong>, not every worker…"，
+         <strong> 把句子切成三个文本节点、site 表配不上整句 —— 这里整块吃英文前半句、替换值自带 <strong>，
+         后面那句（"To make it renderable by everyone…"）有 site 词条，交给 patchTextNodes 翻。 */
+      [/^Your project is private, not every worker will be able to participate in your project\./,
+        '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
 
     /* 模式规则（带变量的文案） */

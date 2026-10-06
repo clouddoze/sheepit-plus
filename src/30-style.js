@@ -788,12 +788,56 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
 #sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
 #sp .sp-siteform .form-group{margin-bottom:14px}
-#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
-#sp .sp-siteform select,#sp .sp-siteform textarea{
-  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+/* ---- 控件皮肤：全自绘（0.1.18）-------------------------------------------------
+   此前这里只给了 accent-color：勾选框、单选框其实是**浏览器原生**画出来的，
+   摆进我们的卡片里就不是一套东西（用户实报"所有控件还是很不协调"）。现在自绘：
+   appearance:none + 我们自己的勾/圆点/输入框/下拉箭头，颜色一律走主题变量 ⇒
+   暗色、亮色自动跟随。边界没变：控件本体还是站点那些活节点（id/name/value/checked
+   一个字节都没动），我们只改"画法"。 */
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-siteform select,#sp .sp-up3 select,#sp .sp-siteform textarea{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+  appearance:none;-webkit-appearance:none;
 }
-#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
+#sp .sp-siteform select,#sp .sp-up3 select{
+  padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
+}
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):hover,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
+#sp .sp-siteform select:hover,#sp .sp-up3 select:hover{border-color:var(--border-strong)}
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):focus,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
+#sp .sp-siteform select:focus,#sp .sp-up3 select:focus{border-color:var(--accent)}
+#sp .sp-siteform input:disabled,#sp .sp-up3 input:disabled,
+#sp .sp-siteform select:disabled,#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+#sp .sp-siteform input::placeholder,#sp .sp-up3 input::placeholder{color:var(--text-3)}
+
+#sp .sp-siteform input[type=checkbox],#sp .sp-up3 input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
+  transition:background .12s,border-color .12s;
+}
+#sp .sp-siteform input[type=checkbox]:hover,#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
+#sp .sp-siteform input[type=checkbox]:checked,#sp .sp-up3 input[type=checkbox]:checked{
+  border-color:var(--accent);
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
+}
+#sp .sp-siteform input[type=radio],#sp .sp-up3 input[type=radio]{
+  appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
+  transition:border-color .12s,border-width .12s;
+}
+#sp .sp-siteform input[type=radio]:hover,#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
+#sp .sp-siteform input[type=radio]:checked,#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
+#sp .sp-siteform input[type=checkbox]:disabled,#sp .sp-up3 input[type=checkbox]:disabled,
+#sp .sp-siteform input[type=radio]:disabled,#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
+/* flex 的 label 里间距由 gap 负责（vis 段落要顶对齐，cpu 段落是居中） */
+#sp .sp-up3 .up3-sec label.checkbox input[type=checkbox],
+#sp .sp-up3 .up3-sec label.checkbox input[type=radio]{margin:1px 0 0}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=radio],
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=checkbox]{margin:0}
 #sp .sp-siteform input[type=submit],#sp .sp-siteform button{
   font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
   background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
@@ -819,6 +863,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
 #sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
 #sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
+/* 站点那张 CPU/GPU PNG 已被换成我们的图标（60-step3.js 的 swapIcons） */
+#sp .sp-up3 .up3-ico{display:block;width:16px;height:16px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 label.checkbox:has(input:checked) .up3-ico{color:var(--accent)}
+#sp .sp-up3 .up3-ico .icon{width:16px;height:16px}
+/* 站点那两行「Est. queue position / Total projects」原本是裸文本 + <br>，被包成 .up3-hint */
+#sp .sp-up3 .up3-hint{display:block;font-size:11.5px;line-height:1.75;color:var(--text-3);font-variant-numeric:tabular-nums}
 #sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
 #sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
 #sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}

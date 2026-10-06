@@ -615,6 +615,84 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 
 ---
 
+### 0.1.18（2026-10-06 起，尚未发布）
+
+**两块内容**：① 新版上传第三步的控件皮肤全部自绘（控件本体仍是站点原版，只换外观）+ 设置页那张
+指纹卡压成一行；② **修掉一个真缺陷：第三步的表单在页面上有两份，站点提交时读的是壳后面那份原件**。
+
+**缺陷（0.1.14 起一直存在，本轮才查出来）**：
+`80-app.js` 的 `paintAnalyse()` 拿到我们自己的 GET `/project/add_analyse/<token>` 结果后执行
+`box.innerHTML = s.html` —— 这是把服务端渲染的整块表单**当字符串复制**进 `#sp-an-result`。
+与此同时站点自己的轮询 `doAnalyseUploadedProject()`（`addproject.js:177-211`，由页面内联脚本起
+`setTimeout(..., 5000, token)`，写完就停）把同样的 HTML 写进它自己的
+`#project_add_analyse_result`，那份原件留在原地、被我们的整页外壳盖住。
+⇒ 页面上每个控件 id 都有两份；而站点取值一律 `$('#id')`（`doAddProject` 逐 id 读，
+`$('#public_render').is(':checked')` 这种写法，见 `addproject.js:1-101`），jQuery 命中文档序靠前的
+**隐藏原件**，于是：**用户在新版第三步里改的任何值都提交不上去，提交的是服务端默认值。**
+
+**为什么 0.1.14 的验收没发现**：验收跑的是"值全留默认"那条路径（payload `diff: []` 就是这个意思），
+而"34 个控件全部在位"那次点名查的是 `document.getElementById(rec.id)` —— 命中的正是那份隐藏原件。
+两边行为一致，所以三次真提交（1224486 / 1224491 / 1224502）都"成功"了，看不出问题。
+本轮用「先在原版页面给每个节点打标记、再注入」+「点界面上的勾选框、再回头问 jQuery 状态」
+两个实验才把它钉死（点完之后 `$('#public_render').is(':checked')` 仍是 `true`）。
+
+**改法（`src/80-app.js`）**：搬活节点，不复制 HTML。
+- 新增 `hideStaleAnalyse()`：在 `box.innerHTML = s.html` **之前**把站点那份
+  `#project_add_analyse_result` 从文档里摘下来（存 `anStale`），原位留一个 `<!--sp-analyse-->`
+  注释锚（`anAnchor`）；
+- 新增 `parkAnalyse()`：按锚点把摘下来的容器送回原位 —— `render()` 的重画前、`release()` 拆 `#sp`
+  之前各调一次，和既有的 `parkManage()` 同一套路。
+
+**实测（真站点 + 真流程，token `40c6Bk`）**：
+- 注入前（classic 档、站点原版页面）：`#project_add_analyse_result.container` 存在、`1170×533`、
+  内含 form、`[id]` 共 34 个、`$('#public_render')` 只 1 份且 13×13 可见。
+- 注入 0.1.18 之后：同名 id **每个都只剩 1 份**（`addproject_0` / `addproject_content_0` /
+  `public_render` / `generate_mp4` / `compute_method_cpu` / `addproject_animation_start|end|step_frame_0` /
+  `addproject_exe_0` / `token` / `addproject_submit_div_0` / `addproject_error_box_0` 全 = 1；
+  `addproject_split_animation_sample_range_value_0` = 0 是站点对 animation 本来就不给这个元素）；
+  `staleContainerInDoc: false`、注释锚 `["sp-analyse"]`、`controlsInBox: 34`、`up3secs` 四块齐全。
+- **用站点自己的取值路径读一遍 payload**（探针 `.tmp/upload-test/probe-payload.js`，逐条对照
+  `addproject.js:1-101`，**不发任何请求**）：27 个键齐全；每个 id 的 `$('#id')[0]` 都指向 `#sp` 里那份
+  （`jqHit: true`）；在界面上取消「所有成员均可渲染」、勾上「生成 MP4 视频」之后，payload 读到
+  `public_render: "0"`、`generate_mp4: "1"`（服务端默认分别是 1 和 0）⇒ **界面上的改动进得了 payload**。
+- 指纹卡改成一行：`9b13032c · 已核对 34/34`，悬停提示放三行细节（站点资源版本 / 与本脚本验证过的
+  版本一致 / 上次进入第三步的时间与控件数）；没走过第三步时是 `9b13032c · 还没走过第三步`。
+- 控件皮肤：「新版（实验）」档的第三步里，站点那两张 PNG（`cpu_enabled.png` / `gpu_enabled.png`）
+  换成我们的 SVG（16×16；CPU 选中时是主题色 `rgb(182, 71, 47)`、未选是 `rgb(75, 84, 98)`）；
+  「预计排队 / 项目总数」那两行裸文本包成 `.up3-hint`（`display:block`、11.5px、`#656d79`，
+  两行之间多余的 `<br>` 清掉）；勾选框/单选框/输入框/下拉一律 `appearance:none` + 自绘
+  —— 站点 CSS（`base-light.css` / `base-main.css` / `bootstrap.min.css`，已下载到
+  `.tmp/upload-test/site-css/`）里没有任何一条规则在画这些控件，之前看到的"橙色勾选框"其实是我们自己
+  `30-style.js` 里那条 `accent-color` 的效果，本轮已删。
+- 构建：`dist` 337,536 字节（注释 55,354 = 16.4%）。
+
+**踩到的坑（写下来免得再踩）**：
+1. **`new $.ajax(url, opts)` 的 URL 是第一个参数**。为了不真提交我写了个 `$.ajax` 桩，只拦 `opts.url`，
+   结果站点那次调用没被拦住、**真提交了**，建出项目 1224502（`public_render="0"`，因为探针刚把界面上
+   那个勾选框点掉）。事故反过来成了最硬的证据：该项目管理页显示站点的
+   「Your project is **private**, not every worker will be able to participate in your project.」提示
+   ⇒ 提交上去的正是界面里的值（不是默认值）。项目 1224502 事后用站点自己的删除按钮删掉了
+   （`projectAction(id, 'remove_no_redirect')`，与 1224486 / 1224491 同一条路径）。
+2. 站点那句私有提醒被 `<strong>` 切成三段文本节点，`site` 表（逐节点精确匹配）配不上整句；
+   逐节点配 `'Your project is'` / `'private'` / `', not every worker…'` 能翻，但 `textNodeValue`
+   会保留节点首尾空白，渲染成「你的项目是 私有的，…」—— 中文里多一个空格，难看。
+   最终走 `blockPatterns`（整块 textContent 正则 + 替换值自带 HTML）：
+   `/^Your project is private, not every worker will be able to participate in your project\./`
+   → `你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。`
+   （实测渲染为「你的项目是私有的，不是所有 worker 都能参与你的项目。」）
+3. `#public_thumbnail` 这个键：账号不能自己关缩略图时，站点渲染的是
+   `<input type="hidden" id="public_thumbnail" value="1" checked>`（`UI__HTML.php:1057`），
+   而站点自己用 `$('#public_thumbnail').is(':checked')` 取值 —— hidden 输入永远 `:checked === false`
+   ⇒ 站点一直提交 `public_thumbnail=0`。这是站点自己的既有行为，我们照原样透传、不动它。
+4. 「切回原版界面」是 `Util.store.set('uiMode','classic')` + `location.reload()`（`80-app.js:661-664`），
+   所以搬进壳里的活节点（管理页的 `.w-section`、分析页摘下来的 `#project_add_analyse_result`）
+   被重载连带销毁是安全的；只有"同一个页面里换实例"的调试场景（探针注入覆盖旧 `#sp`）会踩到。
+
+**仍未验证**：控件皮肤与"两份表单"的修复只在站点当前这一版（`9b13032c`）上测过；
+`public_thumbnail` 的 hidden 变体只在"不能关缩略图"的账号上见过。
+
+---
+
 ### 0.1.17（2026-10-06 起，尚未发布）
 
 **缺陷（用户实报）**：今天刚注册的账号，总览显示「还没有渲染记录」那张新用户卡，而站点原版页面

@@ -19,7 +19,7 @@
   'use strict';
 
   const SP = window.__SHEEPIT_PLUS__;
-  const { Util, t } = { Util: SP.Util, t: SP.t };
+  const { Util, UI, t } = { Util: SP.Util, UI: SP.UI, t: SP.t };
   const esc = Util.esc;
 
   /** 我们验证过的上游版本 = 站点资源路径里的 short_version（= www 仓库 commit 短 id）。
@@ -93,6 +93,53 @@
     return s;
   };
   const bodyOf = (s) => s.querySelector('.up3-body');
+
+  /* 站点给 CPU/GPU 各挂了一张 PNG（UI__HTML.php:1109/1122），画成什么样由站点 CSS 决定，
+     在我们的卡片里就是外来物。换成我们自己的图标：这两张图没有 id/name、不参与提交，
+     只属于"外观"，换掉不动语义。 */
+  function swapIcons(scope) {
+    scope.querySelectorAll('img').forEach((img) => {
+      const src = (img.getAttribute('src') || '').toLowerCase();
+      const kind = src.indexOf('gpu') >= 0 ? 'gpu' : (src.indexOf('cpu') >= 0 ? 'cpu' : '');
+      if (!kind) return;
+      const box = mk('span', 'up3-ico');
+      box.title = img.getAttribute('title') || (kind === 'gpu' ? 'GPU' : 'CPU');
+      box.innerHTML = UI.icon(kind);
+      img.parentNode.replaceChild(box, img);
+    });
+  }
+
+  /* 「Est. queue position: 9」/「Total projects: 47」在服务端是**裸文本 + <br>**（UI__HTML.php:1112），
+     连元素都没有 —— 字号、颜色、行距全都不归我们管。包进我们的提示样式。
+     中英两种都认：翻译可能先于也可能后于这一步。 */
+  const HINT_RE = /^\s*(Est\.\s*queue position|Total projects|预计排队|项目总数)/;
+  const meaningful = (n) => {
+    while (n && n.nodeType === 3 && !n.nodeValue.trim()) n = n.nextSibling;
+    return n;
+  };
+  function wrapHints(scope) {
+    scope.querySelectorAll('label.checkbox').forEach((lb) => {
+      const par = lb.parentNode;
+      if (!par) return;
+      let lastHint = false;
+      Array.prototype.slice.call(par.childNodes).forEach((n) => {
+        if (n.nodeType === 3 && !n.nodeValue.trim()) return;
+        if (n.nodeType === 3 && HINT_RE.test(n.nodeValue)) {
+          const box = mk('span', 'up3-hint');
+          par.insertBefore(box, n);
+          box.appendChild(n);
+          lastHint = true;
+          return;
+        }
+        /* 两行提示之间原来靠 <br> 分行；变成块级之后那个 <br> 会多留一行空白 */
+        if (n.nodeName === 'BR' && lastHint) {
+          const nxt = meaningful(n.nextSibling);
+          if (nxt && nxt.nodeType === 3 && HINT_RE.test(nxt.nodeValue)) { par.removeChild(n); return; }
+        }
+        lastHint = false;
+      });
+    });
+  }
 
   /** 把服务端渲染的那一块重排成我们的布局。box = #sp-an-result。
       返回 { ok:true, id, count } 或 { ok:false, reason }（reason='shape' → 调用方保持站点原样）。 */
@@ -178,6 +225,9 @@
 
     box.dataset.spUp3 = '1';
     box.classList.add('sp-up3');
+    /* 只动外观的两处：站点那张 PNG 换成我们的图标；裸文本的排队/项目数包成我们的提示行 */
+    swapIcons(cpuSec);
+    wrapHints(cpuSec);
     wire({ box, form, cont, errBox, msg, host, hid, submitDiv, submitInput, maxRam, baseline, i });
     saveReport({ at: Date.now(), stage: 'enter', ok: true, n: baseline.length, missing: [], upstream: upstreamVersion(), verified: VERIFIED_UPSTREAM });
     return { ok: true, id: i, count: baseline.length };
@@ -258,31 +308,30 @@
     ctx.observer = obs;
   }
 
-  /* ---- 设置面板里的指纹行（D8：放在上传开关旁边）----------------------- */
-
+  /* ---- 设置面板里的指纹行（D8：放在上传开关旁边）-----------------------
+     用户 0.1.18 拍板：卡片上只留**一行摘要**，全部细节塞进悬停提示。
+     版本一致时只说"一致"；只有真的对不上/点名缺控件时才把整句摆到明面上。 */
   function fpRows() {
     const now = upstreamVersion();
     const rep = report();
-    let version;
-    if (!now) version = `<div class="hint">${esc(t('set.fp.unknown'))}</div>`;
-    else if (now === VERIFIED_UPSTREAM) version = `<div class="hint">${esc(t('set.fp.same', { v: now }))}</div>`;
-    else version = `<div class="hint bad">${esc(t('set.fp.diff', { now, known: VERIFIED_UPSTREAM }))}</div>`;
-    let checkRow = `<div class="hint">${esc(t('set.fp.never'))}</div>`;
+    const when = rep && rep.at ? new Date(rep.at).toLocaleString() : '';
+    const tip = [];
+    if (now) tip.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
     if (rep && rep.at) {
-      const when = new Date(rep.at).toLocaleString();
-      if (rep.missing && rep.missing.length) {
-        checkRow = `<div class="hint bad">${esc(t('set.fp.bad', { time: when, n: rep.missing.length, list: rep.missing.join('、') }))}</div>`;
-      } else if (rep.stage === 'submit') {
-        checkRow = `<div class="hint">${esc(t('set.fp.ok', { time: when, n: rep.n }))}</div>`;
-      } else {
-        checkRow = `<div class="hint">${esc(t('set.fp.enter', { time: when, n: rep.n }))}</div>`;
-      }
-    }
+      tip.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
+    } else tip.push(t('set.fp.never'));
+    const tipAttr = esc(tip.join('\n'));
+
+    let line;
+    if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
+    else if (now !== VERIFIED_UPSTREAM) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known: VERIFIED_UPSTREAM }))}</div>`;
+    else if (rep && rep.missing && rep.missing.length) line = `<div class="hint bad">${esc(t('set.fp.bad', { time: when, n: rep.missing.length, list: rep.missing.join('、') }))}</div>`;
+    else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
+    else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
+
     return `<div class="fp">
         <div class="lbl2">${esc(t('set.fp.title'))}</div>
-        <div class="hint">${esc(t('set.fp.now', { v: now || '—' }))}</div>
-        ${version}
-        ${checkRow}
+        ${line}
       </div>`;
   }
 

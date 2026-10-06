@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.17
+// @version      0.1.18
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.17 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.18 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -332,18 +332,20 @@
       'set.exp': '实验性',
       'set.upmode': '上传项目',
       'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
-        + '新版（重画第三步的项目设置表单）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
-        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。新版未经验证。',
+        + '新版（重画第三步的项目设置表单，控件外观也由我们自绘）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
+        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。',
       'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
-      'set.fp.title': '新版上传的上游指纹',
-      'set.fp.now': '站点资源版本：{v}（就是线上 www 仓库的 commit 短 id）',
+      'set.fp.title': '上游指纹',
+      'set.fp.one': '{v} · 已核对 {n}/{n}',
+      'set.fp.oneNew': '{v} · 还没走过第三步',
+      'set.fp.now': '站点资源版本 {v} —— 就是线上 www 仓库的 commit 短 id',
       'set.fp.unknown': '这一页读不到站点资源版本。',
       'set.fp.same': '与本脚本验证过的版本一致：{v}。',
       'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经失效，建议先切回兼容界面。',
       'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
       'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
       'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
-      'set.fp.never': '还没走过第三步，暂时没有记录。',
+      'set.fp.never': '还没走过第三步，所以没有点名记录。',
       'nav.upload': '上传项目',
       'nav.uploadTip': '上传项目（兼容界面／新版可切换）',
       'set.about': '关于', 'set.aboutText':
@@ -570,18 +572,21 @@
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
       'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
-        + 'New (redraws the third step, the project settings form). Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
-        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone. The new one is unverified.',
+        + 'New (redraws the third step, the project settings form \u2014 the controls keep their behaviour but get our own skin). '
+        + 'Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
+        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone.',
       'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
-      'set.fp.title': 'Upstream fingerprint (new upload)',
-      'set.fp.now': 'Site asset version: {v} (the commit short id of the live www repository)',
+      'set.fp.title': 'Upstream fingerprint',
+      'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
+      'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
+      'set.fp.now': 'Site asset version {v} \u2014 the commit short id of the live www repository',
       'set.fp.unknown': 'This page does not expose a site asset version.',
       'set.fp.same': 'Same version this script was verified against: {v}.',
       'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may already be broken, switch back to Compatible.',
       'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
       'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
       'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
-      'set.fp.never': 'The third step has not been opened yet, so there is nothing to report.',
+      'set.fp.never': 'The third step has not been opened yet, so there is no pre-submit check on record.',
       'nav.upload': 'Upload a project',
       'nav.uploadTip': 'Project upload (Compatible / New)',
       'set.about': 'About', 'set.aboutText':
@@ -1127,7 +1132,9 @@
 
       /* 项目管理页：其它状态（渲染中／暂停／私有／封禁／限速／服务器不可用）
          注意 site 表是短词条精确匹配：被 <strong> 拆开的整句（如 "Your project is <strong>private</strong>, …"）
-         这里只能盖住不含标签的那几截，所以单词 "private" 故意不加（全站误伤面太大）。 */
+         site 表盖不住（单词 "private" 又太泛、全站误伤面太大），所以那句走下面的 blockPatterns ——
+         patchBlocks 是按**整块 textContent** 匹配的，正则只吃英文前半句、替换值里带 <strong>，
+         后半句（另一句，已有 site 词条）原样留着给 patchTextNodes 翻（0.1.18）。 */
       'Rendering': '渲染中',
       'Paused': '已暂停',
       'Current renderers:': '正在渲染的成员：',
@@ -1183,6 +1190,12 @@
 
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
+
+      /* 项目是私有的时候那句提醒：站点写成 "Your project is <strong>private</strong>, not every worker…"，
+         <strong> 把句子切成三个文本节点、site 表配不上整句 —— 这里整块吃英文前半句、替换值自带 <strong>，
+         后面那句（"To make it renderable by everyone…"）有 site 词条，交给 patchTextNodes 翻。 */
+      [/^Your project is private, not every worker will be able to participate in your project\./,
+        '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
 
     /* 模式规则（带变量的文案） */
@@ -2641,12 +2654,56 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
 #sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
 #sp .sp-siteform .form-group{margin-bottom:14px}
-#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
-#sp .sp-siteform select,#sp .sp-siteform textarea{
-  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+/* ---- 控件皮肤：全自绘（0.1.18）-------------------------------------------------
+   此前这里只给了 accent-color：勾选框、单选框其实是**浏览器原生**画出来的，
+   摆进我们的卡片里就不是一套东西（用户实报"所有控件还是很不协调"）。现在自绘：
+   appearance:none + 我们自己的勾/圆点/输入框/下拉箭头，颜色一律走主题变量 ⇒
+   暗色、亮色自动跟随。边界没变：控件本体还是站点那些活节点（id/name/value/checked
+   一个字节都没动），我们只改"画法"。 */
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-siteform select,#sp .sp-up3 select,#sp .sp-siteform textarea{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+  appearance:none;-webkit-appearance:none;
 }
-#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
+#sp .sp-siteform select,#sp .sp-up3 select{
+  padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
+}
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):hover,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
+#sp .sp-siteform select:hover,#sp .sp-up3 select:hover{border-color:var(--border-strong)}
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):focus,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
+#sp .sp-siteform select:focus,#sp .sp-up3 select:focus{border-color:var(--accent)}
+#sp .sp-siteform input:disabled,#sp .sp-up3 input:disabled,
+#sp .sp-siteform select:disabled,#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+#sp .sp-siteform input::placeholder,#sp .sp-up3 input::placeholder{color:var(--text-3)}
+
+#sp .sp-siteform input[type=checkbox],#sp .sp-up3 input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
+  transition:background .12s,border-color .12s;
+}
+#sp .sp-siteform input[type=checkbox]:hover,#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
+#sp .sp-siteform input[type=checkbox]:checked,#sp .sp-up3 input[type=checkbox]:checked{
+  border-color:var(--accent);
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
+}
+#sp .sp-siteform input[type=radio],#sp .sp-up3 input[type=radio]{
+  appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
+  transition:border-color .12s,border-width .12s;
+}
+#sp .sp-siteform input[type=radio]:hover,#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
+#sp .sp-siteform input[type=radio]:checked,#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
+#sp .sp-siteform input[type=checkbox]:disabled,#sp .sp-up3 input[type=checkbox]:disabled,
+#sp .sp-siteform input[type=radio]:disabled,#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
+/* flex 的 label 里间距由 gap 负责（vis 段落要顶对齐，cpu 段落是居中） */
+#sp .sp-up3 .up3-sec label.checkbox input[type=checkbox],
+#sp .sp-up3 .up3-sec label.checkbox input[type=radio]{margin:1px 0 0}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=radio],
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=checkbox]{margin:0}
 #sp .sp-siteform input[type=submit],#sp .sp-siteform button{
   font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
   background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
@@ -2672,6 +2729,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
 #sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
 #sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
+/* 站点那张 CPU/GPU PNG 已被换成我们的图标（60-step3.js 的 swapIcons） */
+#sp .sp-up3 .up3-ico{display:block;width:16px;height:16px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 label.checkbox:has(input:checked) .up3-ico{color:var(--accent)}
+#sp .sp-up3 .up3-ico .icon{width:16px;height:16px}
+/* 站点那两行「Est. queue position / Total projects」原本是裸文本 + <br>，被包成 .up3-hint */
+#sp .sp-up3 .up3-hint{display:block;font-size:11.5px;line-height:1.75;color:var(--text-3);font-variant-numeric:tabular-nums}
 #sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
 #sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
 #sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
@@ -2862,6 +2925,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
     heart: '<path d="M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z"/>',
     ban: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2"/>',
+    /* 上传第三步的 CPU/GPU 图标：站点挂的是两张 PNG（UI__HTML.php:1109/1122），
+       换我们自己的矢量图标（同一条路径，两格外形一眼能分辨）。 */
+    cpu: '<path d="M9 2h2v2H9zm4 0h2v2h-2zM9 19h2v2H9zm4 0h2v2h-2zM2 9h2v2H2zm0 4h2v2H2zm18-4h2v2h-2zm0 4h2v2h-2z"/><path d="M5.5 5.5h13v13h-13zm2 2v9h9v-9z"/>',
+    gpu: '<path d="M3 5.5h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 17V7A1.5 1.5 0 0 1 3 5.5zm.5 2v9h17v-9z"/><path d="M12 8.6a3.4 3.4 0 1 1-3.4 3.4A3.4 3.4 0 0 1 12 8.6zm0 1.8a1.6 1.6 0 1 0 1.6 1.6A1.6 1.6 0 0 0 12 10.4z"/><path d="M4.5 8.8h3v1.4h-3z"/>',
   };
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -4581,7 +4648,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   'use strict';
 
   const SP = window.__SHEEPIT_PLUS__;
-  const { Util, t } = { Util: SP.Util, t: SP.t };
+  const { Util, UI, t } = { Util: SP.Util, UI: SP.UI, t: SP.t };
   const esc = Util.esc;
 
   /** 我们验证过的上游版本 = 站点资源路径里的 short_version（= www 仓库 commit 短 id）。
@@ -4655,6 +4722,53 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return s;
   };
   const bodyOf = (s) => s.querySelector('.up3-body');
+
+  /* 站点给 CPU/GPU 各挂了一张 PNG（UI__HTML.php:1109/1122），画成什么样由站点 CSS 决定，
+     在我们的卡片里就是外来物。换成我们自己的图标：这两张图没有 id/name、不参与提交，
+     只属于"外观"，换掉不动语义。 */
+  function swapIcons(scope) {
+    scope.querySelectorAll('img').forEach((img) => {
+      const src = (img.getAttribute('src') || '').toLowerCase();
+      const kind = src.indexOf('gpu') >= 0 ? 'gpu' : (src.indexOf('cpu') >= 0 ? 'cpu' : '');
+      if (!kind) return;
+      const box = mk('span', 'up3-ico');
+      box.title = img.getAttribute('title') || (kind === 'gpu' ? 'GPU' : 'CPU');
+      box.innerHTML = UI.icon(kind);
+      img.parentNode.replaceChild(box, img);
+    });
+  }
+
+  /* 「Est. queue position: 9」/「Total projects: 47」在服务端是**裸文本 + <br>**（UI__HTML.php:1112），
+     连元素都没有 —— 字号、颜色、行距全都不归我们管。包进我们的提示样式。
+     中英两种都认：翻译可能先于也可能后于这一步。 */
+  const HINT_RE = /^\s*(Est\.\s*queue position|Total projects|预计排队|项目总数)/;
+  const meaningful = (n) => {
+    while (n && n.nodeType === 3 && !n.nodeValue.trim()) n = n.nextSibling;
+    return n;
+  };
+  function wrapHints(scope) {
+    scope.querySelectorAll('label.checkbox').forEach((lb) => {
+      const par = lb.parentNode;
+      if (!par) return;
+      let lastHint = false;
+      Array.prototype.slice.call(par.childNodes).forEach((n) => {
+        if (n.nodeType === 3 && !n.nodeValue.trim()) return;
+        if (n.nodeType === 3 && HINT_RE.test(n.nodeValue)) {
+          const box = mk('span', 'up3-hint');
+          par.insertBefore(box, n);
+          box.appendChild(n);
+          lastHint = true;
+          return;
+        }
+        /* 两行提示之间原来靠 <br> 分行；变成块级之后那个 <br> 会多留一行空白 */
+        if (n.nodeName === 'BR' && lastHint) {
+          const nxt = meaningful(n.nextSibling);
+          if (nxt && nxt.nodeType === 3 && HINT_RE.test(nxt.nodeValue)) { par.removeChild(n); return; }
+        }
+        lastHint = false;
+      });
+    });
+  }
 
   /** 把服务端渲染的那一块重排成我们的布局。box = #sp-an-result。
       返回 { ok:true, id, count } 或 { ok:false, reason }（reason='shape' → 调用方保持站点原样）。 */
@@ -4740,6 +4854,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     box.dataset.spUp3 = '1';
     box.classList.add('sp-up3');
+    /* 只动外观的两处：站点那张 PNG 换成我们的图标；裸文本的排队/项目数包成我们的提示行 */
+    swapIcons(cpuSec);
+    wrapHints(cpuSec);
     wire({ box, form, cont, errBox, msg, host, hid, submitDiv, submitInput, maxRam, baseline, i });
     saveReport({ at: Date.now(), stage: 'enter', ok: true, n: baseline.length, missing: [], upstream: upstreamVersion(), verified: VERIFIED_UPSTREAM });
     return { ok: true, id: i, count: baseline.length };
@@ -4820,31 +4937,30 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     ctx.observer = obs;
   }
 
-  /* ---- 设置面板里的指纹行（D8：放在上传开关旁边）----------------------- */
-
+  /* ---- 设置面板里的指纹行（D8：放在上传开关旁边）-----------------------
+     用户 0.1.18 拍板：卡片上只留**一行摘要**，全部细节塞进悬停提示。
+     版本一致时只说"一致"；只有真的对不上/点名缺控件时才把整句摆到明面上。 */
   function fpRows() {
     const now = upstreamVersion();
     const rep = report();
-    let version;
-    if (!now) version = `<div class="hint">${esc(t('set.fp.unknown'))}</div>`;
-    else if (now === VERIFIED_UPSTREAM) version = `<div class="hint">${esc(t('set.fp.same', { v: now }))}</div>`;
-    else version = `<div class="hint bad">${esc(t('set.fp.diff', { now, known: VERIFIED_UPSTREAM }))}</div>`;
-    let checkRow = `<div class="hint">${esc(t('set.fp.never'))}</div>`;
+    const when = rep && rep.at ? new Date(rep.at).toLocaleString() : '';
+    const tip = [];
+    if (now) tip.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
     if (rep && rep.at) {
-      const when = new Date(rep.at).toLocaleString();
-      if (rep.missing && rep.missing.length) {
-        checkRow = `<div class="hint bad">${esc(t('set.fp.bad', { time: when, n: rep.missing.length, list: rep.missing.join('、') }))}</div>`;
-      } else if (rep.stage === 'submit') {
-        checkRow = `<div class="hint">${esc(t('set.fp.ok', { time: when, n: rep.n }))}</div>`;
-      } else {
-        checkRow = `<div class="hint">${esc(t('set.fp.enter', { time: when, n: rep.n }))}</div>`;
-      }
-    }
+      tip.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
+    } else tip.push(t('set.fp.never'));
+    const tipAttr = esc(tip.join('\n'));
+
+    let line;
+    if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
+    else if (now !== VERIFIED_UPSTREAM) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known: VERIFIED_UPSTREAM }))}</div>`;
+    else if (rep && rep.missing && rep.missing.length) line = `<div class="hint bad">${esc(t('set.fp.bad', { time: when, n: rep.missing.length, list: rep.missing.join('、') }))}</div>`;
+    else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
+    else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
+
     return `<div class="fp">
         <div class="lbl2">${esc(t('set.fp.title'))}</div>
-        <div class="hint">${esc(t('set.fp.now', { v: now || '—' }))}</div>
-        ${version}
-        ${checkRow}
+        ${line}
       </div>`;
   }
 
@@ -5207,6 +5323,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /** 守卫已注入、后来发现不该接管：把页面原样还给用户 */
   function release() {
     released = true;
+    parkAnalyse();   // 壳下面那份站点结果容器还挂着：先送回页面，再拆 #sp
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
@@ -5365,7 +5482,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
-    parkManage();   // 搬进来的那一块是站点的活节点：先送回原位，别被下面这行连同旧 host 扔掉
+    /* 搬/借来的活节点先送回原位，别被下面这行连同旧 host 扔掉 */
+    parkManage();   // 管理页那一整块（站点的活节点）
+    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
@@ -5431,6 +5550,36 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     analyseTimer = setTimeout(analyseTick, 5000);
   }
 
+  /* ---- 3.4b 分析完成页那份站点结果容器 ----------------------------------------
+     站点渲染 /project/add/<token> 时，它自己的轮询（doAnalyseUploadedProject）会把
+     GET /project/add_analyse/<token> 的 HTML 整块塞进页面里的 #project_add_analyse_result。
+     我们自己拉的也是同一个地址：如果两边各留一份，全站就有两套同名 id，而 $('#id') 命中的是
+     站点那份（在壳后面）—— doAddProject 读它、用户在壳里改的控件白改（0.1.18 修的真缺陷）。
+     做法跟管理页的 park 一个套路：把站点那份**摘下来留着**，离开这一页再原样还回去。 */
+  let anStale = null;    // 站点那份容器（摘下来后挂在这儿，不删除）
+  let anAnchor = null;   // 它在原页里的锚（注释节点）
+
+  /** 把站点那份摘出文档（只摘一次；它空着也摘，反正内容我们自己渲染） */
+  function hideStaleAnalyse() {
+    if (anStale) return;
+    const live = document.getElementById('project_add_analyse_result');
+    if (!live || live.closest('#sp')) return;          // 站点没这块 / 已经在我们壳里
+    if (!anAnchor || !anAnchor.parentNode || anAnchor.closest('#sp')) {
+      anAnchor = document.createComment('sp-analyse');
+      live.parentNode.insertBefore(anAnchor, live);
+    }
+    live.remove();
+    anStale = live;
+  }
+
+  /** 离开这一页（或整个交还页面）时把它放回去，站点页面保持原样 */
+  function parkAnalyse() {
+    if (anStale && anAnchor && anAnchor.parentNode) {
+      anAnchor.parentNode.insertBefore(anStale, anAnchor.nextSibling);
+    }
+    anStale = null;
+  }
+
   /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
   function paintAnalyse(s) {
     const host = document.getElementById('sp');
@@ -5470,10 +5619,15 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
       if (box) {
+        /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
+           两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
+           东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
+           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去），壳里这份才是唯一一套 id。 */
+        hideStaleAnalyse();
         box.innerHTML = s.html;
         box.hidden = false;
         /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
-           搬活节点 —— 容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+           容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
         if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
         /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
            翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */

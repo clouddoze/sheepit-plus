@@ -308,18 +308,20 @@
       'set.exp': '实验性',
       'set.upmode': '上传项目',
       'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
-        + '新版（重画第三步的项目设置表单）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
-        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。新版未经验证。',
+        + '新版（重画第三步的项目设置表单，控件外观也由我们自绘）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
+        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。',
       'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
-      'set.fp.title': '新版上传的上游指纹',
-      'set.fp.now': '站点资源版本：{v}（就是线上 www 仓库的 commit 短 id）',
+      'set.fp.title': '上游指纹',
+      'set.fp.one': '{v} · 已核对 {n}/{n}',
+      'set.fp.oneNew': '{v} · 还没走过第三步',
+      'set.fp.now': '站点资源版本 {v} —— 就是线上 www 仓库的 commit 短 id',
       'set.fp.unknown': '这一页读不到站点资源版本。',
       'set.fp.same': '与本脚本验证过的版本一致：{v}。',
       'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经失效，建议先切回兼容界面。',
       'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
       'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
       'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
-      'set.fp.never': '还没走过第三步，暂时没有记录。',
+      'set.fp.never': '还没走过第三步，所以没有点名记录。',
       'nav.upload': '上传项目',
       'nav.uploadTip': '上传项目（兼容界面／新版可切换）',
       'set.about': '关于', 'set.aboutText':
@@ -546,18 +548,21 @@
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
       'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
-        + 'New (redraws the third step, the project settings form). Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
-        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone. The new one is unverified.',
+        + 'New (redraws the third step, the project settings form \u2014 the controls keep their behaviour but get our own skin). '
+        + 'Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
+        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone.',
       'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
-      'set.fp.title': 'Upstream fingerprint (new upload)',
-      'set.fp.now': 'Site asset version: {v} (the commit short id of the live www repository)',
+      'set.fp.title': 'Upstream fingerprint',
+      'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
+      'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
+      'set.fp.now': 'Site asset version {v} \u2014 the commit short id of the live www repository',
       'set.fp.unknown': 'This page does not expose a site asset version.',
       'set.fp.same': 'Same version this script was verified against: {v}.',
       'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may already be broken, switch back to Compatible.',
       'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
       'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
       'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
-      'set.fp.never': 'The third step has not been opened yet, so there is nothing to report.',
+      'set.fp.never': 'The third step has not been opened yet, so there is no pre-submit check on record.',
       'nav.upload': 'Upload a project',
       'nav.uploadTip': 'Project upload (Compatible / New)',
       'set.about': 'About', 'set.aboutText':

@@ -91,6 +91,7 @@
   /** 守卫已注入、后来发现不该接管：把页面原样还给用户 */
   function release() {
     released = true;
+    parkAnalyse();   // 壳下面那份站点结果容器还挂着：先送回页面，再拆 #sp
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
@@ -249,7 +250,9 @@
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
-    parkManage();   // 搬进来的那一块是站点的活节点：先送回原位，别被下面这行连同旧 host 扔掉
+    /* 搬/借来的活节点先送回原位，别被下面这行连同旧 host 扔掉 */
+    parkManage();   // 管理页那一整块（站点的活节点）
+    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
@@ -315,6 +318,36 @@
     analyseTimer = setTimeout(analyseTick, 5000);
   }
 
+  /* ---- 3.4b 分析完成页那份站点结果容器 ----------------------------------------
+     站点渲染 /project/add/<token> 时，它自己的轮询（doAnalyseUploadedProject）会把
+     GET /project/add_analyse/<token> 的 HTML 整块塞进页面里的 #project_add_analyse_result。
+     我们自己拉的也是同一个地址：如果两边各留一份，全站就有两套同名 id，而 $('#id') 命中的是
+     站点那份（在壳后面）—— doAddProject 读它、用户在壳里改的控件白改（0.1.18 修的真缺陷）。
+     做法跟管理页的 park 一个套路：把站点那份**摘下来留着**，离开这一页再原样还回去。 */
+  let anStale = null;    // 站点那份容器（摘下来后挂在这儿，不删除）
+  let anAnchor = null;   // 它在原页里的锚（注释节点）
+
+  /** 把站点那份摘出文档（只摘一次；它空着也摘，反正内容我们自己渲染） */
+  function hideStaleAnalyse() {
+    if (anStale) return;
+    const live = document.getElementById('project_add_analyse_result');
+    if (!live || live.closest('#sp')) return;          // 站点没这块 / 已经在我们壳里
+    if (!anAnchor || !anAnchor.parentNode || anAnchor.closest('#sp')) {
+      anAnchor = document.createComment('sp-analyse');
+      live.parentNode.insertBefore(anAnchor, live);
+    }
+    live.remove();
+    anStale = live;
+  }
+
+  /** 离开这一页（或整个交还页面）时把它放回去，站点页面保持原样 */
+  function parkAnalyse() {
+    if (anStale && anAnchor && anAnchor.parentNode) {
+      anAnchor.parentNode.insertBefore(anStale, anAnchor.nextSibling);
+    }
+    anStale = null;
+  }
+
   /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
   function paintAnalyse(s) {
     const host = document.getElementById('sp');
@@ -354,10 +387,15 @@
       const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
       if (box) {
+        /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
+           两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
+           东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
+           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去），壳里这份才是唯一一套 id。 */
+        hideStaleAnalyse();
         box.innerHTML = s.html;
         box.hidden = false;
         /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
-           搬活节点 —— 容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+           容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
         if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
         /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
            翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
