@@ -339,13 +339,17 @@
       'sess.kpi.maxTime': '单帧渲染时长上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
       'sess.kpi.powerLink': '各机型算力榜',
-      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
+      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算；内部枚举翻成了人话，原文在悬停提示里',
+      'sess.never': '从未', 'sess.rawTip': '站点内部值：{raw}',
+      'sess.class.verySlow': '极慢档', 'sess.class.slow': '偏慢档', 'sess.class.medium': '中等档',
+      'sess.class.fast': '偏快档', 'sess.class.veryFast': '极快档',
+      'sess.act.pause': '暂停', 'sess.act.resume': '继续',
       'sess.f.cpu': '处理器',
       'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
       'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
       'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
       'sess.f.ramAllowed': '渲染可用内存', 'sess.f.ramAvailable': '物理内存',
-      'sess.f.scheduler': '调度模式', 'sess.f.createdAt': '创建时间',
+      'sess.f.scheduler': '速度档位', 'sess.f.createdAt': '创建时间',
       'sess.f.lastRequest': '最后请求', 'sess.f.lastRequestJob': '最后请求作业',
       'sess.f.lastValidatedJob': '最后验证作业', 'sess.f.ua': '运行环境',
       'sess.f.renderKey': '渲染密钥', 'sess.f.action': '可用动作',
@@ -360,7 +364,6 @@
       'sess.act.events': '事件', 'sess.act.jobs': '作业', 'sess.act.failed': '失败',
       'sess.act.moreDay': '更早的 {n} 天没有列在这里', 'sess.act.moreMonth': '更早的 {n} 个月没有列在这里',
       'sess.logOpen': '查看完整日志（{n} 条）', 'sess.logClose': '收起完整日志',
-      'sess.publisher': '发布者',
       'sess.col.type': '事件', 'sess.col.job': '作业', 'sess.col.start': '开始',
       'sess.col.end': '结束', 'sess.col.span': '时长',
       'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个',
@@ -572,13 +575,17 @@
       'sess.kpi.maxTime': 'Per-frame render time limit',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
       'sess.kpi.powerLink': 'Power by machine model',
-      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
+      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted; internal enums are glossed \u2014 hover for the original',
+      'sess.never': 'Never', 'sess.rawTip': 'the site calls this {raw}',
+      'sess.class.verySlow': 'very slow', 'sess.class.slow': 'slow', 'sess.class.medium': 'medium',
+      'sess.class.fast': 'fast', 'sess.class.veryFast': 'very fast',
+      'sess.act.pause': 'Pause', 'sess.act.resume': 'Resume',
       'sess.f.cpu': 'Processor',
       'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
       'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
       'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
       'sess.f.ramAllowed': 'RAM allowed for rendering', 'sess.f.ramAvailable': 'RAM installed',
-      'sess.f.scheduler': 'Scheduler', 'sess.f.createdAt': 'Created',
+      'sess.f.scheduler': 'Speed class', 'sess.f.createdAt': 'Created',
       'sess.f.lastRequest': 'Last request', 'sess.f.lastRequestJob': 'Last request job',
       'sess.f.lastValidatedJob': 'Last validated job', 'sess.f.ua': 'Runtime',
       'sess.f.renderKey': 'Render key', 'sess.f.action': 'Action',
@@ -592,7 +599,6 @@
       'sess.act.events': 'Events', 'sess.act.jobs': 'Jobs', 'sess.act.failed': 'Failed',
       'sess.act.moreDay': '{n} earlier days are not listed here', 'sess.act.moreMonth': '{n} earlier months are not listed here',
       'sess.logOpen': 'Show the full log ({n} events)', 'sess.logClose': 'Hide the full log',
-      'sess.publisher': 'Publisher',
       'sess.col.type': 'Event', 'sess.col.job': 'Job', 'sess.col.start': 'Start',
       'sess.col.end': 'End', 'sess.col.span': 'Duration',
       'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects',
@@ -654,6 +660,7 @@
         blocks: Object.assign({}, (SITE[code] || {}).blocks, pack.blocks || {}),
         patterns: [].concat((SITE[code] || {}).patterns || [], pack.patterns || []),
         blockPatterns: [].concat((SITE[code] || {}).blockPatterns || [], pack.blockPatterns || []),
+        dateText: pack.dateText || (SITE[code] || {}).dateText,
       });
       if (pack.label) LANG_LABELS[code] = pack.label;
       return code;
@@ -699,6 +706,17 @@
       if (hit !== undefined) return hit;
       for (const [re, rep] of pack.patterns) if (re.test(text)) return text.replace(re, rep);
       return null;
+    },
+
+    /**
+     * 语言包可选的日期本地化：站点把日期写成「20th Oct 06:10」或「06:40 Sep 29」两种形状，
+     * 语言包用 pack.dateText 提供转换；没有（en 就是这种情况）就原样返回。
+     * 只处理这两种形状、认不出的原样返回 —— 站点换格式时界面不会变空。
+     */
+    date(s) {
+      const pack = SITE[this.lang];
+      const raw = String(s == null ? '' : s);
+      return pack && pack.dateText ? pack.dateText(raw) : raw;
     },
 
     /** 整块替换：被内联标签切碎的句子；未命中返回 null */

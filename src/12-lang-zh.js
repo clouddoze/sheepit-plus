@@ -5,19 +5,28 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP || !SP.I18n) return;
 
-  /* 站点把日期写成「20th Oct 06:10」，照抄进中文句子太刺眼：只本地化这一种格式。
+  /* 站点把日期写成「20th Oct 06:10」（项目管理页）或「06:40 Sep 29」（会话页）两种形状，
+     照抄进中文句子太刺眼：只本地化这两种。作为 pack.dateText 注册，视图层可以直接用
+     I18n.date() 要本地化结果（10-core.js 的 I18n.date）。
      （patterns 的替换值可以是函数——10-core.js 用的是 String.replace(re, rep)。） */
   const MONTH_ZH = { Jan: '1月', Feb: '2月', Mar: '3月', Apr: '4月', May: '5月', Jun: '6月',
     Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' };
-  const farmDate = (s) => String(s).replace(
-    /\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/,
-    (m, d, mon, time) => {
-      const k = mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase();
-      return (MONTH_ZH[k] || mon) + d + '日 ' + time;
-    });
+  const monthOf = (mon) => MONTH_ZH[String(mon).slice(0, 3).charAt(0).toUpperCase() + String(mon).slice(1, 3).toLowerCase()];
+  const farmDate = (s) => String(s == null ? '' : s)
+    .replace(/\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/g,
+      (m, d, mon, time) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      })
+    .replace(/\b(\d{1,2}:\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})\b/g,
+      (m, time, mon, d) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      });
 
   SP.I18n.register('zh', {
     label: '中文',
+    dateText: farmDate,
 
     /* 短词条 */
     site: {
@@ -260,6 +269,8 @@
       /* 项目管理页：调度器那一段（只在项目「等待中 / 渲染中」时渲染）。
          注意 site 表是**短词条精确匹配**，值放在子 <b> 里的整句要用下面的 patterns。 */
       'Scheduler': '调度器',
+      /* 站点在「从没活动过」的机器上印红色小字 never（账户页三行、旧版会话页）。 */
+      'never': '从未',
       'How many machines can actually render the project?': '有多少台机器能真正渲染这个项目？',
       'Connected machines:': '已连接机器：',
       'Connected machines for CPU:': 'CPU 已连接机器：',

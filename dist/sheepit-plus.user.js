@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.15
+// @version      0.1.16
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.15 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.16 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -363,13 +363,17 @@
       'sess.kpi.maxTime': '单帧渲染时长上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
       'sess.kpi.powerLink': '各机型算力榜',
-      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
+      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算；内部枚举翻成了人话，原文在悬停提示里',
+      'sess.never': '从未', 'sess.rawTip': '站点内部值：{raw}',
+      'sess.class.verySlow': '极慢档', 'sess.class.slow': '偏慢档', 'sess.class.medium': '中等档',
+      'sess.class.fast': '偏快档', 'sess.class.veryFast': '极快档',
+      'sess.act.pause': '暂停', 'sess.act.resume': '继续',
       'sess.f.cpu': '处理器',
       'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
       'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
       'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
       'sess.f.ramAllowed': '渲染可用内存', 'sess.f.ramAvailable': '物理内存',
-      'sess.f.scheduler': '调度模式', 'sess.f.createdAt': '创建时间',
+      'sess.f.scheduler': '速度档位', 'sess.f.createdAt': '创建时间',
       'sess.f.lastRequest': '最后请求', 'sess.f.lastRequestJob': '最后请求作业',
       'sess.f.lastValidatedJob': '最后验证作业', 'sess.f.ua': '运行环境',
       'sess.f.renderKey': '渲染密钥', 'sess.f.action': '可用动作',
@@ -384,7 +388,6 @@
       'sess.act.events': '事件', 'sess.act.jobs': '作业', 'sess.act.failed': '失败',
       'sess.act.moreDay': '更早的 {n} 天没有列在这里', 'sess.act.moreMonth': '更早的 {n} 个月没有列在这里',
       'sess.logOpen': '查看完整日志（{n} 条）', 'sess.logClose': '收起完整日志',
-      'sess.publisher': '发布者',
       'sess.col.type': '事件', 'sess.col.job': '作业', 'sess.col.start': '开始',
       'sess.col.end': '结束', 'sess.col.span': '时长',
       'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个',
@@ -596,13 +599,17 @@
       'sess.kpi.maxTime': 'Per-frame render time limit',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
       'sess.kpi.powerLink': 'Power by machine model',
-      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
+      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted; internal enums are glossed \u2014 hover for the original',
+      'sess.never': 'Never', 'sess.rawTip': 'the site calls this {raw}',
+      'sess.class.verySlow': 'very slow', 'sess.class.slow': 'slow', 'sess.class.medium': 'medium',
+      'sess.class.fast': 'fast', 'sess.class.veryFast': 'very fast',
+      'sess.act.pause': 'Pause', 'sess.act.resume': 'Resume',
       'sess.f.cpu': 'Processor',
       'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
       'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
       'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
       'sess.f.ramAllowed': 'RAM allowed for rendering', 'sess.f.ramAvailable': 'RAM installed',
-      'sess.f.scheduler': 'Scheduler', 'sess.f.createdAt': 'Created',
+      'sess.f.scheduler': 'Speed class', 'sess.f.createdAt': 'Created',
       'sess.f.lastRequest': 'Last request', 'sess.f.lastRequestJob': 'Last request job',
       'sess.f.lastValidatedJob': 'Last validated job', 'sess.f.ua': 'Runtime',
       'sess.f.renderKey': 'Render key', 'sess.f.action': 'Action',
@@ -616,7 +623,6 @@
       'sess.act.events': 'Events', 'sess.act.jobs': 'Jobs', 'sess.act.failed': 'Failed',
       'sess.act.moreDay': '{n} earlier days are not listed here', 'sess.act.moreMonth': '{n} earlier months are not listed here',
       'sess.logOpen': 'Show the full log ({n} events)', 'sess.logClose': 'Hide the full log',
-      'sess.publisher': 'Publisher',
       'sess.col.type': 'Event', 'sess.col.job': 'Job', 'sess.col.start': 'Start',
       'sess.col.end': 'End', 'sess.col.span': 'Duration',
       'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects',
@@ -678,6 +684,7 @@
         blocks: Object.assign({}, (SITE[code] || {}).blocks, pack.blocks || {}),
         patterns: [].concat((SITE[code] || {}).patterns || [], pack.patterns || []),
         blockPatterns: [].concat((SITE[code] || {}).blockPatterns || [], pack.blockPatterns || []),
+        dateText: pack.dateText || (SITE[code] || {}).dateText,
       });
       if (pack.label) LANG_LABELS[code] = pack.label;
       return code;
@@ -723,6 +730,17 @@
       if (hit !== undefined) return hit;
       for (const [re, rep] of pack.patterns) if (re.test(text)) return text.replace(re, rep);
       return null;
+    },
+
+    /**
+     * 语言包可选的日期本地化：站点把日期写成「20th Oct 06:10」或「06:40 Sep 29」两种形状，
+     * 语言包用 pack.dateText 提供转换；没有（en 就是这种情况）就原样返回。
+     * 只处理这两种形状、认不出的原样返回 —— 站点换格式时界面不会变空。
+     */
+    date(s) {
+      const pack = SITE[this.lang];
+      const raw = String(s == null ? '' : s);
+      return pack && pack.dateText ? pack.dateText(raw) : raw;
     },
 
     /** 整块替换：被内联标签切碎的句子；未命中返回 null */
@@ -825,19 +843,28 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP || !SP.I18n) return;
 
-  /* 站点把日期写成「20th Oct 06:10」，照抄进中文句子太刺眼：只本地化这一种格式。
+  /* 站点把日期写成「20th Oct 06:10」（项目管理页）或「06:40 Sep 29」（会话页）两种形状，
+     照抄进中文句子太刺眼：只本地化这两种。作为 pack.dateText 注册，视图层可以直接用
+     I18n.date() 要本地化结果（10-core.js 的 I18n.date）。
      （patterns 的替换值可以是函数——10-core.js 用的是 String.replace(re, rep)。） */
   const MONTH_ZH = { Jan: '1月', Feb: '2月', Mar: '3月', Apr: '4月', May: '5月', Jun: '6月',
     Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' };
-  const farmDate = (s) => String(s).replace(
-    /\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/,
-    (m, d, mon, time) => {
-      const k = mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase();
-      return (MONTH_ZH[k] || mon) + d + '日 ' + time;
-    });
+  const monthOf = (mon) => MONTH_ZH[String(mon).slice(0, 3).charAt(0).toUpperCase() + String(mon).slice(1, 3).toLowerCase()];
+  const farmDate = (s) => String(s == null ? '' : s)
+    .replace(/\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/g,
+      (m, d, mon, time) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      })
+    .replace(/\b(\d{1,2}:\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})\b/g,
+      (m, time, mon, d) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      });
 
   SP.I18n.register('zh', {
     label: '中文',
+    dateText: farmDate,
 
     /* 短词条 */
     site: {
@@ -1080,6 +1107,8 @@
       /* 项目管理页：调度器那一段（只在项目「等待中 / 渲染中」时渲染）。
          注意 site 表是**短词条精确匹配**，值放在子 <b> 里的整句要用下面的 patterns。 */
       'Scheduler': '调度器',
+      /* 站点在「从没活动过」的机器上印红色小字 never（账户页三行、旧版会话页）。 */
+      'never': '从未',
       'How many machines can actually render the project?': '有多少台机器能真正渲染这个项目？',
       'Connected machines:': '已连接机器：',
       'Connected machines for CPU:': 'CPU 已连接机器：',
@@ -3841,6 +3870,46 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return hit === k ? f.label : hit;
   }
 
+  /* 站点在「机器信息」里塞的有些值是**内部枚举**，不是给人看的字：OS 那格印 `linux`，
+     Scheduler 那格印 `very_slow_computer`（它说的是这台机器跑多快，跟"调度模式"没关系），
+     从没活动过的机器几格印 `Never`。这些翻成人话、原文进悬停提示；
+     **认不出的值一律原样显示** —— 站点哪天加新档，界面上照样看得见。 */
+  const OS_NAME = {
+    linux: 'Linux', windows: 'Windows', win32: 'Windows',
+    'mac os x': 'macOS', macos: 'macOS', darwin: 'macOS', freebsd: 'FreeBSD',
+  };
+  const MACHINE_CLASS = [
+    [/^very[_\s-]*slow[_\s-]*computer$/i, 'verySlow'],
+    [/^(slow|low)[_\s-]*computer$/i, 'slow'],
+    [/^(medium|average|normal)[_\s-]*computer$/i, 'medium'],
+    [/^(fast|high)[_\s-]*computer$/i, 'fast'],
+    [/^very[_\s-]*fast[_\s-]*computer$/i, 'veryFast'],
+  ];
+  /* Action 那格站点放的是 `<input type="button" value="Pause">`（值是英文按钮字，
+     实测只有 Pause / Resume 两种），只在没显示我们自己的控制面板时才走到这里。 */
+  const ACTION_NAME = { pause: 'sess.act.pause', resume: 'sess.act.resume' };
+  function valueHuman(key, raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return null;
+    if (/^never$/i.test(s)) return { text: t('sess.never'), title: t('sess.rawTip', { raw: s }) };
+    if (key === 'os') {
+      const n = OS_NAME[s.toLowerCase()];
+      if (n) return { text: n, title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'scheduler') {
+      const hit = MACHINE_CLASS.find(([re]) => re.test(s));
+      if (hit) return { text: t(`sess.class.${hit[1]}`), title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'action' && ACTION_NAME[s.toLowerCase()]) {
+      return { text: t(ACTION_NAME[s.toLowerCase()]), title: t('sess.rawTip', { raw: s }) };
+    }
+    /* 值里带站点日期形状（`20th Oct 06:10` / `06:40 Sep 29`）就按语言包本地化；
+       转换没变化说明不是日期，交给后面原样显示。 */
+    const loc = I18n.date(s);
+    if (loc !== s) return { text: loc, title: '' };
+    return null;
+  }
+
   function typeLabel(raw) {
     const s = String(raw || '').trim();
     if (!s) return '—';
@@ -3941,7 +4010,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     } else if (cur) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cur)}</b></span>`);
     }
-    if (val('os')) bits.push(`<span>${esc(val('os'))}</span>`);
+    if (val('os')) {
+      const os = valueHuman('os', val('os'));
+      bits.push(`<span${os ? ` title="${esc(os.title)}"` : ''}>${esc(os ? os.text : val('os'))}</span>`);
+    }
     if (owner) {
       const href = owner.href || (owner.user ? `/user/${encodeURIComponent(owner.user)}/profile` : '');
       bits.push(`<span>${esc(t('sess.owner'))} ${href
@@ -3965,7 +4037,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
+    const since = I18n.date(tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt'));
 
     /* 算力那格跟着站点印了哪一行走（"Power CPU" / "Power GPU" 都开就两行都在）；**不写死** —— 早先写死读
        Power CPU，纯 GPU 机器上那格永远是"—"，被读成"CPU 有问题"。 */
@@ -4018,8 +4090,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
             `<button class="btn sm" data-act="reveal-key" aria-pressed="false">${esc(t('sess.reveal'))}</button>`;
         } else {
           const raw = f.value || '—';
-          const txt = f.href ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>` : esc(raw);
-          v = `<span class="num">${txt}</span>`;
+          const human = f.href ? null : valueHuman(f.key, f.value);
+          const txt = f.href
+            ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>`
+            : esc(human ? human.text : raw);
+          v = `<span class="num"${human ? ` title="${esc(human.title)}"` : ''}>${txt}</span>`;
         }
         return `<div class="fact"><span class="k">${esc(sessLabel(f))}</span><span class="v">${v}</span></div>`;
       }).join('')}</div>

@@ -637,6 +637,46 @@
     return hit === k ? f.label : hit;
   }
 
+  /* 站点在「机器信息」里塞的有些值是**内部枚举**，不是给人看的字：OS 那格印 `linux`，
+     Scheduler 那格印 `very_slow_computer`（它说的是这台机器跑多快，跟"调度模式"没关系），
+     从没活动过的机器几格印 `Never`。这些翻成人话、原文进悬停提示；
+     **认不出的值一律原样显示** —— 站点哪天加新档，界面上照样看得见。 */
+  const OS_NAME = {
+    linux: 'Linux', windows: 'Windows', win32: 'Windows',
+    'mac os x': 'macOS', macos: 'macOS', darwin: 'macOS', freebsd: 'FreeBSD',
+  };
+  const MACHINE_CLASS = [
+    [/^very[_\s-]*slow[_\s-]*computer$/i, 'verySlow'],
+    [/^(slow|low)[_\s-]*computer$/i, 'slow'],
+    [/^(medium|average|normal)[_\s-]*computer$/i, 'medium'],
+    [/^(fast|high)[_\s-]*computer$/i, 'fast'],
+    [/^very[_\s-]*fast[_\s-]*computer$/i, 'veryFast'],
+  ];
+  /* Action 那格站点放的是 `<input type="button" value="Pause">`（值是英文按钮字，
+     实测只有 Pause / Resume 两种），只在没显示我们自己的控制面板时才走到这里。 */
+  const ACTION_NAME = { pause: 'sess.act.pause', resume: 'sess.act.resume' };
+  function valueHuman(key, raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return null;
+    if (/^never$/i.test(s)) return { text: t('sess.never'), title: t('sess.rawTip', { raw: s }) };
+    if (key === 'os') {
+      const n = OS_NAME[s.toLowerCase()];
+      if (n) return { text: n, title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'scheduler') {
+      const hit = MACHINE_CLASS.find(([re]) => re.test(s));
+      if (hit) return { text: t(`sess.class.${hit[1]}`), title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'action' && ACTION_NAME[s.toLowerCase()]) {
+      return { text: t(ACTION_NAME[s.toLowerCase()]), title: t('sess.rawTip', { raw: s }) };
+    }
+    /* 值里带站点日期形状（`20th Oct 06:10` / `06:40 Sep 29`）就按语言包本地化；
+       转换没变化说明不是日期，交给后面原样显示。 */
+    const loc = I18n.date(s);
+    if (loc !== s) return { text: loc, title: '' };
+    return null;
+  }
+
   function typeLabel(raw) {
     const s = String(raw || '').trim();
     if (!s) return '—';
@@ -737,7 +777,10 @@
     } else if (cur) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cur)}</b></span>`);
     }
-    if (val('os')) bits.push(`<span>${esc(val('os'))}</span>`);
+    if (val('os')) {
+      const os = valueHuman('os', val('os'));
+      bits.push(`<span${os ? ` title="${esc(os.title)}"` : ''}>${esc(os ? os.text : val('os'))}</span>`);
+    }
     if (owner) {
       const href = owner.href || (owner.user ? `/user/${encodeURIComponent(owner.user)}/profile` : '');
       bits.push(`<span>${esc(t('sess.owner'))} ${href
@@ -761,7 +804,7 @@
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
+    const since = I18n.date(tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt'));
 
     /* 算力那格跟着站点印了哪一行走（"Power CPU" / "Power GPU" 都开就两行都在）；**不写死** —— 早先写死读
        Power CPU，纯 GPU 机器上那格永远是"—"，被读成"CPU 有问题"。 */
@@ -814,8 +857,11 @@
             `<button class="btn sm" data-act="reveal-key" aria-pressed="false">${esc(t('sess.reveal'))}</button>`;
         } else {
           const raw = f.value || '—';
-          const txt = f.href ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>` : esc(raw);
-          v = `<span class="num">${txt}</span>`;
+          const human = f.href ? null : valueHuman(f.key, f.value);
+          const txt = f.href
+            ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>`
+            : esc(human ? human.text : raw);
+          v = `<span class="num"${human ? ` title="${esc(human.title)}"` : ''}>${txt}</span>`;
         }
         return `<div class="fact"><span class="k">${esc(sessLabel(f))}</span><span class="v">${v}</span></div>`;
       }).join('')}</div>
