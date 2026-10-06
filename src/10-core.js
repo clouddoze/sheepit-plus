@@ -307,10 +307,10 @@
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
-      'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
-        + '新版（重画第三步的项目设置表单，控件外观也由我们自绘）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
-        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。',
-      'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
+        + '原版（我们只出外壳，把站点原版那一块搬进来 —— 顶栏、页脚、下载客户端都不显示，处理逻辑全归站点）；'
+        + '新版（上传、等待、设置三步全部自绘：解析站点的分析结果、自己发提交，界面与站点脚本无关）。',
+      'set.upmode.off': '关闭', 'set.upmode.site': '原版', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
@@ -382,8 +382,8 @@
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
-        + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
+      'up.expNote': '原版：这一档用的是站点自己的控件与逻辑 —— 上传表单、估算器、进度条、分析轮询、提交全归站点；'
+        + '我们只把上传相关的那几块收进卡片里排版（顶栏、页脚、下载客户端都不出现）。想用脚本重写的那套，去设置里切到「新版」。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
@@ -506,6 +506,9 @@
       'up1.perTile': '每块预计用时',
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
+      /* 「原版」档（内嵌站点原版界面） */
+      'site.sub': '这一档是站点自己的界面：只把上传相关的那一块搬进外壳，顶栏、页脚、下载客户端都不显示；处理逻辑全归站点。',
+      'site.missing': '这一页没找到要内嵌的那一块 —— 站点可能改版了。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -643,11 +646,10 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
-      'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
-        + 'New (redraws the third step, the project settings form \u2014 the controls keep their behaviour but get our own skin). '
-        + 'Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
-        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone.',
-      'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
+        + 'Original (this shell only frames the site\u2019s own block \u2014 no top bar, no footer, no client download; all the logic stays the site\u2019s); '
+        + 'New (upload, wait and settings are all drawn by this script: it parses the site\u2019s analysis result and sends the submit itself).',
+      'set.upmode.off': 'Off', 'set.upmode.site': 'Original', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
@@ -715,8 +717,8 @@
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
-        + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
+      'up.expNote': 'Original: this mode uses the site\u2019s own controls and logic \u2014 form, estimator, progress bar, analysis polling and submit all belong to the site. '
+        + 'This script only arranges the upload blocks into cards (no top bar, no footer, no client download). Switch to \u201cNew\u201d in Settings for the rewritten path.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
@@ -831,6 +833,8 @@
       'up1.perTile': 'Expected time per tile',
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
+      'site.sub': 'This mode is the site\u2019s own interface: only the upload part is moved into this shell (no top bar, no footer, no client download). All the logic stays the site\u2019s.',
+      'site.missing': 'The block to embed was not found on this page \u2014 the site may have changed.',
     },
   };
 

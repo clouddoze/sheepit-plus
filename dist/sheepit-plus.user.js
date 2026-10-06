@@ -331,10 +331,10 @@
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
-      'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
-        + '新版（重画第三步的项目设置表单，控件外观也由我们自绘）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
-        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。',
-      'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
+        + '原版（我们只出外壳，把站点原版那一块搬进来 —— 顶栏、页脚、下载客户端都不显示，处理逻辑全归站点）；'
+        + '新版（上传、等待、设置三步全部自绘：解析站点的分析结果、自己发提交，界面与站点脚本无关）。',
+      'set.upmode.off': '关闭', 'set.upmode.site': '原版', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
@@ -406,8 +406,8 @@
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
-        + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
+      'up.expNote': '原版：这一档用的是站点自己的控件与逻辑 —— 上传表单、估算器、进度条、分析轮询、提交全归站点；'
+        + '我们只把上传相关的那几块收进卡片里排版（顶栏、页脚、下载客户端都不出现）。想用脚本重写的那套，去设置里切到「新版」。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
@@ -530,6 +530,9 @@
       'up1.perTile': '每块预计用时',
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
+      /* 「原版」档（内嵌站点原版界面） */
+      'site.sub': '这一档是站点自己的界面：只把上传相关的那一块搬进外壳，顶栏、页脚、下载客户端都不显示；处理逻辑全归站点。',
+      'site.missing': '这一页没找到要内嵌的那一块 —— 站点可能改版了。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -667,11 +670,10 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
-      'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
-        + 'New (redraws the third step, the project settings form \u2014 the controls keep their behaviour but get our own skin). '
-        + 'Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
-        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone.',
-      'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
+        + 'Original (this shell only frames the site\u2019s own block \u2014 no top bar, no footer, no client download; all the logic stays the site\u2019s); '
+        + 'New (upload, wait and settings are all drawn by this script: it parses the site\u2019s analysis result and sends the submit itself).',
+      'set.upmode.off': 'Off', 'set.upmode.site': 'Original', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
@@ -739,8 +741,8 @@
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
-        + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
+      'up.expNote': 'Original: this mode uses the site\u2019s own controls and logic \u2014 form, estimator, progress bar, analysis polling and submit all belong to the site. '
+        + 'This script only arranges the upload blocks into cards (no top bar, no footer, no client download). Switch to \u201cNew\u201d in Settings for the rewritten path.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
@@ -855,6 +857,8 @@
       'up1.perTile': 'Expected time per tile',
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
+      'site.sub': 'This mode is the site\u2019s own interface: only the upload part is moved into this shell (no top bar, no footer, no client download). All the logic stays the site\u2019s.',
+      'site.missing': 'The block to embed was not found on this page \u2014 the site may have changed.',
     },
   };
 
@@ -3004,6 +3008,132 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
 #sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
 
+/* ==== 「原版」档的第三步（60-step3.js 的 enhance() 重排出来的那一块）====
+   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
+   面板化、栅格化、按钮统一。自绘外观、站点语义。
+   0.2.0 自绘那一套用的是另一组类名（up3-group/up3-line/up3-blend）；共用 .up3-head/.up3-msg
+   的规则里，自绘那几条排在下面，冲突时以自绘的为准。 */
+/* ==== 新版上传 · 第三步（60-step3.js 重排出来的那一块）====
+   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
+   面板化、栅格化、按钮统一。自绘外观、站点语义。 */
+#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-head{margin:0 0 14px}
+#sp .sp-up3 .up3-head h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-hid{display:none}
+#sp .sp-up3 .up3-sec{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);padding:12px 14px;margin:0 0 12px}
+#sp .sp-up3 .up3-sec h3{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
+/* 站点用 bootstrap 的 float 栅格；这里的 .row 是我们主动改成 flex 的（列宽已被上面那组兜底改成 auto） */
+#sp .sp-up3 .up3-sec .row{margin:0}
+#sp .sp-up3 .up3-sec [class*="col-md-"]{float:none;width:auto;padding:0}
+#sp .sp-up3 .up3-sec[data-sec="frames"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:14px}
+#sp .sp-up3 .up3-sec[data-sec="frames"] [class*="col-md-"]{flex:1 1 150px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:16px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
+/* 站点那张 CPU/GPU PNG 已被换成我们的图标（60-step3.js 的 swapIcons） */
+#sp .sp-up3 .up3-ico{display:block;width:16px;height:16px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 label.checkbox:has(input:checked) .up3-ico{color:var(--accent)}
+#sp .sp-up3 .up3-ico .icon{width:16px;height:16px}
+/* 站点那两行「Est. queue position / Total projects」原本是裸文本 + <br>，被包成 .up3-hint */
+#sp .sp-up3 .up3-hint{display:block;font-size:11.5px;line-height:1.75;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
+#sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .up3-body > div:first-child{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .form-group{margin:10px 0 0}
+#sp .sp-up3 .up3-note{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-left:2px solid var(--accent);
+  border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .sp-up3 .up3-msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.8}
+#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
+#sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
+#sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
+#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
+/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
+#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
+#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
+
+/* 设置面板里的「上游指纹」小卡（60-step3.js 的 fpRows 画） */
+#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
+#sp .fp .hint{margin:0 0 6px}
+#sp .fp .hint:last-child{margin-bottom:0}
+#sp .hint.bad{color:var(--accent)}
+
+/* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
+   80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
+   的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
+#sp .sp-manage{padding:18px 20px 20px;color:var(--text-2)}
+#sp .sp-manage .w-section,#sp .sp-manage .container,#sp .sp-manage .w-box,
+#sp .sp-manage .padding-15,#sp .sp-manage [class*="col-md-"]{padding:0;margin:0;background:none;border:none;box-shadow:none;max-width:none}
+/* 别改 .row 的布局方式：站点用 bootstrap 的 float 栅格，8/4 栏加起来正好 100%，
+   一旦给 .row 加 display:flex + gap，多出来的 gap 会把右栏挤到下一行（实测两栏会竖着叠）。 */
+#sp .sp-manage .row{margin:0}
+#sp .sp-manage .row::after{content:'';display:block;clear:both}
+#sp .sp-manage h2{margin:0 0 8px;font-size:14.5px;font-weight:600;color:var(--text)}
+#sp .sp-manage h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
+#sp .sp-manage a{color:var(--accent);text-decoration:none}
+#sp .sp-manage a:hover{text-decoration:underline}
+#sp .sp-manage ul{padding:0;margin:0;list-style:none}
+#sp .sp-manage .meta-list{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
+#sp .sp-manage li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .sp-manage .meta-list li[class^="msg_"]{font-weight:600;color:var(--text-2)}
+#sp .sp-manage .breadcrumb{display:none}
+/* 站点那几个方块本来就是「卡片」：它们的底色/边框被上面统一掉了，这里按我们的样式还回来，
+   免得整页糊成一片（Summary 与项目卡是 .w-box，右栏图例/页签是 .widget）。 */
+#sp .sp-manage .w-box,#sp .sp-manage .widget{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+#sp .sp-manage .widget-heading{margin:0 0 10px}
+/* 图例：站点用三个 .square 当色块，色是 bootstrap 的 btn-neutral/warning/default */
+#sp .sp-manage .legend{display:flex;gap:16px;flex-wrap:wrap}
+#sp .sp-manage .legend a{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:12.5px;text-decoration:none}
+#sp .sp-manage .legend i{display:none}
+#sp .sp-manage .legend .square{width:14px !important;height:14px !important;margin:0 !important;border-radius:3px;border:none}
+#sp .sp-manage .legend .btn-neutral{background:var(--text-3)}
+#sp .sp-manage .legend .btn-warning{background:#e0a13a}
+#sp .sp-manage .legend .btn-default{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .sp-manage div[style*="color:red"]{color:var(--accent) !important}
+#sp .sp-manage .nav-tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--border)}
+#sp .sp-manage .nav-tabs > li{margin:0}
+#sp .sp-manage .nav-tabs > li > a{display:block;padding:7px 12px;font-size:12.5px;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;text-decoration:none;color:var(--text-2)}
+#sp .sp-manage .nav-tabs > li > a:hover{text-decoration:none;color:var(--text)}
+#sp .sp-manage .nav-tabs > li.active > a{background:var(--surface-2);border-color:var(--border);color:var(--text)}
+#sp .sp-manage .btn:not(.square){font:inherit;font-size:12.5px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);cursor:pointer;box-shadow:none;text-shadow:none;text-decoration:none}
+#sp .sp-manage .btn:not(.square):hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}
+#sp .sp-manage .btn-primary:not(.square){background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
+#sp .sp-manage .btn:not(.square).btn-danger{color:var(--accent);border-color:var(--accent-weak)}
+#sp .sp-manage .btn-round i{display:none}   /* 图标是 FA4 类名、站点只装了 FA6：::before 根本没内容，留着就是空心圆 */
+/* 站点把 .btn-round 钉成 34×34 的圆（配一个根本画不出来的图标），字写进去就被裁掉 */
+#sp .sp-manage .btn-round{width:auto !important;height:auto !important;border-radius:var(--r-sm) !important;padding:6px 10px !important}
+/* 站点给 .btn.square 上了 !important 的 16×16：帧缩略图与图例色块必须跟着用 !important 才拨得动 */
+#sp .sp-manage .square{display:inline-block;width:22px !important;height:22px !important;margin:0 6px 0 0 !important;padding:0 !important;border-radius:4px;border:1px solid var(--border);vertical-align:middle;text-align:center;overflow:hidden}
+#sp .sp-manage .square img{display:block;width:100% !important;height:100% !important;object-fit:cover;border-radius:3px}
+#sp .sp-manage input[type=text],#sp .sp-manage input.form-control{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%}
+#sp .sp-manage input[type=text]::placeholder{color:var(--text-3)}
+#sp .sp-manage input[type=checkbox],#sp .sp-manage input[type=radio]{accent-color:var(--accent);margin-right:7px;vertical-align:middle}
+#sp .sp-manage label{font-size:12.5px;color:var(--text-2);margin:0}
+#sp .sp-manage .form-inline,#sp .sp-manage .checkbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sp .sp-manage .tiles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#sp .sp-manage .tiles .square{width:80px !important;height:60px !important;margin:0 !important}
+/* 站点给 .tab-content 铺了白底 + 边框，在暗色主题下是一块亮斑 */
+#sp .sp-manage .tab-content{background:none;border:none;padding:0;box-shadow:none}
+#sp .sp-manage .tab-pane{padding:0}
+#sp .sp-manage .tab-pane img{display:inline-block;vertical-align:middle;height:16px;margin:0 3px}
+#sp .sp-manage .tab-pane input[type=radio]{margin:0 2px 0 10px}
+#sp .sp-manage .text-right{text-align:right}
+#sp .sp-manage .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+
+/* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
+   重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
+@keyframes sp-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:no-preference){
+  #sp .chart .area{animation:sp-rise .7s cubic-bezier(.16,1,.3,1) .15s both}
+  #sp.sp-anim .kpis,#sp.sp-anim .grid,#sp.sp-anim .farm{animation:sp-rise .5s cubic-bezier(.16,1,.3,1) both}
+  #sp.sp-anim .grid{animation-delay:.06s}
+  #sp.sp-anim .farm{animation-delay:.1s}
+}
+
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
    所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
@@ -4130,7 +4260,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
-          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['site', t('set.upmode.site')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
           ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>
@@ -4803,6 +4933,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
       if (estBlock && slotEst) {
         slotEst.appendChild(grab(estBlock));
+        /* 站点在这块里自带一个 <h4>估算器</h4>，与卡片标题重复：去掉它，只留内容 */
+        const dup = estBlock.querySelector('h4');
+        if (dup && /估算器|Estimator/i.test(dup.textContent)) dup.remove();
         const numTable = estBlock.querySelector('table');
         if (numTable) numTable.classList.add('numband');
         watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
@@ -4925,6 +5058,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
+
 
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
@@ -5148,13 +5282,26 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (mp4 && mp4.closest('label')) bodyOf(visSec).appendChild(mp4.closest('label'));
 
     const cpuSec = sec('cpu', t('up3.cpu'));
-    if (cpu && cpu.closest('.row')) bodyOf(cpuSec).appendChild(cpu.closest('.row'));
+    if (cpu && cpu.closest('.row')) {
+      const row = cpu.closest('.row');
+      /* 站点在行首自带一个 <label class="checkbox">计算方式：</label>，与面板标题重复 → 去掉 */
+      row.querySelectorAll('label').forEach((lb) => {
+        if (!lb.querySelector('input') && /^\s*(Compute method|计算方式)/i.test(lb.textContent)) lb.remove();
+      });
+      bodyOf(cpuSec).appendChild(row);
+    }
 
     /* ③ 帧范围 / 高级选项：站点自己的节点原样搬进对应面板 */
     const framesSec = sec('frames', t('up3.frames'));
     bodyOf(framesSec).appendChild(div10);
     const advSec = sec('adv', t('up3.adv'));
-    if (advWrap) bodyOf(advSec).appendChild(advWrap);
+    if (advWrap) {
+      /* 勾选框后面那句裸文本"Advanced options"与面板标题重复 → 去掉，只留勾选框 */
+      bodyOf(advSec).appendChild(advWrap);
+      Array.prototype.slice.call(advWrap.childNodes).forEach((n) => {
+        if (n.nodeType === 3 && /^\s*(Advanced options|高级选项)\s*$/i.test(n.nodeValue)) n.remove();
+      });
+    }
     if (advBox) bodyOf(advSec).appendChild(advBox);
 
     /* ④ 剩下的是隐藏项、畸形项与降噪提示文本：隐藏项收进 .up3-hid，有字的文本进提示条 */
@@ -6978,6 +7125,16 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   /* ---- 1. 接管判定 ---- */
 
+  /** 上传链路三态（用户 2026-10-07 定）：
+      off  = 关：整条链路不接管，原站页面照旧（顶栏也不出入口）
+      site = 原版：我们只提供外壳，把站点**原版**那一块搬进来（去掉全站装饰：顶栏、页脚、下载客户端）
+      new  = 开：三个契约由 62-chain.js 解析、界面全自绘
+      存量值 'compat'（0.2.0 之前的"兼容界面"）语义上等于现在的 site。 */
+  function uploadMode() {
+    const v = Util.store.get('uploadMode', 'site');
+    return v === 'off' || v === 'new' ? v : 'site';
+  }
+
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
   function viewForPath(pathname) {
     const p = pathname.replace(/\/+$/, '') || '/home';
@@ -6990,10 +7147,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (/^\/user\/[^/]+\/edit$/.test(p)) return 'account';
     // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    /* /getstarted **不接管**（用户拍板）：上传表单只是那页最后一段，局部接手会让"上传项目"有两种
-       界面。上传只走应用内 `#/upload`。 */
+    /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
+       有两种界面 —— 所以「开」档只走应用内 #/upload，「原版」档才真跳这一页并内嵌那一段。 */
+    const um = uploadMode();
+    if (p === '/getstarted') return um === 'off' ? null : 'upload';
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
-    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
+    if (/^\/project\/add\/[^/]+$/.test(p)) return um === 'off' ? null : 'analyse';
     /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
        （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
@@ -7092,8 +7251,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    /* 上传项目：off（顶栏不出入口）/ compat（兼容界面：搬站点原样 + 只做外观与文案）/ new（新版第三步） */
-    uploadMode: 'compat',
+    /* 上传项目三态：off 关 / site 原版（内嵌站点那一块）/ new 开（源码重写）—— 见 viewForPath 上方 */
+    uploadMode: 'site',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -7103,8 +7262,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    const um = Util.store.get('uploadMode', '');
-    state.uploadMode = um === 'off' || um === 'new' ? um : 'compat';
+    state.uploadMode = uploadMode();
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -7367,9 +7525,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
             tip.textContent = t('up3x.degrade');
             box.insertBefore(tip, box.firstChild);
           }
-          /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+          /* 把第三步（服务端渲染的这块表单）重排成我们的面板：原版档与「开」档的降级都用它。
              容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
-          if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
+          if (SP.Step3) SP.Step3.enhance(box);
           /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
              翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
           if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
@@ -7384,6 +7542,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const bar = q('bar');
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
+
+  /* ---- 3.5b 「原版」档的排版 ------------------------------------------------------
+     用户 2026-10-07 两句话合起来：原版 = 站点自己的控件与逻辑（表单、估算器、轮询、提交），
+     但**只显示上传相关的那几块**，并且搬进我们的卡片里排版 —— 顶栏、页脚、下载客户端都不出现。
+     具体做法：上传页走 Views.upload + wireUploadDoc（把站点那三块收进三张卡片），
+     等待/设置页走 paintAnalyse（把站点那份结果搬进卡片，再按 60-step3.js 重排）。
+     这两条都是 0.1.x 就在跑的路径，「原版」档就是它；「开」档才走 62-chain/64-step1/68-step3。 */
 
   /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
      站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
@@ -7626,7 +7791,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
 
     const nav = ev.target.closest('[data-nav]');
-    if (nav) { go(nav.dataset.nav); return; }
+    if (nav) {
+      /* 原版档的上传入口必须是**真跳转**：要原站那一页，站点自己的脚本（jQuery UI 进度条、
+         估算器自动补全、分析轮询）才在。 */
+      if (nav.dataset.nav === 'upload' && state.uploadMode === 'site') { location.href = '/getstarted'; return; }
+      go(nav.dataset.nav); return;
+    }
 
     const act = ev.target.closest('[data-act]');
     if (act) {
@@ -7830,11 +8000,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const um = ev.target.closest('#sp-upmode [data-v]');
     if (um) {
       const v = um.dataset.v;
+      if (v === state.uploadMode) return;
       Util.store.set('uploadMode', v);
       state.uploadMode = v;
-      const host = document.getElementById('sp');
-      if (host) host.innerHTML = shell();
-      show(state.view, { silent: true });
+      /* 换档会改变"哪些页接管、入口指向哪"，而这些判定在 boot 时就做完了 —— 老实重载一次 */
+      location.reload();
       return;
     }
   }

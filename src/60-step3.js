@@ -178,13 +178,26 @@
     if (mp4 && mp4.closest('label')) bodyOf(visSec).appendChild(mp4.closest('label'));
 
     const cpuSec = sec('cpu', t('up3.cpu'));
-    if (cpu && cpu.closest('.row')) bodyOf(cpuSec).appendChild(cpu.closest('.row'));
+    if (cpu && cpu.closest('.row')) {
+      const row = cpu.closest('.row');
+      /* 站点在行首自带一个 <label class="checkbox">计算方式：</label>，与面板标题重复 → 去掉 */
+      row.querySelectorAll('label').forEach((lb) => {
+        if (!lb.querySelector('input') && /^\s*(Compute method|计算方式)/i.test(lb.textContent)) lb.remove();
+      });
+      bodyOf(cpuSec).appendChild(row);
+    }
 
     /* ③ 帧范围 / 高级选项：站点自己的节点原样搬进对应面板 */
     const framesSec = sec('frames', t('up3.frames'));
     bodyOf(framesSec).appendChild(div10);
     const advSec = sec('adv', t('up3.adv'));
-    if (advWrap) bodyOf(advSec).appendChild(advWrap);
+    if (advWrap) {
+      /* 勾选框后面那句裸文本"Advanced options"与面板标题重复 → 去掉，只留勾选框 */
+      bodyOf(advSec).appendChild(advWrap);
+      Array.prototype.slice.call(advWrap.childNodes).forEach((n) => {
+        if (n.nodeType === 3 && /^\s*(Advanced options|高级选项)\s*$/i.test(n.nodeValue)) n.remove();
+      });
+    }
     if (advBox) bodyOf(advSec).appendChild(advBox);
 
     /* ④ 剩下的是隐藏项、畸形项与降噪提示文本：隐藏项收进 .up3-hid，有字的文本进提示条 */

@@ -493,7 +493,7 @@
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
-          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['site', t('set.upmode.site')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
           ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>
@@ -1166,6 +1166,9 @@
       if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
       if (estBlock && slotEst) {
         slotEst.appendChild(grab(estBlock));
+        /* 站点在这块里自带一个 <h4>估算器</h4>，与卡片标题重复：去掉它，只留内容 */
+        const dup = estBlock.querySelector('h4');
+        if (dup && /估算器|Estimator/i.test(dup.textContent)) dup.remove();
         const numTable = estBlock.querySelector('table');
         if (numTable) numTable.classList.add('numband');
         watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
@@ -1288,6 +1291,7 @@
       <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
+
 
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先

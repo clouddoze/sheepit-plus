@@ -9,6 +9,16 @@
 
   /* ---- 1. 接管判定 ---- */
 
+  /** 上传链路三态（用户 2026-10-07 定）：
+      off  = 关：整条链路不接管，原站页面照旧（顶栏也不出入口）
+      site = 原版：我们只提供外壳，把站点**原版**那一块搬进来（去掉全站装饰：顶栏、页脚、下载客户端）
+      new  = 开：三个契约由 62-chain.js 解析、界面全自绘
+      存量值 'compat'（0.2.0 之前的"兼容界面"）语义上等于现在的 site。 */
+  function uploadMode() {
+    const v = Util.store.get('uploadMode', 'site');
+    return v === 'off' || v === 'new' ? v : 'site';
+  }
+
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
   function viewForPath(pathname) {
     const p = pathname.replace(/\/+$/, '') || '/home';
@@ -21,10 +31,12 @@
     if (/^\/user\/[^/]+\/edit$/.test(p)) return 'account';
     // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    /* /getstarted **不接管**（用户拍板）：上传表单只是那页最后一段，局部接手会让"上传项目"有两种
-       界面。上传只走应用内 `#/upload`。 */
+    /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
+       有两种界面 —— 所以「开」档只走应用内 #/upload，「原版」档才真跳这一页并内嵌那一段。 */
+    const um = uploadMode();
+    if (p === '/getstarted') return um === 'off' ? null : 'upload';
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
-    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
+    if (/^\/project\/add\/[^/]+$/.test(p)) return um === 'off' ? null : 'analyse';
     /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
        （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
@@ -123,8 +135,8 @@
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    /* 上传项目：off（顶栏不出入口）/ compat（兼容界面：搬站点原样 + 只做外观与文案）/ new（新版第三步） */
-    uploadMode: 'compat',
+    /* 上传项目三态：off 关 / site 原版（内嵌站点那一块）/ new 开（源码重写）—— 见 viewForPath 上方 */
+    uploadMode: 'site',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -134,8 +146,7 @@
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    const um = Util.store.get('uploadMode', '');
-    state.uploadMode = um === 'off' || um === 'new' ? um : 'compat';
+    state.uploadMode = uploadMode();
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -398,9 +409,9 @@
             tip.textContent = t('up3x.degrade');
             box.insertBefore(tip, box.firstChild);
           }
-          /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+          /* 把第三步（服务端渲染的这块表单）重排成我们的面板：原版档与「开」档的降级都用它。
              容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
-          if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
+          if (SP.Step3) SP.Step3.enhance(box);
           /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
              翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
           if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
@@ -415,6 +426,13 @@
     const bar = q('bar');
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
+
+  /* ---- 3.5b 「原版」档的排版 ------------------------------------------------------
+     用户 2026-10-07 两句话合起来：原版 = 站点自己的控件与逻辑（表单、估算器、轮询、提交），
+     但**只显示上传相关的那几块**，并且搬进我们的卡片里排版 —— 顶栏、页脚、下载客户端都不出现。
+     具体做法：上传页走 Views.upload + wireUploadDoc（把站点那三块收进三张卡片），
+     等待/设置页走 paintAnalyse（把站点那份结果搬进卡片，再按 60-step3.js 重排）。
+     这两条都是 0.1.x 就在跑的路径，「原版」档就是它；「开」档才走 62-chain/64-step1/68-step3。 */
 
   /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
      站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
@@ -657,7 +675,12 @@
     }
 
     const nav = ev.target.closest('[data-nav]');
-    if (nav) { go(nav.dataset.nav); return; }
+    if (nav) {
+      /* 原版档的上传入口必须是**真跳转**：要原站那一页，站点自己的脚本（jQuery UI 进度条、
+         估算器自动补全、分析轮询）才在。 */
+      if (nav.dataset.nav === 'upload' && state.uploadMode === 'site') { location.href = '/getstarted'; return; }
+      go(nav.dataset.nav); return;
+    }
 
     const act = ev.target.closest('[data-act]');
     if (act) {
@@ -861,11 +884,11 @@
     const um = ev.target.closest('#sp-upmode [data-v]');
     if (um) {
       const v = um.dataset.v;
+      if (v === state.uploadMode) return;
       Util.store.set('uploadMode', v);
       state.uploadMode = v;
-      const host = document.getElementById('sp');
-      if (host) host.innerHTML = shell();
-      show(state.view, { silent: true });
+      /* 换档会改变"哪些页接管、入口指向哪"，而这些判定在 boot 时就做完了 —— 老实重载一次 */
+      location.reload();
       return;
     }
   }
