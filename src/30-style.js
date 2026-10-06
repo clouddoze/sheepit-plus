@@ -883,6 +883,53 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
 #sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
 
+/* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
+   拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
+#sp .up1-drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:20px 16px;text-align:center;
+  cursor:pointer;transition:border-color .12s,background .12s}
+#sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
+#sp .up1-droptitle{font-size:13px;color:var(--text)}
+#sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
+/* 上传页的文件框：站点槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（老路径的
+   自绘文件框）。我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
+#sp .up-body .up1-drop input[type=file]{
+  position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
+}
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
+#sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end}
+#sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
+#sp .up1-dev{position:relative}
+#sp .up1-devin{display:block;width:100%}
+#sp .up1-sug{position:absolute;z-index:6;left:0;right:0;top:100%;margin-top:4px;max-height:230px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow)}
+#sp .up1-sugitem{padding:7px 10px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+#sp .up1-sugitem:hover{background:var(--surface-2);color:var(--text)}
+#sp .up1-estfields{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+#sp .up1-fld{flex:1 1 140px;min-width:0}
+#sp .up1-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-fld > input{width:100%}
+#sp .up1-estout{margin-top:14px}
+#sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
+#sp .up1-cost b{color:var(--accent);font-weight:600}
+#sp .up1-tbl{margin-top:10px}
+#sp .up1-tbl td.bad{color:var(--accent)}
+#sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .up1-rules li + li{margin-top:6px}
+/* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
+#sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .sp-in:hover,#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
    所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：

@@ -364,9 +364,13 @@
       if (o.status === 'PROCESSING') return { kind: 'processing', done: Number(o.analysed) || 0, total: Number(o.total) || 0 };
       return { kind: 'done', html: text };
     }
-    /* 不是 JSON：FINISHED 的碎片，或者站点那句 'Internal error, please retry to upload your file' */
-    if (/addproject_content_|formAddProject|id="token"/.test(text)) return { kind: 'done', html: text };
-    if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+    /* 不是 JSON：可能是 FINISHED 的碎片，也可能是整页错误（"找不到编号"/其他）或那句
+       'Internal error, please retry to upload your file' */
+    if (/^\s*<(!doctype|html)/i.test(text)) {
+      if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+      return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+    }
+    if (/addproject_content_|id="token"/.test(text)) return { kind: 'done', html: text };
     return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
   }
 
@@ -431,11 +435,57 @@
     };
   }
 
+  /* ------------------------------------------------------------- 估算器 */
+
+  /** 契约 D：估算器。POST /project/estimator（ProjectController.php:925-997）——
+      time = 每帧分钟数，count = 帧数，device = `cpu_<id>` 或 `gpu_<id>`（下面那个接口给的 value）。 */
+  async function estimator(fields) {
+    const res = await fetch('/project/estimator', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams({
+        time: String(fields.time), count: String(fields.count), device: String(fields.device),
+      }).toString(),
+    });
+    const text = await res.text();
+    if (!res.ok) return { ok: false, reason: 'http', message: t('up3x.httpFail', { code: res.status }) };
+    const plain = text.trim();
+    /* 服务端认不出设备时回的就是这两句纯文本（:990 / :995） */
+    if (/^failed/i.test(plain)) return { ok: false, reason: plain, message: '' };
+    const d = parseDoc(text);
+    const body = d.body ? d.body.textContent : text;
+    const cost = (function () { const m = /([\d,.]+)\s*points/i.exec(body); return m ? m[1] : ''; })();
+    const rows = [].slice.call(d.querySelectorAll('table tbody tr')).map((tr) => {
+      const tds = [].slice.call(tr.children);
+      return tds.map((td) => ({
+        text: (td.textContent || '').replace(/\s+/g, ' ').trim(),
+        good: !!td.querySelector('.label-success'),
+      }));
+    });
+    return { ok: true, cost, rows };
+  }
+
+  /** 设备自动补全：GET /device/search?term=（DeviceController.php:45-）→ [{value:'cpu_12',label:'…'}]。
+      站点遇到非法字符会回一条 value='#' 的提示，那条不是设备，过滤掉。 */
+  async function deviceSearch(term) {
+    const res = await fetch('/device/search?term=' + encodeURIComponent(String(term)), {
+      credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let list = null;
+    try { list = await res.json(); } catch (e) { return []; }
+    if (!Array.isArray(list)) return [];
+    return list.filter((o) => o && o.value && o.value !== '#')
+      .map((o) => ({ value: String(o.value), label: String(o.label == null ? '' : o.label) }));
+  }
+
   SP.Chain = {
     UPSTREAM, upstreamVersion,
     SUBMIT_KEYS, buildPayload, validate,
     parseStep3, uploadPage,
     submit, analyse, upload,
+    estimator, deviceSearch,
     analyseUrl, step2Url, messageFrom,
   };
 })();

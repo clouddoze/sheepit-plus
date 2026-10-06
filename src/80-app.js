@@ -292,29 +292,20 @@
   async function analyseTick() {
     const token = state.analyseToken;
     if (!token) return;
-    let raw;
+    /* 轮询与判形都在 62-chain.js 里（契约 B）：RETRY / PROCESSING / 完成的碎片 / 编号已失效 */
+    let r;
     try {
-      // ttl 0：轮的就是"现在"，缓存会停在第一次的结果
-      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+      r = await SP.Chain.analyse(token);
     } catch (e) {
       // 不自己重试：卡片上的文案已说"重新载入这一页"
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    let json = null;
-    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
-    if (json === null) {
-      /* 完成吐的是**没有布局的片段**，"找不到编号"吐的是整页 error.html.twig → 按形状分开
-         （否则整页错误会被当成表单）。 */
-      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
-      paintAnalyse({ html: raw });
-      return;
-    }
-    if (json && json.status === 'PROCESSING') {
-      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
-    } else {
-      paintAnalyse({ waiting: true });
-    }
+    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
+    if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
+    if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
+    else paintAnalyse({ waiting: true });
     analyseTimer = setTimeout(analyseTick, 5000);
   }
 

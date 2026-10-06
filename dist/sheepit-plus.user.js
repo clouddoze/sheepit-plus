@@ -503,6 +503,33 @@
       'up3x.badStep': '{name}：步长至少为 1。',
       'up3x.badRam': '{name}：内存只能填数字（单位 MB）。',
       'up3x.degrade': '这份表单的结构与脚本核对过的上游版本不一样，已改回「照站点原样渲染 + 提交前点名」的老路。设置里能看到两边的版本号。',
+      /* 0.2.0 源码重写 · 第一步（64-step1.js 自绘的上传页） */
+      'up1.pick': '把 .blend / .zip 拖到这里，或',
+      'up1.pickBtn': '选择文件',
+      'up1.pickSub': '单个文件上限 {size}（ZIP 压缩之前）；Blender 自带的压缩受支持，也推荐用。',
+      'up1.anySize': '以站点这次给的上限为准',
+      'up1.picked': '已选择 {name}（{size}）',
+      'up1.noFile': '先选一个文件。',
+      'up1.go': '开始上传',
+      'up1.uploading': '正在上传 {pct}%',
+      'up1.sending': '文件传完了，等站点接手…',
+      'up1.jumping': '上传完成，正在跳到分析页…',
+      'up1.fail': '上传没有被接受，站点没给原因。',
+      'up1.gate': '站点这次没有给出上传表单（通常是没有渲染够帧数，或者正在维护）。',
+      'up1.estTip': '填这两项、再选一台设备，站点会算出大概花多少积分、切多少块比较合适。',
+      'up1.devPh': '处理器或显卡型号（至少 3 个字）',
+      'up1.devPick': '先从建议列表里选一台设备 —— 站点认不出自由输入的名字。',
+      'up1.time': '单帧渲染时间（分钟）',
+      'up1.count': '帧数',
+      'up1.estGo': '估算',
+      'up1.estimating': '估算中…',
+      'up1.estNeed': '渲染时间和帧数都要填正数。',
+      'up1.estFail': '站点没有给出估算结果。',
+      'up1.cost': '大概要花 {pts} 积分。',
+      'up1.tiles': '切块数',
+      'up1.perTile': '每块预计用时',
+      'up1.noSplit': '不切块',
+      'up1.noRules': '站点这一页没给须知清单。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -802,6 +829,32 @@
       'up3x.badStep': '{name}: the step must be at least 1.',
       'up3x.badRam': '{name}: memory must be a number (Mbytes).',
       'up3x.degrade': 'This form does not match the upstream version this script was verified against, so it fell back to rendering the site\u2019s own form and checking it before submit. Settings shows both versions.',
+      'up1.pick': 'Drop a .blend / .zip here, or',
+      'up1.pickBtn': 'choose a file',
+      'up1.pickSub': 'One file, up to {size} (before ZIP compression). Blender\u2019s own compression is supported and recommended.',
+      'up1.anySize': 'whatever limit the site gave this time',
+      'up1.picked': 'Selected {name} ({size})',
+      'up1.noFile': 'Choose a file first.',
+      'up1.go': 'Start upload',
+      'up1.uploading': 'Uploading {pct}%',
+      'up1.sending': 'File sent; waiting for the site\u2026',
+      'up1.jumping': 'Upload done, going to the analysis page\u2026',
+      'up1.fail': 'The upload was not accepted and the site gave no reason.',
+      'up1.gate': 'The site did not offer an upload form this time (usually not enough rendered frames, or maintenance).',
+      'up1.estTip': 'Give these two numbers and pick a device: the site computes the point cost and a sensible split.',
+      'up1.devPh': 'Processor or GPU name (3 characters or more)',
+      'up1.devPick': 'Pick a device from the suggestion list \u2014 the site cannot resolve a free-typed name.',
+      'up1.time': 'Render time per frame (minutes)',
+      'up1.count': 'Frames',
+      'up1.estGo': 'Estimate',
+      'up1.estimating': 'Estimating\u2026',
+      'up1.estNeed': 'Render time and frame count must both be positive numbers.',
+      'up1.estFail': 'The site returned no estimate.',
+      'up1.cost': 'This will cost you about {pts} points.',
+      'up1.tiles': 'Tiles',
+      'up1.perTile': 'Expected time per tile',
+      'up1.noSplit': 'No split',
+      'up1.noRules': 'The site did not list any checks on this page.',
     },
   };
 
@@ -2904,6 +2957,53 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
 #sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
 
+/* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
+   拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
+#sp .up1-drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:20px 16px;text-align:center;
+  cursor:pointer;transition:border-color .12s,background .12s}
+#sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
+#sp .up1-droptitle{font-size:13px;color:var(--text)}
+#sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
+/* 上传页的文件框：站点槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（老路径的
+   自绘文件框）。我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
+#sp .up-body .up1-drop input[type=file]{
+  position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
+}
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
+#sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end}
+#sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
+#sp .up1-dev{position:relative}
+#sp .up1-devin{display:block;width:100%}
+#sp .up1-sug{position:absolute;z-index:6;left:0;right:0;top:100%;margin-top:4px;max-height:230px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow)}
+#sp .up1-sugitem{padding:7px 10px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+#sp .up1-sugitem:hover{background:var(--surface-2);color:var(--text)}
+#sp .up1-estfields{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+#sp .up1-fld{flex:1 1 140px;min-width:0}
+#sp .up1-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-fld > input{width:100%}
+#sp .up1-estout{margin-top:14px}
+#sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
+#sp .up1-cost b{color:var(--accent);font-weight:600}
+#sp .up1-tbl{margin-top:10px}
+#sp .up1-tbl td.bad{color:var(--accent)}
+#sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .up1-rules li + li{margin-top:6px}
+/* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
+#sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .sp-in:hover,#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
    所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
@@ -4564,7 +4664,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      <div class="expnote">${esc(t('up.expNote'))}</div>
+      ${state.uploadMode === 'new' ? '' : `<div class="expnote">${esc(t('up.expNote'))}</div>`}
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -4834,7 +4934,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
       SP.DomI18n.enabled = !!state.translateSite;
-      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+      /* 「开」：三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；
+         其余档：老的"搬站点活节点"路（S3 换成"原版内嵌"后会删掉这条）。 */
+      if (state.uploadMode === 'new' && SP.Step1) {
+        if (SP.Step1.mount(root, state.uploadHtml) === false) return false;
+      } else if (wireUploadDoc(root, state.uploadHtml) === false) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -5578,9 +5682,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (o.status === 'PROCESSING') return { kind: 'processing', done: Number(o.analysed) || 0, total: Number(o.total) || 0 };
       return { kind: 'done', html: text };
     }
-    /* 不是 JSON：FINISHED 的碎片，或者站点那句 'Internal error, please retry to upload your file' */
-    if (/addproject_content_|formAddProject|id="token"/.test(text)) return { kind: 'done', html: text };
-    if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+    /* 不是 JSON：可能是 FINISHED 的碎片，也可能是整页错误（"找不到编号"/其他）或那句
+       'Internal error, please retry to upload your file' */
+    if (/^\s*<(!doctype|html)/i.test(text)) {
+      if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+      return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+    }
+    if (/addproject_content_|id="token"/.test(text)) return { kind: 'done', html: text };
     return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
   }
 
@@ -5645,13 +5753,421 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     };
   }
 
+  /* ------------------------------------------------------------- 估算器 */
+
+  /** 契约 D：估算器。POST /project/estimator（ProjectController.php:925-997）——
+      time = 每帧分钟数，count = 帧数，device = `cpu_<id>` 或 `gpu_<id>`（下面那个接口给的 value）。 */
+  async function estimator(fields) {
+    const res = await fetch('/project/estimator', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams({
+        time: String(fields.time), count: String(fields.count), device: String(fields.device),
+      }).toString(),
+    });
+    const text = await res.text();
+    if (!res.ok) return { ok: false, reason: 'http', message: t('up3x.httpFail', { code: res.status }) };
+    const plain = text.trim();
+    /* 服务端认不出设备时回的就是这两句纯文本（:990 / :995） */
+    if (/^failed/i.test(plain)) return { ok: false, reason: plain, message: '' };
+    const d = parseDoc(text);
+    const body = d.body ? d.body.textContent : text;
+    const cost = (function () { const m = /([\d,.]+)\s*points/i.exec(body); return m ? m[1] : ''; })();
+    const rows = [].slice.call(d.querySelectorAll('table tbody tr')).map((tr) => {
+      const tds = [].slice.call(tr.children);
+      return tds.map((td) => ({
+        text: (td.textContent || '').replace(/\s+/g, ' ').trim(),
+        good: !!td.querySelector('.label-success'),
+      }));
+    });
+    return { ok: true, cost, rows };
+  }
+
+  /** 设备自动补全：GET /device/search?term=（DeviceController.php:45-）→ [{value:'cpu_12',label:'…'}]。
+      站点遇到非法字符会回一条 value='#' 的提示，那条不是设备，过滤掉。 */
+  async function deviceSearch(term) {
+    const res = await fetch('/device/search?term=' + encodeURIComponent(String(term)), {
+      credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let list = null;
+    try { list = await res.json(); } catch (e) { return []; }
+    if (!Array.isArray(list)) return [];
+    return list.filter((o) => o && o.value && o.value !== '#')
+      .map((o) => ({ value: String(o.value), label: String(o.label == null ? '' : o.label) }));
+  }
+
   SP.Chain = {
     UPSTREAM, upstreamVersion,
     SUBMIT_KEYS, buildPayload, validate,
     parseStep3, uploadPage,
     submit, analyse, upload,
+    estimator, deviceSearch,
     analyseUrl, step2Url, messageFrom,
   };
+})();
+
+/* ===== src/64-step1.js ===== */
+/* ==== 64-step1.js：新版上传 · 第一步「上传」（自绘，0.2.0）========================
+
+   契约（站点源码）：
+     页面    /getstarted 最后一段（HTML.php:2021 printCreateProject）。站点在这里给的是
+             **纯 PHP 拼的 HTML**，我们只当数据源读两件事：表单在不在（没给就是前置拦截：
+             renderedFrames<10 且公共剩余帧>5000，HTML.php:2091-2108）、文件上限文案。
+     上传    POST /project/internal/upload（multipart：addproject_archive + UPLOAD_IDENTIFIER）
+             成功 → 302 /project/add/<token>；失败 → 200 纯文本原因（维护中/没头像/并发上限…）
+             或 error 页（后缀不对/太大）
+     估算器  POST /project/estimator + GET /device/search?term=（ProjectController.php:925-997）
+
+   站点的进度条靠轮询 POST /project/internal/progress；我们用 XHR 自己的 upload 进度事件，
+   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（那一页由 66 那边接管）。 */
+
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Step1) return;
+  const { Util, I18n } = SP;
+  const t = SP.t;
+
+  const mk = (tag, cls, txt) => {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (txt != null) el.textContent = txt;
+    return el;
+  };
+  const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
+
+  let picked = null;        // 选中的 File（input 与拖放共用）
+  let busy = false;         // 上传中：不许再点
+
+  /* ---------------------------------------------------------------- 数据 */
+
+  /** 站点"上传须知"那段 <ul>（HTML.php:2219+），只取文字 */
+  function rulesFrom(html) {
+    const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    const head = [].slice.call(d.querySelectorAll('h4')).filter((x) => /Before adding a file/i.test(x.textContent))[0];
+    if (!head) return [];
+    let ul = head.nextElementSibling;
+    while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
+    if (!ul && head.parentNode) ul = head.parentNode.querySelector('ul');
+    if (!ul) return [];
+    return [].slice.call(ul.querySelectorAll('li')).map((li) => li.textContent.replace(/\s+/g, ' ').trim());
+  }
+
+  function limitFrom(note) {
+    const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(note || '');
+    return m ? m[1] : '';
+  }
+
+  /* ---------------------------------------------------------------- 上传 */
+
+  function buildForm(slot, page, html) {
+    slot.textContent = '';
+    if (!page.hasForm) {
+      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限…），原文照译 */
+      const box = mk('div', 'up1-msg bad');
+      box.textContent = page.warning ? zh(page.warning) : t('up1.gate');
+      slot.appendChild(box);
+      return;
+    }
+
+    const drop = mk('div', 'up1-drop');
+    const title = mk('div', 'up1-droptitle');
+    title.appendChild(document.createTextNode(t('up1.pick') + ' '));
+    /* 复用站内已有的 label.filepick（头像那个也是它）：原生 file input 塞在 label 里、
+       1px 透明，Tab 顺序保得住，外观由 label 承担。 */
+    const pick = mk('label', 'filepick');
+    pick.appendChild(document.createTextNode(t('up1.pickBtn')));
+    const inp = mk('input');
+    inp.type = 'file';
+    inp.accept = '.blend,.zip';
+    inp.className = 'up1-input';
+    pick.appendChild(inp);
+    title.appendChild(pick);
+    drop.appendChild(title);
+    drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
+    const nameEl = mk('div', 'up1-name');
+    const bar = mk('div', 'up1-bar');
+    bar.hidden = true;
+    const fill = mk('i');
+    bar.appendChild(fill);
+    const pct = mk('div', 'up1-pct');
+    pct.hidden = true;
+    const msg = mk('div', 'up1-msg');
+    msg.hidden = true;
+    const foot = mk('div', 'up1-foot');
+    const btn = mk('button', 'btn primary');
+    btn.type = 'button';
+    btn.textContent = t('up1.go');
+    foot.appendChild(btn);
+
+    slot.appendChild(drop);
+    slot.appendChild(nameEl);
+    slot.appendChild(bar);
+    slot.appendChild(pct);
+    slot.appendChild(msg);
+    slot.appendChild(foot);
+
+    const say = (text, bad) => {
+      msg.textContent = text || '';
+      msg.hidden = !text;
+      msg.classList.toggle('bad', !!bad);
+    };
+    const show = (f) => {
+      picked = f || null;
+      nameEl.textContent = picked ? t('up1.picked', { name: picked.name, size: fmtSize(picked.size) }) : '';
+      btn.disabled = !picked || busy;
+    };
+
+    drop.addEventListener('click', (e) => {
+      /* 点在 label.filepick 上由标签自己开文件框；点别处我们代开 */
+      if (e.target && e.target.closest && e.target.closest('.filepick')) return;
+      inp.click();
+    });
+    inp.addEventListener('change', () => show(inp.files && inp.files[0]));
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => {
+      e.preventDefault(); drop.classList.add('over');
+    }));
+    ['dragleave', 'dragend'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('over');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) show(f);
+    });
+
+    btn.addEventListener('click', async () => {
+      if (busy || !picked) { if (!picked) say(t('up1.noFile'), true); return; }
+      busy = true;
+      btn.disabled = true;
+      say('');
+      bar.hidden = false;
+      pct.hidden = false;
+      fill.style.width = '0%';
+      pct.textContent = t('up1.uploading', { pct: 0 });
+
+      const r = await SP.Chain.upload(picked, (loaded, total) => {
+        const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+        fill.style.width = p + '%';
+        pct.textContent = p >= 100 ? t('up1.sending') : t('up1.uploading', { pct: p });
+      });
+
+      busy = false;
+      if (r.ok) {
+        pct.textContent = t('up1.jumping');
+        location.href = SP.Chain.step2Url(r.token);
+        return;
+      }
+      bar.hidden = true;
+      pct.hidden = true;
+      btn.disabled = false;
+      say(r.message || t('up1.fail'), true);
+    });
+  }
+
+  function fmtSize(n) {
+    if (!Number.isFinite(n)) return '';
+    const u = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
+  }
+
+  /* -------------------------------------------------------------- 估算器 */
+
+  function buildEst(slot) {
+    slot.textContent = '';
+    let devValue = '';
+
+    const dev = mk('div', 'up1-dev');
+    const devInp = mk('input');
+    devInp.type = 'text';
+    devInp.className = 'up1-devin';
+    devInp.placeholder = t('up1.devPh');
+    devInp.autocomplete = 'off';
+    const sug = mk('div', 'up1-sug');
+    sug.hidden = true;
+    dev.appendChild(devInp);
+    dev.appendChild(sug);
+
+    const fields = mk('div', 'up1-estfields');
+    const timeF = mk('div', 'up1-fld');
+    timeF.appendChild(mk('label', null, t('up1.time')));
+    const timeInp = mk('input');
+    timeInp.type = 'text';
+    timeInp.inputMode = 'decimal';
+    timeF.appendChild(timeInp);
+    const cntF = mk('div', 'up1-fld');
+    cntF.appendChild(mk('label', null, t('up1.count')));
+    const cntInp = mk('input');
+    cntInp.type = 'text';
+    cntInp.inputMode = 'numeric';
+    cntF.appendChild(cntInp);
+    fields.appendChild(timeF);
+    fields.appendChild(cntF);
+
+    const foot = mk('div', 'up1-foot');
+    const btn = mk('button', 'btn primary');
+    btn.type = 'button';
+    btn.textContent = t('up1.estGo');
+    foot.appendChild(btn);
+
+    const out = mk('div', 'up1-estout');
+    const msg = mk('div', 'up1-msg');
+    msg.hidden = true;
+    const say = (text, bad) => {
+      msg.textContent = text || '';
+      msg.hidden = !text;
+      msg.classList.toggle('bad', !!bad);
+    };
+
+    slot.appendChild(mk('div', 'up1-tip', t('up1.estTip')));
+    slot.appendChild(dev);
+    slot.appendChild(fields);
+    slot.appendChild(foot);
+    slot.appendChild(msg);
+    slot.appendChild(out);
+
+    /* 设备名：站点那个 jQuery UI autocomplete 的替代品，走同一个 GET /device/search */
+    let timer = null;
+    let seq = 0;
+    const closeSug = () => { sug.hidden = true; sug.textContent = ''; };
+    devInp.addEventListener('input', () => {
+      devValue = '';
+      closeSug();
+      const term = devInp.value.trim();
+      if (term.length < 3) return;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const my = ++seq;
+        const list = await SP.Chain.deviceSearch(term);
+        if (my !== seq) return;
+        sug.textContent = '';
+        if (!list.length) { closeSug(); return; }
+        list.slice(0, 12).forEach((o) => {
+          const li = mk('div', 'up1-sugitem', o.label);
+          li.addEventListener('click', () => {
+            devValue = o.value;
+            devInp.value = o.label;
+            closeSug();
+          });
+          sug.appendChild(li);
+        });
+        sug.hidden = false;
+      }, 250);
+    });
+    devInp.addEventListener('blur', () => setTimeout(closeSug, 180));
+
+    btn.addEventListener('click', async () => {
+      const time = Number(String(timeInp.value).replace(',', '.'));
+      const count = Number(cntInp.value);
+      say('');
+      out.textContent = '';
+      if (!devValue) { say(t('up1.devPick'), true); return; }
+      if (!(time > 0) || !(count > 0)) { say(t('up1.estNeed'), true); return; }
+      btn.disabled = true;
+      btn.textContent = t('up1.estimating');
+      const r = await SP.Chain.estimator({ time, count, device: devValue });
+      btn.disabled = false;
+      btn.textContent = t('up1.estGo');
+      if (!r.ok) {
+        say(r.reason === 'failed to import device' ? t('up1.devPick') : (r.message || t('up1.estFail')), true);
+        return;
+      }
+      if (r.cost) {
+        const c = mk('div', 'up1-cost');
+        c.innerHTML = t('up1.cost', { pts: '<b>' + Util.esc(r.cost) + '</b>' });
+        out.appendChild(c);
+      }
+      if (r.rows.length) {
+        const tbl = mk('table', 'tbl up1-tbl');
+        const thead = mk('thead');
+        const tr = mk('tr');
+        tr.appendChild(mk('th', null, t('up1.tiles')));
+        tr.appendChild(mk('th', null, t('up1.perTile')));
+        thead.appendChild(tr);
+        tbl.appendChild(thead);
+        const tb = mk('tbody');
+        r.rows.forEach((cells) => {
+          const row = mk('tr');
+          cells.forEach((c, idx) => {
+            const td = mk('td');
+            if (idx === 1 && c.good) td.className = 'ok';
+            td.textContent = /^no split$/i.test(c.text) ? t('up1.noSplit') : c.text;
+            row.appendChild(td);
+          });
+          tb.appendChild(row);
+        });
+        tbl.appendChild(tb);
+        out.appendChild(tbl);
+      }
+      if (!out.childNodes.length) say(t('up1.estFail'), true);
+    });
+  }
+
+  /* ---------------------------------------------------------------- 须知 */
+
+  /** 须知：站点那几条 `<li>` 里带 `<strong>`，按 textContent 拼成一整句反而匹配不上词典
+      （词典是按文本节点/整块两种粒度写的）。所以**原样克隆节点**，再走 DOM 翻译器那一趟。 */
+  function buildRules(slot, html) {
+    slot.textContent = '';
+    const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    const head = [].slice.call(d.querySelectorAll('h4')).filter((x) => /Before adding a file/i.test(x.textContent))[0];
+    let src = null;
+    if (head) {
+      src = head.nextElementSibling;
+      while (src && src.tagName !== 'UL') src = src.nextElementSibling;
+      if (!src && head.parentNode) src = head.parentNode.querySelector('ul');
+    }
+    const ul = mk('ul', 'up1-rules');
+    if (src) [].slice.call(src.children).forEach((li) => ul.appendChild(document.importNode(li, true)));
+    if (!ul.children.length) { slot.appendChild(mk('div', 'up1-tip', t('up1.noRules'))); return; }
+    slot.appendChild(ul);
+    /* 这是我们自己的卡片，里面的站点原文也该是中文：临时打开翻译器那一趟（用户的总开关不参与）。 */
+    const di = SP.DomI18n;
+    if (di && di.translateSubtree) {
+      const keep = di.enabled;
+      di.enabled = true;
+      try { di.translateSubtree(ul); } finally { di.enabled = keep; }
+    }
+    /* 站点把句号写在 <strong> 外面（`…3.0 or higher</strong>.`）：中文译文自己带句号，
+       后面那个 "." 就成了「。.」——译文已经以句末标点收尾时，把那个孤零零的 "." 去掉。 */
+    [].slice.call(ul.querySelectorAll('li')).forEach((li) => {
+      const last = li.lastChild;
+      if (!last || last.nodeType !== 3) return;
+      const tail = last.nodeValue.trim();
+      if (!/^[.．。]+$/.test(tail)) return;
+      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
+      if (/[。．.！!？?]$/.test(before)) last.remove();
+    });
+  }
+
+  /* ---------------------------------------------------------------- 入口 */
+
+  /** 把站点的 /getstarted 当数据源，三个槽位全部自绘。返回 false = 页面结构不认识。 */
+  function mount(root, html) {
+    if (!root || !html) return false;
+    const page = SP.Chain.uploadPage(html);
+    const form = root.querySelector('[data-up="form"]');
+    const est = root.querySelector('[data-up="est"]');
+    const rules = root.querySelector('[data-up="rules"]');
+    if (!form || !est || !rules) return false;
+    /* 站点连表单都没给时，估算器与须知也没有意义 */
+    buildForm(form, page, html);
+    if (page.hasForm) {
+      buildEst(est);
+      buildRules(rules, html);
+    } else {
+      est.textContent = '';
+      rules.textContent = '';
+    }
+    return true;
+  }
+
+  SP.Step1 = { mount, rulesFrom, limitFrom, fmtSize };
 })();
 
 /* ===== src/68-step3.js ===== */
@@ -6745,29 +7261,20 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   async function analyseTick() {
     const token = state.analyseToken;
     if (!token) return;
-    let raw;
+    /* 轮询与判形都在 62-chain.js 里（契约 B）：RETRY / PROCESSING / 完成的碎片 / 编号已失效 */
+    let r;
     try {
-      // ttl 0：轮的就是"现在"，缓存会停在第一次的结果
-      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+      r = await SP.Chain.analyse(token);
     } catch (e) {
       // 不自己重试：卡片上的文案已说"重新载入这一页"
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    let json = null;
-    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
-    if (json === null) {
-      /* 完成吐的是**没有布局的片段**，"找不到编号"吐的是整页 error.html.twig → 按形状分开
-         （否则整页错误会被当成表单）。 */
-      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
-      paintAnalyse({ html: raw });
-      return;
-    }
-    if (json && json.status === 'PROCESSING') {
-      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
-    } else {
-      paintAnalyse({ waiting: true });
-    }
+    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
+    if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
+    if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
+    else paintAnalyse({ waiting: true });
     analyseTimer = setTimeout(analyseTick, 5000);
   }
 

@@ -1027,7 +1027,7 @@
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      <div class="expnote">${esc(t('up.expNote'))}</div>
+      ${state.uploadMode === 'new' ? '' : `<div class="expnote">${esc(t('up.expNote'))}</div>`}
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -1297,7 +1297,11 @@
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
       SP.DomI18n.enabled = !!state.translateSite;
-      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+      /* 「开」：三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；
+         其余档：老的"搬站点活节点"路（S3 换成"原版内嵌"后会删掉这条）。 */
+      if (state.uploadMode === 'new' && SP.Step1) {
+        if (SP.Step1.mount(root, state.uploadHtml) === false) return false;
+      } else if (wireUploadDoc(root, state.uploadHtml) === false) return false;
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
