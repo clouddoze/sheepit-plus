@@ -493,7 +493,7 @@
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
-          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['site', t('set.upmode.site')], ['new', t('set.upmode.new')]])}
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
           ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>

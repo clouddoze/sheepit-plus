@@ -307,10 +307,11 @@
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
-      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
+      'set.upmodeHint': '四档：关闭（顶栏不出现入口，整条链路不接管）；'
+        + '原版（顶栏入口点一下＝新标签页打开站点自己的上传页，我们完全不接管那一页）；'
         + '兼容（站点自己的控件与逻辑，我们只负责收进卡片排版 —— 站点加新功能会自动跟上）；'
         + '新版（上传 / 等待 / 设置全部自绘：解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
-      'set.upmode.off': '关闭', 'set.upmode.site': '兼容', 'set.upmode.new': '新版',
+      'set.upmode.off': '关闭', 'set.upmode.raw': '原版', 'set.upmode.compat': '兼容', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
@@ -652,10 +653,11 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
-      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
+      'set.upmodeHint': 'Four settings: Off (no entry in the top bar, the whole chain is left alone); '
+        + 'Original (the top-bar entry opens the site\u2019s own upload page in a new tab; this script does not touch that page); '
         + 'Compatible (the site\u2019s own controls and logic, only arranged into cards \u2014 site-side features come along automatically); '
         + 'New (this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
-      'set.upmode.off': 'Off', 'set.upmode.site': 'Compatible', 'set.upmode.new': 'New',
+      'set.upmode.off': 'Off', 'set.upmode.raw': 'Original', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',

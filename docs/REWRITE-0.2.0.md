@@ -264,6 +264,18 @@
 
 三态名称（用户要求）：**关 / 兼容 / 新版**。
 
+
+### 第四档「原版」（用户 2026-10-07 追加）
+
+顶栏入口在，点一下 = **新标签页**打开站点自己的 `/getstarted`，我们**完全不接管**那一页
+（连 `#sp` 外壳都不挂）—— 就是原站原样，含它自己的顶栏、页脚、下载客户端。
+
+- 存的值 `raw`；`viewForPath` 里只有 `compat` / `new` 两档才接管 `/getstarted` 与 `/project/add/<token>`
+- 顶栏点击：raw → `window.open('/getstarted','_blank')`；compat → 本页真跳转；new → 应用内 `#/upload`
+- 设置里的四段：关闭 / 原版 / 兼容 / 新版（`site` 是中途用过的名字，归到 compat）
+- 真机验证：raw 档在 `/home` 点入口 → `window.open('/getstarted','_blank')`、本页不动；
+  在 `/getstarted` → 无 `#sp`、站点顶栏/页脚/下载客户端/上传表单全在（100% 原版）
+
 ## 6. 不做的事
 
 - 不碰 `POST /project/estimator` 之外的站点接口语义；不自己发明字段。

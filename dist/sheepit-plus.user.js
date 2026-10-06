@@ -331,10 +331,11 @@
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
-      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
+      'set.upmodeHint': '四档：关闭（顶栏不出现入口，整条链路不接管）；'
+        + '原版（顶栏入口点一下＝新标签页打开站点自己的上传页，我们完全不接管那一页）；'
         + '兼容（站点自己的控件与逻辑，我们只负责收进卡片排版 —— 站点加新功能会自动跟上）；'
         + '新版（上传 / 等待 / 设置全部自绘：解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
-      'set.upmode.off': '关闭', 'set.upmode.site': '兼容', 'set.upmode.new': '新版',
+      'set.upmode.off': '关闭', 'set.upmode.raw': '原版', 'set.upmode.compat': '兼容', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
@@ -676,10 +677,11 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
-      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
+      'set.upmodeHint': 'Four settings: Off (no entry in the top bar, the whole chain is left alone); '
+        + 'Original (the top-bar entry opens the site\u2019s own upload page in a new tab; this script does not touch that page); '
         + 'Compatible (the site\u2019s own controls and logic, only arranged into cards \u2014 site-side features come along automatically); '
         + 'New (this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
-      'set.upmode.off': 'Off', 'set.upmode.site': 'Compatible', 'set.upmode.new': 'New',
+      'set.upmode.off': 'Off', 'set.upmode.raw': 'Original', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
@@ -4271,7 +4273,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
-          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['site', t('set.upmode.site')], ['new', t('set.upmode.new')]])}
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
           ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>
@@ -7190,13 +7192,15 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /* ---- 1. 接管判定 ---- */
 
   /** 上传链路三态（用户 2026-10-07 定）：
-      off  = 关：整条链路不接管，原站页面照旧（顶栏也不出入口）
-      site = 原版：我们只提供外壳，把站点**原版**那一块搬进来（去掉全站装饰：顶栏、页脚、下载客户端）
-      new  = 开：三个契约由 62-chain.js 解析、界面全自绘
-      存量值 'compat'（0.2.0 之前的"兼容界面"）语义上等于现在的 site。 */
+      off    = 关：整条链路不接管，顶栏也不出入口
+      raw    = 原版：顶栏入口在，点一下**新标签页**打开站点自己的 /getstarted（我们完全不接管那一页）
+      compat = 兼容：站点自己的控件与逻辑，收进我们的卡片排版
+      new    = 新版：三个契约由 62-chain.js 解析、界面自绘、提交自己发
+      （'site' 是 0.2.0 中途用过的名字，归到 compat。） */
   function uploadMode() {
-    const v = Util.store.get('uploadMode', 'site');
-    return v === 'off' || v === 'new' ? v : 'site';
+    const v = Util.store.get('uploadMode', 'compat');
+    if (v === 'off' || v === 'raw' || v === 'new') return v;
+    return 'compat';   // 'site'（0.2.0 中途用过的名字）与空值都归到兼容
   }
 
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
@@ -7214,9 +7218,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
        有两种界面 —— 所以「开」档只走应用内 #/upload，「原版」档才真跳这一页并内嵌那一段。 */
     const um = uploadMode();
-    if (p === '/getstarted') return um === 'off' ? null : 'upload';
+    const takeover = um === 'compat' || um === 'new';
+    if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
-    if (/^\/project\/add\/[^/]+$/.test(p)) return um === 'off' ? null : 'analyse';
+    if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
     /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
        （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
@@ -7856,9 +7861,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
-      /* 原版档的上传入口必须是**真跳转**：要原站那一页，站点自己的脚本（jQuery UI 进度条、
-         估算器自动补全、分析轮询）才在。 */
-      if (nav.dataset.nav === 'upload' && state.uploadMode === 'site') { location.href = '/getstarted'; return; }
+      if (nav.dataset.nav === 'upload') {
+        /* 兼容档要**真跳转**（站点自己的脚本才在那一页上）；原版档干脆开新标签页，我们一点都不碰。 */
+        if (state.uploadMode === 'compat') { location.href = '/getstarted'; return; }
+        if (state.uploadMode === 'raw') { window.open('/getstarted', '_blank', 'noopener'); return; }
+      }
       go(nav.dataset.nav); return;
     }
 
