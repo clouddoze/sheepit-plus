@@ -334,3 +334,51 @@
 
 产物：457,473 → 417,032 字节（-40,441，约 -8.8%）。
 - 团队加白名单发**数字 team id**，用户加白名单发 **login**；自由输入不选自动补全 → 发 0 → 404 HTML 被 alert。
+
+## 9. 「我的项目」（0.2.2，用户 2026-10-07 拍板的方向）
+
+入口：**总览加「我的项目」区块 + 项目页加范围切换「全部 / 我发布的」**，不新增导航项。
+
+### 9.1 数据源（真机核对过，不是照源码猜）
+
+站点个人主页那张表来自 `HTML::printProjects()`（`HTML.php:2551`），2026-10-07 抓的真实 HTML
+（`.tmp/recon/raw/profile-self.html`、`profile-wiza.html`、`profile-moneymike.html`、`profile-miaocang.html`）：
+
+```html
+<div class="w-box blog-post"><h2>Latest projects</h2><div class="padding-15">
+  <table class="table table-bordered table-striped table-comparision table-responsive">
+    <tr><td><a href="/project/1224469">sptest</a></td><td class="msg_finished">Rendered</td></tr>
+```
+
+| 观察到的事实 | 依据 |
+|---|---|
+| **两列**：名字、状态。**没有**最后更新时间、设备、内存、发布者 | 真机 HTML + `printProjects()` 源码 |
+| 状态词在 `td` 的 class `msg_<processing\|waiting\|paused\|finished\|unknown>`；`Rendering (88%)` 的百分比只对 rendering/waiting 有 | `humanStatus()`（`HTML.php:1462`）+ 真机样本 |
+| 名字被站点截到 25 字符（`Misc::stringLimit`），带 `...` | `profile-wiza.html`（`SHEAP_V5_Eclipse_Large_Fa...`） |
+| **别人的主页没有 `<a>`**（`canManageProject` 为假）→ 解析不出 id | `profile-wiza.html`（22 行全是纯文本） |
+| 被封的项目整行 `class="danger"`（`blocked != 0`，如"太重/缺 bake/上传失败"） | `Project::isBlocked()`（`Project.php:506`）+ 源码三元 |
+| 零项目时**整块不渲染**（不是空表） | `profile-miaocang.html` 里只有页脚那个同名 `<h4>` 块 |
+| 站点自己那份顺序是**插入序**（正在渲染的排在最后），不是"最近在前" | `profile-wiza.html`：22 行末尾才是两个 Rendering |
+
+→ 因此 `parseMyProjects()`：只认 `<h2>`（页脚同名块是 `<h4>`，`smallestBoxByTitle` 那种按字数挑"最小盒子"
+的写法在项目少时会挑错块）、用 class 判状态不认英文文案、按 **id 倒序**当"新的在前"（id 是 IDENTITY 自增，
+`Project.php:63`；没有 id 的行保持原序）。
+
+### 9.2 实现与验收
+
+- `src/20-api.js`：`parseMyProjects(doc)` → `{ id, name, statusKind, status, pct, blocked, manageable }`；
+  `parseProfile()` 返回值多一个 `myProjects`。
+- `src/50-views.js`：`myPanel()`（总览区块，最多 5 条 + 「看全部」）、`mineProjects()`（项目页那一档，
+  四列：项目 / 状态 / 进度 / 操作）、`scopeSeg()`（两档共用）。
+- `src/80-app.js`：`state.myProjects` 取数 + `#sp-scope [data-s]` / `th[data-msort]` / `[data-scope]` 三个接线。
+  看自己的总览时**零额外请求**（复用已抓的个人主页）；在别人主页上点进项目页才会多一趟（60 秒缓存）。
+- 真机验收（`.tmp/recon/inject-recon.js` 把 dev dist 装进真机页）：自己的主页 1 条（sptest/已完成）、
+  Wiza 22 条（无 id）、MoneyMike 2 条（Rendering 36%/21%，两次抓取数字在涨，说明读的是活数据）、
+  miaocang 0 条（走空态）；另用合成夹具验了 danger 行、`msg_unknown`、名字截断、7 条截断成 5 + 看全部。
+- 窄屏：≤760px 砍掉进度列（条子固定 200px 会把「操作」挤出容器，而百分比本来就在状态文案里）。
+
+### 9.3 没做 / 待定
+
+- **最后更新时间没有数据源**：站点这张表不给，要它就得每个项目跑一趟项目页。区块里因此不画"最近更新"。
+- 「我的项目」只在**自己的主页**上画（别人的主页那张表没有 id，点不进管理页）。
+- 总览区块的位置（指标带下 / 页面末）与空态是否要画 —— 等用户看完截图拍板。
