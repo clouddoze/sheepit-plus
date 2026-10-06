@@ -5171,8 +5171,9 @@ ${Theme.css('#sp')}
       返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
       传错了只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
       与"网络失败"分开，界面才能说实话。
-      （界面上暂时没有取消按钮 —— 用户 2026-10-07 要求删掉；abort 能力留在这一层，
-      将来要加回按钮或走快捷键都不用再动契约。） */
+      （界面上没有取消按钮、也没有超时看门狗 —— **用户 2026-10-07 明确决定就这样**：
+      已传的字节取消也拿不回来，界面宁可不加这个东西；卡住时刷新页面是已知且可接受的出路。
+      abort 能力留在这一层，将来真要加回按钮或快捷键，不用再动契约。） */
   function upload(file, onProgress) {
     let xhr = null;
     const promise = new Promise((resolve) => {
