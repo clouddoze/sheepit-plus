@@ -794,8 +794,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    appearance:none + 我们自己的勾/圆点/输入框/下拉箭头，颜色一律走主题变量 ⇒
    暗色、亮色自动跟随。边界没变：控件本体还是站点那些活节点（id/name/value/checked
    一个字节都没动），我们只改"画法"。 */
-#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
-#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
 #sp .sp-siteform select,#sp .sp-up3 select,#sp .sp-siteform textarea{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
@@ -882,6 +882,52 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
 #sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
 #sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
+
+/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
+   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
+   所以自绘不违反契约。下面只写"我们的东西长什么样"。 */
+#sp .sp-up3 .up3-sub{margin:4px 0 0;font-size:12.5px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-card{background:var(--surface);border-color:var(--border-strong)}
+#sp .sp-up3 .up3-card > h3{color:var(--text);font-size:13.5px;letter-spacing:0}
+#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 12px}
+#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
+#sp .sp-up3 .up3-opt input{margin:0}
+#sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 12px}
+#sp .sp-up3 .up3-fld{flex:1 1 132px;min-width:0}
+#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 6px;font-size:12.5px;color:var(--text-2)}
+#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+#sp .sp-up3 .up3-cmpbox{flex:1 1 190px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body{display:flex;flex-wrap:wrap;gap:16px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-cmp{font-weight:600}
+#sp .sp-up3 .up3-split{margin:0 0 12px}
+#sp .sp-up3 .up3-slider{display:block}
+#sp .sp-up3 .up3-slider > label{display:block;margin:0 0 8px}
+#sp .sp-up3 .up3-read{margin-left:10px;font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
+#sp .sp-up3 input[type=range]{
+  appearance:none;-webkit-appearance:none;width:100%;max-width:340px;height:18px;background:transparent;
+  cursor:pointer;padding:0;border:none;margin:0;
+}
+#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);
+}
+#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
+#sp .sp-up3 .up3-adv{margin:0 0 12px}
+#sp .sp-up3 .up3-adv .up3-opt{margin:0 0 10px}
+#sp .sp-up3 .up3-slot{margin:0 0 10px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
+#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-note.up3-bad,#sp .sp-up3 .up3-note .up3-bad{color:var(--accent)}
+#sp .sp-up3 .up3-note > div + div{margin-top:6px}
+#sp .sp-up3 button.up3-submit{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
 #sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
 /* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
 #sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}

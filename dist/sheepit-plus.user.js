@@ -422,8 +422,8 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '接下来这一步是站点自己的表单：引擎、帧区间、切块、采样、分辨率都在里面。'
-        + '设置里的「上传项目·新版」只会把它的外观重排成我们的样子 —— 控件、提交方式仍是站点那套。',
+      'an.doneNote': '下面这份设置是脚本从站点的分析结果里读出来、自己画的：引擎、帧区间、切块、采样、分辨率都在里面。'
+        + '提交也由脚本发出，键名与取值与站点原来的表单逐键一致（离线比对过 27 个键）。',
 
       /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
       'up3.vis': '可见性',
@@ -434,6 +434,53 @@
       'up3.missing': '表单里缺了 {list}，脚本不敢替你提交 —— 站点可能改版了。可以切回兼容界面，或刷新这一页重来。',
       'up3.rejected': '站点没有接受这次提交。表单没有被改动，你可以改完再试一次。',
       'up3.netFail': '提交没有送到（网络或登录状态）：',
+
+      /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
+      'up3x.title': '项目设置',
+      'up3x.sub': '下面这些是站点分析你存档时算出来的（上游版本 {v}，{n} 个文件）。能改的只有帧区间、切块、内存和可见性 —— 引擎、分辨率、采样、路径都是分析结果，原样提交。',
+      'up3x.render': '所有成员都可渲染',
+      'up3x.renderTip': '默认所有成员都能渲染你的项目；不想开放就别勾。之后在项目管理页还能改，也可以单独指定谁能渲染。',
+      'up3x.mp4': '生成 MP4 视频',
+      'up3x.mp4Tip': '给项目生成 MP4 视频。对服务器很吃资源，确实需要才勾。',
+      'up3x.thumb': '缩略图对所有成员可见',
+      'up3x.thumbTip': '默认所有成员都能看到你项目的缩略图；不想公开就别勾。之后在项目管理页还能改。',
+      'up3x.forced': '站点没有开放这个开关：它不会按你勾的样子发，最终结果是「{state}」。',
+      'up3x.yes': '是',
+      'up3x.no': '否',
+      'up3x.cpu': 'CPU',
+      'up3x.gpu': 'GPU',
+      'up3x.queue': '预计排队 {v}',
+      'up3x.total': '项目总数 {n}',
+      'up3x.anim': '动画',
+      'up3x.single': '单帧',
+      'up3x.start': '起始帧',
+      'up3x.end': '结束帧',
+      'up3x.step': '步长',
+      'up3x.frame': '帧',
+      'up3x.splitEach': '每帧切成几份',
+      'up3x.splitGrid': '每帧切成几宫格',
+      'up3x.splitFixed': '站点分析后认定这个文件不能切块，将按整帧渲染。',
+      'up3x.nTiles': '{n} 份',
+      'up3x.fullFrame': '整帧',
+      'up3x.ram': '内存占用',
+      'up3x.ramTip': '可选。项目很吃内存（比如超过 20GB）时填上，服务器会把帧派给内存够的机器；不填就在渲染第一帧时自动探测。',
+      'up3x.ramPh': '单位 MB',
+      'up3x.submit': '添加这个文件',
+      'up3x.sending': '正在提交…',
+      'up3x.done': '已提交，正在跳转…',
+      'up3x.multi': '这份存档里有多个 .blend：站点的分析编号在第一次成功提交后就会被删掉，想接着加下一个要重新上传一次。',
+      'up3x.rejectedBlend': '站点不给这个文件建表单（缺相机 / 有活动的输出节点 / 分析报错）。',
+      'up3x.rejected': '站点没有接受这次提交。',
+      'up3x.netFail': '提交没有送到（网络或登录状态）。',
+      'up3x.httpFail': '站点回了 HTTP {code}。',
+      'up3x.uploadOdd': '上传没有被接受，但站点没给原因。',
+      'up3x.analyseOdd': '分析接口回了个看不懂的响应。',
+      'up3x.needCompute': '先选一个计算方式（CPU 或 GPU）再提交。',
+      'up3x.badFrame': '{name}：帧必须是整数（站点那边收到空值会直接报错）。',
+      'up3x.badRange': '{name}：结束帧不能小于起始帧。',
+      'up3x.badStep': '{name}：步长至少为 1。',
+      'up3x.badRam': '{name}：内存只能填数字（单位 MB）。',
+      'up3x.degrade': '这份表单的结构与脚本核对过的上游版本不一样，已改回「照站点原样渲染 + 提交前点名」的老路。设置里能看到两边的版本号。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -656,8 +703,8 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'The next step is the site\u2019s own form: engine, frame range, tiles, samples, resolution \u2014 all of it. '
-        + '"Project upload \u00b7 New" in Settings only rearranges how it looks; the controls and the submit path stay the site\u2019s own.',
+      'an.doneNote': 'This script reads the site\u2019s analysis result and draws the form below itself: engine, frame range, tiles, samples, resolution \u2014 all of it. '
+        + 'It also sends the request, with the same keys and values the site\u2019s own form uses (all 27 compared offline).',
       'up3.vis': 'Visibility',
       'up3.cpu': 'Compute method',
       'up3.frames': 'Frame range',
@@ -666,6 +713,51 @@
       'up3.missing': 'The form is missing {list}, so this script will not submit it for you \u2014 the site may have changed. Switch back to the compatible UI, or reload this page.',
       'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
       'up3.netFail': 'The submission did not go through (network or session):',
+      'up3x.title': 'Project settings',
+      'up3x.sub': 'Everything below was computed by the site while analysing your archive (upstream {v}, {n} file(s)). Only the frame range, the split, the memory and the visibility can be changed \u2014 engine, resolution, samples and paths are the analysis result and are submitted verbatim.',
+      'up3x.render': 'Renderable by all members',
+      'up3x.renderTip': 'By default every member can render your project. Clear this to restrict access; you can change it later on the project page and allow specific members.',
+      'up3x.mp4': 'Generate MP4 video',
+      'up3x.mp4Tip': 'Generates an MP4 video of the project. It is really resource intensive for the server, so only check it if you need it.',
+      'up3x.thumb': 'Thumbnail viewable by all members',
+      'up3x.thumbTip': 'By default every member can see a thumbnail of your project. Clear this to restrict access; you can change it later on the project page.',
+      'up3x.forced': 'The site does not offer this switch here: it does not send what you clicked, the result is \u201c{state}\u201d.',
+      'up3x.yes': 'yes',
+      'up3x.no': 'no',
+      'up3x.cpu': 'CPU',
+      'up3x.gpu': 'GPU',
+      'up3x.queue': 'Est. queue position {v}',
+      'up3x.total': 'Total projects {n}',
+      'up3x.anim': 'Animation',
+      'up3x.single': 'Single frame',
+      'up3x.start': 'Start frame',
+      'up3x.end': 'End frame',
+      'up3x.step': 'Step',
+      'up3x.frame': 'Frame',
+      'up3x.splitEach': 'Divide each frame into',
+      'up3x.splitGrid': 'Tile grid per frame',
+      'up3x.splitFixed': 'The analysis says this file cannot be split, so it will be rendered as full frames.',
+      'up3x.nTiles': '{n} tiles',
+      'up3x.fullFrame': 'Full frame',
+      'up3x.ram': 'Memory used',
+      'up3x.ramTip': 'Optional. If the project needs a lot of RAM (more than 20GB), fill this in so the server can hand the frame to a machine with enough memory. Otherwise it is detected on the first rendered frame.',
+      'up3x.ramPh': 'Mbytes',
+      'up3x.submit': 'Add this file',
+      'up3x.sending': 'Submitting\u2026',
+      'up3x.done': 'Submitted, navigating\u2026',
+      'up3x.multi': 'This archive holds several .blend files: the site deletes the analysis id after the first **successful** submit, so adding the next one needs a fresh upload.',
+      'up3x.rejectedBlend': 'The site does not offer a form for this file (no camera / active output node / analysis error).',
+      'up3x.rejected': 'The site did not accept this submission.',
+      'up3x.netFail': 'The submission did not go through (network or session).',
+      'up3x.httpFail': 'The site answered HTTP {code}.',
+      'up3x.uploadOdd': 'The upload was not accepted and the site gave no reason.',
+      'up3x.analyseOdd': 'The analysis endpoint answered something unreadable.',
+      'up3x.needCompute': 'Pick a compute method (CPU or GPU) before submitting.',
+      'up3x.badFrame': '{name}: frames must be integers (the site errors out on an empty value).',
+      'up3x.badRange': '{name}: the end frame cannot be lower than the start frame.',
+      'up3x.badStep': '{name}: the step must be at least 1.',
+      'up3x.badRam': '{name}: memory must be a number (Mbytes).',
+      'up3x.degrade': 'This form does not match the upstream version this script was verified against, so it fell back to rendering the site\u2019s own form and checking it before submit. Settings shows both versions.',
     },
   };
 
@@ -1258,6 +1350,25 @@
       /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
       [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
         '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],
+      /* 第三步「设置」里站点给每个 .blend 的说明/拒绝理由（68-step3.js 直接把它们当文本渲染，
+         走 siteText：先查 site 精确匹配，再走这里）。 */
+      [/^No camera in scene, cannot render\.$/, '场景里没有相机，无法渲染。'],
+      [/^Since active "output file" nodes result in files being written to arbitrary locations on the renderer's system we do not allow it\.$/, '活动的「输出文件」节点会把文件写到渲染机上的任意位置，所以站点不允许。'],
+      [/^We will accept your \.blend if you mute the node\.$/, '把这个节点静音（mute）后就可以重新上传。'],
+      [/^EXR output detected$/, '检测到 EXR 输出'],
+      [/^Limitation on EXR {2}support:$/, 'EXR 的限制：'],
+      [/^Full frame renders only\. No split-layers or checkerboarding\.$/, '只能整帧渲染，不支持拆分图层或棋盘格切块。'],
+      [/^Only animations are supported, no single image projects\.$/, '只支持动画项目，不支持单张图片项目。'],
+      [/^Maximum image resolution (\d+)x(\d+)y px\.$/, '最大分辨率 $1x$2 像素。'],
+      [/^Maximum image file size (.+)B$/, '单张图片最大 $1B。'],
+      [/^Use of compression is required \(any of (.+)\)\.$/, '必须使用压缩（$1 之一）。'],
+      [/^Denoising detected: Splits \(multiple smaller frames with reduced samples\) are not supported\.$/, '检测到降噪：不支持拆分（把帧切成小块、降低采样再拼回去）。'],
+      [/^It does not make sense to denoise separate splits and recombine them together\.$/, '把拆分后的各块分别降噪、再拼回一起没有意义。'],
+      [/^Drivers will not work$/i, '驱动器（Driver）不会生效'],
+      [/^because scripts are disabled for security reasons\.$/, '出于安全考虑站点禁用了脚本。'],
+      [/^Warning, files not found:$/, '警告：这些文件找不到：'],
+      [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
+      [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
     ],
   });
 })();
@@ -2660,8 +2771,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    appearance:none + 我们自己的勾/圆点/输入框/下拉箭头，颜色一律走主题变量 ⇒
    暗色、亮色自动跟随。边界没变：控件本体还是站点那些活节点（id/name/value/checked
    一个字节都没动），我们只改"画法"。 */
-#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
-#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]),
+#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
 #sp .sp-siteform select,#sp .sp-up3 select,#sp .sp-siteform textarea{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
@@ -2748,6 +2859,52 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
 #sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
 #sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
+
+/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
+   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
+   所以自绘不违反契约。下面只写"我们的东西长什么样"。 */
+#sp .sp-up3 .up3-sub{margin:4px 0 0;font-size:12.5px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-card{background:var(--surface);border-color:var(--border-strong)}
+#sp .sp-up3 .up3-card > h3{color:var(--text);font-size:13.5px;letter-spacing:0}
+#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 12px}
+#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
+#sp .sp-up3 .up3-opt input{margin:0}
+#sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 12px}
+#sp .sp-up3 .up3-fld{flex:1 1 132px;min-width:0}
+#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 6px;font-size:12.5px;color:var(--text-2)}
+#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+#sp .sp-up3 .up3-cmpbox{flex:1 1 190px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body{display:flex;flex-wrap:wrap;gap:16px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-cmp{font-weight:600}
+#sp .sp-up3 .up3-split{margin:0 0 12px}
+#sp .sp-up3 .up3-slider{display:block}
+#sp .sp-up3 .up3-slider > label{display:block;margin:0 0 8px}
+#sp .sp-up3 .up3-read{margin-left:10px;font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
+#sp .sp-up3 input[type=range]{
+  appearance:none;-webkit-appearance:none;width:100%;max-width:340px;height:18px;background:transparent;
+  cursor:pointer;padding:0;border:none;margin:0;
+}
+#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);
+}
+#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
+#sp .sp-up3 .up3-adv{margin:0 0 12px}
+#sp .sp-up3 .up3-adv .up3-opt{margin:0 0 10px}
+#sp .sp-up3 .up3-slot{margin:0 0 10px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
+#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-note.up3-bad,#sp .sp-up3 .up3-note .up3-bad{color:var(--accent)}
+#sp .sp-up3 .up3-note > div + div{margin-top:6px}
+#sp .sp-up3 button.up3-submit{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
 #sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
 /* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
 #sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
@@ -3795,7 +3952,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
           ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
-          ${SP.Step3 ? SP.Step3.fpRows() : ''}
+          ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>
 
         <div class="row block">
@@ -4974,6 +5131,903 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   };
 })();
 
+/* ===== src/62-chain.js ===== */
+/* ==== 62-chain.js：上传链路的**数据层**（0.2.0）====================================
+
+   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 9b13032c
+   （= 线上资源路径 /media/9b13032c/，就是 getShortVersion()）。行号对着那一版看。
+
+   契约 A 上传（第一步）  HTML.php:2127-2152 → POST /project/internal/upload（multipart）
+                          字段：addproject_archive（文件）+ UPLOAD_IDENTIFIER（32 位 hex）
+                          成功 = 302 → /project/add/<token>；失败 = 200 纯文本原因 或 error 页
+   契约 B 等待（第二步）  ProjectController.php:194-221 → GET /project/add_analyse/<token>
+                          JSON {"status":"RETRY"|"PROCESSING",analysed,total} 或整段 HTML 碎片
+   契约 C 提交（第三步）  addproject.js:1-101 / ProjectController.php:226-448 → POST /project/add_internal
+                          27 键；响应以 "http" 开头 = 成功地址，否则整段是错误说明
+
+   这一层的纪律：**服务端返回的 HTML 只经 DOMParser 走一遭，永不进活文档**。
+   界面用我们自己的 id、我们自己的提交 —— 于是"两份同名控件""站点 JS 抢 DOM"那一整类缺陷
+   （0.1.14–0.1.17 反复踩的）从根上不存在。 */
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Chain) return;
+  const t = SP.t;
+
+  /** 核对过的上游版本；站点升级后要重新核对并同时改这里与 docs/REWRITE-0.2.0.md。 */
+  const UPSTREAM = '9b13032c';
+
+  const URL_UPLOAD = '/project/internal/upload';
+  const URL_SUBMIT = '/project/add_internal';
+  const analyseUrl = (token) => '/project/add_analyse/' + encodeURIComponent(token);
+  const step2Url = (token) => '/project/add/' + encodeURIComponent(token);
+
+  /** 站点资源路径里的版本号：/media/<8 位十六进制>/…（脚本、样式、图片都带）。 */
+  function upstreamVersion() {
+    const nodes = document.querySelectorAll('script[src*="/media/"],link[href*="/media/"]');
+    for (let i = 0; i < nodes.length; i++) {
+      const m = /\/media\/([0-9a-f]{8})\//.exec(nodes[i].src || nodes[i].href || '');
+      if (m) return m[1];
+    }
+    return '';
+  }
+
+  /* ------------------------------------------------------------------ 解析 */
+
+  const str = (v) => (v == null ? '' : String(v));
+  const parseDoc = (html) => new DOMParser().parseFromString(str(html), 'text/html');
+  /* 同一套查找要能在 Document 和 Element 上都用（blend 的隐藏值是在卡片元素里找的） */
+  const $id = (root, id) => (root.getElementById ? root.getElementById(id) : root.querySelector('[id="' + id + '"]'));
+  const valOf = (root, id) => { const el = $id(root, id); return el ? str(el.value) : null; };
+
+  /** 站点的取值方式：$('#id').is(':checked')。
+      hidden 的 input 永远不是 :checked —— HTML.php:1042 的 generate_mp4 与 1057 的
+      public_thumbnail 就是这么发的（服务端 ProjectController.php:360 自己再兜一层）。 */
+  const siteChecked = (el) => !!(el && String(el.type).toLowerCase() !== 'hidden' && el.checked);
+
+  /** 三种开关形态：checkbox（用户可改）/ hidden（站点替用户定了）/ none（这一版没给）。 */
+  function toggleOf(el, why) {
+    if (!el) return { kind: 'none', on: false, why: why || '' };
+    if (String(el.type).toLowerCase() === 'hidden') {
+      return { kind: 'hidden', on: false, force: str(el.value) === '1', why: why || '' };
+    }
+    return { kind: 'check', on: !!el.checked, why: why || '', title: (el.parentNode && el.parentNode.querySelector('span[title]') || {}).title || '' };
+  }
+
+  /** 计算方式那一列：CPU / GPU 各带自己的"排队位次 / 项目总数"两行**裸文本**（HTML.php:1112）。 */
+  function computeOf(root) {
+    const cpu = $id(root, 'compute_method_cpu');
+    const gpu = $id(root, 'compute_method_gpu');
+    const hintOf = (el) => {
+      const out = { queue: '', total: '' };
+      if (!el) return out;
+      const box = el.closest('div');
+      if (!box) return out;
+      const s = box.textContent.replace(/\s+/g, ' ');
+      const q = /Est\.\s*queue position:\s*([^ ]+)/i.exec(s);
+      const n = /Total projects:\s*([\d,]+)/i.exec(s);
+      if (q) out.queue = q[1];
+      if (n) out.total = n[1];
+      return out;
+    };
+    return {
+      canCpu: !!cpu, canGpu: !!gpu,
+      cpuOn: !!(cpu && cpu.checked), gpuOn: !!(gpu && gpu.checked),
+      cpuHint: hintOf(cpu), gpuHint: hintOf(gpu),
+    };
+  }
+
+  /* 我们自己渲染的控件（这些 id 的内容不进"说明文字"）：帧、切块、内存、提交、错误框、隐藏项 */
+  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
+
+  /** 把服务端写的**说明文字**（EXR 限制、降噪提示、切块解释、缺文件、驱动警告…）抽出来。
+      不抽控件、不抽 label 的 for 目标 —— 那些我们自己画。 */
+  function notesOf(scope) {
+    const out = [];
+    const walk = (node) => {
+      for (let n = node.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) {
+          const s = n.nodeValue.replace(/\s+/g, ' ').trim();
+          if (s) out.push(s);
+          continue;
+        }
+        if (n.nodeType !== 1) continue;
+        const tag = n.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'select' || tag === 'option' || tag === 'script' || tag === 'style' || tag === 'br') continue;
+        if (n.id && OWN_IDS.test(n.id)) continue;
+        if (n.querySelector && n.querySelector('input,select') && !n.querySelector('ul,li,p,br')) continue;
+        walk(n);
+      }
+    };
+    walk(scope);
+    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎 */
+    const merged = [];
+    out.forEach((s) => {
+      const last = merged[merged.length - 1];
+      if (last && last.length < 40 && !/[.。:：]$/.test(last)) merged[merged.length - 1] = last + ' ' + s;
+      else merged.push(s);
+    });
+    return merged;
+  }
+
+  /** 解析第三步碎片（契约 B 的 HTML 响应）。返回 null = 结构不认识 → 调用方降级。 */
+  function parseStep3(html) {
+    const d = parseDoc(html);
+    const token = valOf(d, 'token');
+    const pub = $id(d, 'public_render');
+    const conts = [].slice.call(d.querySelectorAll('[id^="addproject_content_"]'));
+    if (!token || !pub || !conts.length) return null;
+
+    const blends = conts.map((c) => blendOf(c)).filter(Boolean);
+    if (!blends.length) return null;
+
+    return {
+      token,
+      upstream: upstreamVersion(),
+      verified: UPSTREAM,
+      vis: {
+        render: toggleOf(pub),
+        mp4: toggleOf($id(d, 'generate_mp4'), 'mp4Hidden'),
+        thumb: toggleOf($id(d, 'public_thumbnail'), 'thumbHidden'),
+      },
+      compute: computeOf(d),
+      blends,
+    };
+  }
+
+  const ANIM = /^addproject_animation_(start|end|step)_frame_(\d+)$/;
+  const SINGLE = /^addproject_singleframe_start_frame_(\d+)$/;
+  const RANGE_ANIM = /^addproject_split_animation_sample_range_value_(\d+)$/;
+  const RANGE_SINGLE = /^addproject_split_sample_range_value_(\d+)$/;
+
+  function blendOf(cont) {
+    const m = /^addproject_content_(\d+)$/.exec(cont.id || '');
+    if (!m) return null;
+    const i = m[1];
+    const form = cont.querySelector('form[id="addproject_' + i + '"]');
+    const h4 = cont.querySelector('h4');
+    const err = cont.querySelector('[id="addproject_error_box_' + i + '"]');
+    const rej = cont.querySelector('div.error');
+    const hidden = {};
+    const readHidden = (key) => str(valOf(cont, 'addproject_' + key + '_' + i));
+    ['exe', 'path', 'archive', 'engine', 'denoising', 'color_management', 'render_on_gpu_headless',
+      'use_adaptive_sampling', 'framerate', 'output_path', 'width', 'height', 'cycles_samples',
+      'samples_pixel', 'image_extension'].forEach((k) => { hidden[k] = readHidden(k); });
+
+    const base = {
+      i,
+      name: h4 ? h4.textContent.trim() : (hidden.path || ('#' + i)),
+      hidden,
+      rejected: !form,
+      reason: rej ? rej.textContent.replace(/\s+/g, ' ').trim() : '',
+    };
+    if (!form) return base;
+
+    /* 类型：三形态 —— ①强制动画（EXR/降噪分支只有个 visibility:hidden 的 radio）
+       ②可选（非 EXR 非降噪时给 Single frame / Animation 两个可见 radio） */
+    const typeRadios = [].slice.call(form.querySelectorAll('input[name="addproject_change_type_' + i + '"]'));
+    const forced = typeRadios.length === 1;
+    const checkedType = (typeRadios.filter((r) => r.checked)[0] || typeRadios[0] || {}).value || 'animation';
+
+    const num = (el) => (el ? el.value : '');
+    const anim = {};
+    const single = {};
+    [].slice.call(form.querySelectorAll('[id]')).forEach((el) => {
+      let mm;
+      if ((mm = ANIM.exec(el.id))) anim[mm[1]] = el.value;
+      else if ((mm = SINGLE.exec(el.id))) single.frame = el.value;
+    });
+
+    /* 切块三形态：①samples 滑条（engine=CYCLES 且不允许 tile）②tiles 下拉 ③站点定死（EXR/降噪） */
+    const rangeAnim = form.querySelector('input[id^="addproject_split_animation_sample_range_value_"]');
+    const rangeSingle = form.querySelector('input[id^="addproject_split_sample_range_value_"]');
+    const tilesEl = form.querySelector('[id="addproject_split_tiles_number_' + i + '"]');
+    let split;
+    if (rangeAnim) {
+      split = {
+        kind: 'samples', min: Number(rangeAnim.min || 1), max: Number(rangeAnim.max || 64),
+        value: Number(rangeAnim.value) || Number(rangeAnim.min || 1), tiles: -1,
+      };
+    } else if (tilesEl && tilesEl.tagName.toLowerCase() === 'select') {
+      split = {
+        kind: 'tiles', tiles: str(tilesEl.value),
+        options: [].slice.call(tilesEl.options).map((o) => ({ v: str(o.value), label: o.textContent.trim() })),
+      };
+    } else if (rangeSingle) {
+      split = {
+        kind: 'samples-single', min: Number(rangeSingle.min || 4), max: Number(rangeSingle.max || 32),
+        value: Number(rangeSingle.value) || Number(rangeSingle.min || 4), tiles: '',
+      };
+    } else {
+      /* 没有可见控件：站点把 tiles 定死了（EXR/降噪分支是 1 = 整帧；单帧+降噪同理） */
+      split = { kind: 'fixed', tiles: tilesEl ? str(tilesEl.value) : '' };
+    }
+
+    const advChk = form.querySelector('[id="checkbox_ad_' + i + '"]');
+    const advBox = form.querySelector('[id="checkbox_advanced_option_' + i + '"]');
+    const ram = form.querySelector('[id="addproject_max_ram_optional_' + i + '"]');
+
+    return Object.assign(base, {
+      type: forced ? 'animation' : (checkedType === 'singleframe' ? 'singleframe' : 'animation'),
+      typeForced: forced,
+      anim: { start: str(anim.start), end: str(anim.end), step: str(anim.step) },
+      single: { frame: str(single.frame) },
+      split,
+      advanced: !!advChk && !!advBox,
+      ram: ram ? str(ram.value) : '',
+      notes: notesOf(form),
+    });
+  }
+
+  /* ------------------------------------------------------------- 组提交体 */
+
+  /** 27 键，顺序与站点 addproject.js:57-85 一致（顺序不影响服务端，但方便逐键比对）。 */
+  const SUBMIT_KEYS = [
+    'type', 'compute_method', 'executable', 'engine', 'denoising', 'color_management',
+    'render_on_gpu_headless', 'token', 'public_render', 'public_thumbnail', 'generate_mp4',
+    'start_frame', 'end_frame', 'step_frame', 'archive', 'max_ram_optional', 'path', 'framerate',
+    'output_path', 'width', 'height', 'split_tiles', 'split_samples', 'use_adaptive_sampling',
+    'cycles_samples', 'samples_pixel', 'image_extension',
+  ];
+
+  const numStr = (v) => {
+    const n = parseInt(str(v).trim(), 10);
+    return Number.isFinite(n) ? String(n) : '';
+  };
+
+  /**
+   * model（服务端给的事实）+ ui（用户改的）→ 27 键。
+   * 与站点 doAddProject 的逐键对应写在括号里；**不做任何"顺手修正"**，只做站点做的事：
+   *   · 单帧项目：end_frame 恒为 0、step_frame 恒为 1（addproject.js:3-4,20-21）
+   *   · 没滑条时 split_samples 发空串（站点那边是 undefined，jQuery 也发 `split_samples=`）
+   *   · compute_method 是位掩码：CPU=1 GPU=8（addproject.js:24-30）
+   */
+  function buildPayload(model, ui) {
+    const vis = ui.vis || {};
+    const on = (k) => (vis[k] ? '1' : '0');
+    const compute = ui.compute | 0;
+    const out = [];
+    model.blends.forEach((b) => {
+      if (b.rejected) return;
+      const u = (ui.blends || {})[b.i] || {};
+      const anim = u.type !== 'singleframe';
+      const key = (k) => str(b.hidden[k]);
+      out.push({
+        i: b.i,
+        data: {
+          type: anim ? 'animation' : 'singleframe',
+          compute_method: String(compute),
+          executable: key('exe'),
+          engine: key('engine'),
+          denoising: key('denoising'),
+          color_management: key('color_management'),
+          render_on_gpu_headless: key('render_on_gpu_headless'),
+          token: model.token,
+          public_render: on('render'),
+          public_thumbnail: on('thumb'),
+          generate_mp4: on('mp4'),
+          start_frame: anim ? numStr(u.start) : numStr(u.frame),
+          end_frame: anim ? numStr(u.end) : '0',
+          step_frame: anim ? numStr(u.step) : '1',
+          archive: key('archive'),
+          max_ram_optional: str(u.ram == null ? b.ram : u.ram),
+          path: key('path'),
+          framerate: key('framerate'),
+          output_path: key('output_path'),
+          width: key('width'),
+          height: key('height'),
+          split_tiles: anim ? str(u.splitTiles == null ? b.split.tiles : u.splitTiles)
+            : str(u.splitTiles == null ? '' : u.splitTiles),
+          split_samples: u.splitSamples == null ? '' : str(u.splitSamples),
+          use_adaptive_sampling: key('use_adaptive_sampling'),
+          cycles_samples: key('cycles_samples'),
+          samples_pixel: key('samples_pixel'),
+          image_extension: key('image_extension'),
+        },
+      });
+    });
+    return out;
+  }
+
+  /** 提交前的本地校验：只挡"站点会崩/会静默建错项目"的输入，其余一律等服务端回话。 */
+  function validate(model, ui) {
+    const errs = [];
+    if (!((ui.compute | 0) & 9)) errs.push(t('up3x.needCompute'));
+    model.blends.forEach((b) => {
+      if (b.rejected) return;
+      const u = (ui.blends || {})[b.i] || {};
+      const nm = b.name || ('#' + b.i);
+      const isNum = (v) => /^\d+$/.test(str(v).trim());
+      if (u.type === 'singleframe') {
+        if (!isNum(u.frame)) errs.push(t('up3x.badFrame', { name: nm }));
+        return;
+      }
+      if (!isNum(u.start) || !isNum(u.end) || !isNum(u.step)) { errs.push(t('up3x.badFrame', { name: nm })); return; }
+      if (Number(u.end) < Number(u.start)) errs.push(t('up3x.badRange', { name: nm }));
+      if (Number(u.step) < 1) errs.push(t('up3x.badStep', { name: nm }));
+      if (u.ram && !isNum(u.ram)) errs.push(t('up3x.badRam', { name: nm }));
+    });
+    return errs;
+  }
+
+  /* ---------------------------------------------------------------- 请求 */
+
+  /** 契约 C：提交。成功体是 `{scheme}://{host}/project/<id>`（ProjectController.php:430）。 */
+  async function submit(payload) {
+    const res = await fetch(URL_SUBMIT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams(payload).toString(),
+    });
+    const text = await res.text();
+    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }), raw: text };
+    const body = text.trim();
+    if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
+    return { ok: false, message: messageFrom(body) || body.slice(0, 400), raw: body };
+  }
+
+  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。 */
+  function messageFrom(html) {
+    const s = str(html);
+    if (!s.trim()) return '';
+    if (/^(missing parameter|Failed to add project)$/i.test(s.trim())) return s.trim();
+    const d = parseDoc(s);
+    const box = d.querySelector('p.error, .error, .alert');
+    const src = box || d.body;
+    if (!src) return '';
+    const txt = (src.textContent || '').replace(/\s+/g, ' ').trim();
+    return txt.length > 600 ? txt.slice(0, 600) + '…' : txt;
+  }
+
+  const JSONish = /^\s*[{[]/;
+
+  /** 契约 B：轮询分析状态。 */
+  async function analyse(token) {
+    const res = await fetch(analyseUrl(token), {
+      credentials: 'include', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    if (!res.ok) return { kind: 'error', message: t('up3x.httpFail', { code: res.status }) };
+    const text = await res.text();
+    if (JSONish.test(text)) {
+      let o = null;
+      try { o = JSON.parse(text); } catch (e) { o = null; }
+      if (!o) return { kind: 'error', message: t('up3x.analyseOdd') };
+      if (o.status === 'RETRY') return { kind: 'retry' };
+      if (o.status === 'PROCESSING') return { kind: 'processing', done: Number(o.analysed) || 0, total: Number(o.total) || 0 };
+      return { kind: 'done', html: text };
+    }
+    /* 不是 JSON：FINISHED 的碎片，或者站点那句 'Internal error, please retry to upload your file' */
+    if (/addproject_content_|formAddProject|id="token"/.test(text)) return { kind: 'done', html: text };
+    if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+    return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+  }
+
+  /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
+  function upload(file, onProgress) {
+    return new Promise((resolve) => {
+      const uid = (function () {
+        const a = new Uint8Array(16);
+        (window.crypto || window.msCrypto).getRandomValues(a);
+        return [].map.call(a, (b) => ('0' + b.toString(16)).slice(-2)).join('');
+      })();
+      const fd = new FormData();
+      fd.append('UPLOAD_IDENTIFIER', uid);
+      fd.append('addproject_archive', file, file.name);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', URL_UPLOAD, true);
+      xhr.withCredentials = true;
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+      }
+      xhr.onload = () => resolve(classifyUpload(xhr));
+      xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
+      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
+      xhr.send(fd);
+    });
+  }
+
+  /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */
+  function classifyUpload(xhr) {
+    const url = xhr.responseURL || '';
+    const m = /\/project\/add\/([^/?#]+)/.exec(url);
+    if (m) return { ok: true, token: decodeURIComponent(m[1]), url };
+    if (xhr.status === 401 || xhr.status === 403) return { ok: false, message: t('state.loggedOut') };
+    const text = str(xhr.responseText);
+    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }), raw: text };
+    if (/Upload new project|add_step2/i.test(text)) {
+      /* 兜底：有些路径回的是第二步整页但地址没变（理论上不会），那就当成功，让用户自己走第二步 */
+      const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
+      if (tk) return { ok: true, token: tk[1] };
+    }
+    return { ok: false, message: messageFrom(text) || t('up3x.uploadOdd'), raw: text };
+  }
+
+  /* ------------------------------------------------------------- 「原版」用 */
+
+  /** /getstarted 那一页：上传表单在不在、站点是不是拦住了（HTML.php:2091-2108）。 */
+  function uploadPage(html) {
+    const d = parseDoc(html);
+    const form = d.querySelector('form[action*="/project/internal/upload"]');
+    const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
+    const warn = d.getElementById('addproject_warning_zero_frame');
+    return {
+      hasForm: !!form,
+      warning: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
+      note: (function () {
+        const cell = form && form.querySelector('input[name="addproject_archive"]');
+        const td = cell && cell.closest('td');
+        return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+      })(),
+      uid: uid ? str(uid.value) : '',
+    };
+  }
+
+  SP.Chain = {
+    UPSTREAM, upstreamVersion,
+    SUBMIT_KEYS, buildPayload, validate,
+    parseStep3, uploadPage,
+    submit, analyse, upload,
+    analyseUrl, step2Url, messageFrom,
+  };
+})();
+
+/* ===== src/68-step3.js ===== */
+/* ==== 68-step3.js：新版上传 · 第三步「设置」（自绘，0.2.0）========================
+
+   与前身 60-step3.js 的根本区别：**不再搬站点的活节点**。
+   服务端那份 HTML 只在 62-chain.js 里被 DOMParser 解析成数据，页面上从头到尾只有我们
+   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，27 键）。
+   于是 0.1.14–0.1.17 反复踩的那一类缺陷（两份同名控件、站点 JS 抢 DOM、$('#id') 取到
+   隐藏原件）在结构上不可能出现。
+
+   边界没变：**服务端只认 POST 键，不认 DOM**。所以自绘控件不违反任何契约；
+   所有隐藏值（引擎、分辨率、采样、路径…）原样来自解析结果，一个字节都不改。 */
+
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Step3x) return;
+  const { Util, UI, I18n } = SP;
+  const t = SP.t;
+  const esc = Util.esc;
+
+  const REPORT_KEY = 'up3Report';
+  const mk = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
+
+  /* 同名 radio 在同一个文档里算**一组**，会互相取消勾选：每次 render 用自己的后缀。 */
+  let seq = 0;
+
+  /** 站点原文 → 中文（没命中就原样）。说明文字是站点写的，翻译表在 12-lang-zh.js。 */
+  const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
+
+  function saveReport(rep) { try { Util.store.set(REPORT_KEY, rep); } catch (e) { /* 隐私模式 */ } }
+  function report() {
+    const r = Util.store.get(REPORT_KEY, null);
+    return r && typeof r === 'object' ? r : null;
+  }
+
+  function sec(key, title) {
+    const s = mk('section', 'up3-sec');
+    s.dataset.sec = key;
+    const h = mk('h3');
+    h.textContent = title;
+    s.appendChild(h);
+    s.appendChild(mk('div', 'up3-body'));
+    return s;
+  }
+  const bodyOf = (s) => s.querySelector('.up3-body');
+
+  /** 选项行：<label class="up3-opt"><input …><span>文字</span></label>，title 走原生悬停 */
+  function opt(kind, name, value, label, opts) {
+    const o = opts || {};
+    const lb = mk('label', 'up3-opt' + (o.cls ? ' ' + o.cls : ''));
+    const inp = mk('input');
+    inp.type = kind;
+    if (name) inp.name = name;
+    if (value != null) inp.value = value;
+    inp.checked = !!o.checked;
+    if (o.disabled) inp.disabled = true;
+    if (o.title) lb.title = o.title;
+    lb.appendChild(inp);
+    const sp = mk('span');
+    sp.textContent = label;
+    lb.appendChild(sp);
+    return lb;
+  }
+
+  function fld(label, opts) {
+    const o = opts || {};
+    const box = mk('div', 'up3-fld');
+    const lb = mk('label');
+    lb.textContent = label;
+    if (o.title) lb.title = o.title;
+    const inp = mk('input');
+    inp.type = 'text';
+    inp.value = o.value == null ? '' : String(o.value);
+    inp.inputMode = 'numeric';
+    inp.autocomplete = 'off';
+    if (o.size) inp.size = o.size;
+    if (o.placeholder) inp.placeholder = o.placeholder;
+    inp.dataset.k = o.key || '';
+    box.appendChild(lb);
+    box.appendChild(inp);
+    return box;
+  }
+
+  /** 滑条 + 读数：站点那两个 range 的 value="0" 会被浏览器夹到 min，这里直接给 min。 */
+  function slider(label, min, max, value, onInput) {
+    const box = mk('div', 'up3-fld up3-slider');
+    const lb = mk('label');
+    lb.textContent = label;
+    const inp = mk('input');
+    inp.type = 'range';
+    inp.min = String(min);
+    inp.max = String(max);
+    inp.value = String(value);
+    const out = mk('span', 'up3-read');
+    const paint = () => { out.textContent = t('up3x.nTiles', { n: inp.value }); };
+    inp.addEventListener('input', () => { paint(); if (onInput) onInput(); });
+    paint();
+    box.appendChild(lb);
+    box.appendChild(inp);
+    box.appendChild(out);
+    box._input = inp;
+    return box;
+  }
+
+  function noteBox(lines) {
+    const box = mk('div', 'up3-note');
+    lines.forEach((s) => {
+      const p = mk('div');
+      p.textContent = zh(s);
+      box.appendChild(p);
+    });
+    return box;
+  }
+
+  /* ------------------------------------------------------------------ 渲染 */
+
+  /**
+   * @param box   #sp-an-result（我们自己的容器）
+   * @param model 62-chain.js parseStep3() 的结果
+   * @returns {{ok:boolean, reason?:string}}
+   */
+  function render(box, model) {
+    if (!box || !model) return { ok: false, reason: 'args' };
+    box.textContent = '';
+    box.hidden = false;
+    box.classList.remove('sp-siteform');
+    box.classList.add('sp-up3');
+
+    const root = mk('div', 'up3');
+    const uid = 'sp3-' + (++seq);
+    const state = { vis: {}, compute: 0, blends: {} };
+    const msg = mk('div', 'up3-msg');
+    msg.hidden = true;
+    const say = (text, bad) => {
+      msg.textContent = text;
+      msg.hidden = false;
+      msg.classList.toggle('bad', !!bad);
+    };
+
+    /* 头部：上游指纹 + 这一份碎片解析出来的键数（设置面板那行读同一个报告） */
+    const head = mk('div', 'up3-head');
+    const h4 = mk('h4');
+    h4.textContent = t('up3x.title');
+    const sub = mk('div', 'up3-sub');
+    sub.textContent = t('up3x.sub', { n: model.blends.length, v: model.upstream || '?' });
+    head.appendChild(h4);
+    head.appendChild(sub);
+    root.appendChild(head);
+
+    /* ① 可见性：三个开关，语义与站点 HTML.php:1036-1071 一一对应 */
+    const vis = sec('vis', t('up3.vis'));
+    const vb = bodyOf(vis);
+    const visDefs = [
+      ['render', model.vis.render, 'up3x.render', 'up3x.renderTip'],
+      ['mp4', model.vis.mp4, 'up3x.mp4', 'up3x.mp4Tip'],
+      ['thumb', model.vis.thumb, 'up3x.thumb', 'up3x.thumbTip'],
+    ];
+    visDefs.forEach(([key, def, lbl, tip]) => {
+      if (def.kind === 'none') return;
+      const hidden = def.kind === 'hidden';
+      const o = opt('checkbox', null, null, t(lbl), {
+        checked: hidden ? !!def.force : !!def.on,
+        disabled: hidden,
+        title: t(tip),
+      });
+      state.vis[key] = hidden ? false : !!def.on;   // 站点对 hidden 一律发 "0"（.is(':checked') 为假）
+      const inp = o.querySelector('input');
+      inp.addEventListener('change', () => { state.vis[key] = inp.checked; });
+      vb.appendChild(o);
+      if (hidden) {
+        const why = mk('div', 'up3-hint');
+        why.textContent = t('up3x.forced', { state: def.force ? t('up3x.yes') : t('up3x.no') });
+        vb.appendChild(why);
+      }
+    });
+
+    /* ② 计算方式：CPU=1 / GPU=8 的位掩码（addproject.js:24-30）。
+       站点给不给某一列由 blend 能力决定（HTML.php:1072-1095），我们照它给的画。 */
+    const cpu = sec('cpu', t('up3.cpu'));
+    const cb = bodyOf(cpu);
+    const compute = model.compute;
+    if (compute.cpuOn) state.compute |= 1;
+    if (compute.gpuOn) state.compute |= 8;
+    if (!state.compute) state.compute = compute.canCpu ? 1 : (compute.canGpu ? 8 : 0);
+    const addCompute = (bit, can, lbl, hint) => {
+      if (!can) return;
+      const o = opt('radio', uid + '-compute', String(bit), t(lbl), { checked: !!(state.compute & bit), cls: 'up3-cmp' });
+      const el = o.querySelector('input');
+      el.addEventListener('change', () => { if (el.checked) state.compute = bit; });
+      const wrap = mk('div', 'up3-cmpbox');
+      wrap.appendChild(o);
+      const h = mk('div', 'up3-hint');
+      const parts = [];
+      if (hint && hint.queue) parts.push(t('up3x.queue', { v: hint.queue }));
+      if (hint && hint.total) parts.push(t('up3x.total', { n: hint.total }));
+      if (!parts.length) return;
+      h.textContent = parts.join(' · ');
+      wrap.appendChild(h);
+      cb.appendChild(wrap);
+    };
+    addCompute(1, compute.canCpu, 'up3x.cpu', compute.cpuHint);
+    addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
+    root.appendChild(vis);
+    root.appendChild(cpu);
+
+    /* ③ 每个 .blend 一张卡：一个文件 = 一个项目，各自提交（站点也是每份一个提交按钮） */
+    let parsedKeys = 0;
+    const cards = [];
+    model.blends.forEach((b) => {
+      parsedKeys += Object.keys(b.hidden).length + (b.rejected ? 0 : 3);
+      const card = sec('blend', b.name || ('#' + b.i));
+      card.classList.add('up3-card');
+      card.dataset.i = b.i;
+      const cbody = bodyOf(card);
+
+      if (b.rejected) {
+        /* 站点对"缺相机 / 有活动输出节点 / 分析报错"的文件只给理由、不给表单（HTML.php:1162-1182） */
+        state.blends[b.i] = { rejected: true };
+        const bad = mk('div', 'up3-note up3-bad');
+        bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
+        cbody.appendChild(bad);
+        root.appendChild(card);
+        cards.push({ b, card, body: cbody, submit: null });
+        return;
+      }
+
+      state.blends[b.i] = {
+        type: b.type, start: b.anim.start, end: b.anim.end, step: b.anim.step || '1',
+        frame: b.single.frame, ram: b.ram,
+        splitTiles: b.split.tiles,
+        splitSamples: (b.split.kind === 'samples' || b.split.kind === 'samples-single') ? String(b.split.value) : '',
+      };
+
+      /* 类型：站点只在"非 EXR 且无降噪"时给可见的两个 radio（HTML.php:1259-1267） */
+      if (!b.typeForced) {
+        const row = mk('div', 'up3-opts');
+        const anim = opt('radio', uid + '-type-' + b.i, 'animation', t('up3x.anim'), { checked: b.type !== 'singleframe' });
+        const sing = opt('radio', uid + '-type-' + b.i, 'singleframe', t('up3x.single'), { checked: b.type === 'singleframe' });
+        row.appendChild(anim);
+        row.appendChild(sing);
+        cbody.appendChild(row);
+
+        const animInp = mk('div', 'up3-fields');
+        ['start', 'end', 'step'].forEach((k) => {
+          const def = { start: ['up3x.start', 6], end: ['up3x.end', 6], step: ['up3x.step', 3] }[k];
+          const f = fld(t(def[0]), { key: k, value: state.blends[b.i][k], size: def[1] });
+          f.querySelector('input').addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          animInp.appendChild(f);
+        });
+        const singRow = mk('div', 'up3-fields');
+        const f = fld(t('up3x.frame'), { key: 'frame', value: state.blends[b.i].frame, size: 6 });
+        f.querySelector('input').addEventListener('input', (e) => { state.blends[b.i].frame = e.target.value; });
+        singRow.appendChild(f);
+        animInp.hidden = b.type === 'singleframe';
+        singRow.hidden = b.type !== 'singleframe';
+        const sync = () => {
+          const v = anim.querySelector('input').checked ? 'animation' : 'singleframe';
+          state.blends[b.i].type = v;
+          animInp.hidden = v !== 'animation';
+          singRow.hidden = v !== 'singleframe';
+        };
+        anim.querySelector('input').addEventListener('change', sync);
+        sing.querySelector('input').addEventListener('change', sync);
+        cbody.appendChild(animInp);
+        cbody.appendChild(singRow);
+      } else {
+        /* 强制动画：只有帧区间（HTML.php:1204-1243 那条分支连类型 radio 都是 hidden 的） */
+        const row = mk('div', 'up3-fields');
+        ['start', 'end', 'step'].forEach((k) => {
+          const def = { start: ['up3x.start', 6], end: ['up3x.end', 6], step: ['up3x.step', 3] }[k];
+          const g = fld(t(def[0]), { key: k, value: state.blends[b.i][k], size: def[1] });
+          g.querySelector('input').addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          row.appendChild(g);
+        });
+        cbody.appendChild(row);
+      }
+
+      /* 切块：三形态（samples 滑条 / tiles 下拉 / 站点定死） */
+      const splitBox = mk('div', 'up3-split');
+      if (b.split.kind === 'samples') {
+        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value, null);
+        s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
+        splitBox.appendChild(s);
+      } else if (b.split.kind === 'tiles') {
+        const row = mk('div', 'up3-fld');
+        const lb = mk('label');
+        lb.textContent = t('up3x.splitGrid');
+        const sel = mk('select');
+        b.split.options.forEach((o) => {
+          const op = mk('option');
+          op.value = o.v;
+          op.textContent = o.v === '1' ? t('up3x.fullFrame') : o.label;
+          if (o.v === String(b.split.tiles)) op.selected = true;
+          sel.appendChild(op);
+        });
+        sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
+        row.appendChild(lb);
+        row.appendChild(sel);
+        splitBox.appendChild(row);
+      } else if (b.split.kind === 'samples-single') {
+        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value, null);
+        s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
+        splitBox.appendChild(s);
+      } else {
+        const fixed = mk('div', 'up3-hint');
+        fixed.textContent = t('up3x.splitFixed', { tiles: String(b.split.tiles || 1) });
+        splitBox.appendChild(fixed);
+      }
+      cbody.appendChild(splitBox);
+
+      if (b.notes && b.notes.length) cbody.appendChild(noteBox(b.notes));
+
+      /* 高级选项：内存（站点给的是 MB，服务端 ×1024 存 kB，ProjectController.php:348） */
+      if (b.advanced) {
+        const adv = mk('div', 'up3-adv');
+        const on = { v: false };
+        const ck = opt('checkbox', null, null, t('up3.adv'), { cls: 'up3-opt-adv' });
+        const inp = ck.querySelector('input');
+        const ramRow = mk('div', 'up3-fld up3-ram');
+        ramRow.hidden = true;
+        const lb = mk('label');
+        lb.textContent = t('up3x.ram');
+        lb.title = t('up3x.ramTip');
+        const ramInp = mk('input');
+        ramInp.type = 'text';
+        ramInp.inputMode = 'numeric';
+        ramInp.placeholder = t('up3x.ramPh');
+        ramInp.value = b.ram || '';
+        ramInp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+        ramRow.appendChild(lb);
+        ramRow.appendChild(ramInp);
+        inp.addEventListener('change', () => { on.v = inp.checked; ramRow.hidden = !inp.checked; });
+        adv.appendChild(ck);
+        adv.appendChild(ramRow);
+        cbody.appendChild(adv);
+      }
+
+      /* 每张卡自己的错误槽 + 提交按钮（站点也是一个文件一个提交） */
+      const slot = mk('div', 'up3-slot');
+      slot.hidden = true;
+      const foot = mk('div', 'up3-foot');
+      const btn = mk('button', 'btn up3-submit');
+      btn.type = 'button';
+      btn.textContent = t('up3x.submit');
+      foot.appendChild(btn);
+      cbody.appendChild(slot);
+      cbody.appendChild(foot);
+
+      btn.addEventListener('click', () => doSubmit(b, card, slot, btn, msg, say, state, model));
+      root.appendChild(card);
+      cards.push({ b, card, body: cbody, submit: btn, slot });
+    });
+
+    /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
+       所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
+    if (model.blends.filter((x) => !x.rejected).length > 1) {
+      const warn = mk('div', 'up3-note');
+      warn.textContent = t('up3x.multi');
+      root.appendChild(warn);
+    }
+
+    root.appendChild(msg);
+    box.appendChild(root);
+
+    saveReport({
+      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys, missing: [],
+      upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+    });
+    /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
+    return { ok: true, cards: cards.length, state, model };
+  }
+
+  /* ------------------------------------------------------------------ 提交 */
+
+  async function doSubmit(b, card, slot, btn, msg, say, state, model) {
+    slot.hidden = true;
+    slot.textContent = '';
+    say('', false);
+    msg.hidden = true;
+
+    const ui = {
+      vis: state.vis,
+      compute: state.compute,
+      blends: state.blends,
+    };
+    const errs = SP.Chain.validate(model, ui);
+    if (errs.length) {
+      slot.hidden = false;
+      slot.textContent = errs.join('；');
+      return;
+    }
+    const list = SP.Chain.buildPayload(model, ui).filter((p) => p.i === b.i);
+    if (!list.length) { slot.hidden = false; slot.textContent = t('up3x.rejectedBlend'); return; }
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = t('up3x.sending');
+    try {
+      const r = await SP.Chain.submit(list[0].data);
+      if (r.ok) {
+        saveReport({
+          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length, missing: [],
+          upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+        });
+        btn.textContent = t('up3x.done');
+        location.href = r.url;
+        return;
+      }
+      saveReport({
+        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length,
+        missing: [], upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+      });
+      slot.hidden = false;
+      slot.textContent = r.message || t('up3x.rejected');
+      /* 服务端的错误体是 HTML 片段（含 <strong>/<ul>），我们只取文字、不注入它 */
+      slot.classList.add('up3-bad');
+    } catch (e) {
+      slot.hidden = false;
+      slot.textContent = t('up3x.netFail') + ' ' + ((e && e.message) || e);
+      slot.classList.add('up3-bad');
+    }
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+
+  /** 设置面板里的上游指纹行（与 60-step3.js 同格式，0.2.0 起报告来自解析层）。 */
+  function fpRows() {
+    const now = SP.Chain.upstreamVersion();
+    const known = SP.Chain.UPSTREAM;
+    const rep = report();
+    const when = rep && rep.at ? new Date(rep.at).toLocaleString() : '';
+    const tip = [];
+    if (now) tip.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
+    if (rep && rep.at) {
+      tip.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
+    } else tip.push(t('set.fp.never'));
+    const tipAttr = esc(tip.join('\n'));
+
+    let line;
+    if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
+    else if (now !== known) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known }))}</div>`;
+    else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
+    else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
+
+    return `<div class="fp">
+        <div class="lbl2">${esc(t('set.fp.title'))}</div>
+        ${line}
+      </div>`;
+  }
+
+  SP.Step3x = { render, report, fpRows, version: '0.2.0-rewrite' };
+})();
+
 /* ===== src/70-i18n-dom.js ===== */
 /* ==== 70-i18n-dom.js：原站页面的翻译层 ==== */
 (function () {
@@ -5622,16 +6676,30 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
            两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
            东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
-           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去），壳里这份才是唯一一套 id。 */
+           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去）。 */
         hideStaleAnalyse();
-        box.innerHTML = s.html;
-        box.hidden = false;
-        /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
-           容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
-        if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
-        /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
-           翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
-        if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        /* 0.2.0「开」模式：站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 ——
+           它永远不进活文档，也就不存在"两份同名控件"这一整类问题。解析不认识时降级到 0.1.18 的
+           老路（把碎片塞进来 + 站点 id 点名提交），并在顶上说明。 */
+        const model = (state.uploadMode === 'new' && SP.Chain && SP.Chain.parseStep3)
+          ? SP.Chain.parseStep3(s.html) : null;
+        const drawn = (model && SP.Step3x) ? SP.Step3x.render(box, model) : null;
+        if (!(drawn && drawn.ok)) {
+          box.innerHTML = s.html;
+          box.hidden = false;
+          if (state.uploadMode === 'new') {
+            const tip = document.createElement('div');
+            tip.className = 'hint bad';
+            tip.textContent = t('up3x.degrade');
+            box.insertBefore(tip, box.firstChild);
+          }
+          /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+             容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+          if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
+          /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
+             翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
+          if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        }
       }
       return;
     }

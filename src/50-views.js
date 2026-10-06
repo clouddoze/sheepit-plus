@@ -495,7 +495,7 @@
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
           ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
-          ${SP.Step3 ? SP.Step3.fpRows() : ''}
+          ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
         </div>
 
         <div class="row block">

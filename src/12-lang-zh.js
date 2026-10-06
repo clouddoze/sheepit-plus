@@ -415,6 +415,25 @@
       /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
       [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
         '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],
+      /* 第三步「设置」里站点给每个 .blend 的说明/拒绝理由（68-step3.js 直接把它们当文本渲染，
+         走 siteText：先查 site 精确匹配，再走这里）。 */
+      [/^No camera in scene, cannot render\.$/, '场景里没有相机，无法渲染。'],
+      [/^Since active "output file" nodes result in files being written to arbitrary locations on the renderer's system we do not allow it\.$/, '活动的「输出文件」节点会把文件写到渲染机上的任意位置，所以站点不允许。'],
+      [/^We will accept your \.blend if you mute the node\.$/, '把这个节点静音（mute）后就可以重新上传。'],
+      [/^EXR output detected$/, '检测到 EXR 输出'],
+      [/^Limitation on EXR {2}support:$/, 'EXR 的限制：'],
+      [/^Full frame renders only\. No split-layers or checkerboarding\.$/, '只能整帧渲染，不支持拆分图层或棋盘格切块。'],
+      [/^Only animations are supported, no single image projects\.$/, '只支持动画项目，不支持单张图片项目。'],
+      [/^Maximum image resolution (\d+)x(\d+)y px\.$/, '最大分辨率 $1x$2 像素。'],
+      [/^Maximum image file size (.+)B$/, '单张图片最大 $1B。'],
+      [/^Use of compression is required \(any of (.+)\)\.$/, '必须使用压缩（$1 之一）。'],
+      [/^Denoising detected: Splits \(multiple smaller frames with reduced samples\) are not supported\.$/, '检测到降噪：不支持拆分（把帧切成小块、降低采样再拼回去）。'],
+      [/^It does not make sense to denoise separate splits and recombine them together\.$/, '把拆分后的各块分别降噪、再拼回一起没有意义。'],
+      [/^Drivers will not work$/i, '驱动器（Driver）不会生效'],
+      [/^because scripts are disabled for security reasons\.$/, '出于安全考虑站点禁用了脚本。'],
+      [/^Warning, files not found:$/, '警告：这些文件找不到：'],
+      [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
+      [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
     ],
   });
 })();

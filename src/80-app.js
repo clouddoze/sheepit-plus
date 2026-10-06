@@ -390,16 +390,30 @@
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
            两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
            东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
-           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去），壳里这份才是唯一一套 id。 */
+           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去）。 */
         hideStaleAnalyse();
-        box.innerHTML = s.html;
-        box.hidden = false;
-        /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
-           容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
-        if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
-        /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
-           翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
-        if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        /* 0.2.0「开」模式：站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 ——
+           它永远不进活文档，也就不存在"两份同名控件"这一整类问题。解析不认识时降级到 0.1.18 的
+           老路（把碎片塞进来 + 站点 id 点名提交），并在顶上说明。 */
+        const model = (state.uploadMode === 'new' && SP.Chain && SP.Chain.parseStep3)
+          ? SP.Chain.parseStep3(s.html) : null;
+        const drawn = (model && SP.Step3x) ? SP.Step3x.render(box, model) : null;
+        if (!(drawn && drawn.ok)) {
+          box.innerHTML = s.html;
+          box.hidden = false;
+          if (state.uploadMode === 'new') {
+            const tip = document.createElement('div');
+            tip.className = 'hint bad';
+            tip.textContent = t('up3x.degrade');
+            box.insertBefore(tip, box.firstChild);
+          }
+          /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+             容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+          if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
+          /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
+             翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
+          if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        }
       }
       return;
     }
