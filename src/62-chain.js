@@ -404,9 +404,14 @@
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
-      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
+
+      返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
+      发现选错文件时只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
+      与"网络失败"分开，界面才能说实话。 */
   function upload(file, onProgress) {
-    return new Promise((resolve) => {
+    let xhr = null;
+    const promise = new Promise((resolve) => {
       const uid = (function () {
         const a = new Uint8Array(16);
         (window.crypto || window.msCrypto).getRandomValues(a);
@@ -415,7 +420,7 @@
       const fd = new FormData();
       fd.append('UPLOAD_IDENTIFIER', uid);
       fd.append('addproject_archive', file, file.name);
-      const xhr = new XMLHttpRequest();
+      xhr = new XMLHttpRequest();
       xhr.open('POST', URL_UPLOAD, true);
       xhr.withCredentials = true;
       if (xhr.upload && onProgress) {
@@ -423,9 +428,10 @@
       }
       xhr.onload = () => resolve(classifyUpload(xhr));
       xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
-      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
+      xhr.onabort = () => resolve({ ok: false, aborted: true });
       xhr.send(fd);
     });
+    return { promise, abort: () => { try { if (xhr) xhr.abort(); } catch (e) { /* 已经结束了 */ } } };
   }
 
   /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */
@@ -452,16 +458,33 @@
     const form = d.querySelector('form[action*="/project/internal/upload"]');
     const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
+    const note = (function () {
+      const cell = form && form.querySelector('input[name="addproject_archive"]');
+      const td = cell && cell.closest('td');
+      return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+    })();
+    const lim = limitOf(note);
     return {
       hasForm: !!form,
       warning: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
-      note: (function () {
-        const cell = form && form.querySelector('input[name="addproject_archive"]');
-        const td = cell && cell.closest('td');
-        return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
-      })(),
+      note,
+      /* 上限文案（"Max: 2,048 MB"）在本地就能拦住选错的文件 —— 拿在手里只用来拼提示等于白解析。
+         站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+      limitBytes: lim.bytes,
+      limitText: lim.text,
       uid: uid ? str(uid.value) : '',
     };
+  }
+
+  /** "Max: 2,048 MB before ZIP compression" → { text: '2,048 MB', bytes: 2147483648 }。解析不出来返回 0/''。 */
+  function limitOf(note) {
+    const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(str(note));
+    if (!m) return { bytes: 0, text: '' };
+    const text = m[1].replace(/\s+/g, ' ');
+    const n = Number((/([\d.,]+)/.exec(text) || [])[1].replace(/,/g, ''));
+    const unit = ((/[KMGT]?B/i.exec(text) || [''])[0] || '').toUpperCase();
+    const mult = { B: 1, KB: 1024, MB: Math.pow(1024, 2), GB: Math.pow(1024, 3), TB: Math.pow(1024, 4) }[unit];
+    return { bytes: Number.isFinite(n) && mult ? Math.round(n * mult) : 0, text };
   }
 
   /* ------------------------------------------------------------- 估算器 */

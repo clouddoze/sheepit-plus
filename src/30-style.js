@@ -107,6 +107,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .btn:hover{border-color:var(--border-strong);color:var(--text)}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
+/* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
+   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+#sp .btn:disabled{opacity:.5;cursor:not-allowed}
+#sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
@@ -900,7 +904,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
-#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end}
+/* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
+#sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}
 #sp .up1-devin{display:block;width:100%}

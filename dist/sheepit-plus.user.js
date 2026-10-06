@@ -508,7 +508,15 @@
       'up1.picked': '已选择 {name}（{size}）',
       'up1.noFile': '先选一个文件。',
       'up1.go': '开始上传',
+      'up1.goBusy': '正在上传…',
+      'up1.cancel': '取消上传',
+      'up1.canceled': '已取消，文件没有发出去。',
+      'up1.tooBig': '{name} 有 {size}，超过站点这次的 {max} 上限 —— 先用 Blender 自带的压缩，或把项目拆小。',
+      'up1.badType': '{name} 不是 .blend 或 .zip，站点不收。',
+      'up1.after': '传完之后站点要先读一遍存档（几分钟是正常的），再让你确认项目设置。',
       'up1.uploading': '正在上传 {pct}%',
+      'up1.progressNoEta': '已传 {done} / {total}',
+      'up1.progress': '已传 {done} / {total} · 约剩 {eta}',
       'up1.sending': '文件传完了，等站点接手…',
       'up1.jumping': '上传完成，正在跳到分析页…',
       'up1.fail': '上传没有被接受，站点没给原因。',
@@ -838,7 +846,15 @@
       'up1.picked': 'Selected {name} ({size})',
       'up1.noFile': 'Choose a file first.',
       'up1.go': 'Start upload',
+      'up1.goBusy': 'Uploading\u2026',
+      'up1.cancel': 'Cancel upload',
+      'up1.canceled': 'Cancelled \u2014 nothing was sent.',
+      'up1.tooBig': '{name} is {size}, over the site\u2019s {max} limit right now \u2014 try Blender\u2019s own compression, or split the project.',
+      'up1.badType': '{name} is not a .blend or .zip; the site will not take it.',
+      'up1.after': 'After the upload the site reads the archive first (a few minutes is normal), then you confirm the project settings.',
       'up1.uploading': 'Uploading {pct}%',
+      'up1.progressNoEta': '{done} / {total} sent',
+      'up1.progress': '{done} / {total} sent \u00b7 about {eta} left',
       'up1.sending': 'File sent; waiting for the site\u2026',
       'up1.jumping': 'Upload done, going to the analysis page\u2026',
       'up1.fail': 'The upload was not accepted and the site gave no reason.',
@@ -2190,6 +2206,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .btn:hover{border-color:var(--border-strong);color:var(--text)}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
+/* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
+   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+#sp .btn:disabled{opacity:.5;cursor:not-allowed}
+#sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
@@ -2983,7 +3003,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
-#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end}
+/* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
+#sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}
 #sp .up1-devin{display:block;width:100%}
@@ -5886,9 +5908,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
-      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
+
+      返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
+      发现选错文件时只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
+      与"网络失败"分开，界面才能说实话。 */
   function upload(file, onProgress) {
-    return new Promise((resolve) => {
+    let xhr = null;
+    const promise = new Promise((resolve) => {
       const uid = (function () {
         const a = new Uint8Array(16);
         (window.crypto || window.msCrypto).getRandomValues(a);
@@ -5897,7 +5924,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const fd = new FormData();
       fd.append('UPLOAD_IDENTIFIER', uid);
       fd.append('addproject_archive', file, file.name);
-      const xhr = new XMLHttpRequest();
+      xhr = new XMLHttpRequest();
       xhr.open('POST', URL_UPLOAD, true);
       xhr.withCredentials = true;
       if (xhr.upload && onProgress) {
@@ -5905,9 +5932,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       }
       xhr.onload = () => resolve(classifyUpload(xhr));
       xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
-      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
+      xhr.onabort = () => resolve({ ok: false, aborted: true });
       xhr.send(fd);
     });
+    return { promise, abort: () => { try { if (xhr) xhr.abort(); } catch (e) { /* 已经结束了 */ } } };
   }
 
   /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */
@@ -5934,16 +5962,33 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const form = d.querySelector('form[action*="/project/internal/upload"]');
     const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
+    const note = (function () {
+      const cell = form && form.querySelector('input[name="addproject_archive"]');
+      const td = cell && cell.closest('td');
+      return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+    })();
+    const lim = limitOf(note);
     return {
       hasForm: !!form,
       warning: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
-      note: (function () {
-        const cell = form && form.querySelector('input[name="addproject_archive"]');
-        const td = cell && cell.closest('td');
-        return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
-      })(),
+      note,
+      /* 上限文案（"Max: 2,048 MB"）在本地就能拦住选错的文件 —— 拿在手里只用来拼提示等于白解析。
+         站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+      limitBytes: lim.bytes,
+      limitText: lim.text,
       uid: uid ? str(uid.value) : '',
     };
+  }
+
+  /** "Max: 2,048 MB before ZIP compression" → { text: '2,048 MB', bytes: 2147483648 }。解析不出来返回 0/''。 */
+  function limitOf(note) {
+    const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(str(note));
+    if (!m) return { bytes: 0, text: '' };
+    const text = m[1].replace(/\s+/g, ' ');
+    const n = Number((/([\d.,]+)/.exec(text) || [])[1].replace(/,/g, ''));
+    const unit = ((/[KMGT]?B/i.exec(text) || [''])[0] || '').toUpperCase();
+    const mult = { B: 1, KB: 1024, MB: Math.pow(1024, 2), GB: Math.pow(1024, 3), TB: Math.pow(1024, 4) }[unit];
+    return { bytes: Number.isFinite(n) && mult ? Math.round(n * mult) : 0, text };
   }
 
   /* ------------------------------------------------------------- 估算器 */
@@ -6066,6 +6111,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return;
     }
 
+    /* 站点这次给的上限，在本地就拦住选错的文件（拿在手里只用来拼提示等于白解析）。
+       提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+    const maxBytes = page.limitBytes || 0;
+    const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -6091,12 +6140,21 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const msg = mk('div', 'up1-msg');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
+    /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
+    const cancel = mk('button', 'btn');
+    cancel.type = 'button';
+    cancel.textContent = t('up1.cancel');
+    cancel.hidden = true;
     const btn = mk('button', 'btn primary');
     btn.type = 'button';
     btn.textContent = t('up1.go');
+    btn.disabled = true;   // 未选文件时它不是"已就绪"——以前那是一颗满血主色按钮
+    foot.appendChild(cancel);
     foot.appendChild(btn);
 
     slot.appendChild(drop);
+    /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
+    slot.appendChild(mk('div', 'up1-after', t('up1.after')));
     slot.appendChild(nameEl);
     slot.appendChild(bar);
     slot.appendChild(pct);
@@ -6108,10 +6166,46 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       msg.hidden = !text;
       msg.classList.toggle('bad', !!bad);
     };
+    /* 剩余时间：onProgress 已经把 loaded/total 给了我们，速率取滑动平均，别只报百分比 */
+    const rate = { t: 0, loaded: 0, speed: 0 };
+    const fmtEta = (sec) => {
+      if (!Number.isFinite(sec) || sec <= 0) return '';
+      const m = Math.floor(sec / 60);
+      const s = Math.round(sec % 60);
+      return m + ':' + ('0' + s).slice(-2);
+    };
+    const etaOf = (loaded, total) => {
+      const now = Date.now();
+      if (!rate.t) { rate.t = now; rate.loaded = loaded; return ''; }
+      const dt = (now - rate.t) / 1000;
+      const dl = loaded - rate.loaded;
+      if (dt >= 0.6 && dl > 0) {
+        const inst = dl / dt;
+        rate.speed = rate.speed ? rate.speed * 0.7 + inst * 0.3 : inst;
+        rate.t = now;
+        rate.loaded = loaded;
+      }
+      return rate.speed ? fmtEta((total - loaded) / rate.speed) : '';
+    };
     const show = (f) => {
-      picked = f || null;
-      nameEl.textContent = picked ? t('up1.picked', { name: picked.name, size: fmtSize(picked.size) }) : '';
-      btn.disabled = !picked || busy;
+      picked = null;
+      if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
+      if (!/\.(blend|zip)$/i.test(f.name)) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.badType', { name: f.name }), true);
+        return;
+      }
+      if (maxBytes && f.size > maxBytes) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.tooBig', { name: f.name, size: fmtSize(f.size), max: maxText }), true);
+        return;
+      }
+      say('');
+      picked = f;
+      nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
+      btn.disabled = busy;
     };
 
     drop.addEventListener('click', (e) => {
@@ -6131,23 +6225,39 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (f) show(f);
     });
 
+    let ctrl = null;   // Chain.upload 的 { promise, abort }
+    cancel.addEventListener('click', () => { if (ctrl) ctrl.abort(); });
+
     btn.addEventListener('click', async () => {
-      if (busy || !picked) { if (!picked) say(t('up1.noFile'), true); return; }
+      if (busy) return;
+      if (!picked) { say(t('up1.noFile'), true); return; }
       busy = true;
       btn.disabled = true;
+      btn.textContent = t('up1.goBusy');
+      cancel.hidden = false;
       say('');
       bar.hidden = false;
       pct.hidden = false;
       fill.style.width = '0%';
       pct.textContent = t('up1.uploading', { pct: 0 });
+      rate.t = 0; rate.loaded = 0; rate.speed = 0;
 
-      const r = await SP.Chain.upload(picked, (loaded, total) => {
+      ctrl = SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
-        pct.textContent = p >= 100 ? t('up1.sending') : t('up1.uploading', { pct: p });
+        if (p >= 100) { pct.textContent = t('up1.sending'); return; }
+        if (!total) { pct.textContent = t('up1.uploading', { pct: p }); return; }
+        const eta = etaOf(loaded, total);
+        pct.textContent = eta
+          ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
+          : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
       });
+      const r = await ctrl.promise;
+      ctrl = null;
 
       busy = false;
+      cancel.hidden = true;
+      btn.textContent = t('up1.go');
       if (r.ok) {
         pct.textContent = t('up1.jumping');
         location.href = SP.Chain.step2Url(r.token);
@@ -6155,7 +6265,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       }
       bar.hidden = true;
       pct.hidden = true;
-      btn.disabled = false;
+      btn.disabled = !picked;
+      if (r.aborted) { say(t('up1.canceled')); return; }   // 取消不是错误：中性色，别写成失败
       say(r.message || t('up1.fail'), true);
     });
   }

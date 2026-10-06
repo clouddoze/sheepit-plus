@@ -62,6 +62,10 @@
       return;
     }
 
+    /* 站点这次给的上限，在本地就拦住选错的文件（拿在手里只用来拼提示等于白解析）。
+       提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+    const maxBytes = page.limitBytes || 0;
+    const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -87,12 +91,21 @@
     const msg = mk('div', 'up1-msg');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
+    /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
+    const cancel = mk('button', 'btn');
+    cancel.type = 'button';
+    cancel.textContent = t('up1.cancel');
+    cancel.hidden = true;
     const btn = mk('button', 'btn primary');
     btn.type = 'button';
     btn.textContent = t('up1.go');
+    btn.disabled = true;   // 未选文件时它不是"已就绪"——以前那是一颗满血主色按钮
+    foot.appendChild(cancel);
     foot.appendChild(btn);
 
     slot.appendChild(drop);
+    /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
+    slot.appendChild(mk('div', 'up1-after', t('up1.after')));
     slot.appendChild(nameEl);
     slot.appendChild(bar);
     slot.appendChild(pct);
@@ -104,10 +117,46 @@
       msg.hidden = !text;
       msg.classList.toggle('bad', !!bad);
     };
+    /* 剩余时间：onProgress 已经把 loaded/total 给了我们，速率取滑动平均，别只报百分比 */
+    const rate = { t: 0, loaded: 0, speed: 0 };
+    const fmtEta = (sec) => {
+      if (!Number.isFinite(sec) || sec <= 0) return '';
+      const m = Math.floor(sec / 60);
+      const s = Math.round(sec % 60);
+      return m + ':' + ('0' + s).slice(-2);
+    };
+    const etaOf = (loaded, total) => {
+      const now = Date.now();
+      if (!rate.t) { rate.t = now; rate.loaded = loaded; return ''; }
+      const dt = (now - rate.t) / 1000;
+      const dl = loaded - rate.loaded;
+      if (dt >= 0.6 && dl > 0) {
+        const inst = dl / dt;
+        rate.speed = rate.speed ? rate.speed * 0.7 + inst * 0.3 : inst;
+        rate.t = now;
+        rate.loaded = loaded;
+      }
+      return rate.speed ? fmtEta((total - loaded) / rate.speed) : '';
+    };
     const show = (f) => {
-      picked = f || null;
-      nameEl.textContent = picked ? t('up1.picked', { name: picked.name, size: fmtSize(picked.size) }) : '';
-      btn.disabled = !picked || busy;
+      picked = null;
+      if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
+      if (!/\.(blend|zip)$/i.test(f.name)) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.badType', { name: f.name }), true);
+        return;
+      }
+      if (maxBytes && f.size > maxBytes) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.tooBig', { name: f.name, size: fmtSize(f.size), max: maxText }), true);
+        return;
+      }
+      say('');
+      picked = f;
+      nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
+      btn.disabled = busy;
     };
 
     drop.addEventListener('click', (e) => {
@@ -127,23 +176,39 @@
       if (f) show(f);
     });
 
+    let ctrl = null;   // Chain.upload 的 { promise, abort }
+    cancel.addEventListener('click', () => { if (ctrl) ctrl.abort(); });
+
     btn.addEventListener('click', async () => {
-      if (busy || !picked) { if (!picked) say(t('up1.noFile'), true); return; }
+      if (busy) return;
+      if (!picked) { say(t('up1.noFile'), true); return; }
       busy = true;
       btn.disabled = true;
+      btn.textContent = t('up1.goBusy');
+      cancel.hidden = false;
       say('');
       bar.hidden = false;
       pct.hidden = false;
       fill.style.width = '0%';
       pct.textContent = t('up1.uploading', { pct: 0 });
+      rate.t = 0; rate.loaded = 0; rate.speed = 0;
 
-      const r = await SP.Chain.upload(picked, (loaded, total) => {
+      ctrl = SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
-        pct.textContent = p >= 100 ? t('up1.sending') : t('up1.uploading', { pct: p });
+        if (p >= 100) { pct.textContent = t('up1.sending'); return; }
+        if (!total) { pct.textContent = t('up1.uploading', { pct: p }); return; }
+        const eta = etaOf(loaded, total);
+        pct.textContent = eta
+          ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
+          : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
       });
+      const r = await ctrl.promise;
+      ctrl = null;
 
       busy = false;
+      cancel.hidden = true;
+      btn.textContent = t('up1.go');
       if (r.ok) {
         pct.textContent = t('up1.jumping');
         location.href = SP.Chain.step2Url(r.token);
@@ -151,7 +216,8 @@
       }
       bar.hidden = true;
       pct.hidden = true;
-      btn.disabled = false;
+      btn.disabled = !picked;
+      if (r.aborted) { say(t('up1.canceled')); return; }   // 取消不是错误：中性色，别写成失败
       say(r.message || t('up1.fail'), true);
     });
   }
