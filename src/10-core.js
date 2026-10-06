@@ -399,8 +399,6 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '下面这份设置是脚本从站点的分析结果里读出来、自己画的：引擎、帧区间、切块、采样、分辨率都在里面。'
-        + '提交也由脚本发出，键名与取值与站点原来的表单逐键一致（离线比对过 27 个键）。',
 
       /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
       'up3.vis': '可见性',
@@ -414,13 +412,11 @@
 
       /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
       'up3x.title': '项目设置',
-      'up3x.sub': '这些值都是站点分析你的存档时算出来的；能改的只有帧区间、切块、内存和可见性，其余原样提交。',
       'up3x.type': '类型',
       'up3x.frames': '帧范围',
       'up3x.split': '切块',
       'up3x.mArchive': '存档',
       'up3x.mFiles': '文件',
-      'up3x.mUpstream': '上游',
       'up3x.mEngine': '引擎 {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}×{h}',
@@ -738,8 +734,6 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'This script reads the site\u2019s analysis result and draws the form below itself: engine, frame range, tiles, samples, resolution \u2014 all of it. '
-        + 'It also sends the request, with the same keys and values the site\u2019s own form uses (all 27 compared offline).',
       'up3.vis': 'Visibility',
       'up3.cpu': 'Compute method',
       'up3.frames': 'Frame range',
@@ -749,13 +743,11 @@
       'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
       'up3.netFail': 'The submission did not go through (network or session):',
       'up3x.title': 'Project settings',
-      'up3x.sub': 'These values were computed by the site while analysing your archive. Only the frame range, the split, the memory and the visibility can be changed \u2014 everything else is submitted verbatim.',
       'up3x.type': 'Type',
       'up3x.frames': 'Frame range',
       'up3x.split': 'Split',
       'up3x.mArchive': 'Archive',
       'up3x.mFiles': 'Files',
-      'up3x.mUpstream': 'Upstream',
       'up3x.mEngine': 'Engine {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}\u00d7{h}',

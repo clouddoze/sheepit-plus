@@ -195,14 +195,12 @@
     const h4 = mk('h4');
     h4.textContent = t('up3x.title');
     head.appendChild(h4);
-    head.appendChild(tip(t('up3x.sub')));
     root.appendChild(head);
 
     const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
     const bits = [];
     if (archive) bits.push(`${esc(t('up3x.mArchive'))} <b>${esc(archive)}</b>`);
     bits.push(`${esc(t('up3x.mFiles'))} <b>${model.blends.length}</b>`);
-    if (model.upstream) bits.push(`${esc(t('up3x.mUpstream'))} <b>${esc(model.upstream)}</b>`);
     root.appendChild(metaRow(bits));
 
     /* ② 上半：硬件需求（一个块三行） */
@@ -408,8 +406,14 @@
         splitBox.appendChild(chip);
       }
       if (splitWhy.length) {
+        /* 「检测到降噪」这类理由要看得见：主题色 + 警示图标，单独一行 */
         const why = mk('span', 'up3-why');
-        why.textContent = splitWhy.map(zh).join(' ');
+        const ico = mk('span', 'up3-whyico');
+        ico.innerHTML = UI.icon('warn');
+        why.appendChild(ico);
+        const txt = mk('span');
+        txt.textContent = splitWhy.map(zh).join(' ');
+        why.appendChild(txt);
         splitBox.appendChild(why);
       }
       bl.appendChild(line(t('up3x.split'), splitBox));

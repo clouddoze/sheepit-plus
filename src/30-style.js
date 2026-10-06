@@ -771,9 +771,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
 #sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
 @keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-#sp .an-done{padding:20px 20px 0}
-#sp .an-done .an-sub{margin-bottom:14px}
-#sp .an-foot{padding:0 20px 20px}
+/* 分析完成那张卡片不再有说明与按钮：状态行下面直接接结果（.sp-up3 自带内边距） */
 
 /* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
 #sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
@@ -1106,8 +1104,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 切块这一行为什么没得选：理由就长在这一行上，小字跟在值后面 */
-#sp .sp-up3 .up3-why{flex:1 1 100%;margin-top:2px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
+#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
+  font-size:12.5px;color:var(--accent);line-height:1.7}
+#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
+#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
 /* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
 #sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}

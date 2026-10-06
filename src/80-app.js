@@ -389,7 +389,6 @@
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。

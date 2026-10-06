@@ -423,8 +423,6 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '下面这份设置是脚本从站点的分析结果里读出来、自己画的：引擎、帧区间、切块、采样、分辨率都在里面。'
-        + '提交也由脚本发出，键名与取值与站点原来的表单逐键一致（离线比对过 27 个键）。',
 
       /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
       'up3.vis': '可见性',
@@ -438,13 +436,11 @@
 
       /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
       'up3x.title': '项目设置',
-      'up3x.sub': '这些值都是站点分析你的存档时算出来的；能改的只有帧区间、切块、内存和可见性，其余原样提交。',
       'up3x.type': '类型',
       'up3x.frames': '帧范围',
       'up3x.split': '切块',
       'up3x.mArchive': '存档',
       'up3x.mFiles': '文件',
-      'up3x.mUpstream': '上游',
       'up3x.mEngine': '引擎 {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}×{h}',
@@ -762,8 +758,6 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'This script reads the site\u2019s analysis result and draws the form below itself: engine, frame range, tiles, samples, resolution \u2014 all of it. '
-        + 'It also sends the request, with the same keys and values the site\u2019s own form uses (all 27 compared offline).',
       'up3.vis': 'Visibility',
       'up3.cpu': 'Compute method',
       'up3.frames': 'Frame range',
@@ -773,13 +767,11 @@
       'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
       'up3.netFail': 'The submission did not go through (network or session):',
       'up3x.title': 'Project settings',
-      'up3x.sub': 'These values were computed by the site while analysing your archive. Only the frame range, the split, the memory and the visibility can be changed \u2014 everything else is submitted verbatim.',
       'up3x.type': 'Type',
       'up3x.frames': 'Frame range',
       'up3x.split': 'Split',
       'up3x.mArchive': 'Archive',
       'up3x.mFiles': 'Files',
-      'up3x.mUpstream': 'Upstream',
       'up3x.mEngine': 'Engine {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}\u00d7{h}',
@@ -2862,9 +2854,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
 #sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
 @keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-#sp .an-done{padding:20px 20px 0}
-#sp .an-done .an-sub{margin-bottom:14px}
-#sp .an-foot{padding:0 20px 20px}
+/* 分析完成那张卡片不再有说明与按钮：状态行下面直接接结果（.sp-up3 自带内边距） */
 
 /* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
 #sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
@@ -3197,8 +3187,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 切块这一行为什么没得选：理由就长在这一行上，小字跟在值后面 */
-#sp .sp-up3 .up3-why{flex:1 1 100%;margin-top:2px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
+#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
+  font-size:12.5px;color:var(--accent);line-height:1.7}
+#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
+#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
 /* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
 #sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
@@ -3403,6 +3396,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
+    /* 警示（三角 + 感叹号）：给"检测到降噪"这类"这一项为什么没得选"用 */
+    warn: '<path d="M12 2.4c.56 0 1.08.3 1.36.78l8.2 14.2A1.57 1.57 0 0 1 20.2 19.8H3.8a1.57 1.57 0 0 1-1.36-2.42l8.2-14.2A1.57 1.57 0 0 1 12 2.4zm0 2.4L5.06 17.4h13.88L12 4.8zm-1 3.1h2v4.9h-2zm0 6.1h2v2h-2z"/>',
     heart: '<path d="M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z"/>',
     ban: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2"/>',
     /* 上传第三步的 CPU/GPU 图标：站点挂的是两张 PNG（UI__HTML.php:1109/1122），
@@ -5046,10 +5041,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           </div>
         </div>
         <div class="an-track" data-an="track"><i data-an="bar"></i></div>
-        <div class="an-done" data-an="done" hidden>
-          <div class="an-sub">${esc(t('an.doneNote'))}</div>
-          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
-        </div>
         <div id="sp-an-result" class="sp-siteform" hidden></div>
       </div>
       <div class="foot">${esc(t('footer.source'))}</div>
@@ -6570,14 +6561,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const h4 = mk('h4');
     h4.textContent = t('up3x.title');
     head.appendChild(h4);
-    head.appendChild(tip(t('up3x.sub')));
     root.appendChild(head);
 
     const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
     const bits = [];
     if (archive) bits.push(`${esc(t('up3x.mArchive'))} <b>${esc(archive)}</b>`);
     bits.push(`${esc(t('up3x.mFiles'))} <b>${model.blends.length}</b>`);
-    if (model.upstream) bits.push(`${esc(t('up3x.mUpstream'))} <b>${esc(model.upstream)}</b>`);
     root.appendChild(metaRow(bits));
 
     /* ② 上半：硬件需求（一个块三行） */
@@ -6783,8 +6772,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         splitBox.appendChild(chip);
       }
       if (splitWhy.length) {
+        /* 「检测到降噪」这类理由要看得见：主题色 + 警示图标，单独一行 */
         const why = mk('span', 'up3-why');
-        why.textContent = splitWhy.map(zh).join(' ');
+        const ico = mk('span', 'up3-whyico');
+        ico.innerHTML = UI.icon('warn');
+        why.appendChild(ico);
+        const txt = mk('span');
+        txt.textContent = splitWhy.map(zh).join(' ');
+        why.appendChild(txt);
         splitBox.appendChild(why);
       }
       bl.appendChild(line(t('up3x.split'), splitBox));
@@ -7571,7 +7566,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。

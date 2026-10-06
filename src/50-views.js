@@ -1266,10 +1266,6 @@
           </div>
         </div>
         <div class="an-track" data-an="track"><i data-an="bar"></i></div>
-        <div class="an-done" data-an="done" hidden>
-          <div class="an-sub">${esc(t('an.doneNote'))}</div>
-          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
-        </div>
         <div id="sp-an-result" class="sp-siteform" hidden></div>
       </div>
       <div class="foot">${esc(t('footer.source'))}</div>
