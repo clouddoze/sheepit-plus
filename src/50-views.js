@@ -493,9 +493,9 @@
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
           <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
-          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['new', t('set.upmode.new')]])}
           <div class="hint">${esc(t('set.upmodeHint'))}</div>
-          ${(state.uploadMode === 'new' && SP.Step3x ? SP.Step3x.fpRows() : (SP.Step3 ? SP.Step3.fpRows() : ''))}
+          ${SP.Step3x ? SP.Step3x.fpRows() : ''}
         </div>
 
         <div class="row block">
@@ -1018,8 +1018,8 @@
   }
 
   /* ==== 挂载后补丁：只有总览的积分曲线需要真实像素宽度 ==== */
-  /* ==== 项目上传页 / 分析等待页：等待页整页重建；上传页是**换装** —— 骨架我们画，能干活的节点
-     从抓回来的 /getstarted 里搬进来，不接管那一页（Borrowed Controls Rule 见 docs/DESIGN.md）。 */
+  /* ==== 项目上传页 / 分析等待页：骨架与内容都我们画。上传页把抓回来的 /getstarted 只当**数据源**
+     （64-step1.js 解析后自绘三个槽位），等待页同理由 62-chain/68-step3 接手。 */
 
   function upload(state) {
     return `<div class="wrap up">
@@ -1027,7 +1027,6 @@
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      ${state.uploadMode === 'new' ? '' : `<div class="expnote">${esc(t('up.expNote'))}</div>`}
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -1048,204 +1047,18 @@
     </div>`;
   }
 
-  /** 站点那句「Max: 2,048 MB …」和 `<input type="file">` 挤在同一 `<td>`：**整块替换会把文件框删掉**
-      （见 70-i18n-dom.js），逐节点拼不回中文 —— 故由卡片自己说 `up.maxNote`，大小从站点原文里读。 */
-  function rewordFileLimit(scope) {
-    const file = scope.querySelector('input[type=file]');
-    if (!file) return;
-    const cell = file.closest('td') || file.parentElement;
-    if (!cell) return;
-    const txt = cell.textContent || '';
-    const m = txt.match(/Max:\s*([\d.,]+\s*[KMGT]?B)/i) || txt.match(/上限：\s*([\d.,]+\s*[KMGT]?B)/);
-    if (!m) return;
-    [...cell.childNodes].forEach((n) => { if (n !== file) n.remove(); });
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = t('up.maxNote', { size: m[1] });
-    file.after(note);
-  }
-
-  /** 须知块**只贴标签、只去掉多余字符**：站点把「项目总数: 29」写成裸文本节点（包 span 才能排版）；
-      `…3.0 or higher</strong>.` 的句号在 <strong> 外 → 中文译文双句号，只在前面已有句末标点时删 "."。 */
-  function tidyRules(scope) {
-    const col = scope.firstElementChild;
-    if (!col) return;
-    for (const n of [...col.childNodes]) {
-      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
-      const span = document.createElement('span');
-      span.className = 'qtotal';
-      span.textContent = n.nodeValue.trim();
-      n.replaceWith(span);
-    }
-    const firstUl = col.querySelector('ul');
-    if (firstUl) firstUl.classList.add('qpos');
-    for (const li of scope.querySelectorAll('li')) {
-      const last = li.lastChild;
-      if (!last || last.nodeType !== 3) continue;
-      const tail = last.nodeValue.trim();
-      if (!/^[.．。]+$/.test(tail)) continue;
-      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
-      if (/[。．.！!？?]$/.test(before)) last.remove();
-    }
-
-    const h4s = [...col.querySelectorAll(':scope > h4')];
-    const head = h4s[0];
-    if (head) {
-      const stop = h4s[1] || null;
-      const group = [];
-      for (let n = head.nextSibling; n && n !== stop; n = n.nextSibling) group.push(n);
-      if (group.length) {
-        const band = document.createElement('div');
-        band.className = 'qband';
-        const text = document.createElement('div');
-        text.className = 'qtext';
-        const data = document.createElement('div');
-        data.className = 'qdata';
-        band.appendChild(text);
-        band.appendChild(data);
-
-        let lead = null;
-        const para = group.find((n) => n.nodeType === 1 && n.tagName === 'P');
-        const br = para ? [...para.childNodes].find((n) => n.nodeType === 1 && n.tagName === 'BR') : null;
-        if (para && br) {
-          const tail = [];
-          for (let n = br.nextSibling; n; n = n.nextSibling) tail.push(n);
-          if (tail.some((n) => n.nodeValue && n.nodeValue.trim())) {
-            lead = document.createElement('p');
-            lead.className = 'qlead';
-            for (const n of tail) lead.appendChild(n);
-          }
-          br.remove();
-        }
-        if (lead) data.appendChild(lead);
-
-        for (const n of group) {
-          const isData = n.nodeType === 1 && (n.classList.contains('qpos') || n.classList.contains('qtotal'));
-          (isData ? data : text).appendChild(n);
-        }
-        head.after(band);
-      }
-    }
-  }
-
-  /** 估算器结果是站点 AJAX 回来的一段英文 HTML：`DomI18n.translateSubtree()` 允许翻译器走进 #sp
-      （DOM 在容器里、文字却是站点的）；另去掉中文译文后吊着的英文句号。 */
-  function watchEstimatorResult(box) {
-    if (!box) return;
-    const fix = () => {
-      if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
-      for (const n of [...box.childNodes]) {
-        if (n.nodeType !== 3 || n.nodeValue.trim() !== '.') continue;
-        const before = n.previousSibling ? (n.previousSibling.textContent || '') : '';
-        if (/[\u4e00-\u9fff]$/.test(before.replace(/\s+$/, ''))) n.remove();
-      }
-    };
-    new MutationObserver(fix).observe(box, { childList: true });
-    if (box.innerHTML.trim()) fix();
-  }
-
-  /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
-      （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
-  /** 站点结构变了、这一档拼不出来时，别给用户一张空白卡片：说清楚 + 给出切档办法。 */
-  function shapeNotice(root, mode) {
+  /** 上传卡片接线失败（站点这一版认不出要用的那几块）时，别给用户一张空白卡片：
+      说清楚 + 给出切档办法。 */
+  function shapeNotice(root) {
     const box = document.createElement('div');
     box.className = 'wrap';
     box.innerHTML = `<div class="sechead"><h2>${esc(t('up.title'))}</h2></div>
       <div class="panel" style="padding:16px 20px">
-        <div class="hint bad">${esc(t(mode === 'new' ? 'up.shapeNew' : 'up.shapeCompat'))}</div>
+        <div class="hint bad">${esc(t('up.shapeNew'))}</div>
         <div class="hint" style="margin-top:8px">${esc(t('up.shapeHow'))}</div>
       </div>`;
     root.textContent = '';
     root.appendChild(box);
-  }
-
-  function wireUploadDoc(root, html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const main = doc.querySelector('#addproject_main_div');
-    const blocked = doc.querySelector('#addproject_warning_zero_frame');
-    if (!main && !blocked) return false;
-    const slotForm = root.querySelector('[data-up="form"]');
-    const slotEst = root.querySelector('[data-up="est"]');
-    const slotRules = root.querySelector('[data-up="rules"]');
-    const estPanel = root.querySelector('[data-up="estPanel"]');
-    const grab = (el) => (el ? el : null);
-
-    if (main) {
-      const left = main.querySelector(':scope > .row > .col-md-5');
-      const right = main.querySelector(':scope > .row > .col-md-6');
-      const blocks = left ? [...left.children] : [];
-      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
-      const estBlock = blocks.find((b) => b !== formBlock) || null;
-      if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
-      if (estBlock && slotEst) {
-        slotEst.appendChild(grab(estBlock));
-        /* 站点在这块里自带一个 <h4>估算器</h4>，与卡片标题重复：去掉它，只留内容 */
-        const dup = estBlock.querySelector('h4');
-        if (dup && /估算器|Estimator/i.test(dup.textContent)) dup.remove();
-        const numTable = estBlock.querySelector('table');
-        if (numTable) numTable.classList.add('numband');
-        watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
-        rebindDeviceSearch(estBlock, html);
-      } else if (estPanel) estPanel.remove();
-      if (right && slotRules) slotRules.appendChild(grab(right));
-    } else if (slotForm) {
-      slotForm.appendChild(grab(blocked));
-      if (estPanel) estPanel.remove();
-    }
-
-    /* **先翻译、再整理**，顺序不能反：整块翻译的规则按站点原句写，而 tidyRules 会把「排队情况」在 <br>
-       处切开，切完不再以 "Predicted position in queue:" 结尾 → 规则失配，那一段永远是英文。 */
-    for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
-    if (slotForm) rewordFileLimit(slotForm);
-    if (slotRules) tidyRules(slotRules);
-    return true;
-  }
-
-  /** 设备名自动补全要自己重绑（内联脚本不执行），source 从站点脚本里读、不写死。**坑在菜单**：
-      jQuery UI 把菜单挂 `<body>`，被守卫 `body > *:not(#sp){display:none}` 挡成"输入了没反应"
-      （2026-10-04 实报）—— 所以贴类名 `ul.sp-acmenu` 放行并同步主题。 */
-  function rebindDeviceSearch(estBlock, html) {
-    const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
-    const $ = window.jQuery;
-    if (!src || !$ || !$.fn || !$.fn.autocomplete) return;
-    const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
-    const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
-    if (!label) return;
-
-    /* 每次重画卡片都绑一个新 widget，而菜单挂 <body> 上不跟旧卡片消失 —— 绑之前先清上一批。 */
-    document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
-
-    const paintMenu = () => {
-      const inst = $(label).data('uiAutocomplete') || $(label).data('ui-autocomplete');
-      const menu = inst && inst.menu && inst.menu.element;
-      if (!menu || !menu.length) return;
-      menu.addClass('sp-acmenu');
-      const host = document.getElementById('sp');
-      const th = host && host.getAttribute('data-theme');
-      if (th) menu.attr('data-theme', th);
-    };
-
-    $(label).autocomplete({
-      minLength: 3,
-      source: src,
-      select(event, ui) {
-        $(label).val(ui.item.label);
-        if (value) $(value).val(ui.item.value);
-        return false;
-      },
-      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着时被换掉
-    });
-    paintMenu();
-
-    /* 关闭时机得自己管：这个 jQuery UI（1.10.2）实测**既不 blur 关、也不"点外面"关**
-       —— 打「2060」弹出菜单后点导航切走，那块菜单会留在屏幕上（display 还是 block）。
-       菜单又挂在 <body> 上、不跟卡片一起消失，所以失焦与点外面各补一次关闭。
-       点菜单项不会误关：jQuery UI 在菜单项 mousedown 里 preventDefault，输入框不失焦。 */
-    const closeMenu = () => { try { $(label).autocomplete('close'); } catch (e) { /* 没初始化就无所谓 */ } };
-    $(label).on('blur', () => setTimeout(closeMenu, 160));
-    $(document).off('mousedown.spacmenu').on('mousedown.spacmenu', (ev) => {
-      if (!$(ev.target).closest('ul.sp-acmenu, #addproject_estimator_device_form_search_text_label').length) closeMenu();
-    });
   }
 
   /* ---- 分析等待页 ---- */
@@ -1266,7 +1079,7 @@
           </div>
         </div>
         <div class="an-track" data-an="track"><i data-an="bar"></i></div>
-        <div id="sp-an-result" class="sp-siteform" hidden></div>
+        <div id="sp-an-result" class="sp-up3" hidden></div>
       </div>
       <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
@@ -1310,11 +1123,8 @@
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
       SP.DomI18n.enabled = !!state.translateSite;
-      /* 「开」：三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；
-         其余档：老的"搬站点活节点"路（S3 换成"原版内嵌"后会删掉这条）。 */
-      if (state.uploadMode === 'new' && SP.Step1) {
-        if (SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root, 'new'); return false; }
-      } else if (wireUploadDoc(root, state.uploadHtml) === false) { shapeNotice(root, 'compat'); return false; }
+      /* 三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；认不出站点结构才走 shapeNotice */
+      if (!SP.Step1 || SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root); return false; }
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;

@@ -9,16 +9,16 @@
 
   /* ---- 1. 接管判定 ---- */
 
-  /** 上传链路三态（用户 2026-10-07 定）：
-      off    = 关：整条链路不接管，顶栏也不出入口
-      raw    = 原版：顶栏入口在，点一下**新标签页**打开站点自己的 /getstarted（我们完全不接管那一页）
-      compat = 兼容：站点自己的控件与逻辑，收进我们的卡片排版
-      new    = 新版：三个契约由 62-chain.js 解析、界面自绘、提交自己发
-      （'site' 是 0.2.0 中途用过的名字，归到 compat。） */
+  /** 上传链路三态（用户 2026-10-07 拍板砍掉兼容档后只剩这三档）：
+      off = 关：整条链路不接管，顶栏也不出入口
+      raw = 原版：顶栏入口在，点一下**新标签页**打开站点自己的 /getstarted（我们完全不接管那一页）
+      new = 新版：站点给的三个契约由 62-chain.js 解析、界面自绘、提交自己发 —— 唯一被重制的上传界面
+      历史值（'site' 是 0.2.0 中途用过的名字，'compat' 是已砍掉的兼容档）与空值都归到新版：
+      它们不该把用户留在一条已经不存在的路径上。 */
   function uploadMode() {
-    const v = Util.store.get('uploadMode', 'compat');
+    const v = Util.store.get('uploadMode', 'new');
     if (v === 'off' || v === 'raw' || v === 'new') return v;
-    return 'compat';   // 'site'（0.2.0 中途用过的名字）与空值都归到兼容
+    return 'new';
   }
 
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
@@ -34,9 +34,10 @@
     // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
     /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
-       有两种界面 —— 所以「开」档只走应用内 #/upload，「原版」档才真跳这一页并内嵌那一段。 */
+       有两种界面 —— 所以重制只发生在应用内 #/upload（「新版」档）；「原版」档点一下是**新标签页**
+       打开站点自己那一页（见 onClick），这里返回 null，那一页照常由站点自己渲染。 */
     const um = uploadMode();
-    const takeover = um === 'compat' || um === 'new';
+    const takeover = um === 'new';
     if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
@@ -138,8 +139,8 @@
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    /* 上传项目三态：off 关 / site 原版（内嵌站点那一块）/ new 开（源码重写）—— 见 viewForPath 上方 */
-    uploadMode: 'site',
+    /* 上传项目三态：off 关 / raw 原版（站点自己那页）/ new 新版（源码重写）—— 见 viewForPath 上方 */
+    uploadMode: 'new',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -181,7 +182,8 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 上传入口走**应用内** #/upload，不跳原站那页；三态里只有 off 不出这个入口 */
+    /* 上传入口：「新版」档走**应用内** #/upload；「原版」档点一下＝新标签页打开站点自己那页
+       （见 onClick）；三态里只有「关闭」不出这个入口 */
     if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
@@ -355,6 +357,24 @@
     anStale = null;
   }
 
+  /** 第三步认不出来时的**交还页面**（砍掉兼容档后这是唯一的降级动作）。
+      原则：认不出来就不半新半旧地渲染 —— 老路（把站点碎片塞进我们的卡片、再按站点 id 点名提交）
+      随兼容档一起删了。做法是 release() 把页面还给站点，再把站点自己那份碎片放回站点自己的容器：
+      站点自己的轮询就是这么写的（addproject.js:204 的 $('#project_add_analyse_result').html(data)），
+      而它被我们用空函数顶掉了（见 startAnalysePoll），这一份因此得由我们送回去。
+      容器、表单 id、内联 onsubmit 全是站点的原件，提交照旧走站点的 doAddProject。
+      为什么不是 release() + location.reload()：重载后脚本照样接管这一页、照样认不出来 ——
+      用户会原地转圈；而只 release() 不送碎片的话，站点那一页会停在他自己的「正在分析」上
+      （它的轮询已被顶掉，不会再有人往里写）。 */
+  function handBackToSite(html) {
+    release();   // 拆掉 #sp 与守卫，并把站点那份结果容器放回页面原位
+    const host = document.getElementById('project_add_analyse_result');
+    if (!host) return;   // 站点连这块都没有（改版了）→ 页面已经在站点自己手里，到此为止
+    host.innerHTML = html || '';
+    SP.DomI18n.enabled = state.translateSite !== false;
+    if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(host);
+  }
+
   /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
   function paintAnalyse(s) {
     const host = document.getElementById('sp');
@@ -385,7 +405,7 @@
       return;
     }
     if (s.html !== undefined) {
-      // 站点表单进来：本版没重制它，只做可读性兜底
+      // 站点把第三步（服务端渲染的那块表单）当 HTML 吐回来：它是唯一的数据源，界面我们自己画
       stopAnalysePoll();
       const spin = q('spin'); if (spin) spin.remove();
       say('state', t('an.doneTitle'));
@@ -403,32 +423,35 @@
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
            两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
            东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
-           就是那份原件。先把站点那份请出文档（留着，离开这一页时还回去）。 */
+           就是那份原件。先把站点那份请出文档（留着，离开这一页或交还页面时还回去）。 */
         hideStaleAnalyse();
-        /* 0.2.0「开」模式：站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 ——
-           它永远不进活文档，也就不存在"两份同名控件"这一整类问题。解析不认识时降级到 0.1.18 的
-           老路（把碎片塞进来 + 站点 id 点名提交），并在顶上说明。 */
-        const model = (state.uploadMode === 'new' && SP.Chain && SP.Chain.parseStep3)
-          ? SP.Chain.parseStep3(s.html) : null;
+        /* 站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 —— 它永远不进活文档，
+           也就不存在"两份同名控件"这一整类问题。 */
+        const model = (SP.Chain && SP.Chain.parseStep3) ? SP.Chain.parseStep3(s.html) : null;
         const drawn = (model && SP.Step3x) ? SP.Step3x.render(box, model) : null;
+        /* 解析不认识 / 画不出来：不半新半旧地渲染。明说这一版认不出来，并给一个出口 ——
+           点一下就把整页还给站点自己（见 handBackToSite）。 */
         if (!(drawn && drawn.ok)) {
-          box.innerHTML = s.html;
+          box.textContent = '';
           box.hidden = false;
-          if (state.uploadMode === 'new') {
-            const tip = document.createElement('div');
-            tip.className = 'hint bad';
-            tip.textContent = t('up3x.degrade');
-            box.insertBefore(tip, box.firstChild);
-          }
-          /* 把第三步（服务端渲染的这块表单）重排成我们的面板：原版档与「开」档的降级都用它。
-             容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
-          if (SP.Step3) SP.Step3.enhance(box);
-          /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
-             翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
-          if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+          const note = document.createElement('div');
+          note.className = 'up3-notes up3-bad';
+          note.textContent = t('up3x.degrade');
+          const foot = document.createElement('div');
+          foot.className = 'up3-bfoot';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn up3-submit';
+          btn.textContent = t('up3x.degradeGo');
+          btn.addEventListener('click', () => handBackToSite(s.html));
+          foot.appendChild(btn);
+          box.appendChild(note);
+          box.appendChild(foot);
+          if (tsub) { tsub.textContent = ''; tsub.hidden = true; }
+          return;
         }
         /* 副标题换成"站点读出了什么"：以前它一直挂着"要先读一遍存档"，而存档早读完了。
-           「新版」档我们自己画的 `.up3-meta` 就是那句事实；降级档读站点那份，没有就不显示。 */
+           我们自己画的 `.up3-meta` 就是那句事实。 */
         if (tsub) {
           const metaEl = box.querySelector('.up3-meta');
           tsub.textContent = metaEl ? metaEl.innerText.replace(/\s+/g, ' ').trim() : '';
@@ -444,13 +467,6 @@
     const bar = q('bar');
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
-
-  /* ---- 3.5b 「原版」档的排版 ------------------------------------------------------
-     用户 2026-10-07 两句话合起来：原版 = 站点自己的控件与逻辑（表单、估算器、轮询、提交），
-     但**只显示上传相关的那几块**，并且搬进我们的卡片里排版 —— 顶栏、页脚、下载客户端都不出现。
-     具体做法：上传页走 Views.upload + wireUploadDoc（把站点那三块收进三张卡片），
-     等待/设置页走 paintAnalyse（把站点那份结果搬进卡片，再按 60-step3.js 重排）。
-     这两条都是 0.1.x 就在跑的路径，「原版」档就是它；「开」档才走 62-chain/64-step1/68-step3。 */
 
   /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
      站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
@@ -537,7 +553,7 @@
     }
 
     if (view === 'upload') {
-      // /getstarted 就是数据源（见 50-views.js wireUploadDoc）：站点没给单独接口
+      // /getstarted 就是数据源（由 64-step1.js 解析成自绘界面）：站点没给单独接口
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
@@ -695,8 +711,8 @@
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
       if (nav.dataset.nav === 'upload') {
-        /* 兼容档要**真跳转**（站点自己的脚本才在那一页上）；原版档干脆开新标签页，我们一点都不碰。 */
-        if (state.uploadMode === 'compat') { location.href = '/getstarted'; return; }
+        /* 「原版」档：站点自己的脚本才在那一页上，干脆开新标签页，我们一点都不碰。
+           「新版」档走下面的 go() → 应用内 #/upload。 */
         if (state.uploadMode === 'raw') { window.open('/getstarted', '_blank', 'noopener'); return; }
       }
       go(nav.dataset.nav); return;

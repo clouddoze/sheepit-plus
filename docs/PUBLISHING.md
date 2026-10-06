@@ -52,10 +52,10 @@ What it rebuilds
   render keys, two blocklists.
 - Settings — in-app: theme (system / dark / light), interface language, and whether to translate
   the pages that keep their original layout.
-- Uploading a project — the top bar has an "Upload" entry, with four modes in Settings: off, the
-  site's own page untouched, "compatible" (the site's own controls laid out inside our cards — the
-  default), and "new" (the upload card, the analysis wait, and the project-settings step drawn and
-  submitted by the script, using the values the site's own analyzer returned).
+- Uploading a project — the top bar has an "Upload" entry, with three settings: off (the entry does
+  not appear at all), "original" (the entry opens the site's own upload page in a new tab,
+  untouched), and "new" (the default: the upload card, the analysis wait, and the project-settings
+  step are drawn and submitted by the script, using the values the site's own analyzer returned).
 
 Privacy
 
@@ -85,13 +85,13 @@ Known limitations
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
 - Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, …) keep their original layout; text is
-  replaced only where a translation exists. The upload flow is rebuilt in "new" mode; in the default
-  "compatible" mode the site's own upload form is kept and only re-laid out inside our cards, and
+  replaced only where a translation exists. The upload flow is rebuilt in "new" mode (the default);
   "original" mode opens the site's own page untouched.
 - In "new" mode the project-settings step (engine, frame range, tiles, samples, resolution…) is drawn
-  and submitted by the script from the site's own analysis values. If that form ever stops matching
-  the upstream version the script was checked against, it says so and falls back to the site's own
-  form. The project management page `/project/<id>` keeps the site's own controls, restyled.
+  and submitted by the script from the site's own analysis values. If that form stops matching the
+  upstream version the script was checked against, it says so and hands that page back to the site's
+  own interface — it never renders a half-and-half mixture. The project management page
+  `/project/<id>` keeps the site's own controls, restyled.
 - If the site is redesigned a parser can stop matching. The worst case is one view saying "no data";
   the site itself is unaffected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
@@ -125,8 +125,8 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
   按天的活动汇总与完整日志、可渲染的项目按原因分组；可以在这里暂停或恢复这台机器。
 - 账户设置（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单。
 - 设置（应用内）：主题（跟随系统/暗/亮）、界面语言、是否翻译保持原版的页面。
-- 上传项目：顶栏有「上传项目」入口，设置里有四档 —— 关闭、原版（站点自己那页，我们一点不碰）、
-  兼容（站点自己的控件收进我们的卡片排版，**默认**）、新版（上传卡片、分析等待、项目设置三步
+- 上传项目：顶栏有「上传项目」入口，设置里有三档 —— 关闭（连入口都不出现）、原版（入口点一下＝
+  新标签页打开站点自己那页，我们一点不碰）、新版（**默认**：上传卡片、分析等待、项目设置三步
   都由脚本自绘并自行提交，用的是站点分析器给的值）。
 
 关于隐私
@@ -153,11 +153,10 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
 
 - 原站的 CSS/JS 仍会下载，只是被隐藏了；油猴脚本没有扩展那样的网络层拦截能力。
 - 未重建的页面（`/faq`、`/project/*`、`/servers` 等）保持原版界面，只在有译文时替换文案。
-  上传链路只在「新版」档重做；默认的「兼容」档保留站点自己的表单，只把它收进我们的卡片排版；
-  「原版」档完全不接管，打开的是站点自己那一页。
+  上传链路只在「新版」档重做（这是默认档）；「原版」档完全不接管，打开的是站点自己那一页。
 - 「新版」档下，项目设置那一步（引擎、帧区间、切块、采样、分辨率…）由脚本按站点分析器给的值
-  自绘并自行提交。万一这张表单与脚本核对过的上游版本对不上，它会明说并退回站点自己那张表单。
-  项目管理页 `/project/<数字>` 仍是站点自己的控件，只统一了外观。
+  自绘并自行提交。万一这张表单与脚本核对过的上游版本对不上，它会明说，并把这一页交回站点自己的
+  界面 —— 不做半新半旧的渲染。项目管理页 `/project/<数字>` 仍是站点自己的控件，只统一了外观。
 - 站点改版可能让某个解析器失效，最坏情况是那一个视图显示「无数据」，不影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
 - 未登录时会提示你先在原站登录。

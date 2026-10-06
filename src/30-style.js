@@ -6,9 +6,6 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
-/* .sp-acmenu 单独生成一份：唯一长在 #sp 外面的家具（jQuery UI 的补全菜单挂在 <body> 上）。
-   不能合并成选择器列表 Theme.css('#sp, ul.sp-acmenu') —— 两处条件选择器只绑最后一项，实测暗色下整壳变白。 */
-${Theme.css('ul.sp-acmenu')}
 
 /* ==== 骨架 ==== */
 #sp{
@@ -572,8 +569,9 @@ ${Theme.css('ul.sp-acmenu')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
-/* ==== 上传页 / 分析等待页（局部换装）====
-   站点渲染的表单 / 估算器 / 进度条原样搬过来：addproject.js 认 id 不认外观，不重实现上传逻辑。 */
+/* ==== 上传页 / 分析等待页：骨架与控件都是我们自绘的（64-step1.js / 68-step3.js）====
+   这一版没有兼容档了：站点那份 HTML 只当数据源，页面上没有搬过来的站点节点。
+   下面 .up-body 那几组规则是给它里面的槽位兜底的（自绘控件落在同一个槽位里）。 */
 
 /* 必须 align-items:start 而不是 stretch：估算结果撑高右卡时，stretch 会把左卡一起拉长（用户实报）。 */
 #sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
@@ -585,40 +583,15 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
-#sp .expnote{
-  margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
-}
 
-#sp .up-rules .up-body h4{
-  font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.02em;
-  margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--border);
-}
-#sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
-#sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
-/* 试过把数字钉到卡片最右（空出 686px）、给说明分两栏（「积分」被劈开），都不行；
-   正解：说明限宽 44em、数字紧跟其后一行。 */
-#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:6px}
-#sp .up-rules .qtext p{margin:0;max-width:44em}
-#sp .up-rules .qdata{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 30px;min-width:0;padding-top:1px}
-#sp .up-rules .qdata .qlead{margin:0;font-size:12px;color:var(--text-3);max-width:none}
-#sp .up-rules .qdata .qtotal{margin:0}
-
-#sp .up-rules .up-body .qpos{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px 26px;margin:0}
-#sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
-#sp .up-rules .up-body .qpos li::before{display:none}
-#sp .up-rules .up-body .qpos li strong{
-  margin-left:6px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
-}
-#sp .up-rules .up-body .qtotal{display:inline;margin:0;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
-
-/* 多栏只对块级容器生效：ul 在别处是 flex 列，这里要还原成 block（.qpos 是数据，排除）。 */
+/* 须知那一列：站点原文的 <li> 被原样克隆进我们的 ul.up1-rules（64-step1.js），这里只管排版。
+   多栏只对块级容器生效：ul 在别处是 flex 列（见下面 .up-body ul），这里要还原成 block。 */
 @media (min-width:820px){
-  #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:9px}
+  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:9px}
 }
 @media (min-width:1200px){
-  #sp .up-rules .up-body ul:not(.qpos){columns:3}
+  #sp .up-rules .up-body ul{columns:3}
 }
 
 /* ==== 抹掉原站外观 ==== */
@@ -692,12 +665,6 @@ ${Theme.css('ul.sp-acmenu')}
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
 #sp .up-body table input[type=text]{width:92px}
-/* 估算器那两个数字是「标签 + 值」两列，站点用的是内容自适应 <table>，这里摊平成两列网格
-   （标签列必须 max-content）。只认 .numband：站点稍后返回的结果表格是另一个形状，被误伤过
-   一次 —— 单元格被摊成网格项，分块数和耗时对调了。 */
-#sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
-#sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
-#sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
 #sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
@@ -751,20 +718,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body #addproject_estimator_result th,
 #sp .up-body #addproject_estimator_result td{text-align:left !important}
 
-/* 设备名补全菜单是 jQuery UI 的 widget，挂在 <body> 上 —— 唯一一件长在 #sp 外面的家具
-   （见 injectGuard：挂进 #sp 会被 CSS zoom 把定位算成 0）。选择器因此不带 #sp，用我们
-   自己的类名 .sp-acmenu 划边界，不碰站点可能有的其他 .ui-autocomplete。 */
-body > ul.sp-acmenu{
-  position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
-  max-height:280px;overflow:auto;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
-  box-shadow:0 14px 30px rgba(0,0,0,.30);
-  font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
-  color:var(--text-2);
-}
-body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
-body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
-
 /* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -775,115 +728,58 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
 #sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
 @keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-/* 分析完成那张卡片不再有说明与按钮：状态行下面直接接结果（.sp-up3 自带内边距） */
+/* 分析完成那张卡片：结果直接接在状态行下面 —— 「新版」自绘进 #sp-an-result（即 .sp-up3，自带内边距）；
+   认不出来时那里放的是一句明说 + 一个「交回站点自己界面」的按钮（见 80-app.js 的 handBackToSite）。 */
 
-/* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
-#sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-siteform section,#sp .sp-siteform .slice,
-#sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
-#sp .sp-siteform .form-light,#sp .sp-siteform .padding-15{
-  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
-}
-#sp .sp-siteform .row{margin:0}
-#sp .sp-siteform [class*="col-md-"],#sp .sp-siteform [class*="col-sm-"]{float:none;width:auto;padding:0}
-#sp .sp-siteform h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
-#sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
-#sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
-#sp .sp-siteform .form-group{margin-bottom:14px}
-/* ---- 控件皮肤：全自绘（0.1.18）-------------------------------------------------
-   此前这里只给了 accent-color：勾选框、单选框其实是**浏览器原生**画出来的，
-   摆进我们的卡片里就不是一套东西（用户实报"所有控件还是很不协调"）。现在自绘：
-   appearance:none + 我们自己的勾/圆点/输入框/下拉箭头，颜色一律走主题变量 ⇒
-   暗色、亮色自动跟随。边界没变：控件本体还是站点那些活节点（id/name/value/checked
-   一个字节都没动），我们只改"画法"。 */
-#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
+/* ---- 控件皮肤：全自绘（0.1.18 起；0.2.0 只有 .sp-up3 这一套）------------------------
+   勾选框、单选框、输入框、下拉箭头一律 appearance:none + 我们自己的画法，颜色走主题变量 ⇒
+   暗色、亮色自动跟随。作用域只剩 #sp .sp-up3：兼容档（把站点表单搬进卡片）已砍掉，
+   站点那些控件不再出现在我们的壳里。 */
 #sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
-#sp .sp-siteform select,#sp .sp-up3 select,#sp .sp-siteform textarea{
+#sp .sp-up3 select{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
   appearance:none;-webkit-appearance:none;
 }
-#sp .sp-siteform select,#sp .sp-up3 select{
+#sp .sp-up3 select{
   padding-right:30px;cursor:pointer;
   background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
 }
-#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):hover,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
-#sp .sp-siteform select:hover,#sp .sp-up3 select:hover{border-color:var(--border-strong)}
-#sp .sp-siteform input:not([type=checkbox]):not([type=radio]):focus,#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
-#sp .sp-siteform select:focus,#sp .sp-up3 select:focus{border-color:var(--accent)}
-#sp .sp-siteform input:disabled,#sp .sp-up3 input:disabled,
-#sp .sp-siteform select:disabled,#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
-#sp .sp-siteform input::placeholder,#sp .sp-up3 input::placeholder{color:var(--text-3)}
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
+#sp .sp-up3 select:hover{border-color:var(--border-strong)}
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
+#sp .sp-up3 select:focus{border-color:var(--accent)}
+#sp .sp-up3 input:disabled,
+#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+#sp .sp-up3 input::placeholder{color:var(--text-3)}
 
-#sp .sp-siteform input[type=checkbox],#sp .sp-up3 input[type=checkbox]{
+#sp .sp-up3 input[type=checkbox]{
   appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
   border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
   transition:background .12s,border-color .12s;
 }
-#sp .sp-siteform input[type=checkbox]:hover,#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
-#sp .sp-siteform input[type=checkbox]:checked,#sp .sp-up3 input[type=checkbox]:checked{
+#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=checkbox]:checked{
   border-color:var(--accent);
   background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
 }
-#sp .sp-siteform input[type=radio],#sp .sp-up3 input[type=radio]{
+#sp .sp-up3 input[type=radio]{
   appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
   border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
   transition:border-color .12s,border-width .12s;
 }
-#sp .sp-siteform input[type=radio]:hover,#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
-#sp .sp-siteform input[type=radio]:checked,#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
-#sp .sp-siteform input[type=checkbox]:disabled,#sp .sp-up3 input[type=checkbox]:disabled,
-#sp .sp-siteform input[type=radio]:disabled,#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
-/* flex 的 label 里间距由 gap 负责（vis 段落要顶对齐，cpu 段落是居中） */
-#sp .sp-up3 .up3-sec label.checkbox input[type=checkbox],
-#sp .sp-up3 .up3-sec label.checkbox input[type=radio]{margin:1px 0 0}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=radio],
-#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox input[type=checkbox]{margin:0}
-#sp .sp-siteform input[type=submit],#sp .sp-siteform button{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-}
-#sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
-#sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
+#sp .sp-up3 input[type=checkbox]:disabled,
+#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
 
-/* ==== 新版上传 · 第三步（60-step3.js 重排出来的那一块）====
-   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
-   面板化、栅格化、按钮统一。自绘外观、站点语义。 */
+/* ==== 新版上传 · 第三步的容器（68-step3.js 自绘那一块）====
+   2026-10-07 用户拍板砍掉兼容档之后，这一版不再有"把站点表单搬进来重排"那条路：只服务它的
+   那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
+   清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
 #sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
 #sp .sp-up3 .up3-head{margin:0 0 14px}
-#sp .sp-up3 .up3-head h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
-#sp .sp-up3 .up3-hid{display:none}
-#sp .sp-up3 .up3-sec{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);padding:12px 14px;margin:0 0 12px}
-#sp .sp-up3 .up3-sec h3{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
-/* 站点用 bootstrap 的 float 栅格；这里的 .row 是我们主动改成 flex 的（列宽已被上面那组兜底改成 auto） */
-#sp .sp-up3 .up3-sec .row{margin:0}
-#sp .sp-up3 .up3-sec [class*="col-md-"]{float:none;width:auto;padding:0}
-#sp .sp-up3 .up3-sec[data-sec="frames"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:14px}
-#sp .sp-up3 .up3-sec[data-sec="frames"] [class*="col-md-"]{flex:1 1 150px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:16px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
-/* 站点那张 CPU/GPU PNG 已被换成我们的图标（60-step3.js 的 swapIcons） */
-#sp .sp-up3 .up3-ico{display:block;width:16px;height:16px;color:var(--text-2);flex:0 0 auto}
-#sp .sp-up3 label.checkbox:has(input:checked) .up3-ico{color:var(--accent)}
-#sp .sp-up3 .up3-ico .icon{width:16px;height:16px}
-/* 站点那两行「Est. queue position / Total projects」原本是裸文本 + <br>，被包成 .up3-hint */
-#sp .sp-up3 .up3-hint{display:block;font-size:11.5px;line-height:1.75;color:var(--text-3);font-variant-numeric:tabular-nums}
-#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
-#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
-#sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
-#sp .sp-up3 .up3-sec[data-sec="adv"] .up3-body > div:first-child{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
-#sp .sp-up3 .up3-sec[data-sec="adv"] .form-group{margin:10px 0 0}
-#sp .sp-up3 .up3-note{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-left:2px solid var(--accent);
-  border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.8}
-#sp .sp-up3 .up3-msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.8}
-#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
-#sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
-#sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
 
 /* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
    拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
@@ -892,8 +788,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
 #sp .up1-droptitle{font-size:13px;color:var(--text)}
 #sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
-/* 上传页的文件框：站点槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（老路径的
-   自绘文件框）。我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
+/* 上传页的文件框：槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（见上）。
+   我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
 #sp .up-body .up1-drop input[type=file]{
   position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
 }
@@ -950,54 +846,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
 #sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
 
-/* ==== 「原版」档的第三步（60-step3.js 的 enhance() 重排出来的那一块）====
-   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
-   面板化、栅格化、按钮统一。自绘外观、站点语义。
-   0.2.0 自绘那一套用的是另一组类名（up3-group/up3-line/up3-blend）；共用 .up3-head/.up3-msg
-   的规则里，自绘那几条排在下面，冲突时以自绘的为准。 */
-/* ==== 新版上传 · 第三步（60-step3.js 重排出来的那一块）====
-   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
-   面板化、栅格化、按钮统一。自绘外观、站点语义。 */
-#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-head{margin:0 0 14px}
-#sp .sp-up3 .up3-head h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
-#sp .sp-up3 .up3-hid{display:none}
-#sp .sp-up3 .up3-sec{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);padding:12px 14px;margin:0 0 12px}
-#sp .sp-up3 .up3-sec h3{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
-/* 站点用 bootstrap 的 float 栅格；这里的 .row 是我们主动改成 flex 的（列宽已被上面那组兜底改成 auto） */
-#sp .sp-up3 .up3-sec .row{margin:0}
-#sp .sp-up3 .up3-sec [class*="col-md-"]{float:none;width:auto;padding:0}
-#sp .sp-up3 .up3-sec[data-sec="frames"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:14px}
-#sp .sp-up3 .up3-sec[data-sec="frames"] [class*="col-md-"]{flex:1 1 150px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:16px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
-/* 站点那张 CPU/GPU PNG 已被换成我们的图标（60-step3.js 的 swapIcons） */
-#sp .sp-up3 .up3-ico{display:block;width:16px;height:16px;color:var(--text-2);flex:0 0 auto}
-#sp .sp-up3 label.checkbox:has(input:checked) .up3-ico{color:var(--accent)}
-#sp .sp-up3 .up3-ico .icon{width:16px;height:16px}
-/* 站点那两行「Est. queue position / Total projects」原本是裸文本 + <br>，被包成 .up3-hint */
-#sp .sp-up3 .up3-hint{display:block;font-size:11.5px;line-height:1.75;color:var(--text-3);font-variant-numeric:tabular-nums}
-#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
-#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
-#sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
-#sp .sp-up3 .up3-sec[data-sec="adv"] .up3-body > div:first-child{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
-#sp .sp-up3 .up3-sec[data-sec="adv"] .form-group{margin:10px 0 0}
-#sp .sp-up3 .up3-note{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-left:2px solid var(--accent);
-  border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.8}
-#sp .sp-up3 .up3-msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.8}
-#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
-#sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
-#sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
-#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
-/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
-#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
-#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
-
-/* 设置面板里的「上游指纹」小卡（60-step3.js 的 fpRows 画） */
+/* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
 #sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
 #sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
 #sp .fp .hint{margin:0 0 6px}
@@ -1167,7 +1016,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
 #sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
 
-/* 设置面板里的「上游指纹」小卡（60-step3.js 的 fpRows 画） */
+/* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
 #sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
 #sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
 #sp .fp .hint{margin:0 0 6px}
@@ -1300,13 +1149,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
-    /* 唯一的例外 .sp-acmenu：jQuery UI 的补全菜单由我们的控件创建，却被它挂在 <body> 上，
-       不放开的表现是「输入了没反应」。不 appendTo 进 #sp 的原因：实测在 #sp 的 CSS zoom 下
-       jQuery 的 offset() 会把差值算成 0，菜单落到左上角。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp):not(.sp-acmenu){display:none !important}
+      body > *:not(#sp){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);

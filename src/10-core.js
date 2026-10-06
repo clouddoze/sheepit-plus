@@ -307,24 +307,23 @@
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
-      'set.upmodeHint': '四档：关闭（顶栏不出现入口，整条链路不接管）；'
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
         + '原版（顶栏入口点一下＝新标签页打开站点自己的上传页，我们完全不接管那一页）；'
-        + '兼容（站点自己的控件与逻辑，我们只负责收进卡片排版 —— 站点加新功能会自动跟上）；'
-        + '新版（上传 / 等待 / 设置全部自绘：解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
-      'set.upmode.off': '关闭', 'set.upmode.raw': '原版', 'set.upmode.compat': '兼容', 'set.upmode.new': '新版',
+        + '新版（默认这一档：上传 / 等待 / 设置全部自绘 —— 解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
+      'set.upmode.off': '关闭', 'set.upmode.raw': '原版', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
       'set.fp.now': '站点资源版本 {v} —— 就是线上 www 仓库的 commit 短 id',
       'set.fp.unknown': '这一页读不到站点资源版本。',
       'set.fp.same': '与本脚本验证过的版本一致：{v}。',
-      'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经失效，建议先切回兼容界面。',
+      'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经对不上；真认不出来时它会明说，并把那一页交回站点自己。',
       'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
       'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
       'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
       'set.fp.never': '还没走过第三步，所以没有点名记录。',
       'nav.upload': '上传项目',
-      'nav.uploadTip': '上传项目（兼容界面／新版可切换）',
+      'nav.uploadTip': '上传项目（新版自绘界面）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -383,8 +382,6 @@
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.expNote': '兼容档：用的是站点自己的控件与逻辑 —— 上传表单、估算器、进度条、分析轮询、提交全归站点；'
-        + '我们只把上传相关的那几块收进卡片里排版（顶栏、页脚、下载客户端都不出现）。想用脚本重写的那套，去设置里切到「新版」。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
       'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
@@ -401,15 +398,9 @@
       'an.doneTitle': '分析完成',
       'an.doneSechead': '分析完成 —— 接下来只需确认设置',
 
-      /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
+      /* 新版上传 · 第三步（68-step3.js 自绘那一块用的标签） */
       'up3.vis': '可见性',
       'up3.cpu': '计算方式',
-      'up3.frames': '帧范围',
-      'up3.adv': '高级选项',
-      'up3.needCompute': '先选一个计算方式（CPU 或 GPU）再提交。',
-      'up3.missing': '表单里缺了 {list}，脚本不敢替你提交 —— 站点可能改版了。可以切回兼容界面，或刷新这一页重来。',
-      'up3.rejected': '站点没有接受这次提交。表单没有被改动，你可以改完再试一次。',
-      'up3.netFail': '提交没有送到（网络或登录状态）：',
 
       /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
       'up3x.title': '项目设置',
@@ -479,7 +470,8 @@
       'up3x.badRange': '{name}：结束帧不能小于起始帧。',
       'up3x.badStep': '{name}：步长至少为 1。',
       'up3x.badRam': '{name}：内存只能填数字（单位 MB）。',
-      'up3x.degrade': '这份表单的结构与脚本核对过的上游版本不一样，已改回「照站点原样渲染 + 提交前点名」的老路。设置里能看到两边的版本号。',
+      'up3x.degrade': '这份表单的结构与脚本核对过的上游版本不一样，脚本不认它 —— 这一页不自己画，点下面的按钮交回站点自己的界面（站点的表单与提交照旧可用）。设置里能看到两边的版本号。',
+      'up3x.degradeGo': '用站点自己的界面打开这一页',
       /* 0.2.0 源码重写 · 第一步（64-step1.js 自绘的上传页） */
       'up1.pick': '把 .blend / .zip 拖到这里，或',
       'up1.pickBtn': '选择文件',
@@ -518,15 +510,11 @@
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
       'up1.moreRules': '另外 {n} 条要求 —— 需要时展开',
-      /* 站点结构变了：两条路都不许沉默（A 方案） */
-      'up.shapeCompat': '站点这一版的页面结构与脚本核对过的不一样，兼容档拼不出上传界面 —— 不是你的操作出了问题。',
+      /* 站点结构变了：不许沉默 —— 说清 + 给出切档办法 */
       'up.shapeNew': '站点这一版的页面结构变了，新版认不出要用的那几块。',
-      'up.shapeHow': '可以到「设置 → 上传项目」切到另一档，或者选「关闭」用站点原页面（换档会重新载入这一页）。',
-      'up3x.unknown': '站点这一版多了 {n} 个脚本没画过的元素（{list}…）—— 它们会按站点给的默认值提交。要不要切到「兼容」档、或等脚本跟上？',
+      'up.shapeHow': '可以到「设置 → 上传项目」切到「原版」，用站点自己的上传页（换档会重新载入这一页）。',
+      'up3x.unknown': '站点这一版多了 {n} 个脚本没画过的元素（{list}…）—— 它们会按站点给的默认值提交。',
       'set.fp.unknownEls': '站点多了 {n} 个新控件（{list}…）—— 新版还没跟上，它们会按默认值提交。',
-      /* 「原版」档（内嵌站点原版界面） */
-      'site.sub': '兼容档：站点自己的控件与逻辑，收进卡片里排版；顶栏、页脚、下载客户端都不显示。',
-      'site.missing': '这一页没找到要用的那一块 —— 站点可能改版了。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -664,24 +652,23 @@
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
-      'set.upmodeHint': 'Four settings: Off (no entry in the top bar, the whole chain is left alone); '
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
         + 'Original (the top-bar entry opens the site\u2019s own upload page in a new tab; this script does not touch that page); '
-        + 'Compatible (the site\u2019s own controls and logic, only arranged into cards \u2014 site-side features come along automatically); '
-        + 'New (this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
-      'set.upmode.off': 'Off', 'set.upmode.raw': 'Original', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New',
+        + 'New (the default: this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
+      'set.upmode.off': 'Off', 'set.upmode.raw': 'Original', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
       'set.fp.now': 'Site asset version {v} \u2014 the commit short id of the live www repository',
       'set.fp.unknown': 'This page does not expose a site asset version.',
       'set.fp.same': 'Same version this script was verified against: {v}.',
-      'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may already be broken, switch back to Compatible.',
+      'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may no longer match; when it cannot read the page it says so and hands that page back to the site.',
       'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
       'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
       'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
       'set.fp.never': 'The third step has not been opened yet, so there is no pre-submit check on record.',
       'nav.upload': 'Upload a project',
-      'nav.uploadTip': 'Project upload (Compatible / New)',
+      'nav.uploadTip': 'Project upload (script-drawn interface)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -736,8 +723,6 @@
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.expNote': 'Compatible mode: this uses the site\u2019s own controls and logic \u2014 form, estimator, progress bar, analysis polling and submit all belong to the site. '
-        + 'This script only arranges the upload blocks into cards (no top bar, no footer, no client download). Switch to \u201cNew\u201d in Settings for the rewritten path.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
@@ -752,12 +737,6 @@
       'an.doneSechead': 'Analysis finished \u2014 all that is left is to confirm the settings',
       'up3.vis': 'Visibility',
       'up3.cpu': 'Compute method',
-      'up3.frames': 'Frame range',
-      'up3.adv': 'Advanced options',
-      'up3.needCompute': 'Pick a compute method (CPU or GPU) before submitting.',
-      'up3.missing': 'The form is missing {list}, so this script will not submit it for you \u2014 the site may have changed. Switch back to the compatible UI, or reload this page.',
-      'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
-      'up3.netFail': 'The submission did not go through (network or session):',
       'up3x.title': 'Project settings',
       'up3x.type': 'Type',
       'up3x.frames': 'Frame range',
@@ -824,7 +803,8 @@
       'up3x.badRange': '{name}: the end frame cannot be lower than the start frame.',
       'up3x.badStep': '{name}: the step must be at least 1.',
       'up3x.badRam': '{name}: memory must be a number (Mbytes).',
-      'up3x.degrade': 'This form does not match the upstream version this script was verified against, so it fell back to rendering the site\u2019s own form and checking it before submit. Settings shows both versions.',
+      'up3x.degrade': 'This form does not match the upstream version this script was verified against, so the script will not draw it \u2014 the button below hands this page back to the site\u2019s own interface (its form and submit still work). Settings shows both versions.',
+      'up3x.degradeGo': 'Open this page in the site\u2019s own interface',
       'up1.pick': 'Drop a .blend / .zip here, or',
       'up1.pickBtn': 'choose a file',
       'up1.pickSub': 'One file, up to {size} (before ZIP compression). Blender\u2019s own compression is supported and recommended.',
@@ -862,13 +842,10 @@
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
       'up1.moreRules': '{n} more requirements \u2014 expand if you need them',
-      'up.shapeCompat': 'This version of the page does not match the structure this script was verified against, so Compatible mode cannot assemble the upload UI \u2014 nothing you did caused this.',
       'up.shapeNew': 'The page structure changed on this version, so New mode cannot find the blocks it needs.',
-      'up.shapeHow': 'Switch to the other mode under Settings \u2192 Upload, or pick Off and use the site\u2019s own page (switching reloads this page).',
-      'up3x.unknown': 'This version adds {n} element(s) this script does not draw ({list}\u2026) \u2014 they will be submitted with the site\u2019s defaults. Switch to Compatible, or wait for the script to catch up?',
+      'up.shapeHow': 'Switch to \u201cOriginal\u201d under Settings \u2192 Upload to use the site\u2019s own upload page (switching reloads this page).',
+      'up3x.unknown': 'This version adds {n} element(s) this script does not draw ({list}\u2026) \u2014 they will be submitted with the site\u2019s defaults.',
       'set.fp.unknownEls': 'The site added {n} new control(s) ({list}\u2026) \u2014 New mode has not caught up, so they go out with their defaults.',
-      'site.sub': 'This mode is the site\u2019s own interface: only the upload part is moved into this shell (no top bar, no footer, no client download). All the logic stays the site\u2019s.',
-      'site.missing': 'The block to embed was not found on this page \u2014 the site may have changed.',
     },
   };
 

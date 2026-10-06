@@ -303,4 +303,34 @@
 - `#project_public_render_checkbox_value` 会**随状态换元素类型**（公开时是 hidden input value=0，
   私有时就是那个可见 checkbox），onclick 永远读它——重绘时不能改名。
 - 计算方式的 radio 发的是**服务端算好的翻转值**（`checked_cpu ? '0' : '1'`），不是 `el.checked`。
+
+## 8. 兼容档退役（用户 2026-10-07 拍板）
+
+用户拍板：**砍掉兼容档，不再维护**。理由是站点一旦改版两条线都要维护（§A 方案那张表里两边的
+成本量级本来就一样，而"站点加新功能自动跟上"这个好处抵不过多养一条接管链路）。上传项目只留
+三档 —— **关闭 / 原版（`raw`，跳站点自己那页）/ 新版（`new`，彻底自绘）**，历史值 `site`（中途用过
+的名字）、`compat` 与空值一律归到新版：它们不该把用户留在一条已经不存在的路径上。
+
+这一版删掉的东西（不是注释掉、没留开关）：
+
+- `src/60-step3.js` 整个文件（`enhance()` 把站点第三步表单重排成我们的面板）与 `SP.Step3`。
+- `50-views.js` 的 `wireUploadDoc()` 与它专用的四个 helper（`rewordFileLimit` / `tidyRules` /
+  `watchEstimatorResult` / `rebindDeviceSearch`）；上传视图的兼容分支也没了 —— 三个槽位只有
+  `64-step1.js` 一种填法。`shapeNotice()` 保留（新版认不出站点结构时仍要说清楚），只去掉兼容档文案。
+- `80-app.js` 里降级时"把站点碎片塞进卡片 + 按站点 id 点名提交"那整段（连带它依赖的
+  `up3x.degrade` 旧文案）。`paintAnalyse()` 现在认不出来时只显示 `up3x.degrade` + 一个按钮，
+  点了走 `handBackToSite()`：`release()` 交还页面，再把站点自己那份碎片放回站点自己的容器
+  （站点自己的轮询就是这个写法）—— 不做半新半旧的渲染，也不 reload（重载后脚本照样接管、
+  照样认不出来，用户会原地转圈）。
+- `30-style.js` 里只服务兼容档的 CSS：`.sp-siteform*`、`.up3-sec*`/`.up3-body*`/`.up3-hid*`/
+  `.up3-ico*`/`.up3-hint*`/`.up3-foot*`/`.up3-note`、`.up-rules` 里给站点裸文本排版的那组 `.q*`、
+  `.numband`、`.expnote`，以及 `.sp-acmenu`（jQuery UI 的补全菜单只有兼容档那条路会创建；
+  守卫里的 `:not(.sp-acmenu)` 例外一并撤掉）。
+- 文案（中英两套）：`set.upmode.compat`、`up.expNote`、`up.shapeCompat`、`site.sub`、`site.missing`、
+  `up3.frames`/`up3.adv`/`up3.needCompute`/`up3.missing`/`up3.rejected`/`up3.netFail`。
+
+没动的边界：第三步的 27 键提交负载一个字节没改（`62-chain.js` 的 `buildPayload`）；新版在用的
+`.sp-up3` 那一套、`.up-body*`、`.up1-*`、`.filepick`、`.sp-manage*` 全部留着。
+
+产物：457,473 → 417,032 字节（-40,441，约 -8.8%）。
 - 团队加白名单发**数字 team id**，用户加白名单发 **login**；自由输入不选自动补全 → 发 0 → 404 HTML 被 alert。

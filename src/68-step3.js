@@ -1,6 +1,6 @@
 /* ==== 68-step3.js：新版上传 · 第三步「设置」（自绘，0.2.0）========================
 
-   与前身 60-step3.js 的根本区别：**不再搬站点的活节点**。
+   与已砍掉的兼容档那一套的根本区别：**不再搬站点的活节点**。
    服务端那份 HTML 只在 62-chain.js 里被 DOMParser 解析成数据，页面上从头到尾只有我们
    这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，27 键）。
    于是 0.1.14–0.1.17 反复踩的那一类缺陷（两份同名控件、站点 JS 抢 DOM、$('#id') 取到
@@ -173,7 +173,6 @@
     if (!box || !model) return { ok: false, reason: 'args' };
     box.textContent = '';
     box.hidden = false;
-    box.classList.remove('sp-siteform');
     box.classList.add('sp-up3');
 
     const uid = 'sp3-' + (++seq);
@@ -531,7 +530,7 @@
     btn.textContent = old;
   }
 
-  /** 设置面板里的上游指纹行（与 60-step3.js 同格式，0.2.0 起报告来自解析层）。 */
+  /** 设置面板里的上游指纹行（格式沿用 0.1.x 那一版；0.2.0 起报告来自解析层）。 */
   function fpRows() {
     const now = SP.Chain.upstreamVersion();
     const known = SP.Chain.UPSTREAM;
