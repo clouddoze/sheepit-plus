@@ -441,6 +441,13 @@
       cards.push({ b, card: bl, body: bl, submit: btn, slot });
     });
 
+    /* 站点这一版多了我们没画过的控件：它们会按站点给的默认值提交 —— 明说，别沉默 */
+    if (model.unknown && model.unknown.length) {
+      const warn = mk('div', 'up3-notes up3-warn');
+      warn.textContent = t('up3x.unknown', { n: model.unknown.length, list: model.unknown.slice(0, 8).join('、') });
+      root.appendChild(warn);
+    }
+
     /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
        所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
     if (live.length > 1) {
@@ -454,6 +461,7 @@
 
     saveReport({
       at: Date.now(), stage: 'enter', ok: true, n: parsedKeys, missing: [],
+      unknown: (model.unknown || []).slice(0, 12),
       upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
     });
     /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
@@ -526,6 +534,9 @@
     let line;
     if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
     else if (now !== known) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known }))}</div>`;
+    else if (rep && rep.unknown && rep.unknown.length) {
+      line = `<div class="hint bad">${esc(t('set.fp.unknownEls', { n: rep.unknown.length, list: rep.unknown.slice(0, 6).join('、') }))}</div>`;
+    }
     else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
     else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
 

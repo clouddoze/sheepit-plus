@@ -530,6 +530,12 @@
       'up1.perTile': '每块预计用时',
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
+      /* 站点结构变了：两条路都不许沉默（A 方案） */
+      'up.shapeCompat': '站点这一版的页面结构与脚本核对过的不一样，兼容档拼不出上传界面 —— 不是你的操作出了问题。',
+      'up.shapeNew': '站点这一版的页面结构变了，新版认不出要用的那几块。',
+      'up.shapeHow': '可以到「设置 → 上传项目」切到另一档，或者选「关闭」用站点原页面（换档会重新载入这一页）。',
+      'up3x.unknown': '站点这一版多了 {n} 个脚本没画过的元素（{list}…）—— 它们会按站点给的默认值提交。要不要切到「兼容」档、或等脚本跟上？',
+      'set.fp.unknownEls': '站点多了 {n} 个新控件（{list}…）—— 新版还没跟上，它们会按默认值提交。',
       /* 「原版」档（内嵌站点原版界面） */
       'site.sub': '兼容档：站点自己的控件与逻辑，收进卡片里排版；顶栏、页脚、下载客户端都不显示。',
       'site.missing': '这一页没找到要用的那一块 —— 站点可能改版了。',
@@ -857,6 +863,11 @@
       'up1.perTile': 'Expected time per tile',
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
+      'up.shapeCompat': 'This version of the page does not match the structure this script was verified against, so Compatible mode cannot assemble the upload UI \u2014 nothing you did caused this.',
+      'up.shapeNew': 'The page structure changed on this version, so New mode cannot find the blocks it needs.',
+      'up.shapeHow': 'Switch to the other mode under Settings \u2192 Upload, or pick Off and use the site\u2019s own page (switching reloads this page).',
+      'up3x.unknown': 'This version adds {n} element(s) this script does not draw ({list}\u2026) \u2014 they will be submitted with the site\u2019s defaults. Switch to Compatible, or wait for the script to catch up?',
+      'set.fp.unknownEls': 'The site added {n} new control(s) ({list}\u2026) \u2014 New mode has not caught up, so they go out with their defaults.',
       'site.sub': 'This mode is the site\u2019s own interface: only the upload part is moved into this shell (no top bar, no footer, no client download). All the logic stays the site\u2019s.',
       'site.missing': 'The block to embed was not found on this page \u2014 the site may have changed.',
     },
@@ -4913,6 +4924,19 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
       （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
+  /** 站点结构变了、这一档拼不出来时，别给用户一张空白卡片：说清楚 + 给出切档办法。 */
+  function shapeNotice(root, mode) {
+    const box = document.createElement('div');
+    box.className = 'wrap';
+    box.innerHTML = `<div class="sechead"><h2>${esc(t('up.title'))}</h2></div>
+      <div class="panel" style="padding:16px 20px">
+        <div class="hint bad">${esc(t(mode === 'new' ? 'up.shapeNew' : 'up.shapeCompat'))}</div>
+        <div class="hint" style="margin-top:8px">${esc(t('up.shapeHow'))}</div>
+      </div>`;
+    root.textContent = '';
+    root.appendChild(box);
+  }
+
   function wireUploadDoc(root, html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const main = doc.querySelector('#addproject_main_div');
@@ -5071,8 +5095,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       /* 「开」：三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；
          其余档：老的"搬站点活节点"路（S3 换成"原版内嵌"后会删掉这条）。 */
       if (state.uploadMode === 'new' && SP.Step1) {
-        if (SP.Step1.mount(root, state.uploadHtml) === false) return false;
-      } else if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+        if (SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root, 'new'); return false; }
+      } else if (wireUploadDoc(root, state.uploadHtml) === false) { shapeNotice(root, 'compat'); return false; }
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -5582,6 +5606,33 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return merged;
   }
 
+  /* 脚本认得（会渲染或会读）的 id 清单。站点这一版多出来的元素 = 新控件：
+     我们没画它、就会按站点给的默认值提交 —— 这种事必须说出来，不能沉默（用户 2026-10-07 定）。 */
+  const KNOWN_IDS = [
+    /^token$/, /^public_render$/, /^public_thumbnail$/, /^generate_mp4$/,
+    /^compute_method_(cpu|gpu)$/,
+    /^addproject_\d+$/, /^addproject_content_\d+$/,
+    /^addproject_(exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
+    /^addproject_(animation_start_frame|animation_end_frame|animation_step_frame|singleframe_start_frame|max_ram_optional)_\d+$/,
+    /^addproject_(split_tiles_number|split_animation_sample_range_value|animation_split_sample_value|split_sample_range_value|split_sample_value)_\d+$/,
+    /^addproject_(submit|submit_div|error_box)_\d+$/,
+    /^addproject_(animation_div10|animation_div11|singleframe_div20|singleframe_div21)_\d+$/,
+    /^checkbox_(ad|advanced_option)_\d+$/,
+  ];
+  /** 站点/第三方自己塞进来的 id（与我们无关，别再报给用户） */
+  const IGNORE_ID = /^(ui-|ui\.|sp-|google|g-recaptcha|__)/;
+
+  function unknownIds(root) {
+    const out = [];
+    [].slice.call(root.querySelectorAll('[id]')).forEach((el) => {
+      const id = el.id;
+      if (!id || IGNORE_ID.test(id)) return;
+      if (KNOWN_IDS.some((re) => re.test(id))) return;
+      if (out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+
   /** 解析第三步碎片（契约 B 的 HTML 响应）。返回 null = 结构不认识 → 调用方降级。 */
   function parseStep3(html) {
     const d = parseDoc(html);
@@ -5597,6 +5648,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       token,
       upstream: upstreamVersion(),
       verified: UPSTREAM,
+      /* 这一版多出来的元素（不在上面清单里）= 站点新加的控件，界面上要提示 */
+      unknown: unknownIds(d),
       vis: {
         render: toggleOf(pub),
         mp4: toggleOf($id(d, 'generate_mp4'), 'mp4Hidden'),
@@ -6761,6 +6814,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       cards.push({ b, card: bl, body: bl, submit: btn, slot });
     });
 
+    /* 站点这一版多了我们没画过的控件：它们会按站点给的默认值提交 —— 明说，别沉默 */
+    if (model.unknown && model.unknown.length) {
+      const warn = mk('div', 'up3-notes up3-warn');
+      warn.textContent = t('up3x.unknown', { n: model.unknown.length, list: model.unknown.slice(0, 8).join('、') });
+      root.appendChild(warn);
+    }
+
     /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
        所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
     if (live.length > 1) {
@@ -6774,6 +6834,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     saveReport({
       at: Date.now(), stage: 'enter', ok: true, n: parsedKeys, missing: [],
+      unknown: (model.unknown || []).slice(0, 12),
       upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
     });
     /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
@@ -6846,6 +6907,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     let line;
     if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
     else if (now !== known) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known }))}</div>`;
+    else if (rep && rep.unknown && rep.unknown.length) {
+      line = `<div class="hint bad">${esc(t('set.fp.unknownEls', { n: rep.unknown.length, list: rep.unknown.slice(0, 6).join('、') }))}</div>`;
+    }
     else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
     else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
 

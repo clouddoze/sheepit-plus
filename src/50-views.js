@@ -1146,6 +1146,19 @@
 
   /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
       （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
+  /** 站点结构变了、这一档拼不出来时，别给用户一张空白卡片：说清楚 + 给出切档办法。 */
+  function shapeNotice(root, mode) {
+    const box = document.createElement('div');
+    box.className = 'wrap';
+    box.innerHTML = `<div class="sechead"><h2>${esc(t('up.title'))}</h2></div>
+      <div class="panel" style="padding:16px 20px">
+        <div class="hint bad">${esc(t(mode === 'new' ? 'up.shapeNew' : 'up.shapeCompat'))}</div>
+        <div class="hint" style="margin-top:8px">${esc(t('up.shapeHow'))}</div>
+      </div>`;
+    root.textContent = '';
+    root.appendChild(box);
+  }
+
   function wireUploadDoc(root, html) {
     const doc = new DOMParser().parseFromString(html, 'text/html');
     const main = doc.querySelector('#addproject_main_div');
@@ -1304,8 +1317,8 @@
       /* 「开」：三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；
          其余档：老的"搬站点活节点"路（S3 换成"原版内嵌"后会删掉这条）。 */
       if (state.uploadMode === 'new' && SP.Step1) {
-        if (SP.Step1.mount(root, state.uploadHtml) === false) return false;
-      } else if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+        if (SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root, 'new'); return false; }
+      } else if (wireUploadDoc(root, state.uploadHtml) === false) { shapeNotice(root, 'compat'); return false; }
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;

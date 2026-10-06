@@ -117,6 +117,33 @@
     return merged;
   }
 
+  /* 脚本认得（会渲染或会读）的 id 清单。站点这一版多出来的元素 = 新控件：
+     我们没画它、就会按站点给的默认值提交 —— 这种事必须说出来，不能沉默（用户 2026-10-07 定）。 */
+  const KNOWN_IDS = [
+    /^token$/, /^public_render$/, /^public_thumbnail$/, /^generate_mp4$/,
+    /^compute_method_(cpu|gpu)$/,
+    /^addproject_\d+$/, /^addproject_content_\d+$/,
+    /^addproject_(exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
+    /^addproject_(animation_start_frame|animation_end_frame|animation_step_frame|singleframe_start_frame|max_ram_optional)_\d+$/,
+    /^addproject_(split_tiles_number|split_animation_sample_range_value|animation_split_sample_value|split_sample_range_value|split_sample_value)_\d+$/,
+    /^addproject_(submit|submit_div|error_box)_\d+$/,
+    /^addproject_(animation_div10|animation_div11|singleframe_div20|singleframe_div21)_\d+$/,
+    /^checkbox_(ad|advanced_option)_\d+$/,
+  ];
+  /** 站点/第三方自己塞进来的 id（与我们无关，别再报给用户） */
+  const IGNORE_ID = /^(ui-|ui\.|sp-|google|g-recaptcha|__)/;
+
+  function unknownIds(root) {
+    const out = [];
+    [].slice.call(root.querySelectorAll('[id]')).forEach((el) => {
+      const id = el.id;
+      if (!id || IGNORE_ID.test(id)) return;
+      if (KNOWN_IDS.some((re) => re.test(id))) return;
+      if (out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+
   /** 解析第三步碎片（契约 B 的 HTML 响应）。返回 null = 结构不认识 → 调用方降级。 */
   function parseStep3(html) {
     const d = parseDoc(html);
@@ -132,6 +159,8 @@
       token,
       upstream: upstreamVersion(),
       verified: UPSTREAM,
+      /* 这一版多出来的元素（不在上面清单里）= 站点新加的控件，界面上要提示 */
+      unknown: unknownIds(d),
       vis: {
         render: toggleOf(pub),
         mp4: toggleOf($id(d, 'generate_mp4'), 'mp4Hidden'),
