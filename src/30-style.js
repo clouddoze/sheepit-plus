@@ -792,7 +792,8 @@ ${Theme.css('#sp')}
 #sp .up-body .up1-drop input[type=file]{
   position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
 }
-#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text-2)}
+/* 文件名现在长在虚线框里，是这一屏的主要反馈对象：用正文墨，别再压成三级墨 */
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text)}
 #sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
 #sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
 #sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
@@ -801,7 +802,6 @@ ${Theme.css('#sp')}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
-#sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}

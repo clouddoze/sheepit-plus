@@ -491,9 +491,7 @@
       'up1.picked': '已选择 {name}（{size}）',
       'up1.noFile': '先选一个文件。',
       'up1.go': '开始上传',
-      'up1.willRead': '站点会读出引擎、帧区间、分辨率、采样 —— 分析完再让你确认。',
       'up1.goBusy': '正在上传…',
-      'up1.cancel': '取消上传',
       'up1.canceled': '已取消，文件没有发出去。',
       'up1.tooBig': '{name} 有 {size}，超过站点这次的 {max} 上限 —— 先用 Blender 自带的压缩，或把项目拆小。',
       'up1.badType': '{name} 不是 .blend 或 .zip，站点不收。',
@@ -808,9 +806,7 @@
       'up1.picked': 'Selected {name} ({size})',
       'up1.noFile': 'Choose a file first.',
       'up1.go': 'Start upload',
-      'up1.willRead': 'The site reads the engine, frame range, resolution and samples \u2014 then you confirm.',
       'up1.goBusy': 'Uploading\u2026',
-      'up1.cancel': 'Cancel upload',
       'up1.canceled': 'Cancelled \u2014 nothing was sent.',
       'up1.tooBig': '{name} is {size}, over the site\u2019s {max} limit right now \u2014 try Blender\u2019s own compression, or split the project.',
       'up1.badType': '{name} is not a .blend or .zip; the site will not take it.',
@@ -2854,7 +2850,8 @@ ${Theme.css('#sp')}
 #sp .up-body .up1-drop input[type=file]{
   position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
 }
-#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text-2)}
+/* 文件名现在长在虚线框里，是这一屏的主要反馈对象：用正文墨，别再压成三级墨 */
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text)}
 #sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
 #sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
 #sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
@@ -2863,7 +2860,6 @@ ${Theme.css('#sp')}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
-#sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}
@@ -5173,8 +5169,10 @@ ${Theme.css('#sp')}
       我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
 
       返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
-      发现选错文件时只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
-      与"网络失败"分开，界面才能说实话。 */
+      传错了只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
+      与"网络失败"分开，界面才能说实话。
+      （界面上暂时没有取消按钮 —— 用户 2026-10-07 要求删掉；abort 能力留在这一层，
+      将来要加回按钮或走快捷键都不用再动契约。） */
   function upload(file, onProgress) {
     let xhr = null;
     const promise = new Promise((resolve) => {
@@ -5392,9 +5390,11 @@ ${Theme.css('#sp')}
     title.appendChild(pick);
     drop.appendChild(title);
     drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
-    const nameEl = mk('div', 'up1-name');    /* 选中之后回显"站点接下来会读什么"：这一步的产出是下一步的输入，先说清再让人等 */
-    const willRead = mk('div', 'up1-willread');
-    willRead.hidden = true;
+    /* 选中的文件显示在**这个框里**（用户 2026-10-07）：框本身就是"放文件的地方"，
+       把结果摆到框外另起一行，看起来像两件事。 */
+    const nameEl = mk('div', 'up1-name');
+    nameEl.hidden = true;
+    drop.appendChild(nameEl);
     const bar = mk('div', 'up1-bar');
     /* 读屏用户拿不到进度与结果：进度条与消息行都要能被播报（全 src 里 role=progressbar/aria-live 本来是 0） */
     bar.setAttribute('role', 'progressbar');
@@ -5409,23 +5409,15 @@ ${Theme.css('#sp')}
     msg.setAttribute('aria-live', 'polite');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
-    /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
-    const cancel = mk('button', 'btn');
-    cancel.type = 'button';
-    cancel.textContent = t('up1.cancel');
-    cancel.hidden = true;
     const btn = mk('button', 'btn primary');
     btn.type = 'button';
     btn.textContent = t('up1.go');
     btn.disabled = true;   // 未选文件时它不是"已就绪"——以前那是一颗满血主色按钮
-    foot.appendChild(cancel);
     foot.appendChild(btn);
 
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
-    slot.appendChild(nameEl);
-    slot.appendChild(willRead);
     slot.appendChild(bar);
     slot.appendChild(pct);
     slot.appendChild(msg);
@@ -5459,7 +5451,7 @@ ${Theme.css('#sp')}
     };
     const show = (f) => {
       picked = null;
-      willRead.hidden = true;
+      nameEl.hidden = true;
       if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
       if (!/\.(blend|zip)$/i.test(f.name)) {
         nameEl.textContent = '';
@@ -5476,8 +5468,7 @@ ${Theme.css('#sp')}
       say('');
       picked = f;
       nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
-      willRead.textContent = t('up1.willRead');
-      willRead.hidden = false;
+      nameEl.hidden = false;
       btn.disabled = busy;
     };
 
@@ -5498,16 +5489,12 @@ ${Theme.css('#sp')}
       if (f) show(f);
     });
 
-    let ctrl = null;   // Chain.upload 的 { promise, abort }
-    cancel.addEventListener('click', () => { if (ctrl) ctrl.abort(); });
-
     btn.addEventListener('click', async () => {
       if (busy) return;
       if (!picked) { say(t('up1.noFile'), true); return; }
       busy = true;
       btn.disabled = true;
       btn.textContent = t('up1.goBusy');
-      cancel.hidden = false;
       say('');
       bar.hidden = false;
       pct.hidden = false;
@@ -5515,7 +5502,7 @@ ${Theme.css('#sp')}
       pct.textContent = t('up1.uploading', { pct: 0 });
       rate.t = 0; rate.loaded = 0; rate.speed = 0;
 
-      ctrl = SP.Chain.upload(picked, (loaded, total) => {
+      const r = await SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
         bar.setAttribute('aria-valuenow', String(p));
@@ -5525,12 +5512,9 @@ ${Theme.css('#sp')}
         pct.textContent = eta
           ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
           : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
-      });
-      const r = await ctrl.promise;
-      ctrl = null;
+      }).promise;
 
       busy = false;
-      cancel.hidden = true;
       btn.textContent = t('up1.go');
       if (r.ok) {
         pct.textContent = t('up1.jumping');

@@ -81,9 +81,11 @@
     title.appendChild(pick);
     drop.appendChild(title);
     drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
-    const nameEl = mk('div', 'up1-name');    /* 选中之后回显"站点接下来会读什么"：这一步的产出是下一步的输入，先说清再让人等 */
-    const willRead = mk('div', 'up1-willread');
-    willRead.hidden = true;
+    /* 选中的文件显示在**这个框里**（用户 2026-10-07）：框本身就是"放文件的地方"，
+       把结果摆到框外另起一行，看起来像两件事。 */
+    const nameEl = mk('div', 'up1-name');
+    nameEl.hidden = true;
+    drop.appendChild(nameEl);
     const bar = mk('div', 'up1-bar');
     /* 读屏用户拿不到进度与结果：进度条与消息行都要能被播报（全 src 里 role=progressbar/aria-live 本来是 0） */
     bar.setAttribute('role', 'progressbar');
@@ -98,23 +100,15 @@
     msg.setAttribute('aria-live', 'polite');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
-    /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
-    const cancel = mk('button', 'btn');
-    cancel.type = 'button';
-    cancel.textContent = t('up1.cancel');
-    cancel.hidden = true;
     const btn = mk('button', 'btn primary');
     btn.type = 'button';
     btn.textContent = t('up1.go');
     btn.disabled = true;   // 未选文件时它不是"已就绪"——以前那是一颗满血主色按钮
-    foot.appendChild(cancel);
     foot.appendChild(btn);
 
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
-    slot.appendChild(nameEl);
-    slot.appendChild(willRead);
     slot.appendChild(bar);
     slot.appendChild(pct);
     slot.appendChild(msg);
@@ -148,7 +142,7 @@
     };
     const show = (f) => {
       picked = null;
-      willRead.hidden = true;
+      nameEl.hidden = true;
       if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
       if (!/\.(blend|zip)$/i.test(f.name)) {
         nameEl.textContent = '';
@@ -165,8 +159,7 @@
       say('');
       picked = f;
       nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
-      willRead.textContent = t('up1.willRead');
-      willRead.hidden = false;
+      nameEl.hidden = false;
       btn.disabled = busy;
     };
 
@@ -187,16 +180,12 @@
       if (f) show(f);
     });
 
-    let ctrl = null;   // Chain.upload 的 { promise, abort }
-    cancel.addEventListener('click', () => { if (ctrl) ctrl.abort(); });
-
     btn.addEventListener('click', async () => {
       if (busy) return;
       if (!picked) { say(t('up1.noFile'), true); return; }
       busy = true;
       btn.disabled = true;
       btn.textContent = t('up1.goBusy');
-      cancel.hidden = false;
       say('');
       bar.hidden = false;
       pct.hidden = false;
@@ -204,7 +193,7 @@
       pct.textContent = t('up1.uploading', { pct: 0 });
       rate.t = 0; rate.loaded = 0; rate.speed = 0;
 
-      ctrl = SP.Chain.upload(picked, (loaded, total) => {
+      const r = await SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
         bar.setAttribute('aria-valuenow', String(p));
@@ -214,12 +203,9 @@
         pct.textContent = eta
           ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
           : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
-      });
-      const r = await ctrl.promise;
-      ctrl = null;
+      }).promise;
 
       busy = false;
-      cancel.hidden = true;
       btn.textContent = t('up1.go');
       if (r.ok) {
         pct.textContent = t('up1.jumping');

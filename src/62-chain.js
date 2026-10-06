@@ -409,8 +409,10 @@
       我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
 
       返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
-      发现选错文件时只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
-      与"网络失败"分开，界面才能说实话。 */
+      传错了只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
+      与"网络失败"分开，界面才能说实话。
+      （界面上暂时没有取消按钮 —— 用户 2026-10-07 要求删掉；abort 能力留在这一层，
+      将来要加回按钮或走快捷键都不用再动契约。） */
   function upload(file, onProgress) {
     let xhr = null;
     const promise = new Promise((resolve) => {
