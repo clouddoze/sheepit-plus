@@ -52,6 +52,10 @@ What it rebuilds
   render keys, two blocklists.
 - Settings — in-app: theme (system / dark / light), interface language, and whether to translate
   the pages that keep their original layout.
+- Uploading a project — the top bar has an "Upload" entry, with four modes in Settings: off, the
+  site's own page untouched, "compatible" (the site's own controls laid out inside our cards — the
+  default), and "new" (the upload card, the analysis wait, and the project-settings step drawn and
+  submitted by the script, using the values the site's own analyzer returned).
 
 Privacy
 
@@ -60,10 +64,12 @@ endpoints, and no requests to third parties. The stylesheet and every chart are 
 no analytics, no external fonts, no CDN. Your preferences live in `localStorage` under
 `sheepit-plus:*`.
 
-Three things can change anything on the server, and each is a button you press, posting to the same
+Four things can change anything on the server, and each is a button you press, posting to the same
 endpoint the original page posts to: the forms in Account settings, pause/resume on a session page,
-and add/remove in your render priority. The script makes no scheduling decisions and does not touch
-points or frame accounting.
+add/remove in your render priority, and adding a project (the file upload, then the project settings
+you confirm). In the upload flow the script posts the same fields the site's own form posts, to the
+same addresses; it does not invent endpoints. The script makes no scheduling decisions and does not
+touch points or frame accounting.
 
 Prefer the old interface?
 
@@ -78,12 +84,14 @@ reads data through your own session. No extra permissions: `@grant none`.
 Known limitations
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/getstarted`, …) keep their original
-  layout; text is replaced only where a translation exists. Uploading a project is its own page in
-  the new interface (`#/upload`, behind the experimental switch); `/getstarted` stays the site's page.
-- The last two steps of uploading a project are still the site's own interface: the project-settings
-  form that appears once the analysis finishes (engine, frame range, tiles, samples, resolution…),
-  and the project management page `/project/<id>`. They work; they just have not been rebuilt.
+- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, …) keep their original layout; text is
+  replaced only where a translation exists. The upload flow is rebuilt in "new" mode; in the default
+  "compatible" mode the site's own upload form is kept and only re-laid out inside our cards, and
+  "original" mode opens the site's own page untouched.
+- In "new" mode the project-settings step (engine, frame range, tiles, samples, resolution…) is drawn
+  and submitted by the script from the site's own analysis values. If that form ever stops matching
+  the upstream version the script was checked against, it says so and falls back to the site's own
+  form. The project management page `/project/<id>` keeps the site's own controls, restyled.
 - If the site is redesigned a parser can stop matching. The worst case is one view saying "no data";
   the site itself is unaffected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
@@ -117,6 +125,9 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
   按天的活动汇总与完整日志、可渲染的项目按原因分组；可以在这里暂停或恢复这台机器。
 - 账户设置（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单。
 - 设置（应用内）：主题（跟随系统/暗/亮）、界面语言、是否翻译保持原版的页面。
+- 上传项目：顶栏有「上传项目」入口，设置里有四档 —— 关闭、原版（站点自己那页，我们一点不碰）、
+  兼容（站点自己的控件收进我们的卡片排版，**默认**）、新版（上传卡片、分析等待、项目设置三步
+  都由脚本自绘并自行提交，用的是站点分析器给的值）。
 
 关于隐私
 
@@ -124,9 +135,10 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
 发请求。样式和图表都是脚本自带的，没有统计代码、外部字体或 CDN。你的偏好存在 `localStorage`
 的 `sheepit-plus:*` 键下。
 
-只有三处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
-表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出。脚本不参与渲染调度，也不碰积分
-与帧数的计算。
+只有四处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
+表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出，以及添加项目（文件上传，再到你确认的
+项目设置）。上传链路上脚本发的是站点自己那张表单会发的同一组字段、同一个地址，不自造接口。
+脚本不参与渲染调度，也不碰积分与帧数的计算。
 
 想用回原版
 
@@ -140,11 +152,12 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
 已知限制
 
 - 原站的 CSS/JS 仍会下载，只是被隐藏了；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/getstarted` 等）保持原版界面，只在有译文
-  时替换文案。上传项目在新界面里是单独一页（`#/upload`，需要在设置里打开「实验性」）；
-  `/getstarted` 仍是原站页面。
-- 上传项目的后两步还是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、切块、
-  采样、分辨率…），以及项目管理页 `/project/<数字>`。功能正常，只是还没重做。
+- 未重建的页面（`/faq`、`/project/*`、`/servers` 等）保持原版界面，只在有译文时替换文案。
+  上传链路只在「新版」档重做；默认的「兼容」档保留站点自己的表单，只把它收进我们的卡片排版；
+  「原版」档完全不接管，打开的是站点自己那一页。
+- 「新版」档下，项目设置那一步（引擎、帧区间、切块、采样、分辨率…）由脚本按站点分析器给的值
+  自绘并自行提交。万一这张表单与脚本核对过的上游版本对不上，它会明说并退回站点自己那张表单。
+  项目管理页 `/project/<数字>` 仍是站点自己的控件，只统一了外观。
 - 站点改版可能让某个解析器失效，最坏情况是那一个视图显示「无数据」，不影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
 - 未登录时会提示你先在原站登录。
@@ -187,7 +200,10 @@ MIT 许可。有问题欢迎反馈：告诉我哪个页面、你看到了什么�
 `0.1.9`（实验性入口改成**应用内**打开：把 /getstarted 抓回来装进卡片，不再跳去原站页面）→
 `0.1.10`（/getstarted 不再接管 —— 上传只留应用内那一页；脚本页与 README 的描述重写、语气放平）→
 `0.1.11`（修设备名自动补全的菜单被自己的守卫挡掉；补上菜单的失焦/点外面关闭；源码注释精简
-99.7→33.4 KB，产物 -20%）。
+99.7→33.4 KB，产物 -20%）→
+`0.1.12`–`0.1.18`（**未发布**：仓库里持续迭代，GreasyFork 上一直停在 0.1.11）→
+`0.2.0`（上传链路按上游源码重写：四档开关、新版上传页、新版第三步自绘自提交；验收记录见「五」的
+0.2.0 段）。
 
 ⚠️ **刚发布完别立刻拉 URL 判成败** —— `update.greasyfork.org` 有 CDN 缓存。0.1.4 发布后
 第一次查 `.meta.js` 拿到的还是 `0.1.3`，加一个 `?cb=<随机数>` 再查就是新版本了；脚本页上
@@ -614,6 +630,45 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
   必须先确认这一档是 `modern`**，否则很容易把"没接管"当成回归去查。
 
 ---
+
+### 0.2.0（2026-10-07，发布中）
+
+**主题：上传链路按上游源码重写，四档开关（关闭 / 原版 / 兼容 / 新版）。**
+
+上游契约逐条核对：GitLab `sheepitrenderfarm/www` 的 master HEAD = `9b13032c`，与当时线上资源
+路径 `/media/9b13032c/` 同值。三个服务端接口全部对着源码核过，落在新增的 `src/62-chain.js`：
+上传 `POST /project/internal/upload`（multipart：`addproject_archive` + `UPLOAD_IDENTIFIER`，
+成功 302 → `/project/add/<token>`）、轮询 `GET /project/add_analyse/<token>`（JSON `RETRY` /
+`PROCESSING` 或 HTML 碎片）、提交 `POST /project/add_internal`（27 键，成功体是 `http…` 开头的
+绝对地址）。新增 `src/64-step1.js`（新版上传页）与 `src/68-step3.js`（新版第三步，自绘自提交）。
+
+**真机实测**（真站点 + 注入 `dist`，测试账号 `muwyelkoai3k`）：
+
+- 真机上传 `sptest.blend`（89 KB）→ 站点建分析记录、302 到 `/project/add/aGJVQC`。
+- 等待页轮询显示「分析器正在读：0 / 1 个文件」→ 分析完成后自绘第三步：引擎 CYCLES /
+  blender405 / 160×120 / 24 fps / 采样 153600 / 8 像素 / .png / 降噪 / 自适应采样 / 无头渲染。
+- **提交前拦截**（`SP.Chain.submit` 换桩，**没有发请求**）：27 键齐全、值正确。
+- **四分支逐键一致**：真碎片（EXR/降噪）、tiles 下拉、samples 滑条、单帧+滑条，各 27 键、
+  **零差异**（`.tmp/upload-test/probe-eq.js`）。
+- 兼容档与新版档在同一真实编号上的截图对比：`.tmp/upload-test/step3-v2-compat-vs-new.png`。
+- **架构性保证**：解析碎片用 `DOMParser`，站点 HTML **永不进活文档** —— 0.1.14–0.1.17
+  「两份同名表单」那一整类缺陷结构上不可能再出现。
+- 失效模式可见（用户拍板的 A 方案：两条路都留、都"坏得响"）：`62-chain.js` 的 `KNOWN_IDS`
+  结构指纹 + `model.unknown` → 第三步提示条 + 设置页指纹行变红；`50-views.js` 的
+  `shapeNotice()` 在兼容档拼不出来时明说并给出切档办法。
+- 2026-10-07 本轮 impeccable critique（dual-agent，含真机截图与确定性扫描）分数 **27/40**，
+  快照在 `.impeccable/critique/2026-10-06T21-38-40Z__src-68-step3-js.md`；五条改进项尚未动手。
+
+**本轮未验证（别当成已验证）**：
+
+- 真机点「添加这个文件」真正建项目（每次都要用户点头，只跑到"提交前拦截"为止）。
+- 新版上传页的错误分支（站点维护中 / 无头像账号 / 并发上限 / 站点拒绝原因的就地显示）
+  只用桩验过，没有真实截图。
+- 第三步的其它分支形态（EXR 切块清单、多 .blend 存档、`up3x.unknown` 指纹提示条、
+  提交中 / 提交失败 / 已提交）。
+- **用户从 0.1.11 更新到 0.2.0 的那一跳**（装机实测）：旧设置键里 `uploadMode` 的
+  `site`/`compat` 已做兼容归一，`uiMode`/`translateSite`/`lang`/`scale` 未动。
+- 防闪守卫的 race（第四期遗留）：`#sp` 注入早于站点渲染时仍有闪一下的风险。
 
 ### 0.1.18（2026-10-06 起，尚未发布）
 
