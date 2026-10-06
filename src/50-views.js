@@ -1254,8 +1254,8 @@
   function analyse() {
     return `<div class="wrap">
       <div class="sechead">
-        <h2>${esc(t('an.title'))}</h2>
-        <span class="sub">${esc(t('an.sub'))}</span>
+        <h2 data-an="title">${esc(t('an.title'))}</h2>
+        <span class="sub" data-an="titleSub">${esc(t('an.sub'))}</span>
       </div>
       <div class="panel an-card">
         <div class="an-head">

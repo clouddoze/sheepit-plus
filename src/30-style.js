@@ -906,6 +906,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+/* 「关于你这次的读数」：能传 / 上限，挑文件之前就在 */
+#sp .up1-status{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-status .dot{width:7px;height:7px;border-radius:50%;background:var(--positive);flex:none}
+#sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}
@@ -923,8 +927,20 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-cost b{color:var(--accent);font-weight:600}
 #sp .up1-tbl{margin-top:10px}
 #sp .up1-tbl td.bad{color:var(--accent)}
+/* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
+   "推荐这么切" 与普通行长得一模一样，等于白算。 */
+#sp .up1-tbl td.ok{color:var(--accent);font-weight:600}
+#sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
+/* 12 条须知里的"少数人才需要"那几条：默认折起来，站点原文一条没删 */
+#sp .up1-more{margin-top:12px}
+#sp .up1-more > summary{cursor:pointer;font-size:12.5px;color:var(--text-3);list-style:none}
+#sp .up1-more > summary::-webkit-details-marker{display:none}
+#sp .up1-more > summary::before{content:'▸ '}
+#sp .up1-more[open] > summary::before{content:'▾ '}
+#sp .up1-more > summary:hover{color:var(--text-2)}
+#sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
 #sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
@@ -1066,7 +1082,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
 /* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
    折叠的内存框、未选中的"帧范围"那一行都还在显示） */
-#sp .sp-up3 [hidden]{display:none !important}#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 [hidden]{display:none !important}
+/* 区域标签（h3）：三级墨 12.5px —— 不跟页头 h2 抢，也不跟下面的记录名抢 */
+#sp .sp-up3 .up3-head h3{margin:0;font-size:12.5px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
@@ -1095,7 +1113,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 /* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
 #sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
 #sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-bhead h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
 #sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
 #sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}

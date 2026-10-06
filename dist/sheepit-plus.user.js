@@ -423,6 +423,7 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
+      'an.doneSechead': '分析完成 —— 接下来只需确认设置',
 
       /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
       'up3.vis': '可见性',
@@ -468,7 +469,7 @@
       'up3x.no': '否',
       'up3x.cpu': 'CPU',
       'up3x.gpu': 'GPU',
-      'up3x.queue': '预计排队 {v}',
+      'up3x.queue': '预计排队第 {v} 位',
       'up3x.total': '项目总数 {n}',
       'up3x.anim': '动画',
       'up3x.single': '单帧',
@@ -479,6 +480,9 @@
       'up3x.splitEach': '每帧切成几份',
       'up3x.splitGrid': '每帧切成几宫格',
       'up3x.splitFixed': '站点分析后认定这个文件不能切块，将按整帧渲染。',
+      /* 管着这两行的硬约束，长在决策行上 —— 以前只在上一步的须知里出现过（记忆桥） */
+      'up3x.rule20': '基准机上单帧（或每块）超过 20 分钟就该切块 —— 站点按它那台基准机算。',
+      'up3x.ruleTiles': '一次最多 12,000 个分块：8×8 切法下大约到 187 帧就到顶了。',
       'up3x.nTiles': '{n} 份',
       'up3x.fullFrame': '整帧',
       'up3x.ram': '内存占用',
@@ -508,6 +512,8 @@
       'up1.picked': '已选择 {name}（{size}）',
       'up1.noFile': '先选一个文件。',
       'up1.go': '开始上传',
+      'up1.ok': '这次可以传：单个文件上限 {size}。',
+      'up1.willRead': '站点会读出引擎、帧区间、分辨率、采样 —— 分析完再让你确认。',
       'up1.goBusy': '正在上传…',
       'up1.cancel': '取消上传',
       'up1.canceled': '已取消，文件没有发出去。',
@@ -535,6 +541,7 @@
       'up1.perTile': '每块预计用时',
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
+      'up1.moreRules': '另外 {n} 条要求 —— 需要时展开',
       /* 站点结构变了：两条路都不许沉默（A 方案） */
       'up.shapeCompat': '站点这一版的页面结构与脚本核对过的不一样，兼容档拼不出上传界面 —— 不是你的操作出了问题。',
       'up.shapeNew': '站点这一版的页面结构变了，新版认不出要用的那几块。',
@@ -766,6 +773,7 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
+      'an.doneSechead': 'Analysis finished \u2014 all that is left is to confirm the settings',
       'up3.vis': 'Visibility',
       'up3.cpu': 'Compute method',
       'up3.frames': 'Frame range',
@@ -818,6 +826,8 @@
       'up3x.splitEach': 'Divide each frame into',
       'up3x.splitGrid': 'Tile grid per frame',
       'up3x.splitFixed': 'The analysis says this file cannot be split, so it will be rendered as full frames.',
+      'up3x.rule20': 'If one frame (or tile) takes over 20 minutes on the reference machine, split it \u2014 that is the site\u2019s rule.',
+      'up3x.ruleTiles': 'At most 12,000 tiles per submission: with an 8\u00d78 split that is about 187 frames.',
       'up3x.nTiles': '{n} tiles',
       'up3x.fullFrame': 'Full frame',
       'up3x.ram': 'Memory used',
@@ -846,6 +856,8 @@
       'up1.picked': 'Selected {name} ({size})',
       'up1.noFile': 'Choose a file first.',
       'up1.go': 'Start upload',
+      'up1.ok': 'You can upload right now: one file, up to {size}.',
+      'up1.willRead': 'The site reads the engine, frame range, resolution and samples \u2014 then you confirm.',
       'up1.goBusy': 'Uploading\u2026',
       'up1.cancel': 'Cancel upload',
       'up1.canceled': 'Cancelled \u2014 nothing was sent.',
@@ -873,6 +885,7 @@
       'up1.perTile': 'Expected time per tile',
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
+      'up1.moreRules': '{n} more requirements \u2014 expand if you need them',
       'up.shapeCompat': 'This version of the page does not match the structure this script was verified against, so Compatible mode cannot assemble the upload UI \u2014 nothing you did caused this.',
       'up.shapeNew': 'The page structure changed on this version, so New mode cannot find the blocks it needs.',
       'up.shapeHow': 'Switch to the other mode under Settings \u2192 Upload, or pick Off and use the site\u2019s own page (switching reloads this page).',
@@ -3005,6 +3018,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+/* 「关于你这次的读数」：能传 / 上限，挑文件之前就在 */
+#sp .up1-status{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-status .dot{width:7px;height:7px;border-radius:50%;background:var(--positive);flex:none}
+#sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
 #sp .up1-dev{position:relative}
@@ -3022,8 +3039,20 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .up1-cost b{color:var(--accent);font-weight:600}
 #sp .up1-tbl{margin-top:10px}
 #sp .up1-tbl td.bad{color:var(--accent)}
+/* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
+   "推荐这么切" 与普通行长得一模一样，等于白算。 */
+#sp .up1-tbl td.ok{color:var(--accent);font-weight:600}
+#sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
+/* 12 条须知里的"少数人才需要"那几条：默认折起来，站点原文一条没删 */
+#sp .up1-more{margin-top:12px}
+#sp .up1-more > summary{cursor:pointer;font-size:12.5px;color:var(--text-3);list-style:none}
+#sp .up1-more > summary::-webkit-details-marker{display:none}
+#sp .up1-more > summary::before{content:'▸ '}
+#sp .up1-more[open] > summary::before{content:'▾ '}
+#sp .up1-more > summary:hover{color:var(--text-2)}
+#sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
 #sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
@@ -3165,7 +3194,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
 /* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
    折叠的内存框、未选中的"帧范围"那一行都还在显示） */
-#sp .sp-up3 [hidden]{display:none !important}#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 [hidden]{display:none !important}
+/* 区域标签（h3）：三级墨 12.5px —— 不跟页头 h2 抢，也不跟下面的记录名抢 */
+#sp .sp-up3 .up3-head h3{margin:0;font-size:12.5px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
@@ -3194,7 +3225,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 /* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
 #sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
 #sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-bhead h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
 #sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
 #sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
@@ -5051,8 +5082,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   function analyse() {
     return `<div class="wrap">
       <div class="sechead">
-        <h2>${esc(t('an.title'))}</h2>
-        <span class="sub">${esc(t('an.sub'))}</span>
+        <h2 data-an="title">${esc(t('an.title'))}</h2>
+        <span class="sub" data-an="titleSub">${esc(t('an.sub'))}</span>
       </div>
       <div class="panel an-card">
         <div class="an-head">
@@ -5577,7 +5608,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const s = box.textContent.replace(/\s+/g, ' ');
       const q = /Est\.\s*queue position:\s*([^ ]+)/i.exec(s);
       const n = /Total projects:\s*([\d,]+)/i.exec(s);
-      if (q) out.queue = q[1];
+      /* 站点给的是英文序数（"9th"）。中文模板里写「预计排队第 8th 位」是机器味，
+         这里剥掉后缀，中文拿去拼「第 n 位」，英文那边退化成 "Est. queue position 9"。 */
+      if (q) out.queue = q[1].replace(/(\d+)(st|nd|rd|th)\b/i, '$1');
       if (n) out.total = n[1];
       return out;
     };
@@ -6115,6 +6148,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
        提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
     const maxBytes = page.limitBytes || 0;
     const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
+    /* 关于你这次的读数：能不能传、上限多少 —— 在挑文件之前说，而不是等整页被替换之后才说 */
+    const status = mk('div', 'up1-status');
+    status.appendChild(mk('i', 'dot'));
+    status.appendChild(mk('span', null, t('up1.ok', { size: maxText || t('up1.anySize') })));
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -6130,14 +6167,21 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     title.appendChild(pick);
     drop.appendChild(title);
     drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
-    const nameEl = mk('div', 'up1-name');
+    const nameEl = mk('div', 'up1-name');    /* 选中之后回显"站点接下来会读什么"：这一步的产出是下一步的输入，先说清再让人等 */
+    const willRead = mk('div', 'up1-willread');
+    willRead.hidden = true;
     const bar = mk('div', 'up1-bar');
+    /* 读屏用户拿不到进度与结果：进度条与消息行都要能被播报（全 src 里 role=progressbar/aria-live 本来是 0） */
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('aria-valuemin', '0');
+    bar.setAttribute('aria-valuemax', '100');
     bar.hidden = true;
     const fill = mk('i');
     bar.appendChild(fill);
     const pct = mk('div', 'up1-pct');
     pct.hidden = true;
     const msg = mk('div', 'up1-msg');
+    msg.setAttribute('aria-live', 'polite');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
     /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
@@ -6152,10 +6196,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     foot.appendChild(cancel);
     foot.appendChild(btn);
 
+    slot.appendChild(status);
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
     slot.appendChild(nameEl);
+    slot.appendChild(willRead);
     slot.appendChild(bar);
     slot.appendChild(pct);
     slot.appendChild(msg);
@@ -6189,6 +6235,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     };
     const show = (f) => {
       picked = null;
+      willRead.hidden = true;
       if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
       if (!/\.(blend|zip)$/i.test(f.name)) {
         nameEl.textContent = '';
@@ -6205,6 +6252,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       say('');
       picked = f;
       nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
+      willRead.textContent = t('up1.willRead');
+      willRead.hidden = false;
       btn.disabled = busy;
     };
 
@@ -6245,6 +6294,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       ctrl = SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
+        bar.setAttribute('aria-valuenow', String(p));
         if (p >= 100) { pct.textContent = t('up1.sending'); return; }
         if (!total) { pct.textContent = t('up1.uploading', { pct: p }); return; }
         const eta = etaOf(loaded, total);
@@ -6314,7 +6364,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     fields.appendChild(cntF);
 
     const foot = mk('div', 'up1-foot');
-    const btn = mk('button', 'btn primary');
+    /* 次级样式：估算不改变服务器上的任何东西，按 DESIGN.md 的 One Commit Rule 它不配穿主色
+       （以前它和「开始上传」同为满主色，同屏两个等权按钮） */
+    const btn = mk('button', 'btn');
     btn.type = 'button';
     btn.textContent = t('up1.estGo');
     foot.appendChild(btn);
@@ -6353,10 +6405,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         if (!list.length) { closeSug(); return; }
         list.slice(0, 12).forEach((o) => {
           const li = mk('div', 'up1-sugitem', o.label);
-          li.addEventListener('click', () => {
-            devValue = o.value;
-            devInp.value = o.label;
-            closeSug();
+          /* 键盘也够得着：这条路径强制"必须从建议里选"，纯 click 的 div 等于把键盘用户挡死 */
+          li.tabIndex = 0;
+          li.setAttribute('role', 'option');
+          const pickIt = () => { devValue = o.value; devInp.value = o.label; closeSug(); };
+          li.addEventListener('click', pickIt);
+          li.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
           });
           sug.appendChild(li);
         });
@@ -6445,8 +6500,25 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const tail = last.nodeValue.trim();
       if (!/^[.．。]+$/.test(tail)) return;
       const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
-      if (/[。．.！!？?]$/.test(before)) last.remove();
+      /* 站点把句号写在 <strong> 外面（`…relative paths</strong>.`）：中文译文已经以句末标点收尾时
+         直接去掉，否则把那个半角 "." 换成中文句号 —— 以前只做前半段，于是留下「相对路径.」 */
+      if (/[。．.！!？?]$/.test(before)) last.nodeValue = '';
+      else last.nodeValue = '。';
     });
+    /* 12 条平铺就是一堵墙，而这批用户多半没读过它。把"只有部分人需要"的几条折起来 ——
+       站点原文一条不删，只是默认不占版面。匹配同时认中文译文与站点英文原文。 */
+    const ADV = [/RGBA/, /相对路径/, /relative path/i, /12,?000/, /20\s*分钟/, /20 minutes/i, /187/];
+    const lis = [].slice.call(ul.querySelectorAll('li'));
+    const adv = lis.filter((li) => ADV.some((re) => re.test(li.textContent)));
+    if (adv.length >= 2 && adv.length < lis.length) {
+      const det = mk('details', 'up1-more');
+      const sum = mk('summary', null, t('up1.moreRules', { n: adv.length }));
+      det.appendChild(sum);
+      const ul2 = mk('ul', 'up1-rules');
+      adv.forEach((li) => ul2.appendChild(li));   // 搬节点（翻译已经做完了），不是复制
+      det.appendChild(ul2);
+      slot.appendChild(det);
+    }
   }
 
   /* ---------------------------------------------------------------- 入口 */
@@ -6667,11 +6739,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       };
     });
 
-    /* ① 抬头 + 概览（站点算出来的事实，一行 chips） */
+    /* ① 抬头 + 概览（站点算出来的事实，一行 chips）
+       这一行是**区域标签**（h3，12.5px 三级墨），不是标题级：页头 h2「分析完成…」已经把状态说了，
+       真正的记录名在下面每个 .blend 上。以前三行都挂 h4/13.5px/600，读起来分不清谁是标题。 */
     const head = mk('div', 'up3-head');
-    const h4 = mk('h4');
-    h4.textContent = t('up3x.title');
-    head.appendChild(h4);
+    const h3 = mk('h3');
+    h3.textContent = t('up3x.title');
+    head.appendChild(h3);
     root.appendChild(head);
 
     const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
@@ -6841,6 +6915,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         };
         anim.querySelector('input').addEventListener('change', sync);
         sing.querySelector('input').addEventListener('change', sync);
+        framesBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), framesBox));
       } else {
         const animRow = mk('div', 'up3-fields');
@@ -6849,6 +6924,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
           animRow.appendChild(f);
         });
+        animRow.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
@@ -6893,6 +6969,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         why.appendChild(txt);
         splitBox.appendChild(why);
       }
+      /* 上限也长在这一行：拨滑条的时候才需要知道"到顶是多少" */
+      splitBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.ruleTiles')));
       bl.appendChild(line(t('up3x.split'), splitBox));
 
       /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */
@@ -6914,6 +6992,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       bl.appendChild(foot);
 
       const slot = mk('div', 'up3-slot');
+      slot.setAttribute('aria-live', 'polite');   // 校验错误与提交结果要能被读屏播报
       slot.hidden = true;
       bl.appendChild(slot);
 
@@ -7474,8 +7553,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
+    /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
+    const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
-      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
+      `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -7677,6 +7758,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
+      /* 分析早就完成了，页头却还在说"正在分析你的项目"：状态与标题必须在同一屏上说同一件事。
+         标题接过"完成"这句话（卡片里那句随之收掉），副标题换成站点读出来的归档事实。 */
+      const ttl = q('title');
+      const tsub = q('titleSub');
+      if (ttl) ttl.textContent = t('an.doneSechead');
+      const anHead = host.querySelector('.an-head');
+      if (anHead) anHead.hidden = true;
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
@@ -7705,6 +7793,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
              翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
           if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        }
+        /* 副标题换成"站点读出了什么"：以前它一直挂着"要先读一遍存档"，而存档早读完了。
+           「新版」档我们自己画的 `.up3-meta` 就是那句事实；降级档读站点那份，没有就不显示。 */
+        if (tsub) {
+          const metaEl = box.querySelector('.up3-meta');
+          tsub.textContent = metaEl ? metaEl.innerText.replace(/\s+/g, ' ').trim() : '';
+          tsub.hidden = !tsub.textContent;
         }
       }
       return;

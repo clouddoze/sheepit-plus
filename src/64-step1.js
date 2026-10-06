@@ -66,6 +66,10 @@
        提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
     const maxBytes = page.limitBytes || 0;
     const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
+    /* 关于你这次的读数：能不能传、上限多少 —— 在挑文件之前说，而不是等整页被替换之后才说 */
+    const status = mk('div', 'up1-status');
+    status.appendChild(mk('i', 'dot'));
+    status.appendChild(mk('span', null, t('up1.ok', { size: maxText || t('up1.anySize') })));
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -81,14 +85,21 @@
     title.appendChild(pick);
     drop.appendChild(title);
     drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
-    const nameEl = mk('div', 'up1-name');
+    const nameEl = mk('div', 'up1-name');    /* 选中之后回显"站点接下来会读什么"：这一步的产出是下一步的输入，先说清再让人等 */
+    const willRead = mk('div', 'up1-willread');
+    willRead.hidden = true;
     const bar = mk('div', 'up1-bar');
+    /* 读屏用户拿不到进度与结果：进度条与消息行都要能被播报（全 src 里 role=progressbar/aria-live 本来是 0） */
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('aria-valuemin', '0');
+    bar.setAttribute('aria-valuemax', '100');
     bar.hidden = true;
     const fill = mk('i');
     bar.appendChild(fill);
     const pct = mk('div', 'up1-pct');
     pct.hidden = true;
     const msg = mk('div', 'up1-msg');
+    msg.setAttribute('aria-live', 'polite');
     msg.hidden = true;
     const foot = mk('div', 'up1-foot');
     /* 取消：上限 2,048 MB 意味着大量用户在 GB 级别传，传错了只能关标签页等于把已传的丢掉 */
@@ -103,10 +114,12 @@
     foot.appendChild(cancel);
     foot.appendChild(btn);
 
+    slot.appendChild(status);
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
     slot.appendChild(nameEl);
+    slot.appendChild(willRead);
     slot.appendChild(bar);
     slot.appendChild(pct);
     slot.appendChild(msg);
@@ -140,6 +153,7 @@
     };
     const show = (f) => {
       picked = null;
+      willRead.hidden = true;
       if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
       if (!/\.(blend|zip)$/i.test(f.name)) {
         nameEl.textContent = '';
@@ -156,6 +170,8 @@
       say('');
       picked = f;
       nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
+      willRead.textContent = t('up1.willRead');
+      willRead.hidden = false;
       btn.disabled = busy;
     };
 
@@ -196,6 +212,7 @@
       ctrl = SP.Chain.upload(picked, (loaded, total) => {
         const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
         fill.style.width = p + '%';
+        bar.setAttribute('aria-valuenow', String(p));
         if (p >= 100) { pct.textContent = t('up1.sending'); return; }
         if (!total) { pct.textContent = t('up1.uploading', { pct: p }); return; }
         const eta = etaOf(loaded, total);
@@ -265,7 +282,9 @@
     fields.appendChild(cntF);
 
     const foot = mk('div', 'up1-foot');
-    const btn = mk('button', 'btn primary');
+    /* 次级样式：估算不改变服务器上的任何东西，按 DESIGN.md 的 One Commit Rule 它不配穿主色
+       （以前它和「开始上传」同为满主色，同屏两个等权按钮） */
+    const btn = mk('button', 'btn');
     btn.type = 'button';
     btn.textContent = t('up1.estGo');
     foot.appendChild(btn);
@@ -304,10 +323,13 @@
         if (!list.length) { closeSug(); return; }
         list.slice(0, 12).forEach((o) => {
           const li = mk('div', 'up1-sugitem', o.label);
-          li.addEventListener('click', () => {
-            devValue = o.value;
-            devInp.value = o.label;
-            closeSug();
+          /* 键盘也够得着：这条路径强制"必须从建议里选"，纯 click 的 div 等于把键盘用户挡死 */
+          li.tabIndex = 0;
+          li.setAttribute('role', 'option');
+          const pickIt = () => { devValue = o.value; devInp.value = o.label; closeSug(); };
+          li.addEventListener('click', pickIt);
+          li.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
           });
           sug.appendChild(li);
         });
@@ -396,8 +418,25 @@
       const tail = last.nodeValue.trim();
       if (!/^[.．。]+$/.test(tail)) return;
       const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
-      if (/[。．.！!？?]$/.test(before)) last.remove();
+      /* 站点把句号写在 <strong> 外面（`…relative paths</strong>.`）：中文译文已经以句末标点收尾时
+         直接去掉，否则把那个半角 "." 换成中文句号 —— 以前只做前半段，于是留下「相对路径.」 */
+      if (/[。．.！!？?]$/.test(before)) last.nodeValue = '';
+      else last.nodeValue = '。';
     });
+    /* 12 条平铺就是一堵墙，而这批用户多半没读过它。把"只有部分人需要"的几条折起来 ——
+       站点原文一条不删，只是默认不占版面。匹配同时认中文译文与站点英文原文。 */
+    const ADV = [/RGBA/, /相对路径/, /relative path/i, /12,?000/, /20\s*分钟/, /20 minutes/i, /187/];
+    const lis = [].slice.call(ul.querySelectorAll('li'));
+    const adv = lis.filter((li) => ADV.some((re) => re.test(li.textContent)));
+    if (adv.length >= 2 && adv.length < lis.length) {
+      const det = mk('details', 'up1-more');
+      const sum = mk('summary', null, t('up1.moreRules', { n: adv.length }));
+      det.appendChild(sum);
+      const ul2 = mk('ul', 'up1-rules');
+      adv.forEach((li) => ul2.appendChild(li));   // 搬节点（翻译已经做完了），不是复制
+      det.appendChild(ul2);
+      slot.appendChild(det);
+    }
   }
 
   /* ---------------------------------------------------------------- 入口 */

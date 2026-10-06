@@ -186,8 +186,10 @@
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
+    /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
+    const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
-      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
+      `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -389,6 +391,13 @@
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
+      /* 分析早就完成了，页头却还在说"正在分析你的项目"：状态与标题必须在同一屏上说同一件事。
+         标题接过"完成"这句话（卡片里那句随之收掉），副标题换成站点读出来的归档事实。 */
+      const ttl = q('title');
+      const tsub = q('titleSub');
+      if (ttl) ttl.textContent = t('an.doneSechead');
+      const anHead = host.querySelector('.an-head');
+      if (anHead) anHead.hidden = true;
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
@@ -417,6 +426,13 @@
           /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
              翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
           if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+        }
+        /* 副标题换成"站点读出了什么"：以前它一直挂着"要先读一遍存档"，而存档早读完了。
+           「新版」档我们自己画的 `.up3-meta` 就是那句事实；降级档读站点那份，没有就不显示。 */
+        if (tsub) {
+          const metaEl = box.querySelector('.up3-meta');
+          tsub.textContent = metaEl ? metaEl.innerText.replace(/\s+/g, ' ').trim() : '';
+          tsub.hidden = !tsub.textContent;
         }
       }
       return;

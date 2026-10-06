@@ -190,11 +190,13 @@
       };
     });
 
-    /* ① 抬头 + 概览（站点算出来的事实，一行 chips） */
+    /* ① 抬头 + 概览（站点算出来的事实，一行 chips）
+       这一行是**区域标签**（h3，12.5px 三级墨），不是标题级：页头 h2「分析完成…」已经把状态说了，
+       真正的记录名在下面每个 .blend 上。以前三行都挂 h4/13.5px/600，读起来分不清谁是标题。 */
     const head = mk('div', 'up3-head');
-    const h4 = mk('h4');
-    h4.textContent = t('up3x.title');
-    head.appendChild(h4);
+    const h3 = mk('h3');
+    h3.textContent = t('up3x.title');
+    head.appendChild(h3);
     root.appendChild(head);
 
     const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
@@ -364,6 +366,7 @@
         };
         anim.querySelector('input').addEventListener('change', sync);
         sing.querySelector('input').addEventListener('change', sync);
+        framesBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), framesBox));
       } else {
         const animRow = mk('div', 'up3-fields');
@@ -372,6 +375,7 @@
           f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
           animRow.appendChild(f);
         });
+        animRow.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
@@ -416,6 +420,8 @@
         why.appendChild(txt);
         splitBox.appendChild(why);
       }
+      /* 上限也长在这一行：拨滑条的时候才需要知道"到顶是多少" */
+      splitBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.ruleTiles')));
       bl.appendChild(line(t('up3x.split'), splitBox));
 
       /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */
@@ -437,6 +443,7 @@
       bl.appendChild(foot);
 
       const slot = mk('div', 'up3-slot');
+      slot.setAttribute('aria-live', 'polite');   // 校验错误与提交结果要能被读屏播报
       slot.hidden = true;
       bl.appendChild(slot);
 

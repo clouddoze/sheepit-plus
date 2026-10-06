@@ -73,7 +73,9 @@
       const s = box.textContent.replace(/\s+/g, ' ');
       const q = /Est\.\s*queue position:\s*([^ ]+)/i.exec(s);
       const n = /Total projects:\s*([\d,]+)/i.exec(s);
-      if (q) out.queue = q[1];
+      /* 站点给的是英文序数（"9th"）。中文模板里写「预计排队第 8th 位」是机器味，
+         这里剥掉后缀，中文拿去拼「第 n 位」，英文那边退化成 "Est. queue position 9"。 */
+      if (q) out.queue = q[1].replace(/(\d+)(st|nd|rd|th)\b/i, '$1');
       if (n) out.total = n[1];
       return out;
     };
