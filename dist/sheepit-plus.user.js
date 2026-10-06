@@ -462,6 +462,10 @@
       'up3x.thumb': '缩略图对所有成员可见',
       'up3x.thumbTip': '默认所有成员都能看到你项目的缩略图；不想公开就别勾。之后在项目管理页还能改。',
       'up3x.forced': '站点没有开放这个开关：它不会按你勾的样子发，最终结果是「{state}」。',
+      'up3x.forcedTip': '这个开关站点没开放：界面上的样子只是"站点最终会怎么处理"，提交时按站点的规则走（不会照你勾的发）。最终结果：{state}。',
+      'up3x.ramAuto': '留空 = 由站点在渲染第一帧时自动探测。项目很吃内存（比如超过 20GB）时再填。',
+      'up3x.picture': '画面设置',
+      'up3x.splitFixedTip': '站点分析这个文件后认定它不能切块（EXR 或降噪项目），所以只能整帧渲染 —— 这里没有可选项。',
       'up3x.yes': '是',
       'up3x.no': '否',
       'up3x.cpu': 'CPU',
@@ -756,6 +760,10 @@
       'up3x.thumb': 'Thumbnail viewable by all members',
       'up3x.thumbTip': 'By default every member can see a thumbnail of your project. Clear this to restrict access; you can change it later on the project page.',
       'up3x.forced': 'The site does not offer this switch here: it does not send what you clicked, the result is \u201c{state}\u201d.',
+      'up3x.forcedTip': 'The site does not offer this switch here: what you see is what the site will do, not what will be sent. Final result: {state}.',
+      'up3x.ramAuto': 'Leave it empty and the site detects the memory need on the first rendered frame. Fill it in only for very heavy projects (over 20GB).',
+      'up3x.picture': 'Image settings',
+      'up3x.splitFixedTip': 'The analysis says this file cannot be split (EXR or denoising project), so it is rendered as full frames \u2014 there is nothing to choose here.',
       'up3x.yes': 'yes',
       'up3x.no': 'no',
       'up3x.cpu': 'CPU',
@@ -2896,12 +2904,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
-   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12），
-   并且**只有一个框**：项目级设置。每个 .blend 之间只用一条发丝线分开。 */
+   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
+   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
 #sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
-/* 项目级设置：一个块，两行 */
+/* 硬件需求：一个块，三行，行间发丝线 */
 #sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
 #sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
 #sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
@@ -2913,30 +2921,38 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
 #sp .sp-up3 .up3-opt input{margin:0}
 #sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
 #sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
 #sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
 #sp .sp-up3 .up3-cmp{font-weight:600}
-/* 每个文件一块：只有一条上边线，不再套框 */
-#sp .sp-up3 .up3-blend{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;gap:8px 14px}
+#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
+#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .sp-up3 .up3-ram > input{width:130px}
+/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
+#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
+#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
 #sp .sp-up3 .up3-bhead h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
 #sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
 #sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
 #sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
 #sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+/* 切块：三种形态都摆成"名字: 值" */
 #sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
+#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-#sp .sp-up3 .up3-notes{margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.75}
+/* 站点写的说明：带强调线，别让人看漏 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:2px 0 2px 10px;border-left:2px solid var(--accent);
+  font-size:12.5px;color:var(--text);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad,#sp .sp-up3 .up3-notes .up3-bad{color:var(--accent)}
-#sp .sp-up3 .up3-notes.up3-warn{margin-top:16px;padding-left:10px;border-left:2px solid var(--accent);color:var(--text-2)}
-#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
-#sp .sp-up3 .up3-adv{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
-#sp .sp-up3 .up3-ram{flex:0 1 190px;margin:0}
-#sp .sp-up3 .up3-ram > label{margin:0 6px 0 0;display:inline}
-#sp .sp-up3 .up3-ram > input{width:120px}
+#sp .sp-up3 .up3-notes.up3-bad{border-left-color:var(--border-strong);color:var(--accent)}
+#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
@@ -5641,11 +5657,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    边界没变：**服务端只认 POST 键，不认 DOM**。所以自绘控件不违反任何契约；
    所有隐藏值（引擎、分辨率、采样、路径…）原样来自解析结果，一个字节都不改。
 
-   版式（用户 2026-10-07 提的三条：要概览、别框套框、字号跟其他页一致）：
-     · 概览 = 站点算出来的事实，摆成一行 chips（存档 / 文件数 / 上游版本），每个文件
-       自己那一行（引擎 / 分辨率 / 帧率 / 采样 / 格式 / 降噪…）
-     · 真需要"一组"的只有项目级设置（可见性 + 计算方式）= **一个**块，里面两行，行间发丝线
-     · 每个 .blend 一块，块之间只隔一条发丝线 + 文件名标题，不再套第二个框
+   版式（用户 2026-10-07 两轮意见的落点）：
+     · 概览 = 站点算出来的事实：一行 chips（存档 / 文件数 / 上游版本）+ 每个文件一行（引擎、
+       分辨率、帧率、采样、格式…）——只显示，不改，提交时原样发回
+     · 上半 = 硬件需求（项目级，一个块三行）：可见性 / 计算方式 / 内存占用
+       （内存是每个文件一个值，服务端契约如此；站点原来用「高级选项」勾选框只控制显隐，
+        不影响提交内容，所以这里不设勾选框，留空即自动探测）
+     · 下半 = 画面设置（每个 .blend 一块）：类型 / 帧范围 / 切块 / 提交；块之间只隔一条发丝线
+     · 站点写的说明（降噪、EXR 限制、缺文件…）带强调线，不再是一行灰字
      · 字号一律走站内那套：标题 13.5 / 正文 13 / 次要 12.5 / 提示 12 */
 
 (function () {
@@ -5681,7 +5700,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   /* ------------------------------------------------------------------ 小组件 */
 
-  /** 概览行（站内 .meta 的写法：竖线分隔的 chips） */
   function metaRow(bits) {
     const m = mk('div', 'meta up3-meta');
     bits.forEach((html) => {
@@ -5692,7 +5710,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return m;
   }
 
-  /** 设置块里的一行：左边固定宽度的名字，右边内容 */
   function line(k, content) {
     const l = mk('div', 'up3-line');
     const a = mk('div', 'up3-k');
@@ -5704,7 +5721,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return l;
   }
 
-  /** 选项行：<label class="up3-opt"><input …><span>文字</span></label>，title 走原生悬停 */
+  function tip(text) {
+    const d = mk('div', 'up3-tip');
+    d.textContent = text;
+    return d;
+  }
+
+  /** 选项行：<label class="up3-opt" title="…"><input …><span>文字</span></label> */
   function opt(kind, name, value, label, opts) {
     const o = opts || {};
     const lb = mk('label', 'up3-opt' + (o.cls ? ' ' + o.cls : ''));
@@ -5714,18 +5737,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (value != null) inp.value = value;
     inp.checked = !!o.checked;
     if (o.disabled) inp.disabled = true;
+    /* 说明一律进悬停提示（用户 2026-10-07：别在界面上铺一句话） */
     if (o.title) lb.title = o.title;
     lb.appendChild(inp);
     const sp = mk('span');
     sp.textContent = label;
     lb.appendChild(sp);
     return lb;
-  }
-
-  function tip(text) {
-    const d = mk('div', 'up3-tip');
-    d.textContent = text;
-    return d;
   }
 
   function fld(label, opts) {
@@ -5741,6 +5759,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     inp.autocomplete = 'off';
     if (o.size) inp.size = o.size;
     if (o.placeholder) inp.placeholder = o.placeholder;
+    if (o.title) inp.title = o.title;
     box.appendChild(lb);
     box.appendChild(inp);
     box._input = inp;
@@ -5790,7 +5809,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /* ------------------------------------------------------------------ 渲染 */
 
   /**
-   * @param box   #sp-an-result（我们自己的容器，class 已带 sp-up3）
+   * @param box   #sp-an-result（我们自己的容器）
    * @param model 62-chain.js parseStep3() 的结果
    * @returns {{ok:boolean, reason?:string}}
    */
@@ -5806,11 +5825,16 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const state = { vis: {}, compute: 0, blends: {} };
     const msg = mk('div', 'up3-msg');
     msg.hidden = true;
-    const say = (text, bad) => {
-      msg.textContent = text;
-      msg.hidden = !text;
-      msg.classList.toggle('bad', !!bad);
-    };
+
+    /* 状态先摆好：内存那一行在上半部分，但它写的是每个文件的值（服务端契约如此） */
+    model.blends.forEach((b) => {
+      state.blends[b.i] = b.rejected ? { rejected: true } : {
+        type: b.type, start: b.anim.start, end: b.anim.end, step: b.anim.step || '1',
+        frame: b.single.frame, ram: b.ram,
+        splitTiles: b.split.tiles,
+        splitSamples: (b.split.kind === 'samples' || b.split.kind === 'samples-single') ? String(b.split.value) : '',
+      };
+    });
 
     /* ① 抬头 + 概览（站点算出来的事实，一行 chips） */
     const head = mk('div', 'up3-head');
@@ -5827,32 +5851,28 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (model.upstream) bits.push(`${esc(t('up3x.mUpstream'))} <b>${esc(model.upstream)}</b>`);
     root.appendChild(metaRow(bits));
 
-    /* ② 项目级设置：一个块两行（可见性 + 计算方式）—— 这里才需要"一组" */
+    /* ② 上半：硬件需求（一个块三行） */
     const group = mk('div', 'up3-group');
 
     const visBox = mk('div', 'up3-opts');
     let visAny = false;
-    const visTips = [];
     [['render', model.vis.render, 'up3x.render', 'up3x.renderTip'],
       ['mp4', model.vis.mp4, 'up3x.mp4', 'up3x.mp4Tip'],
       ['thumb', model.vis.thumb, 'up3x.thumb', 'up3x.thumbTip']].forEach(([key, def, lbl, tipKey]) => {
       if (def.kind === 'none') return;
       visAny = true;
       const hidden = def.kind === 'hidden';
+      /* 站点锁死的开关：为什么锁 + 最终结果，全塞进悬停提示，界面上不铺文字 */
+      const title = hidden
+        ? t(tipKey) + '\n' + t('up3x.forcedTip', { state: def.force ? t('up3x.yes') : t('up3x.no') })
+        : t(tipKey);
       const o = opt('checkbox', null, null, t(lbl), {
-        checked: hidden ? !!def.force : !!def.on, disabled: hidden, title: t(tipKey),
+        checked: hidden ? !!def.force : !!def.on, disabled: hidden, title,
       });
       state.vis[key] = hidden ? false : !!def.on;   // 站点对 hidden 一律发 "0"（.is(':checked') 为假）
       const inp = o.querySelector('input');
       inp.addEventListener('change', () => { state.vis[key] = inp.checked; });
       visBox.appendChild(o);
-      /* 站点替用户定了的开关：单独一行说清楚（塞在选项同一行会挤成一句读不懂的话） */
-      if (hidden) visTips.push(t('up3x.forced', { state: def.force ? t('up3x.yes') : t('up3x.no') }));
-    });
-    visTips.forEach((s) => {
-      const d = tip(s);
-      d.classList.add('up3-tiprow');
-      visBox.appendChild(d);
     });
     if (visAny) group.appendChild(line(t('up3.vis'), visBox));
 
@@ -5882,9 +5902,45 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
     if (cpuBox.childNodes.length) group.appendChild(line(t('up3.cpu'), cpuBox));
 
+    /* 内存占用：属于硬件需求，跟着计算方式放；每个文件一个值（服务端契约），留空自动探测 */
+    const ramBox = mk('div', 'up3-rams');
+    let ramAny = false;
+    model.blends.forEach((b) => {
+      if (b.rejected) return;
+      ramAny = true;
+      const w = mk('div', 'up3-ram');
+      if (model.blends.length > 1) {
+        const l = mk('label');
+        l.textContent = b.name;
+        w.appendChild(l);
+      }
+      const inp = mk('input');
+      inp.type = 'text';
+      inp.inputMode = 'numeric';
+      inp.placeholder = t('up3x.ramPh');
+      inp.value = b.ram || '';
+      inp.title = t('up3x.ramTip');
+      inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+      w.appendChild(inp);
+      ramBox.appendChild(w);
+    });
+    if (ramAny) {
+      const d = tip(t('up3x.ramAuto'));
+      d.classList.add('up3-tiprow');
+      ramBox.appendChild(d);
+      group.appendChild(line(t('up3x.ram'), ramBox));
+    }
+
     root.appendChild(group);
 
-    /* ③ 每个 .blend 一块：文件名 + 它自己的事实 + 能改的那几项 + 提交 */
+    /* ③ 下半：画面设置（每个 .blend 一块） */
+    const live = model.blends.filter((b) => !b.rejected);
+    if (live.length) {
+      const sub = mk('div', 'up3-subhead');
+      sub.textContent = t('up3x.picture');
+      root.appendChild(sub);
+    }
+
     let parsedKeys = 0;
     const cards = [];
     model.blends.forEach((b) => {
@@ -5905,7 +5961,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
       if (b.rejected) {
         /* 站点对"缺相机 / 有活动输出节点 / 分析报错"的文件只给理由、不给表单（HTML.php:1162-1182） */
-        state.blends[b.i] = { rejected: true };
         const bad = mk('div', 'up3-notes up3-bad');
         bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
         bl.appendChild(bad);
@@ -5913,13 +5968,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         cards.push({ b, card: bl, body: bl, submit: null });
         return;
       }
-
-      state.blends[b.i] = {
-        type: b.type, start: b.anim.start, end: b.anim.end, step: b.anim.step || '1',
-        frame: b.single.frame, ram: b.ram,
-        splitTiles: b.split.tiles,
-        splitSamples: (b.split.kind === 'samples' || b.split.kind === 'samples-single') ? String(b.split.value) : '',
-      };
 
       /* 类型：站点只在"非 EXR 且无降噪"时给可见的两个 radio（HTML.php:1259-1267）；
          EXR/降噪分支连 radio 都是 hidden 的（:1205），那就没有可选项。 */
@@ -5931,7 +5979,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         opts.appendChild(sing);
         bl.appendChild(line(t('up3x.type'), opts));
 
-        const fields = mk('div', 'up3-fields');
         const animRow = mk('div', 'up3-fields');
         const singRow = mk('div', 'up3-fields');
         [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
@@ -5944,8 +5991,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         singRow.appendChild(sf);
         animRow.hidden = b.type === 'singleframe';
         singRow.hidden = b.type !== 'singleframe';
-        fields.appendChild(animRow);
-        fields.appendChild(singRow);
+        const framesBox = mk('div', 'up3-frames');
+        framesBox.appendChild(animRow);
+        framesBox.appendChild(singRow);
         const sync = () => {
           const v = anim.querySelector('input').checked ? 'animation' : 'singleframe';
           state.blends[b.i].type = v;
@@ -5954,7 +6002,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         };
         anim.querySelector('input').addEventListener('change', sync);
         sing.querySelector('input').addEventListener('change', sync);
-        bl.appendChild(line(t('up3x.frames'), fields));
+        bl.appendChild(line(t('up3x.frames'), framesBox));
       } else {
         const animRow = mk('div', 'up3-fields');
         [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
@@ -5965,7 +6013,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
-      /* 切块：三形态（samples 滑条 / tiles 下拉 / 站点定死） */
+      /* 切块：三种形态都摆成"名字: 值"，不再是一句说明文字 */
       const splitBox = mk('div', 'up3-split');
       if (b.split.kind === 'samples' || b.split.kind === 'samples-single') {
         const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value);
@@ -5983,11 +6031,15 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
         splitBox.appendChild(sel);
       } else {
-        splitBox.appendChild(tip(t('up3x.splitFixed')));
+        /* 站点分析认定不能切块（EXR / 降噪分支）：当只读值显示，理由进悬停 */
+        const chip = mk('span', 'up3-static');
+        chip.textContent = t('up3x.fullFrame');
+        chip.title = t('up3x.splitFixedTip');
+        splitBox.appendChild(chip);
       }
       bl.appendChild(line(t('up3x.split'), splitBox));
 
-      /* 站点写的说明（EXR 限制、降噪、缺文件、驱动警告…）：小字，不装箱 */
+      /* 站点写的说明（EXR 限制、降噪、缺文件、驱动警告…）：带强调线，别让人看漏 */
       if (b.notes && b.notes.length) {
         const notes = mk('div', 'up3-notes');
         b.notes.forEach((s) => {
@@ -5998,30 +6050,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         bl.appendChild(notes);
       }
 
-      /* 底部：高级选项（内存）在左、提交在右 —— 同一行，省掉一层框 */
       const foot = mk('div', 'up3-bfoot');
-      if (b.advanced) {
-        const adv = mk('div', 'up3-adv');
-        const ck = opt('checkbox', null, null, t('up3.adv'), { cls: 'up3-opt-adv' });
-        const inp = ck.querySelector('input');
-        const ramWrap = mk('div', 'up3-fld up3-ram');
-        ramWrap.hidden = true;
-        const rl = mk('label');
-        rl.textContent = t('up3x.ram');
-        rl.title = t('up3x.ramTip');
-        const ri = mk('input');
-        ri.type = 'text';
-        ri.inputMode = 'numeric';
-        ri.placeholder = t('up3x.ramPh');
-        ri.value = b.ram || '';
-        ri.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
-        ramWrap.appendChild(rl);
-        ramWrap.appendChild(ri);
-        inp.addEventListener('change', () => { ramWrap.hidden = !inp.checked; });
-        adv.appendChild(ck);
-        adv.appendChild(ramWrap);
-        foot.appendChild(adv);
-      }
       const btn = mk('button', 'btn up3-submit');
       btn.type = 'button';
       btn.textContent = t('up3x.submit');
@@ -6032,14 +6061,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       slot.hidden = true;
       bl.appendChild(slot);
 
-      btn.addEventListener('click', () => doSubmit(b, bl, slot, btn, msg, say, state, model));
+      btn.addEventListener('click', () => doSubmit(b, bl, slot, btn, msg, state, model));
       root.appendChild(bl);
       cards.push({ b, card: bl, body: bl, submit: btn, slot });
     });
 
     /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
        所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
-    if (model.blends.filter((x) => !x.rejected).length > 1) {
+    if (live.length > 1) {
       const warn = mk('div', 'up3-notes up3-warn');
       warn.textContent = t('up3x.multi');
       root.appendChild(warn);
@@ -6058,10 +6087,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   /* ------------------------------------------------------------------ 提交 */
 
-  async function doSubmit(b, card, slot, btn, msg, say, state, model) {
+  async function doSubmit(b, card, slot, btn, msg, state, model) {
     slot.hidden = true;
     slot.textContent = '';
     slot.classList.remove('up3-bad');
+    msg.hidden = true;
 
     const ui = { vis: state.vis, compute: state.compute, blends: state.blends };
     const errs = SP.Chain.validate(model, ui);

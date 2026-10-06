@@ -885,12 +885,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
-   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12），
-   并且**只有一个框**：项目级设置。每个 .blend 之间只用一条发丝线分开。 */
+   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
+   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
 #sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
-/* 项目级设置：一个块，两行 */
+/* 硬件需求：一个块，三行，行间发丝线 */
 #sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
 #sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
 #sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
@@ -902,30 +902,38 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
 #sp .sp-up3 .up3-opt input{margin:0}
 #sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
 #sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
 #sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
 #sp .sp-up3 .up3-cmp{font-weight:600}
-/* 每个文件一块：只有一条上边线，不再套框 */
-#sp .sp-up3 .up3-blend{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;gap:8px 14px}
+#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
+#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .sp-up3 .up3-ram > input{width:130px}
+/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
+#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
+#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
 #sp .sp-up3 .up3-bhead h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
 #sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
 #sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
 #sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
 #sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+/* 切块：三种形态都摆成"名字: 值" */
 #sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
+#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-#sp .sp-up3 .up3-notes{margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.75}
+/* 站点写的说明：带强调线，别让人看漏 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:2px 0 2px 10px;border-left:2px solid var(--accent);
+  font-size:12.5px;color:var(--text);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad,#sp .sp-up3 .up3-notes .up3-bad{color:var(--accent)}
-#sp .sp-up3 .up3-notes.up3-warn{margin-top:16px;padding-left:10px;border-left:2px solid var(--accent);color:var(--text-2)}
-#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
-#sp .sp-up3 .up3-adv{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
-#sp .sp-up3 .up3-ram{flex:0 1 190px;margin:0}
-#sp .sp-up3 .up3-ram > label{margin:0 6px 0 0;display:inline}
-#sp .sp-up3 .up3-ram > input{width:120px}
+#sp .sp-up3 .up3-notes.up3-bad{border-left-color:var(--border-strong);color:var(--accent)}
+#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
