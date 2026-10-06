@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.13
+// @version      0.1.14
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.13 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.14 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -328,14 +328,24 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
-      /* 文案要说清：未经验证 / 只统一风格 / 没全部重写。 */
+      /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
-      'set.expUpload': '项目上传（兼容界面）',
-      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去是 /getstarted 上「Add your project」那一段。'
-        + '这一页未经验证：只统一了风格，没有重写 —— 上传表单、估算器、进度条都还是站点自己的控件。'
-        + '分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。',
+      'set.upmode': '上传项目',
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
+        + '新版（重画第三步的项目设置表单）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
+        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。新版未经验证。',
+      'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
+      'set.fp.title': '新版上传的上游指纹',
+      'set.fp.now': '站点资源版本：{v}（就是线上 www 仓库的 commit 短 id）',
+      'set.fp.unknown': '这一页读不到站点资源版本。',
+      'set.fp.same': '与本脚本验证过的版本一致：{v}。',
+      'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经失效，建议先切回兼容界面。',
+      'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
+      'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
+      'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
+      'set.fp.never': '还没走过第三步，暂时没有记录。',
       'nav.upload': '上传项目',
-      'nav.uploadTip': '实验性：兼容界面（未经验证，只统一了风格）',
+      'nav.uploadTip': '上传项目（兼容界面／新版可切换）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -407,7 +417,18 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
+      'an.doneNote': '接下来这一步是站点自己的表单：引擎、帧区间、切块、采样、分辨率都在里面。'
+        + '设置里的「上传项目·新版」只会把它的外观重排成我们的样子 —— 控件、提交方式仍是站点那套。',
+
+      /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
+      'up3.vis': '可见性',
+      'up3.cpu': '计算方式',
+      'up3.frames': '帧范围',
+      'up3.adv': '高级选项',
+      'up3.needCompute': '先选一个计算方式（CPU 或 GPU）再提交。',
+      'up3.missing': '表单里缺了 {list}，脚本不敢替你提交 —— 站点可能改版了。可以切回兼容界面，或刷新这一页重来。',
+      'up3.rejected': '站点没有接受这次提交。表单没有被改动，你可以改完再试一次。',
+      'up3.netFail': '提交没有送到（网络或登录状态）：',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -544,12 +565,22 @@
       'set.translate': 'Translate original pages', 'set.on': 'On', 'set.off': 'Off',
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
-      'set.expUpload': 'Project upload (compatibility surface)',
-      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the "Add your project" section of /getstarted. '
-        + 'It is unverified: the style is unified, the page is not rewritten \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls. '
-        + 'The project settings form that follows the analysis, and the project management page, are still the original interface.',
+      'set.upmode': 'Project upload',
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
+        + 'New (redraws the third step, the project settings form). Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
+        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone. The new one is unverified.',
+      'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
+      'set.fp.title': 'Upstream fingerprint (new upload)',
+      'set.fp.now': 'Site asset version: {v} (the commit short id of the live www repository)',
+      'set.fp.unknown': 'This page does not expose a site asset version.',
+      'set.fp.same': 'Same version this script was verified against: {v}.',
+      'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may already be broken, switch back to Compatible.',
+      'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
+      'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
+      'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
+      'set.fp.never': 'The third step has not been opened yet, so there is nothing to report.',
       'nav.upload': 'Upload a project',
-      'nav.uploadTip': 'Experimental: compatibility surface (unverified, style only)',
+      'nav.uploadTip': 'Project upload (Compatible / New)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -614,7 +645,16 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'The next step (engine, frame range, tiles, samples, resolution…) is not rebuilt in this version, so it is the site\u2019s own form: fully functional, in the site\u2019s own look. Submitting it lands on the project management page.',
+      'an.doneNote': 'The next step is the site\u2019s own form: engine, frame range, tiles, samples, resolution \u2014 all of it. '
+        + '"Project upload \u00b7 New" in Settings only rearranges how it looks; the controls and the submit path stay the site\u2019s own.',
+      'up3.vis': 'Visibility',
+      'up3.cpu': 'Compute method',
+      'up3.frames': 'Frame range',
+      'up3.adv': 'Advanced options',
+      'up3.needCompute': 'Pick a compute method (CPU or GPU) before submitting.',
+      'up3.missing': 'The form is missing {list}, so this script will not submit it for you \u2014 the site may have changed. Switch back to the compatible UI, or reload this page.',
+      'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
+      'up3.netFail': 'The submission did not go through (network or session):',
     },
   };
 
@@ -2520,6 +2560,49 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
 #sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
 
+/* ==== 新版上传 · 第三步（60-step3.js 重排出来的那一块）====
+   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
+   面板化、栅格化、按钮统一。自绘外观、站点语义。 */
+#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-head{margin:0 0 14px}
+#sp .sp-up3 .up3-head h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-hid{display:none}
+#sp .sp-up3 .up3-sec{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);padding:12px 14px;margin:0 0 12px}
+#sp .sp-up3 .up3-sec h3{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
+/* 站点用 bootstrap 的 float 栅格；这里的 .row 是我们主动改成 flex 的（列宽已被上面那组兜底改成 auto） */
+#sp .sp-up3 .up3-sec .row{margin:0}
+#sp .sp-up3 .up3-sec [class*="col-md-"]{float:none;width:auto;padding:0}
+#sp .sp-up3 .up3-sec[data-sec="frames"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:14px}
+#sp .sp-up3 .up3-sec[data-sec="frames"] [class*="col-md-"]{flex:1 1 150px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:16px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
+#sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .up3-body > div:first-child{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .form-group{margin:10px 0 0}
+#sp .sp-up3 .up3-note{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-left:2px solid var(--accent);
+  border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .sp-up3 .up3-msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.8}
+#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
+#sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
+#sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
+#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
+/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
+#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
+#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
+
+/* 设置面板里的「上游指纹」小卡（60-step3.js 的 fpRows 画） */
+#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
+#sp .fp .hint{margin:0 0 6px}
+#sp .fp .hint:last-child{margin-bottom:0}
+#sp .hint.bad{color:var(--accent)}
+
 /* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
    80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
    的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
@@ -3537,9 +3620,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
         <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
-          ${seg('sp-exp', state.expUpload ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
-          <div class="hint" style="margin-top:9px"><b>${esc(t('set.expUpload'))}</b></div>
-          <div class="hint">${esc(t('set.expUploadHint'))}</div>
+          <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['compat', t('set.upmode.compat')], ['new', t('set.upmode.new')]])}
+          <div class="hint">${esc(t('set.upmodeHint'))}</div>
+          ${SP.Step3 ? SP.Step3.fpRows() : ''}
         </div>
 
         <div class="row block">
@@ -4324,6 +4408,305 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, rankState, acctState, sessState, dailySeries, mount };
 })();
 
+/* ===== src/60-step3.js ===== */
+/* ==== 60-step3.js：新版上传 · 第三步（分析完成后的项目设置表单）====================
+
+   这一页的表单是站点服务端渲染好、由站点脚本 addproject.js 的 doAddProject(i) 按 **id** 逐项
+   取值的（事实见 .tmp/upload-test/rewrite-facts.md 与 error-branches.md）。所以做法只有一条：
+   **搬活节点** —— 4 个容器、27 个控件的 id/name、内联 onsubmit 全部原样保留，我们只重排外观。
+   自绘边界：容器之间的一切外观都是我们的；容器本身一个属性都不动。
+
+   三条护栏：
+     ① 提交前点名：注入时记下服务端给了哪些带 id 的控件，点提交那一刻逐个确认还在；不在就拦下不
+        提交。jQuery 对缺失元素取到 undefined → 请求里 key 还在但值是空串，而服务端只判 key 在不在
+        → 会静默建成错项目，最坏撞上站点封禁 90 天那条分支。宁可不动，不要错提。
+     ② 桩对比验收：把站点 doAddProject 换成只记录请求体的桩，比对 27 个键的值（见 docs/PUBLISHING.md）。
+     ③ 上游指纹：站点资源路径 /media/<short_version>/ 就是线上 www 仓库的 commit 短 id；与
+        VERIFIED_UPSTREAM 不一致时在设置面板里明说"新版可能已失效"。
+   错误文案一律用我们自己的：站点那 6 个错误分支的片段会被拦下 —— 它那句
+   $('#addproject_content_'+i).html(data) 会把我们整棵树顶掉，我们接住片段、把树放回去。 */
+
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  const { Util, t } = { Util: SP.Util, t: SP.t };
+  const esc = Util.esc;
+
+  /** 我们验证过的上游版本 = 站点资源路径里的 short_version（= www 仓库 commit 短 id）。
+      站点更新后要重新验证并把这里改成新值（同时更新 docs/PUBLISHING.md 的记录）。 */
+  const VERIFIED_UPSTREAM = '9b13032c';
+
+  const REPORT_KEY = 'up3Report';   // 最近一次「提交前点名」的结果，设置面板读它
+  let lastReport = null;
+
+  const mk = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
+
+  /** 站点资源路径里的版本号：/media/<8 位十六进制>/…（脚本、样式、图片都带） */
+  function upstreamVersion() {
+    const nodes = document.querySelectorAll('script[src*="/media/"],link[href*="/media/"]');
+    for (let i = 0; i < nodes.length; i++) {
+      const url = nodes[i].src || nodes[i].href || '';
+      const m = /\/media\/([0-9a-f]{8})\//.exec(url);
+      if (m) return m[1];
+    }
+    return '';
+  }
+
+  function saveReport(rep) {
+    lastReport = rep;
+    try { Util.store.set(REPORT_KEY, rep); } catch (e) { /* 隐私模式等 */ }
+  }
+
+  function report() {
+    if (lastReport) return lastReport;
+    const r = Util.store.get(REPORT_KEY, null);
+    return r && typeof r === 'object' ? r : null;
+  }
+
+  /* ---- ① 提交前点名 ---------------------------------------------------- */
+
+  /** 注入这一刻服务端给了什么：这一块里所有带 id 的元素 */
+  function snapshot(box) {
+    const list = [];
+    box.querySelectorAll('[id]').forEach((el) => {
+      list.push({
+        id: el.id,
+        type: (el.type || '').toLowerCase(),
+        value: el.value === undefined ? '' : String(el.value),
+      });
+    });
+    return list;
+  }
+
+  /** 点名：还在不在。hidden 的"服务端这次算出来的值"还要没被清空 —— 空了就是把参数送成空串。 */
+  function check(list) {
+    const missing = [];
+    list.forEach((rec) => {
+      const el = document.getElementById(rec.id);
+      if (!el) { missing.push(rec.id); return; }
+      const type = (el.type || '').toLowerCase();
+      if (rec.type && type !== rec.type) { missing.push(rec.id); return; }
+      if (rec.type === 'hidden' && rec.value && String(el.value) === '') missing.push(rec.id);
+    });
+    return missing;
+  }
+
+  /* ---- ② 重排外观（搬活节点，不改语义）--------------------------------- */
+
+  const sec = (key, title) => {
+    const s = mk('section', 'up3-sec');
+    s.dataset.sec = key;
+    const h = mk('h3');
+    h.textContent = title;
+    s.appendChild(h);
+    s.appendChild(mk('div', 'up3-body'));
+    return s;
+  };
+  const bodyOf = (s) => s.querySelector('.up3-body');
+
+  /** 把服务端渲染的那一块重排成我们的布局。box = #sp-an-result。
+      返回 { ok:true, id, count } 或 { ok:false, reason }（reason='shape' → 调用方保持站点原样）。 */
+  function enhance(box) {
+    if (!box || box.dataset.spUp3 === '1') return { ok: false, reason: 'done' };
+    const cont = box.querySelector('[id^="addproject_content_"]');
+    const form = cont && cont.querySelector('form[id^="addproject_"]');
+    if (!cont || !form) return { ok: false, reason: 'shape' };
+    const i = form.id.replace('addproject_', '');
+
+    /* 先抓引用：下面整块搬家，再查就找不着了 */
+    const fname = cont.querySelector('h4');
+    const errBox = cont.querySelector('[id^="addproject_error_box_"]');
+    const div10 = form.querySelector('[id^="addproject_animation_div10_"]');
+    const advChk = form.querySelector('[id^="checkbox_ad_"]');
+    const advBox = form.querySelector('[id^="checkbox_advanced_option_"]');
+    const advWrap = advChk && advChk.parentElement;
+    const submitDiv = form.querySelector('[id^="addproject_submit_div_"]');
+    const submitInput = form.querySelector('input[type=submit]');
+    const maxRam = form.querySelector('[id^="addproject_max_ram_optional_"]');
+    const pub = box.querySelector('#public_render');
+    const mp4 = box.querySelector('#generate_mp4');
+    const cpu = box.querySelector('#compute_method_cpu');
+    if (!div10 || !submitDiv || !submitInput || !errBox) return { ok: false, reason: 'shape' };
+
+    const baseline = snapshot(box);
+
+    /* ① 整块搬进我们的 host：先搬再排，站点节点一个不丢（顺序＝服务端给的顺序） */
+    const host = mk('div', 'up3');
+    while (cont.firstChild) host.appendChild(cont.firstChild);
+    cont.appendChild(host);
+
+    /* ② 容器外那两个勾选与计算方式也是这一页真正的输入，一起搬进来（hidden 的留在原位） */
+    const visSec = sec('vis', t('up3.vis'));
+    if (pub && pub.closest('label')) bodyOf(visSec).appendChild(pub.closest('label'));
+    if (mp4 && mp4.closest('label')) bodyOf(visSec).appendChild(mp4.closest('label'));
+
+    const cpuSec = sec('cpu', t('up3.cpu'));
+    if (cpu && cpu.closest('.row')) bodyOf(cpuSec).appendChild(cpu.closest('.row'));
+
+    /* ③ 帧范围 / 高级选项：站点自己的节点原样搬进对应面板 */
+    const framesSec = sec('frames', t('up3.frames'));
+    bodyOf(framesSec).appendChild(div10);
+    const advSec = sec('adv', t('up3.adv'));
+    if (advWrap) bodyOf(advSec).appendChild(advWrap);
+    if (advBox) bodyOf(advSec).appendChild(advBox);
+
+    /* ④ 剩下的是隐藏项、畸形项与降噪提示文本：隐藏项收进 .up3-hid，有字的文本进提示条 */
+    const hid = mk('div', 'up3-hid');
+    const note = mk('div', 'up3-note');
+    Array.prototype.slice.call(form.childNodes).forEach((n) => {
+      if (n.nodeType === 3) { if (n.nodeValue.trim()) note.appendChild(n); return; }
+      if (n.nodeName === 'BR') { note.appendChild(n); return; }
+      if (n === div10 || n === advBox || n === submitDiv || (advWrap && n === advWrap)) return;
+      hid.appendChild(n);
+    });
+
+    /* ⑤ 面板入 form：隐藏项 → 可见性 → 计算方式 → 帧范围 → 高级选项 → 提示 → 消息 → 提交 */
+    const msg = mk('div', 'up3-msg');
+    msg.hidden = true;
+    const foot = mk('div', 'up3-foot');
+    foot.appendChild(submitDiv);
+
+    const frag = document.createDocumentFragment();
+    [visSec, cpuSec, framesSec, advSec].forEach((s) => frag.appendChild(s));
+    if (note.childNodes.length) frag.appendChild(note);
+    frag.appendChild(msg);
+    frag.appendChild(foot);
+    form.insertBefore(hid, form.firstChild);
+    form.appendChild(frag);
+
+    /* ⑥ host 里只留 标题 → 表单 → 站点错误框；其余散件（hidden 的 exe/path 等）收进 .up3-hid */
+    const head = mk('div', 'up3-head');
+    /* 站点给文件名挂了内联 style="color: var(--color-form-bg)"（那是站点主题的变量）。
+       内联样式会压过我们 CSS 里的颜色，而那个变量在我们的外壳里没有定义 —— 摘掉它。 */
+    if (fname) { fname.removeAttribute('style'); head.appendChild(fname); }
+    host.insertBefore(head, host.firstChild);
+    host.appendChild(form);
+    host.appendChild(errBox);
+    Array.prototype.slice.call(host.children).forEach((el) => {
+      if (el !== head && el !== form && el !== errBox) hid.appendChild(el);
+    });
+
+    box.dataset.spUp3 = '1';
+    box.classList.add('sp-up3');
+    wire({ box, form, cont, errBox, msg, host, hid, submitDiv, submitInput, maxRam, baseline, i });
+    saveReport({ at: Date.now(), stage: 'enter', ok: true, n: baseline.length, missing: [], upstream: upstreamVersion(), verified: VERIFIED_UPSTREAM });
+    return { ok: true, id: i, count: baseline.length };
+  }
+
+  /* ---- ③ 提交挂钩：点名 → 放行；出错 → 接住片段、把树放回去 ------------- */
+
+  function wire(ctx) {
+    const { box, form, cont, errBox, msg, host, submitDiv, submitInput, maxRam, baseline } = ctx;
+
+    function say(text, bad) {
+      msg.textContent = text;
+      msg.hidden = false;
+      msg.classList.toggle('bad', !!bad);
+    }
+
+    /** 站点把按钮换成了 loading 图、并 disable 了内存框：出错后要能再点一次 */
+    function restore() {
+      if (submitInput && !submitInput.isConnected) {
+        submitDiv.textContent = '';
+        submitDiv.appendChild(submitInput);
+      }
+      if (maxRam) maxRam.disabled = false;
+    }
+
+    /* 提交前点名。
+       注意事件顺序：submit 事件的目标就是 form，而在**目标节点**上 capture 与非 capture
+       是按注册先后跑的 —— 站点那句内联 onsubmit 在我们之前注册，挂在 form 上抢不到它前面。
+       所以挂到**祖先**（box）的捕获阶段：捕获阶段先于目标阶段，stopPropagation 之后事件
+       根本到不了 form，站点那条内联 onsubmit 与它的 $.ajax 都不会跑。 */
+    const gate = box || form.parentNode || form;
+    gate.addEventListener('submit', (ev) => {
+      if (ev.target !== form) return;
+      /* 两个都没勾时站点那边只 alert 一句英文就中止，不如我们自己说 */
+      const cp = document.getElementById('compute_method_cpu');
+      const gp = document.getElementById('compute_method_gpu');
+      if (cp && gp && !cp.checked && !gp.checked) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        say(t('up3.needCompute'), true);
+        return;
+      }
+      const missing = check(baseline);
+      if (missing.length) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        say(t('up3.missing', { list: missing.join('、') }), true);
+        saveReport({ at: Date.now(), stage: 'submit', ok: false, n: baseline.length, missing, upstream: upstreamVersion(), verified: VERIFIED_UPSTREAM });
+        return;
+      }
+      msg.hidden = true;
+      msg.textContent = '';
+      saveReport({ at: Date.now(), stage: 'submit', ok: true, n: baseline.length, missing: [], upstream: upstreamVersion(), verified: VERIFIED_UPSTREAM });
+    }, true);
+
+    /* 结果：站点 .done 出错时 $('#'+cont.id).html(data) 会把我们整棵树顶掉；
+           .fail 时写进 #addproject_error_box_i。两种情况都接住，换成我们自己的话。 */
+    const obs = new MutationObserver(() => {
+      const net = (errBox.textContent || '').trim();
+      if (net) {
+        errBox.textContent = '';
+        restore();
+        say(t('up3.netFail') + ' ' + net, true);
+        return;
+      }
+      if (!host.isConnected) {
+        const raw = (cont.textContent || '').replace(/\s+/g, ' ').trim();
+        cont.textContent = '';
+        cont.appendChild(host);
+        restore();
+        ctx.lastRaw = raw;
+        /* 站点片段往往写明了原因（帧数太多、空间不足…），切一段跟着一起说，不整段吞掉 */
+        say(t('up3.rejected') + (raw ? ' ' + raw.slice(0, 200) : ''), true);
+      }
+    });
+    obs.observe(cont, { childList: true });
+    obs.observe(errBox, { childList: true, characterData: true, subtree: true });
+    ctx.observer = obs;
+  }
+
+  /* ---- 设置面板里的指纹行（D8：放在上传开关旁边）----------------------- */
+
+  function fpRows() {
+    const now = upstreamVersion();
+    const rep = report();
+    let version;
+    if (!now) version = `<div class="hint">${esc(t('set.fp.unknown'))}</div>`;
+    else if (now === VERIFIED_UPSTREAM) version = `<div class="hint">${esc(t('set.fp.same', { v: now }))}</div>`;
+    else version = `<div class="hint bad">${esc(t('set.fp.diff', { now, known: VERIFIED_UPSTREAM }))}</div>`;
+    let checkRow = `<div class="hint">${esc(t('set.fp.never'))}</div>`;
+    if (rep && rep.at) {
+      const when = new Date(rep.at).toLocaleString();
+      if (rep.missing && rep.missing.length) {
+        checkRow = `<div class="hint bad">${esc(t('set.fp.bad', { time: when, n: rep.missing.length, list: rep.missing.join('、') }))}</div>`;
+      } else if (rep.stage === 'submit') {
+        checkRow = `<div class="hint">${esc(t('set.fp.ok', { time: when, n: rep.n }))}</div>`;
+      } else {
+        checkRow = `<div class="hint">${esc(t('set.fp.enter', { time: when, n: rep.n }))}</div>`;
+      }
+    }
+    return `<div class="fp">
+        <div class="lbl2">${esc(t('set.fp.title'))}</div>
+        <div class="hint">${esc(t('set.fp.now', { v: now || '—' }))}</div>
+        ${version}
+        ${checkRow}
+      </div>`;
+  }
+
+  SP.Step3 = {
+    enhance,
+    check,
+    upstreamVersion,
+    verifiedUpstream: VERIFIED_UPSTREAM,
+    report,
+    fpRows,
+  };
+})();
+
 /* ===== src/70-i18n-dom.js ===== */
 /* ==== 70-i18n-dom.js：原站页面的翻译层 ==== */
 (function () {
@@ -4704,7 +5087,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    expUpload: false,      // 实验性：顶栏的上传入口（设置里开，默认关）
+    /* 上传项目：off（顶栏不出入口）/ compat（兼容界面：搬站点原样 + 只做外观与文案）/ new（新版第三步） */
+    uploadMode: 'compat',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -4714,7 +5098,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    state.expUpload = Util.store.get('expUpload', false) === true;
+    const um = Util.store.get('uploadMode', '');
+    state.uploadMode = um === 'off' || um === 'new' ? um : 'compat';
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -4746,8 +5131,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口走**应用内** #/upload，不跳原站那页 */
-    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
+    /* 上传入口走**应用内** #/upload，不跳原站那页；三态里只有 off 不出这个入口 */
+    if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
@@ -4936,6 +5321,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (box) {
         box.innerHTML = s.html;
         box.hidden = false;
+        /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+           搬活节点 —— 容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+        if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
         /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
            翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
         if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
@@ -5373,12 +5761,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return;
     }
 
-    /* 开关决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
-    const ex = ev.target.closest('#sp-exp [data-v]');
-    if (ex) {
-      const on = ex.dataset.v === 'on';
-      Util.store.set('expUpload', on);
-      state.expUpload = on;
+    /* 三态决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
+    const um = ev.target.closest('#sp-upmode [data-v]');
+    if (um) {
+      const v = um.dataset.v;
+      Util.store.set('uploadMode', v);
+      state.uploadMode = v;
       const host = document.getElementById('sp');
       if (host) host.innerHTML = shell();
       show(state.view, { silent: true });

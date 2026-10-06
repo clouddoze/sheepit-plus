@@ -122,7 +122,8 @@
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    expUpload: false,      // 实验性：顶栏的上传入口（设置里开，默认关）
+    /* 上传项目：off（顶栏不出入口）/ compat（兼容界面：搬站点原样 + 只做外观与文案）/ new（新版第三步） */
+    uploadMode: 'compat',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -132,7 +133,8 @@
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    state.expUpload = Util.store.get('expUpload', false) === true;
+    const um = Util.store.get('uploadMode', '');
+    state.uploadMode = um === 'off' || um === 'new' ? um : 'compat';
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -164,8 +166,8 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口走**应用内** #/upload，不跳原站那页 */
-    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
+    /* 上传入口走**应用内** #/upload，不跳原站那页；三态里只有 off 不出这个入口 */
+    if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
@@ -354,6 +356,9 @@
       if (box) {
         box.innerHTML = s.html;
         box.hidden = false;
+        /* 新版上传：把第三步（服务端渲染的这块表单）重排成我们的布局。
+           搬活节点 —— 容器、id、内联 onsubmit 一个不动，所以站点 JS 照旧能按 id 取值提交。 */
+        if (state.uploadMode === 'new' && SP.Step3) SP.Step3.enhance(box);
         /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
            翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
         if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
@@ -791,12 +796,12 @@
       return;
     }
 
-    /* 开关决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
-    const ex = ev.target.closest('#sp-exp [data-v]');
-    if (ex) {
-      const on = ex.dataset.v === 'on';
-      Util.store.set('expUpload', on);
-      state.expUpload = on;
+    /* 三态决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
+    const um = ev.target.closest('#sp-upmode [data-v]');
+    if (um) {
+      const v = um.dataset.v;
+      Util.store.set('uploadMode', v);
+      state.uploadMode = v;
       const host = document.getElementById('sp');
       if (host) host.innerHTML = shell();
       show(state.view, { silent: true });

@@ -304,14 +304,24 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
-      /* 文案要说清：未经验证 / 只统一风格 / 没全部重写。 */
+      /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
-      'set.expUpload': '项目上传（兼容界面）',
-      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去是 /getstarted 上「Add your project」那一段。'
-        + '这一页未经验证：只统一了风格，没有重写 —— 上传表单、估算器、进度条都还是站点自己的控件。'
-        + '分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。',
+      'set.upmode': '上传项目',
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口）；兼容界面（把站点那三步原样搬进新外壳，只统一外观与文案）；'
+        + '新版（重画第三步的项目设置表单）。两档都保留站点自己的控件与提交方式 —— 脚本不自己拼提交体，'
+        + '只在提交前点名：服务端这次给了哪些控件，提交那一刻还在不在，不在就不提交。新版未经验证。',
+      'set.upmode.off': '关闭', 'set.upmode.compat': '兼容界面', 'set.upmode.new': '新版（实验）',
+      'set.fp.title': '新版上传的上游指纹',
+      'set.fp.now': '站点资源版本：{v}（就是线上 www 仓库的 commit 短 id）',
+      'set.fp.unknown': '这一页读不到站点资源版本。',
+      'set.fp.same': '与本脚本验证过的版本一致：{v}。',
+      'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经失效，建议先切回兼容界面。',
+      'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
+      'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
+      'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
+      'set.fp.never': '还没走过第三步，暂时没有记录。',
       'nav.upload': '上传项目',
-      'nav.uploadTip': '实验性：兼容界面（未经验证，只统一了风格）',
+      'nav.uploadTip': '上传项目（兼容界面／新版可切换）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -383,7 +393,18 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
+      'an.doneNote': '接下来这一步是站点自己的表单：引擎、帧区间、切块、采样、分辨率都在里面。'
+        + '设置里的「上传项目·新版」只会把它的外观重排成我们的样子 —— 控件、提交方式仍是站点那套。',
+
+      /* 新版上传 · 第三步（60-step3.js 重排出来的那一块） */
+      'up3.vis': '可见性',
+      'up3.cpu': '计算方式',
+      'up3.frames': '帧范围',
+      'up3.adv': '高级选项',
+      'up3.needCompute': '先选一个计算方式（CPU 或 GPU）再提交。',
+      'up3.missing': '表单里缺了 {list}，脚本不敢替你提交 —— 站点可能改版了。可以切回兼容界面，或刷新这一页重来。',
+      'up3.rejected': '站点没有接受这次提交。表单没有被改动，你可以改完再试一次。',
+      'up3.netFail': '提交没有送到（网络或登录状态）：',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -520,12 +541,22 @@
       'set.translate': 'Translate original pages', 'set.on': 'On', 'set.off': 'Off',
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
       'set.exp': 'Experimental',
-      'set.expUpload': 'Project upload (compatibility surface)',
-      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the "Add your project" section of /getstarted. '
-        + 'It is unverified: the style is unified, the page is not rewritten \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls. '
-        + 'The project settings form that follows the analysis, and the project management page, are still the original interface.',
+      'set.upmode': 'Project upload',
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar); Compatible (the site\u2019s three steps, moved into the new shell \u2014 look and wording only); '
+        + 'New (redraws the third step, the project settings form). Both keep the site\u2019s own controls and submit path \u2014 this script never builds the request body itself; '
+        + 'it only checks before submitting that every control the server rendered is still there, and refuses to submit if one is gone. The new one is unverified.',
+      'set.upmode.off': 'Off', 'set.upmode.compat': 'Compatible', 'set.upmode.new': 'New (experimental)',
+      'set.fp.title': 'Upstream fingerprint (new upload)',
+      'set.fp.now': 'Site asset version: {v} (the commit short id of the live www repository)',
+      'set.fp.unknown': 'This page does not expose a site asset version.',
+      'set.fp.same': 'Same version this script was verified against: {v}.',
+      'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may already be broken, switch back to Compatible.',
+      'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
+      'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
+      'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
+      'set.fp.never': 'The third step has not been opened yet, so there is nothing to report.',
       'nav.upload': 'Upload a project',
-      'nav.uploadTip': 'Experimental: compatibility surface (unverified, style only)',
+      'nav.uploadTip': 'Project upload (Compatible / New)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -590,7 +621,16 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'The next step (engine, frame range, tiles, samples, resolution…) is not rebuilt in this version, so it is the site\u2019s own form: fully functional, in the site\u2019s own look. Submitting it lands on the project management page.',
+      'an.doneNote': 'The next step is the site\u2019s own form: engine, frame range, tiles, samples, resolution \u2014 all of it. '
+        + '"Project upload \u00b7 New" in Settings only rearranges how it looks; the controls and the submit path stay the site\u2019s own.',
+      'up3.vis': 'Visibility',
+      'up3.cpu': 'Compute method',
+      'up3.frames': 'Frame range',
+      'up3.adv': 'Advanced options',
+      'up3.needCompute': 'Pick a compute method (CPU or GPU) before submitting.',
+      'up3.missing': 'The form is missing {list}, so this script will not submit it for you \u2014 the site may have changed. Switch back to the compatible UI, or reload this page.',
+      'up3.rejected': 'The site did not accept this submission. Nothing was changed, so you can fix it and try again.',
+      'up3.netFail': 'The submission did not go through (network or session):',
     },
   };
 

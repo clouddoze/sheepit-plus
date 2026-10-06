@@ -801,6 +801,49 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
 #sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
 
+/* ==== 新版上传 · 第三步（60-step3.js 重排出来的那一块）====
+   站点那块表单是被**搬**过来的活节点（容器、控件 id、内联 onsubmit 都没动），这里只做外观：
+   面板化、栅格化、按钮统一。自绘外观、站点语义。 */
+#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-head{margin:0 0 14px}
+#sp .sp-up3 .up3-head h4{margin:0;font-size:15px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-hid{display:none}
+#sp .sp-up3 .up3-sec{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);padding:12px 14px;margin:0 0 12px}
+#sp .sp-up3 .up3-sec h3{margin:0 0 10px;font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
+/* 站点用 bootstrap 的 float 栅格；这里的 .row 是我们主动改成 flex 的（列宽已被上面那组兜底改成 auto） */
+#sp .sp-up3 .up3-sec .row{margin:0}
+#sp .sp-up3 .up3-sec [class*="col-md-"]{float:none;width:auto;padding:0}
+#sp .sp-up3 .up3-sec[data-sec="frames"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:14px}
+#sp .sp-up3 .up3-sec[data-sec="frames"] [class*="col-md-"]{flex:1 1 150px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body > .row{display:flex;flex-wrap:wrap;gap:16px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] [class*="col-md-"]{flex:1 1 190px}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] label.checkbox{display:flex;align-items:center;gap:6px;margin:0 0 6px;font-size:12.5px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="cpu"] img{height:15px;vertical-align:-2px;margin:0 4px 0 0}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox{display:flex;align-items:flex-start;gap:9px;margin:0 0 10px;font-size:13px;color:var(--text);line-height:1.6}
+#sp .sp-up3 .up3-sec[data-sec="vis"] label.checkbox:last-child{margin-bottom:0}
+#sp .sp-up3 .up3-sec[data-sec="vis"] span[title]{border-bottom:1px dotted var(--border);cursor:help}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .up3-body > div:first-child{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text)}
+#sp .sp-up3 .up3-sec[data-sec="adv"] .form-group{margin:10px 0 0}
+#sp .sp-up3 .up3-note{margin:0 0 12px;padding:10px 12px;border:1px solid var(--border);border-left:2px solid var(--accent);
+  border-radius:var(--r-sm);background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .sp-up3 .up3-msg{margin:0 0 12px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.8}
+#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-foot{display:flex;justify-content:flex-end;align-items:center;margin-top:2px}
+#sp .sp-up3 .up3-foot [id^="addproject_submit_div_"]{display:flex;justify-content:flex-end}
+#sp .sp-up3 .up3-foot img{float:none;height:18px;margin:0}
+#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
+/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
+#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
+#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
+
+/* 设置面板里的「上游指纹」小卡（60-step3.js 的 fpRows 画） */
+#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
+#sp .fp .hint{margin:0 0 6px}
+#sp .fp .hint:last-child{margin-bottom:0}
+#sp .hint.bad{color:var(--accent)}
+
 /* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
    80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
    的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */

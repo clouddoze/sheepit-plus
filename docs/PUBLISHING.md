@@ -290,6 +290,12 @@ false 才说明确实需要覆盖。更新日志 330 字符走 Markdown。
   **2026-10-06 追加第四枚，以后优先用它**：`#sp-guard` 的规则文本 —— 0.1.11 起是
   `body > *:not(#sp):not(.sp-acmenu)`，0.1.8–0.1.10 是 `body > *:not(#sp)`。这条是二值的，
   不受页面状态影响；而 `SP.CSS.length` 会被运行时状态带偏（见本节末尾）。
+
+  **2026-10-06 追加第五枚（判断"站点有没有改版"，不是判断"装的哪一版"）**：站点自己资源路径里的
+  `<short_version>`，即线上 `www` 仓库的 commit 短 id。取法：页面里任一 `script[src*="/media/"]` /
+  `link[href*="/media/"]` 的 `/\/media\/([0-9a-f]{8})\//`。0.1.14 的新版上传就是拿它当上游指纹
+  （`src/60-step3.js` 的 `VERIFIED_UPSTREAM = '9b13032c'`，设置页那张卡片会把它和"本脚本验证过的版本"
+  并排显示）。它与 GitLab `sheepitrenderfarm/www` 的 master HEAD 同值，改一次上传链路它就会变。
   仍未验证的还是**防闪**与"用户从旧版更新上来"那一跳。（后一条 2026-10-06 已补，见本节末尾；
   前一条只拿到一半证据。）
 - **0.1.9 的应用内上传视图（`#/upload`）三条路径都实测过**：直接以 `#/upload` 载入、
@@ -447,6 +453,52 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 
 **体积提示线**：`build.mjs` 的 `BUDGET_OUT_BYTES` 从 285000 抬到 320000（这一版 +21 KB 后原线会每次
 构建都报，报久了没人看）；仍是**只提示不拦**，见该常量上面的注释。
+
+**0.1.14（2026-10-06 起，尚未发布）**：`@version` 0.1.13 → 0.1.14。上传闭环的**最后一跳**：第三步
+从"只翻文案"变成"自绘外观"，并补上面板级的上游指纹与提交护栏。用户 2026-10-06 拍板：外观 100% 自绘、
+容器之间也用我们的布局，但 **4 个容器本体、27 个控件的 id/name、提交方式一律保留站点原样**，
+"永不自己拼提交体"是硬约束。
+
+- **新增模块 `src/60-step3.js`**（构建时按文件名排序，落在 `50-views.js` 与 `70-i18n-dom.js` 之间）。
+  `SP.Step3 = { enhance, check, upstreamVersion, verifiedUpstream, report, fpRows }`。
+  `enhance(box)` 做四件事：**搬**（把站点渲染好的活节点一个个 `appendChild` 进我们的面板 —— 不
+  `innerHTML` 重建、不重新 fetch，id / 内联 `onsubmit` / 表单原样）→ **点名**（进面板前给 box 内所有
+  `[id]` 拍快照 `{id,type,value}`）→ **提交前复点**（元素没了 / type 变了 / hidden 的值被清空 → 拒绝提交）
+  → **接住结果**（成功会跳走；`.done` 出错时站点 `$('#addproject_content_i').html(data)`、`.fail` 时写
+  `#addproject_error_box_i`，两种都被 `MutationObserver` 接住，把树放回去、按钮放回去，换成我们的文案
+  并附上站点原文）。
+- **提交护栏挂在祖先的捕获阶段，不是表单自己身上**（这一条是踩出来的）：submit 事件的目标就是 `form`，
+  而在**目标节点**上捕获与非捕获**按注册先后执行** —— 站点那句 `onsubmit="doAddProject(0); return false"`
+  是先注册的，挂在 `form` 上抢不到它前面，站点函数会照跑、`$.ajax` 会照发。挂在 `#sp-an-result` 的
+  捕获阶段才拦得住（捕获阶段先于目标阶段，`stopPropagation` 之后事件到不了 form）。
+- **三态开关**：设置页原来的"实验性 / 项目上传（兼容界面）"两态换成三档 `uploadMode`
+  （`off` 不出现入口 / `compat` 兼容界面，默认 / `new` 新版）；旧的 `expUpload` 键不再读，值本身就是
+  默认档，不需要迁移。同一行下方是**上游指纹卡片**：站点资源版本 vs 本脚本验证过的版本（一致 / 已更新 /
+  读不到），以及上一次进入第三步与上一次提交前点名的结果（`up3Report` 存在 `NS:` 下）。
+- 新词条：`set.upmode*` / `set.fp.*` / `up3.vis|cpu|frames|adv|needCompute|missing|rejected|netFail`
+  （zh + en 两份），并删掉 `set.expUpload` / `set.expUploadHint`（grep 全仓库已无残留）。
+
+实测（Helium + BrowserSkill，真站点 `/getstarted`，**注入 `dist` 产物**，页面里 jQuery 与站点
+`addproject.js` 都是活的；把 `$.ajax` 打桩成"只记不发"，**全程零写入**；测试账号 `muwyelkoai3k`）：
+
+| 检查 | 结果 |
+| --- | --- |
+| id / 控件保真 | `[id]` 34 → 34（丢 0、增 0）；`input,select,textarea` 29 → 29 |
+| 表单语义 | `form#addproject_0` 仍 `action="javascript:;"`、`onsubmit="doAddProject(0); return false"`；提交按钮仍在 form 内；`#addproject_error_box_0` 仍在 form 外 |
+| 站点畸形字段 | `#addproject_split_tiles_number_0`（name 被站点 PHP 拼坏的那种）原样保留，值没动 |
+| **请求体逐字段比对** | 站点真函数 `doAddProject(0)` 在**改版前/改版后**各跑一次：27 个键**完全相同**（`diff: []`） |
+| 面板 | `.up3-sec` 四块（可见性 / 计算方式 / 帧范围 / 高级选项）全部可见；降噪提示进了 `.up3-note` |
+| 拦提交 | 抽掉 `#addproject_exe_0` 后点提交 → **ajax 调用 0 次** + 我们的文案；放回去再点 → 1 次 |
+| 错误片段 | `cont.innerHTML = 'Failed to add project'` → `form` 被放回、提交按钮被放回、文案含站点原文 |
+| `.fail` 路径 | `#addproject_error_box_0` 有字 → 清空 + "提交没有送到（网络或登录状态）：Error (timeout)" |
+| 形状护栏 | 没有 `[id^=addproject_content_]`/`form[id^=addproject_]` 的 box → `{ok:false,reason:'shape'}` 且**原样不动**；重复调用 → `{ok:false,reason:'done'}` |
+| 设置三档 | `off compat* new` → 点"新版"存储变 `new`；点"关闭"顶栏的"上传项目"消失 |
+| 指纹卡片 | "站点资源版本：9b13032c … 与本脚本验证过的版本一致"；"上次提交前点名：34 个控件全部在位" |
+| 野 token | `/project/add/bogus1234` → 服务端回 HTML 错误片段 → 走既有的"分析编号已经找不到了"，`#sp-an-result` 保持空、无异常 |
+
+**仍未验证**：真装路径（等用户点一次重新安装再复验）；新版第三步在真账号上**真提交**一次（要用户先点头）；
+上游指纹只钉了 `9b13032c` 这一个版本，站点下次改上传链路时应当"卡片变红 + 建议切回兼容界面"，
+这条提示本身还没在真实改版场景里见过。
 
 ---
 
