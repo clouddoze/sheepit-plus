@@ -406,17 +406,9 @@
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
-      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
-
-      返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
-      传错了只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
-      与"网络失败"分开，界面才能说实话。
-      （界面上没有取消按钮、也没有超时看门狗 —— **用户 2026-10-07 明确决定就这样**：
-      已传的字节取消也拿不回来，界面宁可不加这个东西；卡住时刷新页面是已知且可接受的出路。
-      abort 能力留在这一层，将来真要加回按钮或快捷键，不用再动契约。） */
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
   function upload(file, onProgress) {
-    let xhr = null;
-    const promise = new Promise((resolve) => {
+    return new Promise((resolve) => {
       const uid = (function () {
         const a = new Uint8Array(16);
         (window.crypto || window.msCrypto).getRandomValues(a);
@@ -425,7 +417,7 @@
       const fd = new FormData();
       fd.append('UPLOAD_IDENTIFIER', uid);
       fd.append('addproject_archive', file, file.name);
-      xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
       xhr.open('POST', URL_UPLOAD, true);
       xhr.withCredentials = true;
       if (xhr.upload && onProgress) {
@@ -433,10 +425,10 @@
       }
       xhr.onload = () => resolve(classifyUpload(xhr));
       xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
-      xhr.onabort = () => resolve({ ok: false, aborted: true });
+      /* onabort 只应对浏览器自己的中断（导航、连接被断）：界面上没有中止入口。 */
+      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
       xhr.send(fd);
     });
-    return { promise, abort: () => { try { if (xhr) xhr.abort(); } catch (e) { /* 已经结束了 */ } } };
   }
 
   /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */

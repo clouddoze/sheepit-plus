@@ -492,7 +492,6 @@
       'up1.noFile': '先选一个文件。',
       'up1.go': '开始上传',
       'up1.goBusy': '正在上传…',
-      'up1.canceled': '已取消，文件没有发出去。',
       'up1.tooBig': '{name} 有 {size}，超过站点这次的 {max} 上限 —— 先用 Blender 自带的压缩，或把项目拆小。',
       'up1.badType': '{name} 不是 .blend 或 .zip，站点不收。',
       'up1.after': '传完之后站点要先读一遍存档（几分钟是正常的），再让你确认项目设置。',
@@ -807,7 +806,6 @@
       'up1.noFile': 'Choose a file first.',
       'up1.go': 'Start upload',
       'up1.goBusy': 'Uploading\u2026',
-      'up1.canceled': 'Cancelled \u2014 nothing was sent.',
       'up1.tooBig': '{name} is {size}, over the site\u2019s {max} limit right now \u2014 try Blender\u2019s own compression, or split the project.',
       'up1.badType': '{name} is not a .blend or .zip; the site will not take it.',
       'up1.after': 'After the upload the site reads the archive first (a few minutes is normal), then you confirm the project settings.',
@@ -5166,17 +5164,9 @@ ${Theme.css('#sp')}
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
-      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。
-
-      返回 { promise, abort } 而不是裸 promise：上限 2,048 MB 意味着大量用户会在 GB 级别传，
-      传错了只能关标签页等于把已传的部分全丢。abort() 后 promise 收在 {ok:false,aborted:true}，
-      与"网络失败"分开，界面才能说实话。
-      （界面上没有取消按钮、也没有超时看门狗 —— **用户 2026-10-07 明确决定就这样**：
-      已传的字节取消也拿不回来，界面宁可不加这个东西；卡住时刷新页面是已知且可接受的出路。
-      abort 能力留在这一层，将来真要加回按钮或快捷键，不用再动契约。） */
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
   function upload(file, onProgress) {
-    let xhr = null;
-    const promise = new Promise((resolve) => {
+    return new Promise((resolve) => {
       const uid = (function () {
         const a = new Uint8Array(16);
         (window.crypto || window.msCrypto).getRandomValues(a);
@@ -5185,7 +5175,7 @@ ${Theme.css('#sp')}
       const fd = new FormData();
       fd.append('UPLOAD_IDENTIFIER', uid);
       fd.append('addproject_archive', file, file.name);
-      xhr = new XMLHttpRequest();
+      const xhr = new XMLHttpRequest();
       xhr.open('POST', URL_UPLOAD, true);
       xhr.withCredentials = true;
       if (xhr.upload && onProgress) {
@@ -5193,10 +5183,10 @@ ${Theme.css('#sp')}
       }
       xhr.onload = () => resolve(classifyUpload(xhr));
       xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
-      xhr.onabort = () => resolve({ ok: false, aborted: true });
+      /* onabort 只应对浏览器自己的中断（导航、连接被断）：界面上没有中止入口。 */
+      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
       xhr.send(fd);
     });
-    return { promise, abort: () => { try { if (xhr) xhr.abort(); } catch (e) { /* 已经结束了 */ } } };
   }
 
   /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */
@@ -5513,7 +5503,7 @@ ${Theme.css('#sp')}
         pct.textContent = eta
           ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
           : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
-      }).promise;
+      });
 
       busy = false;
       btn.textContent = t('up1.go');
@@ -5525,7 +5515,6 @@ ${Theme.css('#sp')}
       bar.hidden = true;
       pct.hidden = true;
       btn.disabled = !picked;
-      if (r.aborted) { say(t('up1.canceled')); return; }   // 取消不是错误：中性色，别写成失败
       say(r.message || t('up1.fail'), true);
     });
   }

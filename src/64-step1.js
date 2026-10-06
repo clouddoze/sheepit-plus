@@ -203,7 +203,7 @@
         pct.textContent = eta
           ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
           : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
-      }).promise;
+      });
 
       busy = false;
       btn.textContent = t('up1.go');
@@ -215,7 +215,6 @@
       bar.hidden = true;
       pct.hidden = true;
       btn.disabled = !picked;
-      if (r.aborted) { say(t('up1.canceled')); return; }   // 取消不是错误：中性色，别写成失败
       say(r.message || t('up1.fail'), true);
     });
   }
