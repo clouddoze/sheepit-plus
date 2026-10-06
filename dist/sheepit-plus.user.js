@@ -1017,6 +1017,8 @@
       '--heat-5': 'rgba(224,109,88,1)',
       '--shadow': '0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)',
       '--r': '10px', '--r-sm': '6px',
+      // DESIGN.md 里一直有 positive，但从来没接进 token 表：用处第一次出现是上传页的"可以传"读数点
+      '--positive': '#3fb950',
     },
     light: {
       '--bg': '#fbfbfc', '--surface': '#ffffff', '--surface-2': '#f5f6f8', '--surface-3': '#eceef1',
@@ -1031,6 +1033,7 @@
       '--heat-5': 'rgba(182,71,47,1)',
       '--shadow': '0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)',
       '--r': '10px', '--r-sm': '6px',
+      '--positive': '#1a7f37',
     },
   };
 
@@ -6579,6 +6582,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   const REPORT_KEY = 'up3Report';
   const mk = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
+  /* 这一版的 mk 不收文本（只有 tag+class），别再把第三参当文本传 —— 会被静默丢掉 */
+  const tipRow = (txt) => { const el = mk('div', 'up3-tiprow up3-tip'); el.textContent = txt; return el; };
 
   /* 同名 radio 在同一个文档里算**一组**，会互相取消勾选：每次 render 用自己的后缀。 */
   let seq = 0;
@@ -6915,7 +6920,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         };
         anim.querySelector('input').addEventListener('change', sync);
         sing.querySelector('input').addEventListener('change', sync);
-        framesBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
+        framesBox.appendChild(tipRow(t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), framesBox));
       } else {
         const animRow = mk('div', 'up3-fields');
@@ -6924,7 +6929,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
           animRow.appendChild(f);
         });
-        animRow.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.rule20')));
+        animRow.appendChild(tipRow(t('up3x.rule20')));
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
@@ -6970,7 +6975,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         splitBox.appendChild(why);
       }
       /* 上限也长在这一行：拨滑条的时候才需要知道"到顶是多少" */
-      splitBox.appendChild(mk('div', 'up3-tiprow up3-tip', t('up3x.ruleTiles')));
+      splitBox.appendChild(tipRow(t('up3x.ruleTiles')));
       bl.appendChild(line(t('up3x.split'), splitBox));
 
       /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */

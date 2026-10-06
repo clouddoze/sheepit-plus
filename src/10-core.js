@@ -993,6 +993,8 @@
       '--heat-5': 'rgba(224,109,88,1)',
       '--shadow': '0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)',
       '--r': '10px', '--r-sm': '6px',
+      // DESIGN.md 里一直有 positive，但从来没接进 token 表：用处第一次出现是上传页的"可以传"读数点
+      '--positive': '#3fb950',
     },
     light: {
       '--bg': '#fbfbfc', '--surface': '#ffffff', '--surface-2': '#f5f6f8', '--surface-3': '#eceef1',
@@ -1007,6 +1009,7 @@
       '--heat-5': 'rgba(182,71,47,1)',
       '--shadow': '0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)',
       '--r': '10px', '--r-sm': '6px',
+      '--positive': '#1a7f37',
     },
   };
 
