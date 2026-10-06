@@ -332,9 +332,9 @@
       'set.exp': '实验性',
       'set.upmode': '上传项目',
       'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
-        + '原版（我们只出外壳，把站点原版那一块搬进来 —— 顶栏、页脚、下载客户端都不显示，处理逻辑全归站点）；'
-        + '新版（上传、等待、设置三步全部自绘：解析站点的分析结果、自己发提交，界面与站点脚本无关）。',
-      'set.upmode.off': '关闭', 'set.upmode.site': '原版', 'set.upmode.new': '新版',
+        + '兼容（站点自己的控件与逻辑，我们只负责收进卡片排版 —— 站点加新功能会自动跟上）；'
+        + '新版（上传 / 等待 / 设置全部自绘：解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
+      'set.upmode.off': '关闭', 'set.upmode.site': '兼容', 'set.upmode.new': '新版',
       'set.fp.title': '上游指纹',
       'set.fp.one': '{v} · 已核对 {n}/{n}',
       'set.fp.oneNew': '{v} · 还没走过第三步',
@@ -406,7 +406,7 @@
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.expNote': '原版：这一档用的是站点自己的控件与逻辑 —— 上传表单、估算器、进度条、分析轮询、提交全归站点；'
+      'up.expNote': '兼容档：用的是站点自己的控件与逻辑 —— 上传表单、估算器、进度条、分析轮询、提交全归站点；'
         + '我们只把上传相关的那几块收进卡片里排版（顶栏、页脚、下载客户端都不出现）。想用脚本重写的那套，去设置里切到「新版」。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
@@ -531,8 +531,8 @@
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
       /* 「原版」档（内嵌站点原版界面） */
-      'site.sub': '这一档是站点自己的界面：只把上传相关的那一块搬进外壳，顶栏、页脚、下载客户端都不显示；处理逻辑全归站点。',
-      'site.missing': '这一页没找到要内嵌的那一块 —— 站点可能改版了。',
+      'site.sub': '兼容档：站点自己的控件与逻辑，收进卡片里排版；顶栏、页脚、下载客户端都不显示。',
+      'site.missing': '这一页没找到要用的那一块 —— 站点可能改版了。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -671,9 +671,9 @@
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
       'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
-        + 'Original (this shell only frames the site\u2019s own block \u2014 no top bar, no footer, no client download; all the logic stays the site\u2019s); '
-        + 'New (upload, wait and settings are all drawn by this script: it parses the site\u2019s analysis result and sends the submit itself).',
-      'set.upmode.off': 'Off', 'set.upmode.site': 'Original', 'set.upmode.new': 'New',
+        + 'Compatible (the site\u2019s own controls and logic, only arranged into cards \u2014 site-side features come along automatically); '
+        + 'New (this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
+      'set.upmode.off': 'Off', 'set.upmode.site': 'Compatible', 'set.upmode.new': 'New',
       'set.fp.title': 'Upstream fingerprint',
       'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
       'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
@@ -741,7 +741,7 @@
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.expNote': 'Original: this mode uses the site\u2019s own controls and logic \u2014 form, estimator, progress bar, analysis polling and submit all belong to the site. '
+      'up.expNote': 'Compatible mode: this uses the site\u2019s own controls and logic \u2014 form, estimator, progress bar, analysis polling and submit all belong to the site. '
         + 'This script only arranges the upload blocks into cards (no top bar, no footer, no client download). Switch to \u201cNew\u201d in Settings for the rewritten path.',
       'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
