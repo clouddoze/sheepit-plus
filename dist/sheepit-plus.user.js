@@ -463,7 +463,8 @@
       'up3x.thumbTip': '默认所有成员都能看到你项目的缩略图；不想公开就别勾。之后在项目管理页还能改。',
       'up3x.forced': '站点没有开放这个开关：它不会按你勾的样子发，最终结果是「{state}」。',
       'up3x.forcedTip': '这个开关站点没开放：界面上的样子只是"站点最终会怎么处理"，提交时按站点的规则走（不会照你勾的发）。最终结果：{state}。',
-      'up3x.ramAuto': '留空 = 由站点在渲染第一帧时自动探测。项目很吃内存（比如超过 20GB）时再填。',
+      'up3x.ramAuto': '默认不指定：站点在渲染第一帧时自动探测。项目很吃内存（比如超过 20GB）再手动填。',
+      'up3x.ramManual': '手动指定',
       'up3x.picture': '画面设置',
       'up3x.splitFixedTip': '站点分析这个文件后认定它不能切块（EXR 或降噪项目），所以只能整帧渲染 —— 这里没有可选项。',
       'up3x.yes': '是',
@@ -761,7 +762,8 @@
       'up3x.thumbTip': 'By default every member can see a thumbnail of your project. Clear this to restrict access; you can change it later on the project page.',
       'up3x.forced': 'The site does not offer this switch here: it does not send what you clicked, the result is \u201c{state}\u201d.',
       'up3x.forcedTip': 'The site does not offer this switch here: what you see is what the site will do, not what will be sent. Final result: {state}.',
-      'up3x.ramAuto': 'Leave it empty and the site detects the memory need on the first rendered frame. Fill it in only for very heavy projects (over 20GB).',
+      'up3x.ramAuto': 'Not set by default: the site detects the memory need on the first rendered frame. Set it manually only for very heavy projects (over 20GB).',
+      'up3x.ramManual': 'Set manually',
       'up3x.picture': 'Image settings',
       'up3x.splitFixedTip': 'The analysis says this file cannot be split (EXR or denoising project), so it is rendered as full frames \u2014 there is nothing to choose here.',
       'up3x.yes': 'yes',
@@ -2906,7 +2908,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
    所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
    上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
-#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
+   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
+#sp .sp-up3 [hidden]{display:none !important}#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
@@ -2925,7 +2929,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
 #sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
 #sp .sp-up3 .up3-cmp{font-weight:600}
-#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;gap:8px 14px}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+#sp .sp-up3 .up3-ramck{margin:0}
+#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
 #sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
 #sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .sp-up3 .up3-ram > input{width:130px}
@@ -2947,11 +2954,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 站点写的说明：带强调线，别让人看漏 */
-#sp .sp-up3 .up3-notes{margin-top:12px;padding:2px 0 2px 10px;border-left:2px solid var(--accent);
-  font-size:12.5px;color:var(--text);line-height:1.75}
+/* 切块这一行为什么没得选：理由就长在这一行上，小字跟在值后面 */
+#sp .sp-up3 .up3-why{flex:1 1 100%;margin-top:2px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad{border-left-color:var(--border-strong);color:var(--accent)}
+#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
 #sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
@@ -5682,6 +5691,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /* 同名 radio 在同一个文档里算**一组**，会互相取消勾选：每次 render 用自己的后缀。 */
   let seq = 0;
 
+  /** 站点说明里属于"为什么不能切块"的那几句（降噪那两行）；其余（EXR 清单、缺文件、驱动）另摆。 */
+  const SPLIT_REASON = /denois|splits?\b|tile/i;
+
   /** 站点原文 → 中文（没命中就原样）。说明文字是站点写的，翻译表在 12-lang-zh.js。 */
   const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
 
@@ -5788,8 +5800,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   }
 
   /** 站点给这个文件算出来的事实（只显示，不改；提交时也原样发回去） */
-  function blendFacts(b) {
-    const h = b.hidden || {};
+  function blendFacts(b) {    const h = b.hidden || {};
     const out = [];
     if (h.engine) out.push(t('up3x.mEngine', { v: h.engine }));
     if (h.exe) out.push(t('up3x.mBlender', { v: h.exe }));
@@ -5902,32 +5913,42 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
     if (cpuBox.childNodes.length) group.appendChild(line(t('up3.cpu'), cpuBox));
 
-    /* 内存占用：属于硬件需求，跟着计算方式放；每个文件一个值（服务端契约），留空自动探测 */
+    /* 内存占用：属于硬件需求，跟着计算方式放。默认**折叠**（不指定 = 站点在渲染第一帧时自动探测）；
+       勾上「手动指定」才展开输入框。值本身是每个文件一个（服务端契约），多文件时一行一个。 */
     const ramBox = mk('div', 'up3-rams');
-    let ramAny = false;
-    model.blends.forEach((b) => {
-      if (b.rejected) return;
-      ramAny = true;
-      const w = mk('div', 'up3-ram');
-      if (model.blends.length > 1) {
-        const l = mk('label');
-        l.textContent = b.name;
-        w.appendChild(l);
-      }
-      const inp = mk('input');
-      inp.type = 'text';
-      inp.inputMode = 'numeric';
-      inp.placeholder = t('up3x.ramPh');
-      inp.value = b.ram || '';
-      inp.title = t('up3x.ramTip');
-      inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
-      w.appendChild(inp);
-      ramBox.appendChild(w);
-    });
-    if (ramAny) {
-      const d = tip(t('up3x.ramAuto'));
-      d.classList.add('up3-tiprow');
-      ramBox.appendChild(d);
+    const liveBlends = model.blends.filter((b) => !b.rejected);
+    if (liveBlends.length) {
+      const preRam = liveBlends.some((b) => b.ram);
+      const ck = opt('checkbox', null, null, t('up3x.ramManual'), { cls: 'up3-ramck', checked: preRam, title: t('up3x.ramAuto') });
+      ramBox.appendChild(ck);
+      const fields = mk('div', 'up3-ramfields');
+      fields.hidden = !preRam;
+      liveBlends.forEach((b) => {
+        const w = mk('div', 'up3-ram');
+        if (liveBlends.length > 1) {
+          const l = mk('label');
+          l.textContent = b.name;
+          w.appendChild(l);
+        }
+        const inp = mk('input');
+        inp.type = 'text';
+        inp.inputMode = 'numeric';
+        inp.placeholder = t('up3x.ramPh');
+        inp.value = b.ram || '';
+        inp.title = t('up3x.ramTip');
+        inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+        w.appendChild(inp);
+        fields.appendChild(w);
+      });
+      ramBox.appendChild(fields);
+      /* 折叠 = 不指定：把界面上和提交里的值一起清空，免得"看得见却没发出去" */
+      ck.querySelector('input').addEventListener('change', (e) => {
+        fields.hidden = !e.target.checked;
+        if (!e.target.checked) {
+          liveBlends.forEach((b) => { state.blends[b.i].ram = ''; });
+          [].forEach.call(fields.querySelectorAll('input'), (i2) => { i2.value = ''; });
+        }
+      });
       group.appendChild(line(t('up3x.ram'), ramBox));
     }
 
@@ -6013,8 +6034,15 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
-      /* 切块：三种形态都摆成"名字: 值"，不再是一句说明文字 */
+      /* 切块：三种形态都摆成"名字: 值"。站点认定不能切块时（EXR / 降噪），
+         理由就长在**这一行**上 —— 它本来就是"为什么这里没得选"，单独摆一块反而突兀。 */
       const splitBox = mk('div', 'up3-split');
+      const splitWhy = [];
+      const rest = [];
+      b.notes.forEach((s) => {
+        if (b.split.kind === 'fixed' && SPLIT_REASON.test(s)) splitWhy.push(s);
+        else rest.push(s);
+      });
       if (b.split.kind === 'samples' || b.split.kind === 'samples-single') {
         const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value);
         s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
@@ -6031,18 +6059,22 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
         splitBox.appendChild(sel);
       } else {
-        /* 站点分析认定不能切块（EXR / 降噪分支）：当只读值显示，理由进悬停 */
         const chip = mk('span', 'up3-static');
         chip.textContent = t('up3x.fullFrame');
         chip.title = t('up3x.splitFixedTip');
         splitBox.appendChild(chip);
       }
+      if (splitWhy.length) {
+        const why = mk('span', 'up3-why');
+        why.textContent = splitWhy.map(zh).join(' ');
+        splitBox.appendChild(why);
+      }
       bl.appendChild(line(t('up3x.split'), splitBox));
 
-      /* 站点写的说明（EXR 限制、降噪、缺文件、驱动警告…）：带强调线，别让人看漏 */
-      if (b.notes && b.notes.length) {
+      /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */
+      if (rest.length) {
         const notes = mk('div', 'up3-notes');
-        b.notes.forEach((s) => {
+        rest.forEach((s) => {
           const d = mk('div');
           d.textContent = zh(s);
           notes.appendChild(d);

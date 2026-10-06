@@ -34,6 +34,9 @@
   /* 同名 radio 在同一个文档里算**一组**，会互相取消勾选：每次 render 用自己的后缀。 */
   let seq = 0;
 
+  /** 站点说明里属于"为什么不能切块"的那几句（降噪那两行）；其余（EXR 清单、缺文件、驱动）另摆。 */
+  const SPLIT_REASON = /denois|splits?\b|tile/i;
+
   /** 站点原文 → 中文（没命中就原样）。说明文字是站点写的，翻译表在 12-lang-zh.js。 */
   const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
 
@@ -140,8 +143,7 @@
   }
 
   /** 站点给这个文件算出来的事实（只显示，不改；提交时也原样发回去） */
-  function blendFacts(b) {
-    const h = b.hidden || {};
+  function blendFacts(b) {    const h = b.hidden || {};
     const out = [];
     if (h.engine) out.push(t('up3x.mEngine', { v: h.engine }));
     if (h.exe) out.push(t('up3x.mBlender', { v: h.exe }));
@@ -254,32 +256,42 @@
     addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
     if (cpuBox.childNodes.length) group.appendChild(line(t('up3.cpu'), cpuBox));
 
-    /* 内存占用：属于硬件需求，跟着计算方式放；每个文件一个值（服务端契约），留空自动探测 */
+    /* 内存占用：属于硬件需求，跟着计算方式放。默认**折叠**（不指定 = 站点在渲染第一帧时自动探测）；
+       勾上「手动指定」才展开输入框。值本身是每个文件一个（服务端契约），多文件时一行一个。 */
     const ramBox = mk('div', 'up3-rams');
-    let ramAny = false;
-    model.blends.forEach((b) => {
-      if (b.rejected) return;
-      ramAny = true;
-      const w = mk('div', 'up3-ram');
-      if (model.blends.length > 1) {
-        const l = mk('label');
-        l.textContent = b.name;
-        w.appendChild(l);
-      }
-      const inp = mk('input');
-      inp.type = 'text';
-      inp.inputMode = 'numeric';
-      inp.placeholder = t('up3x.ramPh');
-      inp.value = b.ram || '';
-      inp.title = t('up3x.ramTip');
-      inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
-      w.appendChild(inp);
-      ramBox.appendChild(w);
-    });
-    if (ramAny) {
-      const d = tip(t('up3x.ramAuto'));
-      d.classList.add('up3-tiprow');
-      ramBox.appendChild(d);
+    const liveBlends = model.blends.filter((b) => !b.rejected);
+    if (liveBlends.length) {
+      const preRam = liveBlends.some((b) => b.ram);
+      const ck = opt('checkbox', null, null, t('up3x.ramManual'), { cls: 'up3-ramck', checked: preRam, title: t('up3x.ramAuto') });
+      ramBox.appendChild(ck);
+      const fields = mk('div', 'up3-ramfields');
+      fields.hidden = !preRam;
+      liveBlends.forEach((b) => {
+        const w = mk('div', 'up3-ram');
+        if (liveBlends.length > 1) {
+          const l = mk('label');
+          l.textContent = b.name;
+          w.appendChild(l);
+        }
+        const inp = mk('input');
+        inp.type = 'text';
+        inp.inputMode = 'numeric';
+        inp.placeholder = t('up3x.ramPh');
+        inp.value = b.ram || '';
+        inp.title = t('up3x.ramTip');
+        inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+        w.appendChild(inp);
+        fields.appendChild(w);
+      });
+      ramBox.appendChild(fields);
+      /* 折叠 = 不指定：把界面上和提交里的值一起清空，免得"看得见却没发出去" */
+      ck.querySelector('input').addEventListener('change', (e) => {
+        fields.hidden = !e.target.checked;
+        if (!e.target.checked) {
+          liveBlends.forEach((b) => { state.blends[b.i].ram = ''; });
+          [].forEach.call(fields.querySelectorAll('input'), (i2) => { i2.value = ''; });
+        }
+      });
       group.appendChild(line(t('up3x.ram'), ramBox));
     }
 
@@ -365,8 +377,15 @@
         bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
-      /* 切块：三种形态都摆成"名字: 值"，不再是一句说明文字 */
+      /* 切块：三种形态都摆成"名字: 值"。站点认定不能切块时（EXR / 降噪），
+         理由就长在**这一行**上 —— 它本来就是"为什么这里没得选"，单独摆一块反而突兀。 */
       const splitBox = mk('div', 'up3-split');
+      const splitWhy = [];
+      const rest = [];
+      b.notes.forEach((s) => {
+        if (b.split.kind === 'fixed' && SPLIT_REASON.test(s)) splitWhy.push(s);
+        else rest.push(s);
+      });
       if (b.split.kind === 'samples' || b.split.kind === 'samples-single') {
         const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value);
         s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
@@ -383,18 +402,22 @@
         sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
         splitBox.appendChild(sel);
       } else {
-        /* 站点分析认定不能切块（EXR / 降噪分支）：当只读值显示，理由进悬停 */
         const chip = mk('span', 'up3-static');
         chip.textContent = t('up3x.fullFrame');
         chip.title = t('up3x.splitFixedTip');
         splitBox.appendChild(chip);
       }
+      if (splitWhy.length) {
+        const why = mk('span', 'up3-why');
+        why.textContent = splitWhy.map(zh).join(' ');
+        splitBox.appendChild(why);
+      }
       bl.appendChild(line(t('up3x.split'), splitBox));
 
-      /* 站点写的说明（EXR 限制、降噪、缺文件、驱动警告…）：带强调线，别让人看漏 */
-      if (b.notes && b.notes.length) {
+      /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */
+      if (rest.length) {
         const notes = mk('div', 'up3-notes');
-        b.notes.forEach((s) => {
+        rest.forEach((s) => {
           const d = mk('div');
           d.textContent = zh(s);
           notes.appendChild(d);

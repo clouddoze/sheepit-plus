@@ -887,7 +887,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
    所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
    上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
-#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
+   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
+#sp .sp-up3 [hidden]{display:none !important}#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
 #sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
 #sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
@@ -906,7 +908,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
 #sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
 #sp .sp-up3 .up3-cmp{font-weight:600}
-#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;gap:8px 14px}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+#sp .sp-up3 .up3-ramck{margin:0}
+#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
 #sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
 #sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .sp-up3 .up3-ram > input{width:130px}
@@ -928,11 +933,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
 #sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
 #sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 站点写的说明：带强调线，别让人看漏 */
-#sp .sp-up3 .up3-notes{margin-top:12px;padding:2px 0 2px 10px;border-left:2px solid var(--accent);
-  font-size:12.5px;color:var(--text);line-height:1.75}
+/* 切块这一行为什么没得选：理由就长在这一行上，小字跟在值后面 */
+#sp .sp-up3 .up3-why{flex:1 1 100%;margin-top:2px;font-size:12.5px;color:var(--text-2);line-height:1.7}
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad{border-left-color:var(--border-strong);color:var(--accent)}
+#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
 #sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
