@@ -838,13 +838,13 @@ ${Theme.css('#sp')}
 #sp .up1-more > summary:hover{color:var(--text-2)}
 #sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
-#sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
+#sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
 }
-#sp .sp-in:hover,#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
-#sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
-#sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
 
 /* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
 #sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}

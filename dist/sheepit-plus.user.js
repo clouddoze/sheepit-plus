@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.0
+// @version      0.2.1
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.2.0 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.2.1 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -201,9 +201,9 @@
   const DICT = {
     zh: {
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
-      'nav.account': '账户设置', 'nav.rankingShort': '排行', 'nav.accountShort': '账户',
-      'top.refresh': '刷新', 'top.updated': '更新于', 'top.loading': '加载中…',
-      'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于', 'hero.points': '积分',
+      'nav.rankingShort': '排行', 'nav.accountShort': '账户',
+      'top.refresh': '刷新', 'top.updated': '更新于',
+      'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
       'stat.streak': '当前连续', 'stat.days': '天',
       'stat.streakHint': '历史最长 {best} 天 · 近 30 天活跃 {d30} 天',
@@ -221,12 +221,11 @@
       'stat.daysEquiv': '约 {days} 天机时',
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
       'stat.ordered': '订的帧', 'stat.orderedHint': '为你自己的项目下单的帧数',
-      'site.title': '全站实时', 'site.frames': '待渲染帧', 'site.projects': '进行中项目',
+      'site.frames': '待渲染帧', 'site.projects': '进行中项目',
       'site.clients': '在线客户端', 'site.processing': '正在处理帧',
-      'chart.points': '积分增长', 'chart.frames': '渲染帧数增长',
+      'chart.points': '积分增长',
       'chart.tipPoints': '积分',
       'chart.pointsSub': '{n} 个采样点 · {from} → {to} · 当前 {now}',
-      'chart.framesSub': '{n} 个采样点 · 当前 {now} 帧',
       'months.title': '月度产出', 'months.sub': '按月汇总',
       'months.max': '最高月', 'months.min': '最低月',
       'heat.title': '渲染产出', 'heat.sub': '近 53 周 · 每格一天 · 按当天帧数着色',
@@ -245,9 +244,6 @@
       'empty.s2h': '挂着它', 'empty.s2b': '不需要开着 Blender。空闲算力会自动领活。',
       'empty.s3h': '换积分', 'empty.s3b': '渲染别人 38 分/分钟，自己的项目花 10 分/分钟。',
       'empty.cta1': '下载客户端', 'empty.cta2': '了解规则',
-      'machines.title': '在线机器', 'machines.sub': '当前连接', 'machines.online': '在线',
-      'sessions.title': '最近会话', 'sessions.sub': '共 {n} 条记录',
-      'news.title': '最新动态',
       'proj.title': '进行中项目', 'proj.count': '共 {n} 个',
       'proj.prio.inList': '已在你的渲染优先级名单里',
       /* 3 点菜单 = 放进某份名单：优先 / 捐赠积分（你挣的给 TA）/ 黑名单（不渲染 TA 的项目）。 */
@@ -259,17 +255,17 @@
       'proj.search': '搜索项目或渲染者…', 'proj.all': '全部',
       'proj.col.project': '项目', 'proj.col.owner': '发布者', 'proj.col.status': '状态',
       'proj.col.progress': '进度', 'proj.col.device': '设备', 'proj.col.memory': '内存',
-      'proj.cpu': 'CPU', 'proj.gpu': 'GPU', 'proj.frames': '帧',
+      'proj.cpu': 'CPU', 'proj.gpu': 'GPU',
       'proj.status.renderingN': '{n} 帧渲染中', 'proj.status.rendering': '渲染中',
       'proj.status.waiting': '等待中', 'proj.status.paused': '已暂停',
-      'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}', 'proj.showingN': '显示前 {n} 个',
+      'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
-      'mode.toClassic': '切回原版界面', 'mode.toModern': '切换到现代化界面',
+      'mode.toClassic': '切回原版界面',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
       /* 已连接的机器 */
-      'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
+      'machines.title': '在线机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
       'machines.open': '查看会话', 'machines.unknown': '未识别机型',
       /* 渲染产出：日期轴 */
@@ -281,7 +277,6 @@
       'account.tab.sched': '调度与名单',
       'account.tab.sponsor': '捐赠积分', 'account.tab.account': '账户',
       'account.only': '只能管理自己的账户',
-      'account.onlyHint': '你正在查看 {user} 的账户设置，但那不是你的账号。',
       'account.scheduler': '调度设置', 'account.schedulerHint': '决定优先渲染谁的项目：优先级由低到高是 其他用户 < 我的团队 < 我自己。',
       'account.sched.mine': '优先渲染我自己的项目',
       'account.sched.mineHint': '默认开启。如果你的机器较旧，交给调度器挑更轻的帧可能更划算。',
@@ -344,10 +339,8 @@
       'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经对不上；真认不出来时它会明说，并把那一页交回站点自己。',
       'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
       'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
-      'set.fp.bad': '上次提交前点名：{time} · 缺 {n} 个：{list}',
       'set.fp.never': '还没走过第三步，所以没有点名记录。',
       'nav.upload': '上传项目',
-      'nav.uploadTip': '上传项目（新版自绘界面）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -408,7 +401,6 @@
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
-      'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
       /* 上传后的分析等待页 */
       'an.title': '正在分析你的项目',
       'an.sub': '站点要先读一遍存档，才知道里面有几个 .blend、帧区间和分辨率是多少',
@@ -450,7 +442,6 @@
       'up3x.mp4Tip': '给项目生成 MP4 视频。对服务器很吃资源，确实需要才勾。',
       'up3x.thumb': '缩略图对所有成员可见',
       'up3x.thumbTip': '默认所有成员都能看到你项目的缩略图；不想公开就别勾。之后在项目管理页还能改。',
-      'up3x.forced': '站点没有开放这个开关：它不会按你勾的样子发，最终结果是「{state}」。',
       'up3x.forcedTip': '这个开关站点没开放：界面上的样子只是"站点最终会怎么处理"，提交时按站点的规则走（不会照你勾的发）。最终结果：{state}。',
       'up3x.ramAuto': '默认不指定：站点在渲染第一帧时自动探测。项目很吃内存（比如超过 20GB）再手动填。',
       'up3x.ramManual': '手动指定',
@@ -469,8 +460,6 @@
       'up3x.step': '步长',
       'up3x.frame': '帧',
       'up3x.splitEach': '每帧切成几份',
-      'up3x.splitGrid': '每帧切成几宫格',
-      'up3x.splitFixed': '站点分析后认定这个文件不能切块，将按整帧渲染。',
       /* 管着这两行的硬约束，长在决策行上 —— 以前只在上一步的须知里出现过（记忆桥） */
       'up3x.rule20': '基准机上单帧（或每块）超过 20 分钟就该切块 —— 站点按它那台基准机算。',
       'up3x.ruleTiles': '一次最多 12,000 个分块：8×8 切法下大约到 187 帧就到顶了。',
@@ -558,9 +547,9 @@
     },
     en: {
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
-      'nav.account': 'Account', 'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
-      'top.refresh': 'Refresh', 'top.updated': 'Updated', 'top.loading': 'Loading…',
-      'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined', 'hero.points': 'Points',
+      'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
+      'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
       'stat.streak': 'Current streak', 'stat.days': 'days',
       'stat.streakHint': 'Best {best}d · {d30}/30 active days',
@@ -576,12 +565,11 @@
       'stat.daysEquiv': '≈ {days} machine-days',
       'stat.created': 'Projects created', 'stat.createdHint': 'Tasks you uploaded',
       'stat.ordered': 'Frames ordered', 'stat.orderedHint': 'Frames you ordered for your own projects',
-      'site.title': 'Farm status', 'site.frames': 'Frames remaining', 'site.projects': 'Active projects',
+      'site.frames': 'Frames remaining', 'site.projects': 'Active projects',
       'site.clients': 'Connected clients', 'site.processing': 'Processing frames',
-      'chart.points': 'Points growth', 'chart.frames': 'Frames growth',
+      'chart.points': 'Points growth',
       'chart.tipPoints': 'points',
       'chart.pointsSub': '{n} samples · {from} → {to} · now {now}',
-      'chart.framesSub': '{n} samples · now {now} frames',
       'months.title': 'Monthly output', 'months.sub': 'By calendar month',
       'months.max': 'Best month', 'months.min': 'Lowest month',
       'heat.title': 'Render output', 'heat.sub': 'Last 53 weeks · one cell per day · shaded by frames',
@@ -599,9 +587,6 @@
       'empty.s2h': 'Leave it running', 'empty.s2b': 'No need to have Blender open. Idle cycles pick up work automatically.',
       'empty.s3h': 'Earn points', 'empty.s3b': 'Rendering for others earns 38 points/minute; your own project spends 10.',
       'empty.cta1': 'Download the client', 'empty.cta2': 'How it works',
-      'machines.title': 'Online machines', 'machines.sub': 'Currently connected', 'machines.online': 'online',
-      'sessions.title': 'Recent sessions', 'sessions.sub': '{n} records',
-      'news.title': 'Latest news',
       'proj.title': 'Active projects', 'proj.count': '{n} projects',
       'proj.prio.inList': 'Already in your render priority',
       'proj.menu.open': 'More actions', 'proj.menu.title': 'This publisher\u2026',
@@ -612,15 +597,15 @@
       'proj.search': 'Search project or renderer…', 'proj.all': 'All',
       'proj.col.project': 'Project', 'proj.col.owner': 'Owner', 'proj.col.status': 'Status',
       'proj.col.progress': 'Progress', 'proj.col.device': 'Device', 'proj.col.memory': 'Memory',
-      'proj.cpu': 'CPU', 'proj.gpu': 'GPU', 'proj.frames': 'frames',
+      'proj.cpu': 'CPU', 'proj.gpu': 'GPU',
       'proj.status.renderingN': '{n} Rendering frames', 'proj.status.rendering': 'Rendering',
       'proj.status.waiting': 'Waiting', 'proj.status.paused': 'Paused',
-      'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}', 'proj.showingN': 'Top {n}',
+      'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
-      'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
+      'mode.toClassic': 'Switch to the original interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
-      'machines.title': 'Connected machines', 'machines.count': '{n} machines',
+      'machines.title': 'Online machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
       'heat.weekday': 'Mon,Wed,Fri', 'heat.tip': '{n} frames',
@@ -630,7 +615,6 @@
       'account.tab.sched': 'Scheduler & lists',
       'account.tab.sponsor': 'Donating points', 'account.tab.account': 'Account',
       'account.only': 'Your own account only',
-      'account.onlyHint': 'You are looking at {user}\u2019s account settings, which is not your account.',
       'account.scheduler': 'Scheduler', 'account.schedulerHint': 'Who gets rendered first: other users < my team < myself.',
       'account.sched.mine': 'Render my projects first',
       'account.sched.mineHint': 'On by default. On an older machine it may be better to let the scheduler pick an easier frame.',
@@ -689,10 +673,8 @@
       'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may no longer match; when it cannot read the page it says so and hands that page back to the site.',
       'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
       'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
-      'set.fp.bad': 'Last pre-submit check: {time} \u00b7 {n} missing: {list}',
       'set.fp.never': 'The third step has not been opened yet, so there is no pre-submit check on record.',
       'nav.upload': 'Upload a project',
-      'nav.uploadTip': 'Project upload (script-drawn interface)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -747,7 +729,6 @@
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
       'an.waiting': 'Waiting for an analyser to pick it up…',
@@ -784,7 +765,6 @@
       'up3x.mp4Tip': 'Generates an MP4 video of the project. It is really resource intensive for the server, so only check it if you need it.',
       'up3x.thumb': 'Thumbnail viewable by all members',
       'up3x.thumbTip': 'By default every member can see a thumbnail of your project. Clear this to restrict access; you can change it later on the project page.',
-      'up3x.forced': 'The site does not offer this switch here: it does not send what you clicked, the result is \u201c{state}\u201d.',
       'up3x.forcedTip': 'The site does not offer this switch here: what you see is what the site will do, not what will be sent. Final result: {state}.',
       'up3x.ramAuto': 'Not set by default: the site detects the memory need on the first rendered frame. Set it manually only for very heavy projects (over 20GB).',
       'up3x.ramManual': 'Set manually',
@@ -803,8 +783,6 @@
       'up3x.step': 'Step',
       'up3x.frame': 'Frame',
       'up3x.splitEach': 'Divide each frame into',
-      'up3x.splitGrid': 'Tile grid per frame',
-      'up3x.splitFixed': 'The analysis says this file cannot be split, so it will be rendered as full frames.',
       'up3x.rule20': 'If one frame (or tile) takes over 20 minutes on the reference machine, split it \u2014 that is the site\u2019s rule.',
       'up3x.ruleTiles': 'At most 12,000 tiles per submission: with an 8\u00d78 split that is about 187 frames.',
       'up3x.nTiles': '{n} tiles',
@@ -2930,13 +2908,13 @@ ${Theme.css('#sp')}
 #sp .up1-more > summary:hover{color:var(--text-2)}
 #sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
-#sp .sp-in,#sp .up1-devin,#sp .up1-fld > input{
+#sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
 }
-#sp .sp-in:hover,#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
-#sp .sp-in:focus,#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
-#sp .sp-in::placeholder,#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
 
 /* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
 #sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
