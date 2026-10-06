@@ -411,13 +411,15 @@
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      /* 分析早就完成了，页头却还在说"正在分析你的项目"：状态与标题必须在同一屏上说同一件事。
-         标题接过"完成"这句话（卡片里那句随之收掉），副标题换成站点读出来的归档事实。 */
+      /* 页头接过"这是什么页"和"接下来做什么"：标题用步骤名（顶栏那一项也是它），副标题说明
+         分析已结束。卡片里那句重复的状态行**必须真的隐藏** —— .an-head 有 display:flex，
+         UA 的 [hidden]{display:none} 会被它压掉（这个坑代码里已经记过一次，别再踩）。 */
       const ttl = q('title');
       const tsub = q('titleSub');
-      if (ttl) ttl.textContent = t('an.doneSechead');
+      if (ttl) ttl.textContent = t('up3x.title');
+      if (tsub) { tsub.textContent = t('an.doneSechead'); tsub.hidden = false; }
       const anHead = host.querySelector('.an-head');
-      if (anHead) anHead.hidden = true;
+      if (anHead) { anHead.hidden = true; anHead.style.display = 'none'; }
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
@@ -449,13 +451,6 @@
           box.appendChild(foot);
           if (tsub) { tsub.textContent = ''; tsub.hidden = true; }
           return;
-        }
-        /* 副标题换成"站点读出了什么"：以前它一直挂着"要先读一遍存档"，而存档早读完了。
-           我们自己画的 `.up3-meta` 就是那句事实。 */
-        if (tsub) {
-          const metaEl = box.querySelector('.up3-meta');
-          tsub.textContent = metaEl ? metaEl.innerText.replace(/\s+/g, ' ').trim() : '';
-          tsub.hidden = !tsub.textContent;
         }
       }
       return;

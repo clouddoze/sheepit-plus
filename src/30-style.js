@@ -779,7 +779,6 @@ ${Theme.css('#sp')}
    那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
    清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
 #sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-head{margin:0 0 14px}
 
 /* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
    拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
@@ -802,9 +801,6 @@ ${Theme.css('#sp')}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
-/* 「关于你这次的读数」：能传 / 上限，挑文件之前就在 */
-#sp .up1-status{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--text-2)}
-#sp .up1-status .dot{width:7px;height:7px;border-radius:50%;background:var(--positive);flex:none}
 #sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
@@ -829,14 +825,6 @@ ${Theme.css('#sp')}
 #sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
-/* 12 条须知里的"少数人才需要"那几条：默认折起来，站点原文一条没删 */
-#sp .up1-more{margin-top:12px}
-#sp .up1-more > summary{cursor:pointer;font-size:12.5px;color:var(--text-3);list-style:none}
-#sp .up1-more > summary::-webkit-details-marker{display:none}
-#sp .up1-more > summary::before{content:'▸ '}
-#sp .up1-more[open] > summary::before{content:'▾ '}
-#sp .up1-more > summary:hover{color:var(--text-2)}
-#sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
 #sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
@@ -932,10 +920,6 @@ ${Theme.css('#sp')}
 /* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
    折叠的内存框、未选中的"帧范围"那一行都还在显示） */
 #sp .sp-up3 [hidden]{display:none !important}
-/* 区域标签（h3）：三级墨 12.5px —— 不跟页头 h2 抢，也不跟下面的记录名抢 */
-#sp .sp-up3 .up3-head h3{margin:0;font-size:12.5px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
-#sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
-#sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
 #sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
 #sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}

@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.1
+// @version      0.2.2
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.2.1 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.2.2 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -423,8 +423,6 @@
       'up3x.type': '类型',
       'up3x.frames': '帧范围',
       'up3x.split': '切块',
-      'up3x.mArchive': '存档',
-      'up3x.mFiles': '文件',
       'up3x.mEngine': '引擎 {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}×{h}',
@@ -493,7 +491,6 @@
       'up1.picked': '已选择 {name}（{size}）',
       'up1.noFile': '先选一个文件。',
       'up1.go': '开始上传',
-      'up1.ok': '这次可以传：单个文件上限 {size}。',
       'up1.willRead': '站点会读出引擎、帧区间、分辨率、采样 —— 分析完再让你确认。',
       'up1.goBusy': '正在上传…',
       'up1.cancel': '取消上传',
@@ -522,7 +519,6 @@
       'up1.perTile': '每块预计用时',
       'up1.noSplit': '不切块',
       'up1.noRules': '站点这一页没给须知清单。',
-      'up1.moreRules': '另外 {n} 条要求 —— 需要时展开',
       /* 站点结构变了：不许沉默 —— 说清 + 给出切档办法 */
       'up.shapeNew': '站点这一版的页面结构变了，新版认不出要用的那几块。',
       'up.shapeHow': '可以到「设置 → 上传项目」切到「原版」，用站点自己的上传页（换档会重新载入这一页）。',
@@ -746,8 +742,6 @@
       'up3x.type': 'Type',
       'up3x.frames': 'Frame range',
       'up3x.split': 'Split',
-      'up3x.mArchive': 'Archive',
-      'up3x.mFiles': 'Files',
       'up3x.mEngine': 'Engine {v}',
       'up3x.mBlender': 'Blender {v}',
       'up3x.mRes': '{w}\u00d7{h}',
@@ -814,7 +808,6 @@
       'up1.picked': 'Selected {name} ({size})',
       'up1.noFile': 'Choose a file first.',
       'up1.go': 'Start upload',
-      'up1.ok': 'You can upload right now: one file, up to {size}.',
       'up1.willRead': 'The site reads the engine, frame range, resolution and samples \u2014 then you confirm.',
       'up1.goBusy': 'Uploading\u2026',
       'up1.cancel': 'Cancel upload',
@@ -843,7 +836,6 @@
       'up1.perTile': 'Expected time per tile',
       'up1.noSplit': 'No split',
       'up1.noRules': 'The site did not list any checks on this page.',
-      'up1.moreRules': '{n} more requirements \u2014 expand if you need them',
       'up.shapeNew': 'The page structure changed on this version, so New mode cannot find the blocks it needs.',
       'up.shapeHow': 'Switch to \u201cOriginal\u201d under Settings \u2192 Upload to use the site\u2019s own upload page (switching reloads this page).',
       'up3x.unknown': 'This version adds {n} element(s) this script does not draw ({list}\u2026) \u2014 they will be submitted with the site\u2019s defaults.',
@@ -2849,7 +2841,6 @@ ${Theme.css('#sp')}
    那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
    清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
 #sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-head{margin:0 0 14px}
 
 /* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
    拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
@@ -2872,9 +2863,6 @@ ${Theme.css('#sp')}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
-/* 「关于你这次的读数」：能传 / 上限，挑文件之前就在 */
-#sp .up1-status{display:flex;align-items:center;gap:8px;margin:0 0 12px;font-size:12.5px;color:var(--text-2)}
-#sp .up1-status .dot{width:7px;height:7px;border-radius:50%;background:var(--positive);flex:none}
 #sp .up1-willread{margin-top:4px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
 #sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
@@ -2899,14 +2887,6 @@ ${Theme.css('#sp')}
 #sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
-/* 12 条须知里的"少数人才需要"那几条：默认折起来，站点原文一条没删 */
-#sp .up1-more{margin-top:12px}
-#sp .up1-more > summary{cursor:pointer;font-size:12.5px;color:var(--text-3);list-style:none}
-#sp .up1-more > summary::-webkit-details-marker{display:none}
-#sp .up1-more > summary::before{content:'▸ '}
-#sp .up1-more[open] > summary::before{content:'▾ '}
-#sp .up1-more > summary:hover{color:var(--text-2)}
-#sp .up1-more > ul{margin-top:8px}
 /* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
 #sp .up1-devin,#sp .up1-fld > input{
   font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
@@ -3002,10 +2982,6 @@ ${Theme.css('#sp')}
 /* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
    折叠的内存框、未选中的"帧范围"那一行都还在显示） */
 #sp .sp-up3 [hidden]{display:none !important}
-/* 区域标签（h3）：三级墨 12.5px —— 不跟页头 h2 抢，也不跟下面的记录名抢 */
-#sp .sp-up3 .up3-head h3{margin:0;font-size:12.5px;font-weight:600;color:var(--text-3);letter-spacing:.03em}
-#sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
-#sp .sp-up3 .up3-meta{margin:12px 0 14px}
 /* 硬件需求：一个块，三行，行间发丝线 */
 #sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
 #sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
@@ -5401,10 +5377,6 @@ ${Theme.css('#sp')}
        提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
     const maxBytes = page.limitBytes || 0;
     const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
-    /* 关于你这次的读数：能不能传、上限多少 —— 在挑文件之前说，而不是等整页被替换之后才说 */
-    const status = mk('div', 'up1-status');
-    status.appendChild(mk('i', 'dot'));
-    status.appendChild(mk('span', null, t('up1.ok', { size: maxText || t('up1.anySize') })));
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -5449,7 +5421,6 @@ ${Theme.css('#sp')}
     foot.appendChild(cancel);
     foot.appendChild(btn);
 
-    slot.appendChild(status);
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
@@ -5758,20 +5729,8 @@ ${Theme.css('#sp')}
       if (/[。．.！!？?]$/.test(before)) last.nodeValue = '';
       else last.nodeValue = '。';
     });
-    /* 12 条平铺就是一堵墙，而这批用户多半没读过它。把"只有部分人需要"的几条折起来 ——
-       站点原文一条不删，只是默认不占版面。匹配同时认中文译文与站点英文原文。 */
-    const ADV = [/RGBA/, /相对路径/, /relative path/i, /12,?000/, /20\s*分钟/, /20 minutes/i, /187/];
-    const lis = [].slice.call(ul.querySelectorAll('li'));
-    const adv = lis.filter((li) => ADV.some((re) => re.test(li.textContent)));
-    if (adv.length >= 2 && adv.length < lis.length) {
-      const det = mk('details', 'up1-more');
-      const sum = mk('summary', null, t('up1.moreRules', { n: adv.length }));
-      det.appendChild(sum);
-      const ul2 = mk('ul', 'up1-rules');
-      adv.forEach((li) => ul2.appendChild(li));   // 搬节点（翻译已经做完了），不是复制
-      det.appendChild(ul2);
-      slot.appendChild(det);
-    }
+    /* 2026-10-07 用户拍板：须知**不折叠**，12 条原样平铺。折叠省的那点版面，换来的是
+       "还有几条被藏起来了"的猜疑，不划算。 */
   }
 
   /* ---------------------------------------------------------------- 入口 */
@@ -5858,16 +5817,6 @@ ${Theme.css('#sp')}
   };
 
   /* ------------------------------------------------------------------ 小组件 */
-
-  function metaRow(bits) {
-    const m = mk('div', 'meta up3-meta');
-    bits.forEach((html) => {
-      const s = mk('span');
-      s.innerHTML = html;
-      m.appendChild(s);
-    });
-    return m;
-  }
 
   function line(k, content) {
     const l = mk('div', 'up3-line');
@@ -5993,20 +5942,10 @@ ${Theme.css('#sp')}
       };
     });
 
-    /* ① 抬头 + 概览（站点算出来的事实，一行 chips）
-       这一行是**区域标签**（h3，12.5px 三级墨），不是标题级：页头 h2「分析完成…」已经把状态说了，
-       真正的记录名在下面每个 .blend 上。以前三行都挂 h4/13.5px/600，读起来分不清谁是标题。 */
-    const head = mk('div', 'up3-head');
-    const h3 = mk('h3');
-    h3.textContent = t('up3x.title');
-    head.appendChild(h3);
-    root.appendChild(head);
-
-    const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
-    const bits = [];
-    if (archive) bits.push(`${esc(t('up3x.mArchive'))} <b>${esc(archive)}</b>`);
-    bits.push(`${esc(t('up3x.mFiles'))} <b>${model.blends.length}</b>`);
-    root.appendChild(metaRow(bits));
+    /* ① 不再有"抬头行"与"存档/文件"那行概览。
+       2026-10-07 用户两条意见：一、「存档 sptest」这种说法看不懂，而且和下面每个 .blend 的名字
+       重复；二、页头已经说了这是什么页（h2「项目设置」），卡片里再来一次就是复读。
+       直接进内容：上半是硬件需求，下半是每个 .blend 一块。 */
 
     /* ② 上半：硬件需求（一个块三行） */
     const group = mk('div', 'up3-group');
@@ -6100,10 +6039,11 @@ ${Theme.css('#sp')}
 
     root.appendChild(group);
 
-    /* ③ 下半：画面设置（每个 .blend 一块） */
+    /* ③ 下半：画面设置（每个 .blend 一块）。页头 h2「项目设置」→ 这里 h3 → 每个文件 h4，
+       大纲不跳级；这一行是真正的分区标题，不再是"区域标签"。 */
     const live = model.blends.filter((b) => !b.rejected);
     if (live.length) {
-      const sub = mk('div', 'up3-subhead');
+      const sub = mk('h3', 'up3-subhead');
       sub.textContent = t('up3x.picture');
       root.appendChild(sub);
     }
@@ -7032,13 +6972,15 @@ ${Theme.css('#sp')}
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      /* 分析早就完成了，页头却还在说"正在分析你的项目"：状态与标题必须在同一屏上说同一件事。
-         标题接过"完成"这句话（卡片里那句随之收掉），副标题换成站点读出来的归档事实。 */
+      /* 页头接过"这是什么页"和"接下来做什么"：标题用步骤名（顶栏那一项也是它），副标题说明
+         分析已结束。卡片里那句重复的状态行**必须真的隐藏** —— .an-head 有 display:flex，
+         UA 的 [hidden]{display:none} 会被它压掉（这个坑代码里已经记过一次，别再踩）。 */
       const ttl = q('title');
       const tsub = q('titleSub');
-      if (ttl) ttl.textContent = t('an.doneSechead');
+      if (ttl) ttl.textContent = t('up3x.title');
+      if (tsub) { tsub.textContent = t('an.doneSechead'); tsub.hidden = false; }
       const anHead = host.querySelector('.an-head');
-      if (anHead) anHead.hidden = true;
+      if (anHead) { anHead.hidden = true; anHead.style.display = 'none'; }
       const box = document.getElementById('sp-an-result');
       if (box) {
         /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
@@ -7070,13 +7012,6 @@ ${Theme.css('#sp')}
           box.appendChild(foot);
           if (tsub) { tsub.textContent = ''; tsub.hidden = true; }
           return;
-        }
-        /* 副标题换成"站点读出了什么"：以前它一直挂着"要先读一遍存档"，而存档早读完了。
-           我们自己画的 `.up3-meta` 就是那句事实。 */
-        if (tsub) {
-          const metaEl = box.querySelector('.up3-meta');
-          tsub.textContent = metaEl ? metaEl.innerText.replace(/\s+/g, ' ').trim() : '';
-          tsub.hidden = !tsub.textContent;
         }
       }
       return;

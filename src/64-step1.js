@@ -66,10 +66,6 @@
        提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
     const maxBytes = page.limitBytes || 0;
     const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
-    /* 关于你这次的读数：能不能传、上限多少 —— 在挑文件之前说，而不是等整页被替换之后才说 */
-    const status = mk('div', 'up1-status');
-    status.appendChild(mk('i', 'dot'));
-    status.appendChild(mk('span', null, t('up1.ok', { size: maxText || t('up1.anySize') })));
     const drop = mk('div', 'up1-drop');
     const title = mk('div', 'up1-droptitle');
     title.appendChild(document.createTextNode(t('up1.pick') + ' '));
@@ -114,7 +110,6 @@
     foot.appendChild(cancel);
     foot.appendChild(btn);
 
-    slot.appendChild(status);
     slot.appendChild(drop);
     /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
     slot.appendChild(mk('div', 'up1-after', t('up1.after')));
@@ -423,20 +418,8 @@
       if (/[。．.！!？?]$/.test(before)) last.nodeValue = '';
       else last.nodeValue = '。';
     });
-    /* 12 条平铺就是一堵墙，而这批用户多半没读过它。把"只有部分人需要"的几条折起来 ——
-       站点原文一条不删，只是默认不占版面。匹配同时认中文译文与站点英文原文。 */
-    const ADV = [/RGBA/, /相对路径/, /relative path/i, /12,?000/, /20\s*分钟/, /20 minutes/i, /187/];
-    const lis = [].slice.call(ul.querySelectorAll('li'));
-    const adv = lis.filter((li) => ADV.some((re) => re.test(li.textContent)));
-    if (adv.length >= 2 && adv.length < lis.length) {
-      const det = mk('details', 'up1-more');
-      const sum = mk('summary', null, t('up1.moreRules', { n: adv.length }));
-      det.appendChild(sum);
-      const ul2 = mk('ul', 'up1-rules');
-      adv.forEach((li) => ul2.appendChild(li));   // 搬节点（翻译已经做完了），不是复制
-      det.appendChild(ul2);
-      slot.appendChild(det);
-    }
+    /* 2026-10-07 用户拍板：须知**不折叠**，12 条原样平铺。折叠省的那点版面，换来的是
+       "还有几条被藏起来了"的猜疑，不划算。 */
   }
 
   /* ---------------------------------------------------------------- 入口 */

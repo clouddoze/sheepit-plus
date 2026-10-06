@@ -57,16 +57,6 @@
 
   /* ------------------------------------------------------------------ 小组件 */
 
-  function metaRow(bits) {
-    const m = mk('div', 'meta up3-meta');
-    bits.forEach((html) => {
-      const s = mk('span');
-      s.innerHTML = html;
-      m.appendChild(s);
-    });
-    return m;
-  }
-
   function line(k, content) {
     const l = mk('div', 'up3-line');
     const a = mk('div', 'up3-k');
@@ -191,20 +181,10 @@
       };
     });
 
-    /* ① 抬头 + 概览（站点算出来的事实，一行 chips）
-       这一行是**区域标签**（h3，12.5px 三级墨），不是标题级：页头 h2「分析完成…」已经把状态说了，
-       真正的记录名在下面每个 .blend 上。以前三行都挂 h4/13.5px/600，读起来分不清谁是标题。 */
-    const head = mk('div', 'up3-head');
-    const h3 = mk('h3');
-    h3.textContent = t('up3x.title');
-    head.appendChild(h3);
-    root.appendChild(head);
-
-    const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
-    const bits = [];
-    if (archive) bits.push(`${esc(t('up3x.mArchive'))} <b>${esc(archive)}</b>`);
-    bits.push(`${esc(t('up3x.mFiles'))} <b>${model.blends.length}</b>`);
-    root.appendChild(metaRow(bits));
+    /* ① 不再有"抬头行"与"存档/文件"那行概览。
+       2026-10-07 用户两条意见：一、「存档 sptest」这种说法看不懂，而且和下面每个 .blend 的名字
+       重复；二、页头已经说了这是什么页（h2「项目设置」），卡片里再来一次就是复读。
+       直接进内容：上半是硬件需求，下半是每个 .blend 一块。 */
 
     /* ② 上半：硬件需求（一个块三行） */
     const group = mk('div', 'up3-group');
@@ -298,10 +278,11 @@
 
     root.appendChild(group);
 
-    /* ③ 下半：画面设置（每个 .blend 一块） */
+    /* ③ 下半：画面设置（每个 .blend 一块）。页头 h2「项目设置」→ 这里 h3 → 每个文件 h4，
+       大纲不跳级；这一行是真正的分区标题，不再是"区域标签"。 */
     const live = model.blends.filter((b) => !b.rejected);
     if (live.length) {
-      const sub = mk('div', 'up3-subhead');
+      const sub = mk('h3', 'up3-subhead');
       sub.textContent = t('up3x.picture');
       root.appendChild(sub);
     }
