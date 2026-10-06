@@ -13,12 +13,21 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, statSy
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { countCommentBytes } from './tools/comment-bytes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, 'src');
 const DIST = join(HERE, 'dist');
 const OUT = join(DIST, 'sheepit-plus.user.js');
 const checkOnly = process.argv.includes('--check');
+
+// ---- 体积提示（只提示，不拦构建） ----
+// 为什么要有：上一轮把源码注释从 99.7 KB 压到 33.4 KB、产物从 339,846 压到 271,560 字节
+// （-20%）。但构建只打印 KB，没有任何东西提醒注释以后再长回来，这条就是那个提醒。
+// 为什么只提示不拦（2026-10-06 用户拍板「不要硬上限，提示一下就行」）：加功能本来就会让产物
+// 变大，构建不该替人挡路 —— 提醒一下，变大是否接受由人决定。
+const BUDGET_OUT_BYTES = 285000;   // 产物 UTF-8 字节提示线
+const BUDGET_COMMENT_RATIO = 0.25; // 注释字节 / 产物字节 的提示线
 
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();
 if (!files.length) {
@@ -118,6 +127,32 @@ const parts = files.map((f) => `${f}(${(statSync(join(SRC, f)).size / 1024).toFi
 console.log(`√ 语法校验通过`);
 console.log(`  模块：${parts}`);
 console.log(`  产物：${kb} KB（UTF-8 字节）${checkOnly ? '（--check，未写入）' : ''}`);
+
+// 注释字节按源文件逐个统计再求和，而不是直接扫产物：30-style.js 的模板串里装的是 CSS，
+// 那段注释得按 CSS 口径算（约 7 KB）；直接扫产物时扫描器不认识"这段模板是 CSS"，
+// 只能保守地跳过所有模板串，会漏掉这 7 KB；若反过来开启模板内扫描，又会把
+// accept="image/*" 这类内容误判成注释起始（实测虚高 2.5 KB）。
+// 分子按源码口径、分母按产物字节（用户实际下载的字节数），生成期注释（banner 与模块
+// 分隔行，约 300 字节）未计入分子。
+const commentBytes = files.reduce((sum, f) => {
+  const code = readFileSync(join(SRC, f), 'utf8');
+  return sum + countCommentBytes(code, { stripTemplate: f === '30-style.js' }).commentBytes;
+}, 0);
+const outBytes = Buffer.byteLength(out, 'utf8');
+const commentRatio = commentBytes / outBytes;
+console.log(`  注释：${commentBytes} 字节 / 产物 ${outBytes} 字节 = ${(commentRatio * 100).toFixed(1)}%`
+  + `（占比提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%）`);
+
+// 只提示、不拦：加功能本来就会变大，构建不该替人挡路（用户 2026-10-06 拍板）。
+if (outBytes > BUDGET_OUT_BYTES) {
+  console.warn(`⚠ 产物 ${outBytes} 字节，已过提示线 ${BUDGET_OUT_BYTES} 字节（超 ${outBytes - BUDGET_OUT_BYTES} 字节）——`
+    + '变的这版是不是有意的？');
+}
+if (commentRatio > BUDGET_COMMENT_RATIO) {
+  console.warn(`⚠ 注释 ${commentBytes} 字节，占产物 ${(commentRatio * 100).toFixed(1)}%，`
+    + `已过提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%（${Math.floor(outBytes * BUDGET_COMMENT_RATIO)} 字节）`
+    + ' —— 注释是不是又写多了？');
+}
 
 if (!checkOnly) {
   if (!existsSync(DIST)) mkdirSync(DIST, { recursive: true });
