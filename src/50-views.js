@@ -34,6 +34,9 @@
     return '';
   }
 
+  /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
+  const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
+
   const rankOf = (st) => {
     const raw = statOf(st, ['Rank']);
     const digits = String(raw).replace(/[^\d]/g, '');
@@ -127,10 +130,18 @@
     const st = p.stats || {};
     const d = p.derived || {};
     const daily = dailySeries(p.frames);
-    const hasData = (p.points && p.points.length > 1) || daily.length > 0 || (p.activity && p.activity.length > 0);
+    const hasCalendar = daily.length > 0 || !!(p.activity && p.activity.length > 0);
+    /* 新账号站点常常"只给统计表、不给图表数组"（line_*_timeline 与热力图整段不渲染）。
+       数字是真的（Frames rendered 148 / Points 20,062），所以判据不能只看图表：
+       统计表里任何一个数 > 0、或者有在线机器/历史会话，都算"有记录"（用户实报：总览说"还没有渲染记录"）。 */
+    const hasStat = asCount(statOf(st, ['Frames rendered'])) > 0
+      || asCount(statOf(st, ['Points'])) > 0
+      || asCount(statOf(st, ['Time rendered'])) > 0;
+    const hasData = (p.points && p.points.length > 1) || hasCalendar || hasStat
+      || (p.machines && p.machines.count > 0) || (p.sessions && p.sessions.length > 0);
 
     if (!hasData) {
-      // 统计读到了但没有任何渲染记录 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
+      // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
       return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
     }
@@ -146,7 +157,6 @@
     const points = statOf(st, ['Points']);
     const created = statOf(st, ['Projects created']);
     const ordered = statOf(st, ['Frames ordered']);
-    const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, ''));
 
     const kpiItems = [
       {
@@ -162,13 +172,14 @@
         d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
-      {
+      /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */
+      ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
         d: d.best !== undefined
           ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
           : '',
-      },
+      }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
       ...(asCount(ordered) > 0

@@ -601,8 +601,10 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
   调度器那段全中文：「调度器 / 有多少台机器能真正渲染这个项目？ / 已连接机器： 474 /
   CPU 已连接机器： 245 / 474 / 能用 Blender 4.5+ 的机器： 202 / 245 / 潜在渲染机器： 202」，
   动作按钮「查看帧图像 / 暂停 / 删除项目」，该态残留只有 3 条（用户名、文件名、`display:none`
-  的 `Tab widget`）。截图 `.tmp/upload-test/up3-waiting.png`。测试账号下现在留着两个项目：
-  1224486（已渲染完）与 1224491（等待中）。
+  的 `Tab widget`）。截图 `.tmp/upload-test/up3-waiting.png`。测试账号下曾留着两个项目：
+  1224486（已渲染完）与 1224491（等待中）；**收尾时两个都用站点自己的删除按钮删掉了**
+  （管理页红键 → `projectAction(id, 'remove_no_redirect')` → POST `/project/<id>/remove_no_redirect`
+  → 站点回 `EMPTY` 并自己跳 `/user/profile`；重访两页都是站点的「无权限」页）。
 - 体积：`dist` 325,494 字节（注释 50,353 = 15.5%）。
 - **收尾时踩到的一个假警报：先看一眼"界面档"再判缺陷**。用户浏览器当时停在**原版界面档**
   （`Util.store.get('uiMode', 'modern') === 'classic'`）—— 这一档下我们**不接管任何页面**
@@ -610,6 +612,39 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
   （`#sp-mode-pill` 文字「切回新界面」、`#sp-lang-pill` 文字「译 ZH」）。于是 `/project/1224486`
   上 `#sp` 不存在、`SP.app.state` 读不到、站点原版页面照常显示。这不是缺陷，但**真装复验之前
   必须先确认这一档是 `modern`**，否则很容易把"没接管"当成回归去查。
+
+---
+
+### 0.1.17（2026-10-06 起，尚未发布）
+
+**缺陷（用户实报）**：今天刚注册的账号，总览显示「还没有渲染记录」那张新用户卡，而站点原版页面
+明明有数字（`Frames rendered 148` / `Points 20,062` / `Projects created 3`）。
+
+**根因**：`50-views.js` 的 `overview()` 用
+`hasData = points 时间线 > 1 点 || frames 时间线 > 0 点 || 热力图 activity > 0` 判断"有没有记录"。
+站点对**新账号**是"有统计表、没有图表"：实测 `/user/muwyelkoai3k/profile`（66,793 字节）里
+`line_points_timeline` / `line_frames_timeline` / `consecutive-render-heatmap` **三样整段不渲染**
+（探针 `arrFlags` 全 false），但 `dl.dl-horizontal` 里有真数字（Projects created 3 / Frames ordered 6 /
+Frames rendered 148 / Points 20,062 / Registration October 7th, 2026）。于是 `hasData` 为假、`st` 非空
+→ 正好落进"新用户空状态"分支。同页 `parseMachines` 其实读到了 1 台在线机器
+（`CLOUDCOMPUTER` / `GeForce RTX 3060`），也被一并忽略。
+
+**改法**（都在 `src/50-views.js`）：
+- `asCount` 提到模块作用域（原来定义在 `hasData` 之后的分支里，判断用不到它）。
+- `hasData` 增加三类证据：统计表里 `Frames rendered` / `Points` / `Time rendered` 任一 > 0、
+  `p.machines.count > 0`、`p.sessions.length > 0`。
+- 「当前连续 N 天」这张 KPI 只在**有产出日历**（`daily.length || activity.length`）时才画：
+  数字是从日历算出来的，站点不给日历就会给新账号摆一个"连续 0 天"。
+
+**实测（真站点注入 0.1.17）**：
+- 新账号总览：`emptyCard: false`；KPI = 已渲染帧数 148 / 积分 20,062 / 累计渲染时长 — / 建的项目 3 /
+  订的帧 6（连续天数那格没画）；「渲染产出」面板如实写「站点没有为这个账号提供产出日历」（`heat.none`）；
+  「已连接的机器 共 1 台 CLOUDCOMPUTER GeForce RTX 3060」。截图 `.tmp/upload-test/ov-after-fix.png`。
+- 回归（数据齐全的 `/user/johnnyvillas/profile`）：KPI 六格都在（含「当前连续 1 天 / 历史最长 16 天 ·
+  近 30 天活跃 2 天」）、热力图有真实数据（6 天有渲染）、机器面板「共 2 台 · 当前没有连着算力的客户端」。
+- 构建：`dist` 326,448 字节（注释 50,962 = 15.6%）。
+- **仍未验证**：只实测了"统计表有数字、图表缺席"这一种新账号形态；站点何时才给新账号渲染图表数组
+  没查（在前端控制范围之外）。
 
 ---
 

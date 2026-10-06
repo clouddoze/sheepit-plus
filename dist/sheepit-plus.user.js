@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.16
+// @version      0.1.17
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.16 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.17 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -3267,6 +3267,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return '';
   }
 
+  /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
+  const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
+
   const rankOf = (st) => {
     const raw = statOf(st, ['Rank']);
     const digits = String(raw).replace(/[^\d]/g, '');
@@ -3360,10 +3363,18 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const st = p.stats || {};
     const d = p.derived || {};
     const daily = dailySeries(p.frames);
-    const hasData = (p.points && p.points.length > 1) || daily.length > 0 || (p.activity && p.activity.length > 0);
+    const hasCalendar = daily.length > 0 || !!(p.activity && p.activity.length > 0);
+    /* 新账号站点常常"只给统计表、不给图表数组"（line_*_timeline 与热力图整段不渲染）。
+       数字是真的（Frames rendered 148 / Points 20,062），所以判据不能只看图表：
+       统计表里任何一个数 > 0、或者有在线机器/历史会话，都算"有记录"（用户实报：总览说"还没有渲染记录"）。 */
+    const hasStat = asCount(statOf(st, ['Frames rendered'])) > 0
+      || asCount(statOf(st, ['Points'])) > 0
+      || asCount(statOf(st, ['Time rendered'])) > 0;
+    const hasData = (p.points && p.points.length > 1) || hasCalendar || hasStat
+      || (p.machines && p.machines.count > 0) || (p.sessions && p.sessions.length > 0);
 
     if (!hasData) {
-      // 统计读到了但没有任何渲染记录 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
+      // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
       return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
     }
@@ -3379,7 +3390,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const points = statOf(st, ['Points']);
     const created = statOf(st, ['Projects created']);
     const ordered = statOf(st, ['Frames ordered']);
-    const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, ''));
 
     const kpiItems = [
       {
@@ -3395,13 +3405,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
-      {
+      /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */
+      ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
         d: d.best !== undefined
           ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
           : '',
-      },
+      }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
       ...(asCount(ordered) > 0
