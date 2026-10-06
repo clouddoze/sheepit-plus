@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.12
+// @version      0.1.13
 // @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
 // @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.12 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.1.13 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -384,6 +384,8 @@
       'sess.tl.error': '错误',
 
       /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
+      'mg.title': '项目管理', 'mg.unknown': '项目',
+      'mg.note': '这一页沿用站点自己的控件与动作（只统一了外观与文案）：改计算方式、生成 MP4、删除项目、加管理员，都直接作用在这个项目上。',
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
@@ -592,6 +594,8 @@
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
 
+      'mg.title': 'Project', 'mg.unknown': 'Project',
+      'mg.note': 'This page keeps the site\u2019s own controls and actions (only the look and the wording are unified): compute method, MP4, remove and managers all act on this project directly.',
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
@@ -780,6 +784,17 @@
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP || !SP.I18n) return;
+
+  /* 站点把日期写成「20th Oct 06:10」，照抄进中文句子太刺眼：只本地化这一种格式。
+     （patterns 的替换值可以是函数——10-core.js 用的是 String.replace(re, rep)。） */
+  const MONTH_ZH = { Jan: '1月', Feb: '2月', Mar: '3月', Apr: '4月', May: '5月', Jun: '6月',
+    Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' };
+  const farmDate = (s) => String(s).replace(
+    /\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/,
+    (m, d, mon, time) => {
+      const k = mon.charAt(0).toUpperCase() + mon.slice(1).toLowerCase();
+      return (MONTH_ZH[k] || mon) + d + '日 ' + time;
+    });
 
   SP.I18n.register('zh', {
     label: '中文',
@@ -978,6 +993,49 @@
       'Number of tiles': '分块数',
       'Expected render time': '预计耗时',
       'No split': '不拆分',
+
+      /* 分析完成后的站点「新增项目」表单：站点把它整块塞进 #sp-an-result，我们只翻文案、
+         不动结构（站点 JS 按 id 拼参数）。键必须与站点 DOM 归一化后的文本逐字一致——
+         原文快照见 .tmp/upload-test/step3-outer.html。 */
+      'Renderable by all members': '所有成员均可渲染',
+      'By default every member can render your project. If you want to restrict the access to your project do not check this box. On the project administration page you will be able to modify this setting and add specific members to renderers.':
+        '默认每个成员都能渲染你的项目。想限制访问就别勾这一项；之后可以在项目管理页改这个设置，并把指定成员加进渲染者名单。',
+      'Generate MP4 video': '生成 MP4 视频',
+      'Generates an MP4 video of the projects, it is really resource intensive for the server so only check it if you really need it.':
+        '为项目生成一段 MP4 视频。这非常吃服务器资源，确实需要时才勾。',
+      'Compute method:': '计算方式：',
+      'Denoising detected: Splits (multiple smaller frames with reduced samples) are not supported.':
+        '检测到降噪：本项目不支持拆分（把帧切成小块、再降低每块的采样）。',
+      'It does not make sense to denoise separate splits and recombine them together.':
+        '把拆分后的各块分别降噪、再拼回一起，是没有意义的。',
+      'Start frame': '起始帧',
+      'End frame': '结束帧',
+      'Step': '步长',
+      'Advanced options': '高级选项',
+      'Memory used': '内存占用',
+      'You can specify the memory used your project. If you think your project will take a lot of ram (more than 20GB), please fill the amount. You can find this value on the top right of Blender. It will help the renderfarm, by allowing the server to give a frame to a small configuration. It is an optional attribute, this value will be detected on the first frame rendered.':
+        '可以在这里指定项目要用的内存。预计占用很大（超过 20GB）就填上——这个值显示在 Blender 界面右上角。填了能帮农场把帧派给小机器。可选项，不填会在渲染第一帧时自动探测。',
+      'Memory used in Mbytes': '内存占用（MB）',
+      'Add this blend': '添加这个 blend',
+
+      /* 项目管理页 /project/<数字>：站点把整块服务端渲染好，我们搬进壳里再翻（见 80-app.js 的 wireManageDoc）。
+         动作与 id 都不动，这里只翻文案。 */
+      'Administration': '项目管理',
+      'Summary': '概要', 'Legend': '图例',
+      'Finished': '已完成', 'In progress': '进行中', 'Waiting': '等待中',
+      'Rendered': '已渲染', 'Processing': '渲染中', 'Failed': '失败', 'Expired': '已过期',
+      'Permissions': '权限', 'Renderers': '渲染者', 'Actions': '操作',
+      'Managers': '管理员', 'Users': '用户',
+      'Compute method': '计算方式',
+      'Add a user to manager list': '输入用户名，加入管理员名单',
+      'Add': '添加',
+      'See frames': '查看帧图像', 'Download frames': '下载帧图像', 'Remove': '删除项目',
+      'CPU enabled': 'CPU 已启用', 'CPU disabled': 'CPU 已禁用',
+      'GPU enabled': 'GPU 已启用', 'GPU disabled': 'GPU 已禁用',
+      /* 站点把这句话拆成 <strong>Caution!</strong> + 文本节点，整句当键永远匹配不上 */
+      'Caution!': '注意！',
+      'not all the rendering features are supported by GPUs': 'GPU 并不支持站点全部的渲染特性。',
+      'You might have different results depending on the rendering technology.': '换一种渲染技术，结果可能有差异。',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
@@ -1036,6 +1094,23 @@
       [/^([\d,]+)\s+points$/, '$1 积分'],
       [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
         '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],
+      /* 上传页「排队情况」：站点看有没有团队加成会输出两个变体，上面 blockPatterns 只盖住长的那条 */
+      [/^The render order is based on points\. The more points you have, the higher priority you get\. You currently have ([\d,]+) points\.$/i,
+        '渲染顺序由积分决定：积分越高，优先级越高。你当前有 $1 积分。'],
+      /* 分析完成后第三步表单的排队位置 */
+      [/^Est\. queue position:\s*([\d,]+)(st|nd|rd|th)$/i, '预计排队：第 $1 位'],
+      /* 项目管理页 /project/<数字> 的概要行（数字每次不同，逐行规则） */
+      [/^The project will be done in\s*(.+)$/i, '预计完成：$1'],
+      [/^Storage used:\s*(.+)$/i, '已用存储：$1'],
+      [/^Real duration of render:\s*(.+)$/i, '实际渲染用时：$1'],
+      [/^On reference per frame rendertime:?$/i, '基准机单帧用时：'],
+      [/^RAM usage:\s*(.+)$/i, '内存占用：$1'],
+      [/^Project will be automatically deleted on\s*(.+)$/i,
+        (m, rest) => '项目将于 ' + farmDate(rest) + ' 自动删除'],
+      [/^Connected machines:\s*(.+)$/i, '已连接机器：$1'],
+      /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
+      [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
+        '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],
     ],
   });
 })();
@@ -2444,6 +2519,68 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 }
 #sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
 #sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+
+/* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
+   80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
+   的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
+#sp .sp-manage{padding:18px 20px 20px;color:var(--text-2)}
+#sp .sp-manage .w-section,#sp .sp-manage .container,#sp .sp-manage .w-box,
+#sp .sp-manage .padding-15,#sp .sp-manage [class*="col-md-"]{padding:0;margin:0;background:none;border:none;box-shadow:none;max-width:none}
+/* 别改 .row 的布局方式：站点用 bootstrap 的 float 栅格，8/4 栏加起来正好 100%，
+   一旦给 .row 加 display:flex + gap，多出来的 gap 会把右栏挤到下一行（实测两栏会竖着叠）。 */
+#sp .sp-manage .row{margin:0}
+#sp .sp-manage .row::after{content:'';display:block;clear:both}
+#sp .sp-manage h2{margin:0 0 8px;font-size:14.5px;font-weight:600;color:var(--text)}
+#sp .sp-manage h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
+#sp .sp-manage a{color:var(--accent);text-decoration:none}
+#sp .sp-manage a:hover{text-decoration:underline}
+#sp .sp-manage ul{padding:0;margin:0;list-style:none}
+#sp .sp-manage .meta-list{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
+#sp .sp-manage li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .sp-manage .meta-list li[class^="msg_"]{font-weight:600;color:var(--text-2)}
+#sp .sp-manage .breadcrumb{display:none}
+/* 站点那几个方块本来就是「卡片」：它们的底色/边框被上面统一掉了，这里按我们的样式还回来，
+   免得整页糊成一片（Summary 与项目卡是 .w-box，右栏图例/页签是 .widget）。 */
+#sp .sp-manage .w-box,#sp .sp-manage .widget{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+#sp .sp-manage .widget-heading{margin:0 0 10px}
+/* 图例：站点用三个 .square 当色块，色是 bootstrap 的 btn-neutral/warning/default */
+#sp .sp-manage .legend{display:flex;gap:16px;flex-wrap:wrap}
+#sp .sp-manage .legend a{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:12.5px;text-decoration:none}
+#sp .sp-manage .legend i{display:none}
+#sp .sp-manage .legend .square{width:14px !important;height:14px !important;margin:0 !important;border-radius:3px;border:none}
+#sp .sp-manage .legend .btn-neutral{background:var(--text-3)}
+#sp .sp-manage .legend .btn-warning{background:#e0a13a}
+#sp .sp-manage .legend .btn-default{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .sp-manage div[style*="color:red"]{color:var(--accent) !important}
+#sp .sp-manage .nav-tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--border)}
+#sp .sp-manage .nav-tabs > li{margin:0}
+#sp .sp-manage .nav-tabs > li > a{display:block;padding:7px 12px;font-size:12.5px;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;text-decoration:none;color:var(--text-2)}
+#sp .sp-manage .nav-tabs > li > a:hover{text-decoration:none;color:var(--text)}
+#sp .sp-manage .nav-tabs > li.active > a{background:var(--surface-2);border-color:var(--border);color:var(--text)}
+#sp .sp-manage .btn:not(.square){font:inherit;font-size:12.5px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);cursor:pointer;box-shadow:none;text-shadow:none;text-decoration:none}
+#sp .sp-manage .btn:not(.square):hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}
+#sp .sp-manage .btn-primary:not(.square){background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
+#sp .sp-manage .btn:not(.square).btn-danger{color:var(--accent);border-color:var(--accent-weak)}
+#sp .sp-manage .btn-round i{display:none}   /* 图标是 FA4 类名、站点只装了 FA6：::before 根本没内容，留着就是空心圆 */
+/* 站点把 .btn-round 钉成 34×34 的圆（配一个根本画不出来的图标），字写进去就被裁掉 */
+#sp .sp-manage .btn-round{width:auto !important;height:auto !important;border-radius:var(--r-sm) !important;padding:6px 10px !important}
+/* 站点给 .btn.square 上了 !important 的 16×16：帧缩略图与图例色块必须跟着用 !important 才拨得动 */
+#sp .sp-manage .square{display:inline-block;width:22px !important;height:22px !important;margin:0 6px 0 0 !important;padding:0 !important;border-radius:4px;border:1px solid var(--border);vertical-align:middle;text-align:center;overflow:hidden}
+#sp .sp-manage .square img{display:block;width:100% !important;height:100% !important;object-fit:cover;border-radius:3px}
+#sp .sp-manage input[type=text],#sp .sp-manage input.form-control{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%}
+#sp .sp-manage input[type=text]::placeholder{color:var(--text-3)}
+#sp .sp-manage input[type=checkbox],#sp .sp-manage input[type=radio]{accent-color:var(--accent);margin-right:7px;vertical-align:middle}
+#sp .sp-manage label{font-size:12.5px;color:var(--text-2);margin:0}
+#sp .sp-manage .form-inline,#sp .sp-manage .checkbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sp .sp-manage .tiles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#sp .sp-manage .tiles .square{width:80px !important;height:60px !important;margin:0 !important}
+/* 站点给 .tab-content 铺了白底 + 边框，在暗色主题下是一块亮斑 */
+#sp .sp-manage .tab-content{background:none;border:none;padding:0;box-shadow:none}
+#sp .sp-manage .tab-pane{padding:0}
+#sp .sp-manage .tab-pane img{display:inline-block;vertical-align:middle;height:16px;margin:0 3px}
+#sp .sp-manage .tab-pane input[type=radio]{margin:0 2px 0 10px}
+#sp .sp-manage .text-right{text-align:right}
+#sp .sp-manage .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
@@ -4121,6 +4258,35 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     </div>`;
   }
 
+  /** 项目管理页 /project/<数字>：站点那一大块由 80-app.js 的 wireManageDoc **搬**进来（活节点）。
+   *  这里只画外壳；名字 / 进度 / 状态从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
+  function project(state) {
+    const id = state.projectId || '';
+    const sec = document.getElementById('jobs_of_a_project');
+    const nameEl = id ? document.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? document.getElementById(`project_job_${id}_progression`) : null;
+    const name = nameEl ? nameEl.textContent.trim() : '';
+    const prog = progEl ? progEl.textContent.trim() : '';
+    const stEl = sec && sec.querySelector('li[class^="msg_"]');
+    const stRaw = stEl ? stEl.textContent.trim() : '';
+    const stCls = stEl ? ((stEl.className.match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+    const stText = stRaw ? (I18n.siteText(stRaw) || stRaw) : '';
+    const meta = [
+      name ? `<b>${esc(name)}</b>` : '',
+      prog ? `${esc(t('proj.col.progress'))} ${esc(prog)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(stCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      <div class="sp-manage" id="sp-mg-host"></div>
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
        render() 再 show()，直接开 #/upload 那次只拿到空卡片）。少了任一道就会把 body 早标成"已接线"，
@@ -4155,7 +4321,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, rankState, acctState, sessState, dailySeries, mount };
 })();
 
 /* ===== src/70-i18n-dom.js ===== */
@@ -4441,7 +4607,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
        界面。上传只走应用内 `#/upload`。 */
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
-    // 还没接管：新增项目表单、/project/<数字>（见 docs/PUBLISHING.md「五」）
+    /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
+       （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
+    if (/^\/project\/\d+$/.test(p)) return 'project';
+    // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
   }
 
@@ -4528,6 +4697,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     session: null,
     sessionId: null,       // /session/<数字>
     analyseToken: null,    // /project/add/<token>
+    projectId: null,       // /project/<数字>
     myAvatar: '',          // 顶栏那张：**自己**的头像（不是正在看的档案）
     loading: false,
     error: null,
@@ -4649,6 +4819,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
+    else if (state.view === 'project') html = Views.project(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -4658,12 +4829,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
+    parkManage();   // 搬进来的那一块是站点的活节点：先送回原位，别被下面这行连同旧 host 扔掉
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染
+    if (state.view === 'project') wireManageDoc(body);
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -4760,7 +4933,13 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const track = q('track'); if (track) track.hidden = true;
       const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
-      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      if (box) {
+        box.innerHTML = s.html;
+        box.hidden = false;
+        /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
+           翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
+        if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+      }
       return;
     }
     say('state', s.total
@@ -4769,6 +4948,61 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const track = q('track'); if (track) track.classList.remove('indet');
     const bar = q('bar');
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
+  }
+
+  /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
+     站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
+     调它的全局函数（projectAction / doModifyComputeMethod / doModifyAttributeFromCheckbox /
+     doAddACLUserProjectManage）。所以搬**活节点**、不重新 fetch、不重建结构：id 与 onclick 原样
+     保留，站点脚本照旧能找到它们；我们只加外观与翻译。 */
+  let mgNode = null;    // 站点那一整块 .w-section
+  let mgAnchor = null;  // 它在原页里的锚（注释节点）：render() 前先把它送回去
+
+  /** render() 会重写 #sp-body.innerHTML：搬过来的活节点必须先送回原处，否则会被一起扔掉 */
+  function parkManage() {
+    if (mgNode && mgAnchor && mgNode.parentNode !== mgAnchor.parentNode) {
+      mgAnchor.parentNode.insertBefore(mgNode, mgAnchor.nextSibling);
+    }
+  }
+
+  function wireManageDoc(body) {
+    const host = body && body.querySelector('#sp-mg-host');
+    if (!host) return;
+    if (!mgNode) {
+      const sec = document.getElementById('jobs_of_a_project');
+      if (!sec) return;                  // 站点没这一块（boot 里已经 release，正常到不了这）
+      mgNode = sec.closest('.w-section') || sec;
+      mgAnchor = document.createComment('sp-manage');
+      mgNode.parentNode.insertBefore(mgAnchor, mgNode);
+    }
+    host.appendChild(mgNode);            // 搬进来；id / 内联 onclick / 表单全不动
+    mgNode.classList.add('sp-manage-sec');
+    /* 站点这块是英文的：翻译器默认跳过 #sp，这里显式放行（同 analyse 的站点表单那条通道） */
+    if (SP.DomI18n) {
+      SP.DomI18n.enabled = state.translateSite !== false;
+      if (SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(mgNode);
+    }
+    /* 站点这几个动作按钮只有 FA4 的图标类名，而站点装的是 Font Awesome 6 —— ::before 没内容，
+       屏幕上就是三个空心圆。title 已经被上面翻成中文，直接拿来当按钮文字（图标由 CSS 藏掉）。 */
+    for (const a of mgNode.querySelectorAll('[id$="_div_actions"] .btn')) {
+      const label = (a.getAttribute('title') || '').trim();
+      if (!label || a.querySelector('.sp-mg-act')) continue;
+      const span = document.createElement('span');
+      span.className = 'sp-mg-act';
+      span.textContent = label;
+      a.appendChild(span);
+    }
+    /* 帧缩略图：站点把 <img> 塞在 title 属性里（给它自己的 tooltip 用），方块本身没有背景，
+       于是每帧都是一个空白小方块。把 src 抠出来当真正的图放进方块里。 */
+    for (const sq of mgNode.querySelectorAll('.tiles .square')) {
+      if (sq.querySelector('img')) continue;
+      const m = /<img\s+src="([^"]+)"/i.exec(sq.getAttribute('title') || '');
+      if (!m) continue;
+      const img = document.createElement('img');
+      img.setAttribute('src', m[1]);
+      img.setAttribute('alt', '');
+      sq.appendChild(img);
+    }
   }
 
   /* ---- 4. 数据编排 ---- */
@@ -5215,10 +5449,18 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
+    // 项目管理页的编号只从地址来（同会话页）
+    const pj = location.pathname.match(/^\/project\/(\d+)/);
+    state.projectId = pj ? pj[1] : null;
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
     }
+
+    /* 项目管理页：站点没给出项目那一块（项目不存在 / 不是自己的 / 站点改了布局）就原样还回去，
+       别接管成一屏空壳。 */
+    if (state.view === 'project' && !document.getElementById('jobs_of_a_project')) { release(); return; }
 
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 

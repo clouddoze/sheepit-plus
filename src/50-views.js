@@ -1202,6 +1202,35 @@
     </div>`;
   }
 
+  /** 项目管理页 /project/<数字>：站点那一大块由 80-app.js 的 wireManageDoc **搬**进来（活节点）。
+   *  这里只画外壳；名字 / 进度 / 状态从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
+  function project(state) {
+    const id = state.projectId || '';
+    const sec = document.getElementById('jobs_of_a_project');
+    const nameEl = id ? document.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? document.getElementById(`project_job_${id}_progression`) : null;
+    const name = nameEl ? nameEl.textContent.trim() : '';
+    const prog = progEl ? progEl.textContent.trim() : '';
+    const stEl = sec && sec.querySelector('li[class^="msg_"]');
+    const stRaw = stEl ? stEl.textContent.trim() : '';
+    const stCls = stEl ? ((stEl.className.match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+    const stText = stRaw ? (I18n.siteText(stRaw) || stRaw) : '';
+    const meta = [
+      name ? `<b>${esc(name)}</b>` : '',
+      prog ? `${esc(t('proj.col.progress'))} ${esc(prog)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(stCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      <div class="sp-manage" id="sp-mg-host"></div>
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
        render() 再 show()，直接开 #/upload 那次只拿到空卡片）。少了任一道就会把 body 早标成"已接线"，
@@ -1236,5 +1265,5 @@
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, rankState, acctState, sessState, dailySeries, mount };
 })();

@@ -26,7 +26,9 @@ const checkOnly = process.argv.includes('--check');
 // （-20%）。但构建只打印 KB，没有任何东西提醒注释以后再长回来，这条就是那个提醒。
 // 为什么只提示不拦（2026-10-06 用户拍板「不要硬上限，提示一下就行」）：加功能本来就会让产物
 // 变大，构建不该替人挡路 —— 提醒一下，变大是否接受由人决定。
-const BUDGET_OUT_BYTES = 285000;   // 产物 UTF-8 字节提示线
+// 提示线本来就该是「离现状一截」，不是「贴着现状」——贴着现状就变成每次构建都报，报久了没人看。
+// 0.1.13 加了第三步翻译与管理页接管（+21 KB），所以从 285000 抬到 320000，留约 10% 余量。
+const BUDGET_OUT_BYTES = 320000;   // 产物 UTF-8 字节提示线
 const BUDGET_COMMENT_RATIO = 0.25; // 注释字节 / 产物字节 的提示线
 
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();

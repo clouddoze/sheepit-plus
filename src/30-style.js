@@ -801,6 +801,68 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
 #sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
 
+/* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
+   80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
+   的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
+#sp .sp-manage{padding:18px 20px 20px;color:var(--text-2)}
+#sp .sp-manage .w-section,#sp .sp-manage .container,#sp .sp-manage .w-box,
+#sp .sp-manage .padding-15,#sp .sp-manage [class*="col-md-"]{padding:0;margin:0;background:none;border:none;box-shadow:none;max-width:none}
+/* 别改 .row 的布局方式：站点用 bootstrap 的 float 栅格，8/4 栏加起来正好 100%，
+   一旦给 .row 加 display:flex + gap，多出来的 gap 会把右栏挤到下一行（实测两栏会竖着叠）。 */
+#sp .sp-manage .row{margin:0}
+#sp .sp-manage .row::after{content:'';display:block;clear:both}
+#sp .sp-manage h2{margin:0 0 8px;font-size:14.5px;font-weight:600;color:var(--text)}
+#sp .sp-manage h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
+#sp .sp-manage a{color:var(--accent);text-decoration:none}
+#sp .sp-manage a:hover{text-decoration:underline}
+#sp .sp-manage ul{padding:0;margin:0;list-style:none}
+#sp .sp-manage .meta-list{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
+#sp .sp-manage li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .sp-manage .meta-list li[class^="msg_"]{font-weight:600;color:var(--text-2)}
+#sp .sp-manage .breadcrumb{display:none}
+/* 站点那几个方块本来就是「卡片」：它们的底色/边框被上面统一掉了，这里按我们的样式还回来，
+   免得整页糊成一片（Summary 与项目卡是 .w-box，右栏图例/页签是 .widget）。 */
+#sp .sp-manage .w-box,#sp .sp-manage .widget{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
+#sp .sp-manage .widget-heading{margin:0 0 10px}
+/* 图例：站点用三个 .square 当色块，色是 bootstrap 的 btn-neutral/warning/default */
+#sp .sp-manage .legend{display:flex;gap:16px;flex-wrap:wrap}
+#sp .sp-manage .legend a{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:12.5px;text-decoration:none}
+#sp .sp-manage .legend i{display:none}
+#sp .sp-manage .legend .square{width:14px !important;height:14px !important;margin:0 !important;border-radius:3px;border:none}
+#sp .sp-manage .legend .btn-neutral{background:var(--text-3)}
+#sp .sp-manage .legend .btn-warning{background:#e0a13a}
+#sp .sp-manage .legend .btn-default{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .sp-manage div[style*="color:red"]{color:var(--accent) !important}
+#sp .sp-manage .nav-tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--border)}
+#sp .sp-manage .nav-tabs > li{margin:0}
+#sp .sp-manage .nav-tabs > li > a{display:block;padding:7px 12px;font-size:12.5px;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;text-decoration:none;color:var(--text-2)}
+#sp .sp-manage .nav-tabs > li > a:hover{text-decoration:none;color:var(--text)}
+#sp .sp-manage .nav-tabs > li.active > a{background:var(--surface-2);border-color:var(--border);color:var(--text)}
+#sp .sp-manage .btn:not(.square){font:inherit;font-size:12.5px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);cursor:pointer;box-shadow:none;text-shadow:none;text-decoration:none}
+#sp .sp-manage .btn:not(.square):hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}
+#sp .sp-manage .btn-primary:not(.square){background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
+#sp .sp-manage .btn:not(.square).btn-danger{color:var(--accent);border-color:var(--accent-weak)}
+#sp .sp-manage .btn-round i{display:none}   /* 图标是 FA4 类名、站点只装了 FA6：::before 根本没内容，留着就是空心圆 */
+/* 站点把 .btn-round 钉成 34×34 的圆（配一个根本画不出来的图标），字写进去就被裁掉 */
+#sp .sp-manage .btn-round{width:auto !important;height:auto !important;border-radius:var(--r-sm) !important;padding:6px 10px !important}
+/* 站点给 .btn.square 上了 !important 的 16×16：帧缩略图与图例色块必须跟着用 !important 才拨得动 */
+#sp .sp-manage .square{display:inline-block;width:22px !important;height:22px !important;margin:0 6px 0 0 !important;padding:0 !important;border-radius:4px;border:1px solid var(--border);vertical-align:middle;text-align:center;overflow:hidden}
+#sp .sp-manage .square img{display:block;width:100% !important;height:100% !important;object-fit:cover;border-radius:3px}
+#sp .sp-manage input[type=text],#sp .sp-manage input.form-control{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%}
+#sp .sp-manage input[type=text]::placeholder{color:var(--text-3)}
+#sp .sp-manage input[type=checkbox],#sp .sp-manage input[type=radio]{accent-color:var(--accent);margin-right:7px;vertical-align:middle}
+#sp .sp-manage label{font-size:12.5px;color:var(--text-2);margin:0}
+#sp .sp-manage .form-inline,#sp .sp-manage .checkbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#sp .sp-manage .tiles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+#sp .sp-manage .tiles .square{width:80px !important;height:60px !important;margin:0 !important}
+/* 站点给 .tab-content 铺了白底 + 边框，在暗色主题下是一块亮斑 */
+#sp .sp-manage .tab-content{background:none;border:none;padding:0;box-shadow:none}
+#sp .sp-manage .tab-pane{padding:0}
+#sp .sp-manage .tab-pane img{display:inline-block;vertical-align:middle;height:16px;margin:0 3px}
+#sp .sp-manage .tab-pane input[type=radio]{margin:0 2px 0 10px}
+#sp .sp-manage .text-right{text-align:right}
+#sp .sp-manage .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
 @keyframes sp-rise{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}

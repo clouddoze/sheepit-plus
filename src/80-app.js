@@ -25,7 +25,10 @@
        界面。上传只走应用内 `#/upload`。 */
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
-    // 还没接管：新增项目表单、/project/<数字>（见 docs/PUBLISHING.md「五」）
+    /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
+       （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
+    if (/^\/project\/\d+$/.test(p)) return 'project';
+    // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
   }
 
@@ -112,6 +115,7 @@
     session: null,
     sessionId: null,       // /session/<数字>
     analyseToken: null,    // /project/add/<token>
+    projectId: null,       // /project/<数字>
     myAvatar: '',          // 顶栏那张：**自己**的头像（不是正在看的档案）
     loading: false,
     error: null,
@@ -233,6 +237,7 @@
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
+    else if (state.view === 'project') html = Views.project(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -242,12 +247,14 @@
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
+    parkManage();   // 搬进来的那一块是站点的活节点：先送回原位，别被下面这行连同旧 host 扔掉
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染
+    if (state.view === 'project') wireManageDoc(body);
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -344,7 +351,13 @@
       const track = q('track'); if (track) track.hidden = true;
       const done = q('done'); if (done) done.hidden = false;
       const box = document.getElementById('sp-an-result');
-      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      if (box) {
+        box.innerHTML = s.html;
+        box.hidden = false;
+        /* 站点这套表单是英文的，我们只翻文案、不动结构（站点 JS 按 id 拼参数，改结构就断了）。
+           翻译器默认跳过 #sp，这里必须显式放行——和估算器结果同一条通道（50-views.js 的 slotEst）。 */
+        if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
+      }
       return;
     }
     say('state', s.total
@@ -353,6 +366,61 @@
     const track = q('track'); if (track) track.classList.remove('indet');
     const bar = q('bar');
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
+  }
+
+  /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
+     站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
+     调它的全局函数（projectAction / doModifyComputeMethod / doModifyAttributeFromCheckbox /
+     doAddACLUserProjectManage）。所以搬**活节点**、不重新 fetch、不重建结构：id 与 onclick 原样
+     保留，站点脚本照旧能找到它们；我们只加外观与翻译。 */
+  let mgNode = null;    // 站点那一整块 .w-section
+  let mgAnchor = null;  // 它在原页里的锚（注释节点）：render() 前先把它送回去
+
+  /** render() 会重写 #sp-body.innerHTML：搬过来的活节点必须先送回原处，否则会被一起扔掉 */
+  function parkManage() {
+    if (mgNode && mgAnchor && mgNode.parentNode !== mgAnchor.parentNode) {
+      mgAnchor.parentNode.insertBefore(mgNode, mgAnchor.nextSibling);
+    }
+  }
+
+  function wireManageDoc(body) {
+    const host = body && body.querySelector('#sp-mg-host');
+    if (!host) return;
+    if (!mgNode) {
+      const sec = document.getElementById('jobs_of_a_project');
+      if (!sec) return;                  // 站点没这一块（boot 里已经 release，正常到不了这）
+      mgNode = sec.closest('.w-section') || sec;
+      mgAnchor = document.createComment('sp-manage');
+      mgNode.parentNode.insertBefore(mgAnchor, mgNode);
+    }
+    host.appendChild(mgNode);            // 搬进来；id / 内联 onclick / 表单全不动
+    mgNode.classList.add('sp-manage-sec');
+    /* 站点这块是英文的：翻译器默认跳过 #sp，这里显式放行（同 analyse 的站点表单那条通道） */
+    if (SP.DomI18n) {
+      SP.DomI18n.enabled = state.translateSite !== false;
+      if (SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(mgNode);
+    }
+    /* 站点这几个动作按钮只有 FA4 的图标类名，而站点装的是 Font Awesome 6 —— ::before 没内容，
+       屏幕上就是三个空心圆。title 已经被上面翻成中文，直接拿来当按钮文字（图标由 CSS 藏掉）。 */
+    for (const a of mgNode.querySelectorAll('[id$="_div_actions"] .btn')) {
+      const label = (a.getAttribute('title') || '').trim();
+      if (!label || a.querySelector('.sp-mg-act')) continue;
+      const span = document.createElement('span');
+      span.className = 'sp-mg-act';
+      span.textContent = label;
+      a.appendChild(span);
+    }
+    /* 帧缩略图：站点把 <img> 塞在 title 属性里（给它自己的 tooltip 用），方块本身没有背景，
+       于是每帧都是一个空白小方块。把 src 抠出来当真正的图放进方块里。 */
+    for (const sq of mgNode.querySelectorAll('.tiles .square')) {
+      if (sq.querySelector('img')) continue;
+      const m = /<img\s+src="([^"]+)"/i.exec(sq.getAttribute('title') || '');
+      if (!m) continue;
+      const img = document.createElement('img');
+      img.setAttribute('src', m[1]);
+      img.setAttribute('alt', '');
+      sq.appendChild(img);
+    }
   }
 
   /* ---- 4. 数据编排 ---- */
@@ -799,10 +867,18 @@
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
+    // 项目管理页的编号只从地址来（同会话页）
+    const pj = location.pathname.match(/^\/project\/(\d+)/);
+    state.projectId = pj ? pj[1] : null;
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
       if (ROUTES[v]) state.view = v;
     }
+
+    /* 项目管理页：站点没给出项目那一块（项目不存在 / 不是自己的 / 站点改了布局）就原样还回去，
+       别接管成一屏空壳。 */
+    if (state.view === 'project' && !document.getElementById('jobs_of_a_project')) { release(); return; }
 
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 

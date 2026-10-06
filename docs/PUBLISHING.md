@@ -404,10 +404,49 @@ false 才说明确实需要覆盖。更新日志 330 字符走 Markdown。
 `SKEL:5` → 1.3s → `PANELS:3 TABS`；窗口内切页签 `PANELS:3` → `SKEL:5` → `PANELS:1`；
 项目列表页 kebab → 优先 后菜单收起、56 行不变。**修之前这三处画的都是「暂无数据」**。
 
-**还没做的**：分析完成后的「新增项目」设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…，官方
-`formAddProject()` 约 490 行 PHP）与项目管理页 `/project/<数字>`。这两页**只对项目所有者开放**，
-手上没有可用的真实样本 —— 将来重制只能照官方源码写，成品**必须标注「未对真实页面验证」**，
-并优先请有项目的人复核。现在它们走的是原站界面，功能不受影响。
+**0.1.13（2026-10-06 起，尚未发布）**：`@version` 从 0.1.12 升到 0.1.13（0.1.12 从未发布过，但仓库里的
+0.1.12 产物已经变过几轮，升号才能让 Violentmonkey 明确认成一次更新）。这一版做的是**上传闭环的后半段**，
+按用户 2026-10-06 拍板的路线 A：第三步只补翻译与外观，再接管项目管理页。
+
+- **第三步（分析完成后的站点设置表单）**：注入站点表单后显式调 `SP.DomI18n.translateSubtree(box)`
+  （`src/80-app.js` 的 `paintAnalyse`）—— 翻译器默认跳过 `#sp` 内的节点，不显式放行就永远不翻。
+  只翻文案、不动结构：站点 JS 按 id 拼 24 个参数，改结构就断。实测（拿 `.tmp/upload-test/step3-outer.html`
+  当 fixture）可见文本 13 行只剩文件名 `sptest.blend`（故意不翻），属性只剩 `title=CPU` / `title=GPU`；
+  控件 58→58、id 74→74、`formAction` 仍是 `javascript:;`、`onsubmit` 仍是 `doAddProject(0); return false`。
+- **「排队情况」那段英文**（用户实报）：`src/12-lang-zh.js` 的 `patterns` 补了短变体
+  `The render order is based on points. … You currently have N points.`；原来那条长变体（带团队加成）
+  仍在 `blockPatterns`，两条互不冲突。
+- **接管 `/project/<数字>` 项目管理页**（`viewForPath` 新增一条路由 → 视图 `project`）：**不重新 fetch**，
+  而是把站点服务端渲染好的那一整块 `.w-section`（含 `#jobs_of_a_project`）**搬进** `#sp-mg-host`，
+  id、内联 `onclick`、表单全不动 —— 站点的 `projectAction` / `doModifyComputeMethod` /
+  `doModifyAttributeFromCheckbox` / `doAddACLUserProjectManage`（都在 `media/<ver>/script/ajax/showjob.js`）
+  因此照旧可用。渲染前 `parkManage()` 先把活节点送回原位的注释锚点，免得被 `body.innerHTML` 连同旧壳扔掉；
+  找不到 `#jobs_of_a_project`（别人的项目、站点改版）时 `boot()` 直接 `release()`，页面原样还给用户。
+- 站点的 `title` 属性也当文案用：动作按钮的图标写的是 Font Awesome 4 类名（`fa fa-search-plus`），
+  而站点装的是 FA6，`::before` 根本没内容、按钮是空心圆 → 我们直接把 `title` 当按钮文字；
+  帧缩略图站点只把 `<img src>` 塞在 `span.square` 的 `title` 里（原页面每帧都是空白小方块）→ 抠出来插真 `<img>`。
+- 日期本地化：`src/12-lang-zh.js` 加 `farmDate()`（`20th Oct 06:10` → `10月20日 06:10`）；
+  `patterns` 的替换值可以是函数（`src/10-core.js` 用的是 `text.replace(re, rep)`）。
+
+实测（Helium + BrowserSkill 驱动真站点，测试账号 `muwyelkoai3k`，注入 `dist` 产物）：
+
+| 检查 | 结果 |
+| --- | --- |
+| 第三步翻译（fixture） | 可见文本无英文残留；结构 / 控件数 / id 全不变 |
+| 管理页接管 | `#sp-mg-host` 子节点 1、`.sp-manage-sec` 已搬入、徽章「已渲染」、正文只剩 `sptest.blend` |
+| 页签（权限 / 渲染者 / 操作） | 点「权限」→ `tab-pane active` + `display:block`，另一个 pane 隐藏 |
+| 管理员自动补全 | 输入 `muw` → 站点读接口 `/user/list_from_term` 建出 8 项候选（**只读，无写入**） |
+| 顶栏刷新 → `show(view)` | 送还 + 再搬入各一次：`#jobs_of_a_project` 仍 1 个、`onclick` 原样、缩略图 2 枚 |
+| 别人的项目 `/project/1223983` | 站点自己回「无权限」页 → 我们 `release()`：`#sp` / `#sp-guard` 都不在，页面照常可见 |
+
+**样本从哪来**：这两页只对项目所有者开放，所以 2026-10-06 用测试账号真走了一遍上传（`sptest.blend`：
+Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/project/1224469`），第三步表单与项目管理页
+因此第一次有了**真实样本**（`step3-outer.html`、`manage.html` 落在 `.tmp/upload-test/`，`.tmp/` 不入库）。
+**验证方式仍然是注入式**（把 `dist` 产物在页面里 eval 一遍），不是真装路径 —— 真装路径下的管理页
+要在用户点过重新安装之后再复验一次。`/getstarted` 依旧有意不接管（0.1.10 拍板），上传只走应用内那一页。
+
+**体积提示线**：`build.mjs` 的 `BUDGET_OUT_BYTES` 从 285000 抬到 320000（这一版 +21 KB 后原线会每次
+构建都报，报久了没人看）；仍是**只提示不拦**，见该常量上面的注释。
 
 ---
 
