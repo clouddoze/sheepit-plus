@@ -336,7 +336,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
-#sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap}
+/* 状态列在会话页放的是站点给的一整句原因（"Not enough free memory, requiring: …"），
+   而 .st 原来既 nowrap 又没有上限 → 整列被最长那句撑到 376px，表格溢出容器出横向滚条
+   （实测差 129px）。给个上限 + 省略号，完整原因走 title。 */
+#sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap;display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
 @media (max-width:760px){
   #sp .tbl{min-width:660px}

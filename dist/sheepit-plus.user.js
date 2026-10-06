@@ -377,7 +377,7 @@
       'sess.publisher': '发布者',
       'sess.col.type': '事件', 'sess.col.job': '作业', 'sess.col.start': '开始',
       'sess.col.end': '结束', 'sess.col.span': '时长',
-      'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个 · 按当前调度都不会派给这台机器',
+      'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个',
       'sess.prjNone': '当前没有能派给这台机器的项目', 'sess.whyNone': '未给出原因',
       'sess.tl.rendering': '渲染', 'sess.tl.request': '领任务', 'sess.tl.validate': '校验',
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
@@ -413,6 +413,10 @@
       'why.renderable': '现在可渲染',
       'why.computer-has-previously-failed-to-render-project': '这台机器之前渲染它失败过',
       'why.requires-gpu': '需要 GPU',
+      /* 站点另有 requires-cpu（2026-10-06 实测在这台机器的会话页上有 5 行），之前只有 gpu 那条。 */
+      'why.requires-cpu': '需要 CPU',
+      /* 带数字，slug 查不到，所以由 50-views.js 的 WHY_RULES 按规则填这两个占位。 */
+      'why.notEnoughMemory': '可用内存不足：需要 {need}，现有 {have}',
       'why.project-rate-limited-due-to-lack-of-points': '发布者积分不足被限流',
       'why.project-too-heavy-for-this-computer': '这台机器带不动这个项目',
       'why.cannot-render-due-to-criterionprojectisoverfilesize': '项目文件超出体积上限',
@@ -582,7 +586,7 @@
       'sess.publisher': 'Publisher',
       'sess.col.type': 'Event', 'sess.col.job': 'Job', 'sess.col.start': 'Start',
       'sess.col.end': 'End', 'sess.col.span': 'Duration',
-      'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects · none of them is being sent to this machine right now',
+      'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects',
       'sess.prjNone': 'No project can be sent to this machine right now', 'sess.whyNone': 'no reason given',
       'sess.tl.rendering': 'Rendering', 'sess.tl.request': 'Request', 'sess.tl.validate': 'Validate',
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
@@ -1976,7 +1980,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
-#sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap}
+/* 状态列在会话页放的是站点给的一整句原因（"Not enough free memory, requiring: …"），
+   而 .st 原来既 nowrap 又没有上限 → 整列被最长那句撑到 376px，表格溢出容器出横向滚条
+   （实测差 129px）。给个上限 + 省略号，完整原因走 title。 */
+#sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap;display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
 @media (max-width:760px){
   #sp .tbl{min-width:660px}
@@ -2977,6 +2984,22 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return upper ? s.toUpperCase() : s;
   }
 
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
+     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  const WHY_RULES = [
+    [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
+      const key = 'why.notEnoughMemory';
+      const hit = t(key, { need: m[1].trim(), have: m[2].trim() });
+      return hit === key ? m[0] : hit;
+    }],
+  ];
+  function whyLabel(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    for (const [re, fn] of WHY_RULES) { const m = s.match(re); if (m) return fn(m); }
+    return packLabel('why', s);
+  }
+
   const STATUS_RULES = [
     [/^waiting to render/i, () => t('status.idle')],
     [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
@@ -3812,7 +3835,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
        time limit"、"Computer has previously failed to render project" —— 只做一次映射：不排序、不分组、不去重。 */
     const prjRows = s.projects.map((p) => ({
       n: p.name,
-      label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
+      label: p.reason ? whyLabel(p.reason) : t('sess.whyNone'),
       p: own.get(p.name) || null,
     }));
 
@@ -3842,7 +3865,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
             <td><div class="pnwrap"><div class="pn" title="${esc(n)}">${esc(n)}</div>${
               isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
-            <td><span class="st">${esc(label)}</span></td>
+            <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
             <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
             <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>

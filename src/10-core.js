@@ -353,7 +353,7 @@
       'sess.publisher': '发布者',
       'sess.col.type': '事件', 'sess.col.job': '作业', 'sess.col.start': '开始',
       'sess.col.end': '结束', 'sess.col.span': '时长',
-      'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个 · 按当前调度都不会派给这台机器',
+      'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个',
       'sess.prjNone': '当前没有能派给这台机器的项目', 'sess.whyNone': '未给出原因',
       'sess.tl.rendering': '渲染', 'sess.tl.request': '领任务', 'sess.tl.validate': '校验',
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
@@ -389,6 +389,10 @@
       'why.renderable': '现在可渲染',
       'why.computer-has-previously-failed-to-render-project': '这台机器之前渲染它失败过',
       'why.requires-gpu': '需要 GPU',
+      /* 站点另有 requires-cpu（2026-10-06 实测在这台机器的会话页上有 5 行），之前只有 gpu 那条。 */
+      'why.requires-cpu': '需要 CPU',
+      /* 带数字，slug 查不到，所以由 50-views.js 的 WHY_RULES 按规则填这两个占位。 */
+      'why.notEnoughMemory': '可用内存不足：需要 {need}，现有 {have}',
       'why.project-rate-limited-due-to-lack-of-points': '发布者积分不足被限流',
       'why.project-too-heavy-for-this-computer': '这台机器带不动这个项目',
       'why.cannot-render-due-to-criterionprojectisoverfilesize': '项目文件超出体积上限',
@@ -558,7 +562,7 @@
       'sess.publisher': 'Publisher',
       'sess.col.type': 'Event', 'sess.col.job': 'Job', 'sess.col.start': 'Start',
       'sess.col.end': 'End', 'sess.col.span': 'Duration',
-      'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects · none of them is being sent to this machine right now',
+      'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects',
       'sess.prjNone': 'No project can be sent to this machine right now', 'sess.whyNone': 'no reason given',
       'sess.tl.rendering': 'Rendering', 'sess.tl.request': 'Request', 'sess.tl.validate': 'Validate',
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',

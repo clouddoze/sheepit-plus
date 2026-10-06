@@ -65,6 +65,22 @@
     return upper ? s.toUpperCase() : s;
   }
 
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
+     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  const WHY_RULES = [
+    [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
+      const key = 'why.notEnoughMemory';
+      const hit = t(key, { need: m[1].trim(), have: m[2].trim() });
+      return hit === key ? m[0] : hit;
+    }],
+  ];
+  function whyLabel(raw) {
+    const s = String(raw || '').trim();
+    if (!s) return '';
+    for (const [re, fn] of WHY_RULES) { const m = s.match(re); if (m) return fn(m); }
+    return packLabel('why', s);
+  }
+
   const STATUS_RULES = [
     [/^waiting to render/i, () => t('status.idle')],
     [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
@@ -900,7 +916,7 @@
        time limit"、"Computer has previously failed to render project" —— 只做一次映射：不排序、不分组、不去重。 */
     const prjRows = s.projects.map((p) => ({
       n: p.name,
-      label: p.reason ? packLabel('why', p.reason) : t('sess.whyNone'),
+      label: p.reason ? whyLabel(p.reason) : t('sess.whyNone'),
       p: own.get(p.name) || null,
     }));
 
@@ -930,7 +946,7 @@
             <td><div class="pnwrap"><div class="pn" title="${esc(n)}">${esc(n)}</div>${
               isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
-            <td><span class="st">${esc(label)}</span></td>
+            <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
             <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
             <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>

@@ -21,14 +21,13 @@ const DIST = join(HERE, 'dist');
 const OUT = join(DIST, 'sheepit-plus.user.js');
 const checkOnly = process.argv.includes('--check');
 
-// ---- 体积护栏 ----
+// ---- 体积提示（只提示，不拦构建） ----
 // 为什么要有：上一轮把源码注释从 99.7 KB 压到 33.4 KB、产物从 339,846 压到 271,560 字节
-// （-20%）。但构建只打印 KB，没有任何东西阻止注释以后再长回来，这条护栏就是那道闸。
-// 为什么是这些值：产物现在 271,560 字节，警告线留约 5% 余量、硬上限留约 10%；
-// 注释占比实测约 12.8%，25% 大约是它的两倍，能拦住"注释翻倍"这类回涨，又不误伤正常写作。
-const MAX_OUT_BYTES = 300000;    // 产物 UTF-8 字节硬上限，超出即失败
-const WARN_OUT_BYTES = 285000;   // 产物 UTF-8 字节警告线，超出只提醒
-const MAX_COMMENT_RATIO = 0.25;  // 注释字节 / 产物字节 的硬上限
+// （-20%）。但构建只打印 KB，没有任何东西提醒注释以后再长回来，这条就是那个提醒。
+// 为什么只提示不拦（2026-10-06 用户拍板「不要硬上限，提示一下就行」）：加功能本来就会让产物
+// 变大，构建不该替人挡路 —— 提醒一下，变大是否接受由人决定。
+const BUDGET_OUT_BYTES = 285000;   // 产物 UTF-8 字节提示线
+const BUDGET_COMMENT_RATIO = 0.25; // 注释字节 / 产物字节 的提示线
 
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();
 if (!files.length) {
@@ -142,24 +141,17 @@ const commentBytes = files.reduce((sum, f) => {
 const outBytes = Buffer.byteLength(out, 'utf8');
 const commentRatio = commentBytes / outBytes;
 console.log(`  注释：${commentBytes} 字节 / 产物 ${outBytes} 字节 = ${(commentRatio * 100).toFixed(1)}%`
-  + `（占比硬上限 ${(MAX_COMMENT_RATIO * 100).toFixed(0)}%）`);
+  + `（占比提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%）`);
 
-// 校验放在写文件之前：任何一条不过，dist 保持原样，不会留下一个超标的产物。
-if (outBytes > MAX_OUT_BYTES) {
-  console.error(`× 产物 ${outBytes} 字节，超过硬上限 ${MAX_OUT_BYTES} 字节（超 ${outBytes - MAX_OUT_BYTES} 字节）`);
-  console.error('  上一次注释回涨就是这么来的：产物只打印 KB，没人拦。');
-  console.error('  真需要更多字节，请在 build.mjs 顶部调高 MAX_OUT_BYTES，并在提交说明里写清理由。');
-  process.exit(1);
+// 只提示、不拦：加功能本来就会变大，构建不该替人挡路（用户 2026-10-06 拍板）。
+if (outBytes > BUDGET_OUT_BYTES) {
+  console.warn(`⚠ 产物 ${outBytes} 字节，已过提示线 ${BUDGET_OUT_BYTES} 字节（超 ${outBytes - BUDGET_OUT_BYTES} 字节）——`
+    + '变的这版是不是有意的？');
 }
-if (commentRatio > MAX_COMMENT_RATIO) {
-  console.error(`× 注释 ${commentBytes} 字节，占产物 ${(commentRatio * 100).toFixed(1)}%，`
-    + `超过硬上限 ${(MAX_COMMENT_RATIO * 100).toFixed(0)}%（阈值 ${Math.floor(outBytes * MAX_COMMENT_RATIO)} 字节）`);
-  console.error('  注释不该占这么大比重，请精简注释或补充说明为什么必须保留。');
-  process.exit(1);
-}
-if (outBytes > WARN_OUT_BYTES) {
-  console.warn(`⚠ 产物 ${outBytes} 字节，已过警告线 ${WARN_OUT_BYTES} 字节，`
-    + `距硬上限 ${MAX_OUT_BYTES} 字节只剩 ${MAX_OUT_BYTES - outBytes} 字节`);
+if (commentRatio > BUDGET_COMMENT_RATIO) {
+  console.warn(`⚠ 注释 ${commentBytes} 字节，占产物 ${(commentRatio * 100).toFixed(1)}%，`
+    + `已过提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%（${Math.floor(outBytes * BUDGET_COMMENT_RATIO)} 字节）`
+    + ' —— 注释是不是又写多了？');
 }
 
 if (!checkOnly) {
