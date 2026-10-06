@@ -13,12 +13,22 @@ import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, statSy
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
+import { countCommentBytes } from './tools/comment-bytes.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, 'src');
 const DIST = join(HERE, 'dist');
 const OUT = join(DIST, 'sheepit-plus.user.js');
 const checkOnly = process.argv.includes('--check');
+
+// ---- 体积护栏 ----
+// 为什么要有：上一轮把源码注释从 99.7 KB 压到 33.4 KB、产物从 339,846 压到 271,560 字节
+// （-20%）。但构建只打印 KB，没有任何东西阻止注释以后再长回来，这条护栏就是那道闸。
+// 为什么是这些值：产物现在 271,560 字节，警告线留约 5% 余量、硬上限留约 10%；
+// 注释占比实测约 12.8%，25% 大约是它的两倍，能拦住"注释翻倍"这类回涨，又不误伤正常写作。
+const MAX_OUT_BYTES = 300000;    // 产物 UTF-8 字节硬上限，超出即失败
+const WARN_OUT_BYTES = 285000;   // 产物 UTF-8 字节警告线，超出只提醒
+const MAX_COMMENT_RATIO = 0.25;  // 注释字节 / 产物字节 的硬上限
 
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();
 if (!files.length) {
@@ -118,6 +128,39 @@ const parts = files.map((f) => `${f}(${(statSync(join(SRC, f)).size / 1024).toFi
 console.log(`√ 语法校验通过`);
 console.log(`  模块：${parts}`);
 console.log(`  产物：${kb} KB（UTF-8 字节）${checkOnly ? '（--check，未写入）' : ''}`);
+
+// 注释字节按源文件逐个统计再求和，而不是直接扫产物：30-style.js 的模板串里装的是 CSS，
+// 那段注释得按 CSS 口径算（约 7 KB）；直接扫产物时扫描器不认识"这段模板是 CSS"，
+// 只能保守地跳过所有模板串，会漏掉这 7 KB；若反过来开启模板内扫描，又会把
+// accept="image/*" 这类内容误判成注释起始（实测虚高 2.5 KB）。
+// 分子按源码口径、分母按产物字节（用户实际下载的字节数），生成期注释（banner 与模块
+// 分隔行，约 300 字节）未计入分子。
+const commentBytes = files.reduce((sum, f) => {
+  const code = readFileSync(join(SRC, f), 'utf8');
+  return sum + countCommentBytes(code, { stripTemplate: f === '30-style.js' }).commentBytes;
+}, 0);
+const outBytes = Buffer.byteLength(out, 'utf8');
+const commentRatio = commentBytes / outBytes;
+console.log(`  注释：${commentBytes} 字节 / 产物 ${outBytes} 字节 = ${(commentRatio * 100).toFixed(1)}%`
+  + `（占比硬上限 ${(MAX_COMMENT_RATIO * 100).toFixed(0)}%）`);
+
+// 校验放在写文件之前：任何一条不过，dist 保持原样，不会留下一个超标的产物。
+if (outBytes > MAX_OUT_BYTES) {
+  console.error(`× 产物 ${outBytes} 字节，超过硬上限 ${MAX_OUT_BYTES} 字节（超 ${outBytes - MAX_OUT_BYTES} 字节）`);
+  console.error('  上一次注释回涨就是这么来的：产物只打印 KB，没人拦。');
+  console.error('  真需要更多字节，请在 build.mjs 顶部调高 MAX_OUT_BYTES，并在提交说明里写清理由。');
+  process.exit(1);
+}
+if (commentRatio > MAX_COMMENT_RATIO) {
+  console.error(`× 注释 ${commentBytes} 字节，占产物 ${(commentRatio * 100).toFixed(1)}%，`
+    + `超过硬上限 ${(MAX_COMMENT_RATIO * 100).toFixed(0)}%（阈值 ${Math.floor(outBytes * MAX_COMMENT_RATIO)} 字节）`);
+  console.error('  注释不该占这么大比重，请精简注释或补充说明为什么必须保留。');
+  process.exit(1);
+}
+if (outBytes > WARN_OUT_BYTES) {
+  console.warn(`⚠ 产物 ${outBytes} 字节，已过警告线 ${WARN_OUT_BYTES} 字节，`
+    + `距硬上限 ${MAX_OUT_BYTES} 字节只剩 ${MAX_OUT_BYTES - outBytes} 字节`);
+}
 
 if (!checkOnly) {
   if (!existsSync(DIST)) mkdirSync(DIST, { recursive: true });
