@@ -662,6 +662,12 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
   （11,719 字符，含 `#token=aGJVQC` 与站点自己的内联 `onsubmit`）落进 `#project_add_analyse_result`。
 - 设置页只剩 关闭 / 原版 / 新版 三段，当前选中「新版」；原版档下 `/getstarted` 实测不接管。
 
+**发布记录（2026-10-07）**：产物 **412,359 B**，SHA-256
+`E431BCEA2A60514D82AACB8A30AF7611D4E80474B3063F1183F239EBE05D5382`（提交前对填好的
+`script_version[code]` 复算一致）。脚本页 = `0.2.1` / 402.7 KB；`/code`（直读库）里
+「在线机器」在、`up.maxNote`/`set.fp.bad`/`nav.uploadTip`/`up3x.splitGrid`/`set.upmode.compat`/
+`60-step3` 全不在；CDN `.user.js` = **412,355** vs 本地 412,359 —— 仍是那 4 个字节（**第九次复现**）。
+
 **仍未验证**：上传页错误分支（站点维护中 / 无头像 / 并发上限）只用桩验过；第三步其它分支形态
 （EXR 切块清单、多 .blend、`up3x.unknown`）；防闪守卫 race；`#/upload` 这个 hash 在关闭/原版档下
 仍会画出新版上传页（顶栏无入口，属待定的产品取舍）。
