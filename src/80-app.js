@@ -445,6 +445,8 @@
         || (view === 'projects' && !state.projects)
         || (view === 'ranking' && !state.ranking)
         || (view === 'upload' && !state.uploadHtml)
+        /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
+        || (view === 'account' && !state.account)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -494,6 +496,11 @@
       Api.invalidate();
       state.account = null;
       state.session = null;
+      /* 重取期间必须留下"在加载"的表示：数据已经置空，而 show({silent}) 不设 loading，这段窗口里
+         任何一次 render() 都会把整页画成「暂无数据」（实测：移出渲染优先后菜单还开着，随手点一下
+         菜单外面就中）。这里**不**立刻 render()：正常路径旧内容留到重取完，只有真发生 stray render
+         才显示骨架。 */
+      state.loading = true;
       await show(state.view, { silent: true });
       toast(okMsg || t('account.ok'));
       return true;
@@ -637,6 +644,9 @@
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
+        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。原来只有这两处收，
+           prio-set 的菜单会一直敞着，用户随手一点就是一次 render()。 */
+        Views.projState.menu = null;
         submit(() => Api.post(url));
         return;
       }

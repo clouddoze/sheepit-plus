@@ -392,6 +392,18 @@ false 才说明确实需要覆盖。更新日志 330 字符走 Markdown。
 `src/50-views.js`、`src/10-core.js`）。**从这一刻起，仓库里的 0.1.11 与线上的 0.1.11 内容不同** ——
 按「`@version` 必须往上走」那条规矩升的，发不发等用户点头。
 
+**0.1.12 里的缺陷修复：加入/移出渲染优先后会闪一下「暂无数据」**（2026-10-06，用户实报，
+原话是"选择某用户加入优先，再删掉会出现暂无数据"）：`submit()`（`src/80-app.js`）POST 成功后先把
+`state.account` / `state.session` 置空，再用 `show(view, { silent: true })` 重取；而 `{silent}`
+不设 `state.loading`（`need` 里也没有 account 分支），所以这段重取窗口里**任何一次 `render()`**
+都会走"数据为 null"分支画成 `state.empty()`。**不是名单为空** —— 名单空显示的是「（空）」。
+最容易中的触发点：`prio-set` 原来不像 `owner-gift` / `owner-block` 那样清 `Views.projState.menu`，
+菜单一直敞着，随手点一下菜单外面就是一次 `render()`；切页签、Esc、刷新按钮同理。
+修法三处：`need` 补 account 分支、置空后设 `state.loading = true`（**不**立刻 render）、`prio-set` 关菜单。
+实测（真站点 + 注入改动后的产物，只看 `#sp-body` 的内容签名）：账户页首次进入
+`SKEL:5` → 1.3s → `PANELS:3 TABS`；窗口内切页签 `PANELS:3` → `SKEL:5` → `PANELS:1`；
+项目列表页 kebab → 优先 后菜单收起、56 行不变。**修之前这三处画的都是「暂无数据」**。
+
 **还没做的**：分析完成后的「新增项目」设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…，官方
 `formAddProject()` 约 490 行 PHP）与项目管理页 `/project/<数字>`。这两页**只对项目所有者开放**，
 手上没有可用的真实样本 —— 将来重制只能照官方源码写，成品**必须标注「未对真实页面验证」**，
