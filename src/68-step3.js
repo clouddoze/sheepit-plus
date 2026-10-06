@@ -7,7 +7,14 @@
    隐藏原件）在结构上不可能出现。
 
    边界没变：**服务端只认 POST 键，不认 DOM**。所以自绘控件不违反任何契约；
-   所有隐藏值（引擎、分辨率、采样、路径…）原样来自解析结果，一个字节都不改。 */
+   所有隐藏值（引擎、分辨率、采样、路径…）原样来自解析结果，一个字节都不改。
+
+   版式（用户 2026-10-07 提的三条：要概览、别框套框、字号跟其他页一致）：
+     · 概览 = 站点算出来的事实，摆成一行 chips（存档 / 文件数 / 上游版本），每个文件
+       自己那一行（引擎 / 分辨率 / 帧率 / 采样 / 格式 / 降噪…）
+     · 真需要"一组"的只有项目级设置（可见性 + 计算方式）= **一个**块，里面两行，行间发丝线
+     · 每个 .blend 一块，块之间只隔一条发丝线 + 文件名标题，不再套第二个框
+     · 字号一律走站内那套：标题 13.5 / 正文 13 / 次要 12.5 / 提示 12 */
 
 (function () {
   'use strict';
@@ -33,16 +40,37 @@
     return r && typeof r === 'object' ? r : null;
   }
 
-  function sec(key, title) {
-    const s = mk('section', 'up3-sec');
-    s.dataset.sec = key;
-    const h = mk('h3');
-    h.textContent = title;
-    s.appendChild(h);
-    s.appendChild(mk('div', 'up3-body'));
-    return s;
+  /** 数字好看一点：服务端 width 是 resolution_x * percentage / 100，可能是 160.0000001 */
+  const num = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || String(v).trim() === '') return String(v);
+    return String(Math.round(n * 100) / 100);
+  };
+
+  /* ------------------------------------------------------------------ 小组件 */
+
+  /** 概览行（站内 .meta 的写法：竖线分隔的 chips） */
+  function metaRow(bits) {
+    const m = mk('div', 'meta up3-meta');
+    bits.forEach((html) => {
+      const s = mk('span');
+      s.innerHTML = html;
+      m.appendChild(s);
+    });
+    return m;
   }
-  const bodyOf = (s) => s.querySelector('.up3-body');
+
+  /** 设置块里的一行：左边固定宽度的名字，右边内容 */
+  function line(k, content) {
+    const l = mk('div', 'up3-line');
+    const a = mk('div', 'up3-k');
+    a.textContent = k;
+    const b = mk('div', 'up3-c');
+    if (typeof content === 'string') b.innerHTML = content; else b.appendChild(content);
+    l.appendChild(a);
+    l.appendChild(b);
+    return l;
+  }
 
   /** 选项行：<label class="up3-opt"><input …><span>文字</span></label>，title 走原生悬停 */
   function opt(kind, name, value, label, opts) {
@@ -62,6 +90,12 @@
     return lb;
   }
 
+  function tip(text) {
+    const d = mk('div', 'up3-tip');
+    d.textContent = text;
+    return d;
+  }
+
   function fld(label, opts) {
     const o = opts || {};
     const box = mk('div', 'up3-fld');
@@ -75,15 +109,15 @@
     inp.autocomplete = 'off';
     if (o.size) inp.size = o.size;
     if (o.placeholder) inp.placeholder = o.placeholder;
-    inp.dataset.k = o.key || '';
     box.appendChild(lb);
     box.appendChild(inp);
+    box._input = inp;
     return box;
   }
 
   /** 滑条 + 读数：站点那两个 range 的 value="0" 会被浏览器夹到 min，这里直接给 min。 */
-  function slider(label, min, max, value, onInput) {
-    const box = mk('div', 'up3-fld up3-slider');
+  function slider(label, min, max, value) {
+    const box = mk('div', 'up3-slider');
     const lb = mk('label');
     lb.textContent = label;
     const inp = mk('input');
@@ -93,7 +127,7 @@
     inp.value = String(value);
     const out = mk('span', 'up3-read');
     const paint = () => { out.textContent = t('up3x.nTiles', { n: inp.value }); };
-    inp.addEventListener('input', () => { paint(); if (onInput) onInput(); });
+    inp.addEventListener('input', paint);
     paint();
     box.appendChild(lb);
     box.appendChild(inp);
@@ -102,20 +136,29 @@
     return box;
   }
 
-  function noteBox(lines) {
-    const box = mk('div', 'up3-note');
-    lines.forEach((s) => {
-      const p = mk('div');
-      p.textContent = zh(s);
-      box.appendChild(p);
-    });
-    return box;
+  /** 站点给这个文件算出来的事实（只显示，不改；提交时也原样发回去） */
+  function blendFacts(b) {
+    const h = b.hidden || {};
+    const out = [];
+    if (h.engine) out.push(t('up3x.mEngine', { v: h.engine }));
+    if (h.exe) out.push(t('up3x.mBlender', { v: h.exe }));
+    if (h.width && h.height) out.push(t('up3x.mRes', { w: num(h.width), h: num(h.height) }));
+    if (h.framerate) out.push(t('up3x.mFps', { v: num(h.framerate) }));
+    if (h.cycles_samples) out.push(t('up3x.mSamples', { v: num(h.cycles_samples) }));
+    if (h.samples_pixel) out.push(t('up3x.mPerPixel', { v: h.samples_pixel }));
+    if (h.image_extension) out.push(h.image_extension);
+    if (h.denoising === '1') out.push(t('up3x.mDenoise'));
+    if (h.use_adaptive_sampling === '1') out.push(t('up3x.mAdaptive'));
+    if (h.render_on_gpu_headless === '1') out.push(t('up3x.mHeadless'));
+    if (h.color_management === '1') out.push(t('up3x.mColorMgmt'));
+    if (h.output_path) out.push(t('up3x.mOutput', { v: h.output_path }));
+    return out;
   }
 
   /* ------------------------------------------------------------------ 渲染 */
 
   /**
-   * @param box   #sp-an-result（我们自己的容器）
+   * @param box   #sp-an-result（我们自己的容器，class 已带 sp-up3）
    * @param model 62-chain.js parseStep3() 的结果
    * @returns {{ok:boolean, reason?:string}}
    */
@@ -126,62 +169,66 @@
     box.classList.remove('sp-siteform');
     box.classList.add('sp-up3');
 
-    const root = mk('div', 'up3');
     const uid = 'sp3-' + (++seq);
+    const root = mk('div', 'up3');
     const state = { vis: {}, compute: 0, blends: {} };
     const msg = mk('div', 'up3-msg');
     msg.hidden = true;
     const say = (text, bad) => {
       msg.textContent = text;
-      msg.hidden = false;
+      msg.hidden = !text;
       msg.classList.toggle('bad', !!bad);
     };
 
-    /* 头部：上游指纹 + 这一份碎片解析出来的键数（设置面板那行读同一个报告） */
+    /* ① 抬头 + 概览（站点算出来的事实，一行 chips） */
     const head = mk('div', 'up3-head');
     const h4 = mk('h4');
     h4.textContent = t('up3x.title');
-    const sub = mk('div', 'up3-sub');
-    sub.textContent = t('up3x.sub', { n: model.blends.length, v: model.upstream || '?' });
     head.appendChild(h4);
-    head.appendChild(sub);
+    head.appendChild(tip(t('up3x.sub')));
     root.appendChild(head);
 
-    /* ① 可见性：三个开关，语义与站点 HTML.php:1036-1071 一一对应 */
-    const vis = sec('vis', t('up3.vis'));
-    const vb = bodyOf(vis);
-    const visDefs = [
-      ['render', model.vis.render, 'up3x.render', 'up3x.renderTip'],
+    const archive = (model.blends.filter((b) => b.hidden && b.hidden.archive)[0] || { hidden: {} }).hidden.archive;
+    const bits = [];
+    if (archive) bits.push(`${esc(t('up3x.mArchive'))} <b>${esc(archive)}</b>`);
+    bits.push(`${esc(t('up3x.mFiles'))} <b>${model.blends.length}</b>`);
+    if (model.upstream) bits.push(`${esc(t('up3x.mUpstream'))} <b>${esc(model.upstream)}</b>`);
+    root.appendChild(metaRow(bits));
+
+    /* ② 项目级设置：一个块两行（可见性 + 计算方式）—— 这里才需要"一组" */
+    const group = mk('div', 'up3-group');
+
+    const visBox = mk('div', 'up3-opts');
+    let visAny = false;
+    const visTips = [];
+    [['render', model.vis.render, 'up3x.render', 'up3x.renderTip'],
       ['mp4', model.vis.mp4, 'up3x.mp4', 'up3x.mp4Tip'],
-      ['thumb', model.vis.thumb, 'up3x.thumb', 'up3x.thumbTip'],
-    ];
-    visDefs.forEach(([key, def, lbl, tip]) => {
+      ['thumb', model.vis.thumb, 'up3x.thumb', 'up3x.thumbTip']].forEach(([key, def, lbl, tipKey]) => {
       if (def.kind === 'none') return;
+      visAny = true;
       const hidden = def.kind === 'hidden';
       const o = opt('checkbox', null, null, t(lbl), {
-        checked: hidden ? !!def.force : !!def.on,
-        disabled: hidden,
-        title: t(tip),
+        checked: hidden ? !!def.force : !!def.on, disabled: hidden, title: t(tipKey),
       });
       state.vis[key] = hidden ? false : !!def.on;   // 站点对 hidden 一律发 "0"（.is(':checked') 为假）
       const inp = o.querySelector('input');
       inp.addEventListener('change', () => { state.vis[key] = inp.checked; });
-      vb.appendChild(o);
-      if (hidden) {
-        const why = mk('div', 'up3-hint');
-        why.textContent = t('up3x.forced', { state: def.force ? t('up3x.yes') : t('up3x.no') });
-        vb.appendChild(why);
-      }
+      visBox.appendChild(o);
+      /* 站点替用户定了的开关：单独一行说清楚（塞在选项同一行会挤成一句读不懂的话） */
+      if (hidden) visTips.push(t('up3x.forced', { state: def.force ? t('up3x.yes') : t('up3x.no') }));
     });
+    visTips.forEach((s) => {
+      const d = tip(s);
+      d.classList.add('up3-tiprow');
+      visBox.appendChild(d);
+    });
+    if (visAny) group.appendChild(line(t('up3.vis'), visBox));
 
-    /* ② 计算方式：CPU=1 / GPU=8 的位掩码（addproject.js:24-30）。
-       站点给不给某一列由 blend 能力决定（HTML.php:1072-1095），我们照它给的画。 */
-    const cpu = sec('cpu', t('up3.cpu'));
-    const cb = bodyOf(cpu);
     const compute = model.compute;
     if (compute.cpuOn) state.compute |= 1;
     if (compute.gpuOn) state.compute |= 8;
     if (!state.compute) state.compute = compute.canCpu ? 1 : (compute.canGpu ? 8 : 0);
+    const cpuBox = mk('div', 'up3-cmps');
     const addCompute = (bit, can, lbl, hint) => {
       if (!can) return;
       const o = opt('radio', uid + '-compute', String(bit), t(lbl), { checked: !!(state.compute & bit), cls: 'up3-cmp' });
@@ -189,38 +236,49 @@
       el.addEventListener('change', () => { if (el.checked) state.compute = bit; });
       const wrap = mk('div', 'up3-cmpbox');
       wrap.appendChild(o);
-      const h = mk('div', 'up3-hint');
       const parts = [];
       if (hint && hint.queue) parts.push(t('up3x.queue', { v: hint.queue }));
       if (hint && hint.total) parts.push(t('up3x.total', { n: hint.total }));
-      if (!parts.length) return;
-      h.textContent = parts.join(' · ');
-      wrap.appendChild(h);
-      cb.appendChild(wrap);
+      if (parts.length) {
+        const h = mk('div', 'up3-tip');
+        h.textContent = parts.join(' · ');
+        wrap.appendChild(h);
+      }
+      cpuBox.appendChild(wrap);
     };
     addCompute(1, compute.canCpu, 'up3x.cpu', compute.cpuHint);
     addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
-    root.appendChild(vis);
-    root.appendChild(cpu);
+    if (cpuBox.childNodes.length) group.appendChild(line(t('up3.cpu'), cpuBox));
 
-    /* ③ 每个 .blend 一张卡：一个文件 = 一个项目，各自提交（站点也是每份一个提交按钮） */
+    root.appendChild(group);
+
+    /* ③ 每个 .blend 一块：文件名 + 它自己的事实 + 能改的那几项 + 提交 */
     let parsedKeys = 0;
     const cards = [];
     model.blends.forEach((b) => {
       parsedKeys += Object.keys(b.hidden).length + (b.rejected ? 0 : 3);
-      const card = sec('blend', b.name || ('#' + b.i));
-      card.classList.add('up3-card');
-      card.dataset.i = b.i;
-      const cbody = bodyOf(card);
+      const bl = mk('div', 'up3-blend');
+      bl.dataset.i = b.i;
+      const bh = mk('div', 'up3-bhead');
+      const name = mk('h4');
+      name.textContent = b.name || ('#' + b.i);
+      bh.appendChild(name);
+      const facts = b.rejected ? [] : blendFacts(b);
+      if (facts.length) {
+        const fm = mk('div', 'up3-bmeta');
+        fm.textContent = facts.join(' · ');
+        bh.appendChild(fm);
+      }
+      bl.appendChild(bh);
 
       if (b.rejected) {
         /* 站点对"缺相机 / 有活动输出节点 / 分析报错"的文件只给理由、不给表单（HTML.php:1162-1182） */
         state.blends[b.i] = { rejected: true };
-        const bad = mk('div', 'up3-note up3-bad');
+        const bad = mk('div', 'up3-notes up3-bad');
         bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
-        cbody.appendChild(bad);
-        root.appendChild(card);
-        cards.push({ b, card, body: cbody, submit: null });
+        bl.appendChild(bad);
+        root.appendChild(bl);
+        cards.push({ b, card: bl, body: bl, submit: null });
         return;
       }
 
@@ -231,60 +289,57 @@
         splitSamples: (b.split.kind === 'samples' || b.split.kind === 'samples-single') ? String(b.split.value) : '',
       };
 
-      /* 类型：站点只在"非 EXR 且无降噪"时给可见的两个 radio（HTML.php:1259-1267） */
+      /* 类型：站点只在"非 EXR 且无降噪"时给可见的两个 radio（HTML.php:1259-1267）；
+         EXR/降噪分支连 radio 都是 hidden 的（:1205），那就没有可选项。 */
       if (!b.typeForced) {
-        const row = mk('div', 'up3-opts');
+        const opts = mk('div', 'up3-opts');
         const anim = opt('radio', uid + '-type-' + b.i, 'animation', t('up3x.anim'), { checked: b.type !== 'singleframe' });
         const sing = opt('radio', uid + '-type-' + b.i, 'singleframe', t('up3x.single'), { checked: b.type === 'singleframe' });
-        row.appendChild(anim);
-        row.appendChild(sing);
-        cbody.appendChild(row);
+        opts.appendChild(anim);
+        opts.appendChild(sing);
+        bl.appendChild(line(t('up3x.type'), opts));
 
-        const animInp = mk('div', 'up3-fields');
-        ['start', 'end', 'step'].forEach((k) => {
-          const def = { start: ['up3x.start', 6], end: ['up3x.end', 6], step: ['up3x.step', 3] }[k];
-          const f = fld(t(def[0]), { key: k, value: state.blends[b.i][k], size: def[1] });
-          f.querySelector('input').addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
-          animInp.appendChild(f);
-        });
+        const fields = mk('div', 'up3-fields');
+        const animRow = mk('div', 'up3-fields');
         const singRow = mk('div', 'up3-fields');
-        const f = fld(t('up3x.frame'), { key: 'frame', value: state.blends[b.i].frame, size: 6 });
-        f.querySelector('input').addEventListener('input', (e) => { state.blends[b.i].frame = e.target.value; });
-        singRow.appendChild(f);
-        animInp.hidden = b.type === 'singleframe';
+        [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
+          const f = fld(t(lbl), { value: state.blends[b.i][k], size });
+          f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          animRow.appendChild(f);
+        });
+        const sf = fld(t('up3x.frame'), { value: state.blends[b.i].frame, size: 6 });
+        sf._input.addEventListener('input', (e) => { state.blends[b.i].frame = e.target.value; });
+        singRow.appendChild(sf);
+        animRow.hidden = b.type === 'singleframe';
         singRow.hidden = b.type !== 'singleframe';
+        fields.appendChild(animRow);
+        fields.appendChild(singRow);
         const sync = () => {
           const v = anim.querySelector('input').checked ? 'animation' : 'singleframe';
           state.blends[b.i].type = v;
-          animInp.hidden = v !== 'animation';
+          animRow.hidden = v !== 'animation';
           singRow.hidden = v !== 'singleframe';
         };
         anim.querySelector('input').addEventListener('change', sync);
         sing.querySelector('input').addEventListener('change', sync);
-        cbody.appendChild(animInp);
-        cbody.appendChild(singRow);
+        bl.appendChild(line(t('up3x.frames'), fields));
       } else {
-        /* 强制动画：只有帧区间（HTML.php:1204-1243 那条分支连类型 radio 都是 hidden 的） */
-        const row = mk('div', 'up3-fields');
-        ['start', 'end', 'step'].forEach((k) => {
-          const def = { start: ['up3x.start', 6], end: ['up3x.end', 6], step: ['up3x.step', 3] }[k];
-          const g = fld(t(def[0]), { key: k, value: state.blends[b.i][k], size: def[1] });
-          g.querySelector('input').addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
-          row.appendChild(g);
+        const animRow = mk('div', 'up3-fields');
+        [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
+          const f = fld(t(lbl), { value: state.blends[b.i][k], size });
+          f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          animRow.appendChild(f);
         });
-        cbody.appendChild(row);
+        bl.appendChild(line(t('up3x.frames'), animRow));
       }
 
       /* 切块：三形态（samples 滑条 / tiles 下拉 / 站点定死） */
       const splitBox = mk('div', 'up3-split');
-      if (b.split.kind === 'samples') {
-        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value, null);
+      if (b.split.kind === 'samples' || b.split.kind === 'samples-single') {
+        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value);
         s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
         splitBox.appendChild(s);
       } else if (b.split.kind === 'tiles') {
-        const row = mk('div', 'up3-fld');
-        const lb = mk('label');
-        lb.textContent = t('up3x.splitGrid');
         const sel = mk('select');
         b.split.options.forEach((o) => {
           const op = mk('option');
@@ -294,67 +349,66 @@
           sel.appendChild(op);
         });
         sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
-        row.appendChild(lb);
-        row.appendChild(sel);
-        splitBox.appendChild(row);
-      } else if (b.split.kind === 'samples-single') {
-        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value, null);
-        s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
-        splitBox.appendChild(s);
+        splitBox.appendChild(sel);
       } else {
-        const fixed = mk('div', 'up3-hint');
-        fixed.textContent = t('up3x.splitFixed', { tiles: String(b.split.tiles || 1) });
-        splitBox.appendChild(fixed);
+        splitBox.appendChild(tip(t('up3x.splitFixed')));
       }
-      cbody.appendChild(splitBox);
+      bl.appendChild(line(t('up3x.split'), splitBox));
 
-      if (b.notes && b.notes.length) cbody.appendChild(noteBox(b.notes));
+      /* 站点写的说明（EXR 限制、降噪、缺文件、驱动警告…）：小字，不装箱 */
+      if (b.notes && b.notes.length) {
+        const notes = mk('div', 'up3-notes');
+        b.notes.forEach((s) => {
+          const d = mk('div');
+          d.textContent = zh(s);
+          notes.appendChild(d);
+        });
+        bl.appendChild(notes);
+      }
 
-      /* 高级选项：内存（站点给的是 MB，服务端 ×1024 存 kB，ProjectController.php:348） */
+      /* 底部：高级选项（内存）在左、提交在右 —— 同一行，省掉一层框 */
+      const foot = mk('div', 'up3-bfoot');
       if (b.advanced) {
         const adv = mk('div', 'up3-adv');
-        const on = { v: false };
         const ck = opt('checkbox', null, null, t('up3.adv'), { cls: 'up3-opt-adv' });
         const inp = ck.querySelector('input');
-        const ramRow = mk('div', 'up3-fld up3-ram');
-        ramRow.hidden = true;
-        const lb = mk('label');
-        lb.textContent = t('up3x.ram');
-        lb.title = t('up3x.ramTip');
-        const ramInp = mk('input');
-        ramInp.type = 'text';
-        ramInp.inputMode = 'numeric';
-        ramInp.placeholder = t('up3x.ramPh');
-        ramInp.value = b.ram || '';
-        ramInp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
-        ramRow.appendChild(lb);
-        ramRow.appendChild(ramInp);
-        inp.addEventListener('change', () => { on.v = inp.checked; ramRow.hidden = !inp.checked; });
+        const ramWrap = mk('div', 'up3-fld up3-ram');
+        ramWrap.hidden = true;
+        const rl = mk('label');
+        rl.textContent = t('up3x.ram');
+        rl.title = t('up3x.ramTip');
+        const ri = mk('input');
+        ri.type = 'text';
+        ri.inputMode = 'numeric';
+        ri.placeholder = t('up3x.ramPh');
+        ri.value = b.ram || '';
+        ri.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+        ramWrap.appendChild(rl);
+        ramWrap.appendChild(ri);
+        inp.addEventListener('change', () => { ramWrap.hidden = !inp.checked; });
         adv.appendChild(ck);
-        adv.appendChild(ramRow);
-        cbody.appendChild(adv);
+        adv.appendChild(ramWrap);
+        foot.appendChild(adv);
       }
-
-      /* 每张卡自己的错误槽 + 提交按钮（站点也是一个文件一个提交） */
-      const slot = mk('div', 'up3-slot');
-      slot.hidden = true;
-      const foot = mk('div', 'up3-foot');
       const btn = mk('button', 'btn up3-submit');
       btn.type = 'button';
       btn.textContent = t('up3x.submit');
       foot.appendChild(btn);
-      cbody.appendChild(slot);
-      cbody.appendChild(foot);
+      bl.appendChild(foot);
 
-      btn.addEventListener('click', () => doSubmit(b, card, slot, btn, msg, say, state, model));
-      root.appendChild(card);
-      cards.push({ b, card, body: cbody, submit: btn, slot });
+      const slot = mk('div', 'up3-slot');
+      slot.hidden = true;
+      bl.appendChild(slot);
+
+      btn.addEventListener('click', () => doSubmit(b, bl, slot, btn, msg, say, state, model));
+      root.appendChild(bl);
+      cards.push({ b, card: bl, body: bl, submit: btn, slot });
     });
 
     /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
        所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
     if (model.blends.filter((x) => !x.rejected).length > 1) {
-      const warn = mk('div', 'up3-note');
+      const warn = mk('div', 'up3-notes up3-warn');
       warn.textContent = t('up3x.multi');
       root.appendChild(warn);
     }
@@ -375,17 +429,13 @@
   async function doSubmit(b, card, slot, btn, msg, say, state, model) {
     slot.hidden = true;
     slot.textContent = '';
-    say('', false);
-    msg.hidden = true;
+    slot.classList.remove('up3-bad');
 
-    const ui = {
-      vis: state.vis,
-      compute: state.compute,
-      blends: state.blends,
-    };
+    const ui = { vis: state.vis, compute: state.compute, blends: state.blends };
     const errs = SP.Chain.validate(model, ui);
     if (errs.length) {
       slot.hidden = false;
+      slot.classList.add('up3-bad');
       slot.textContent = errs.join('；');
       return;
     }
@@ -407,17 +457,17 @@
         return;
       }
       saveReport({
-        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length,
-        missing: [], upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length, missing: [],
+        upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
       });
       slot.hidden = false;
-      slot.textContent = r.message || t('up3x.rejected');
-      /* 服务端的错误体是 HTML 片段（含 <strong>/<ul>），我们只取文字、不注入它 */
       slot.classList.add('up3-bad');
+      /* 服务端的错误体是 HTML 片段（含 <strong>/<ul>），我们只取文字、不注入它 */
+      slot.textContent = r.message || t('up3x.rejected');
     } catch (e) {
       slot.hidden = false;
-      slot.textContent = t('up3x.netFail') + ' ' + ((e && e.message) || e);
       slot.classList.add('up3-bad');
+      slot.textContent = t('up3x.netFail') + ' ' + ((e && e.message) || e);
     }
     btn.disabled = false;
     btn.textContent = old;
@@ -429,12 +479,12 @@
     const known = SP.Chain.UPSTREAM;
     const rep = report();
     const when = rep && rep.at ? new Date(rep.at).toLocaleString() : '';
-    const tip = [];
-    if (now) tip.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
+    const tipLines = [];
+    if (now) tipLines.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
     if (rep && rep.at) {
-      tip.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
-    } else tip.push(t('set.fp.never'));
-    const tipAttr = esc(tip.join('\n'));
+      tipLines.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
+    } else tipLines.push(t('set.fp.never'));
+    const tipAttr = esc(tipLines.join('\n'));
 
     let line;
     if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;

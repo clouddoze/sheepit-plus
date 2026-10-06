@@ -885,29 +885,62 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
 /* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
    这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
-   所以自绘不违反契约。下面只写"我们的东西长什么样"。 */
-#sp .sp-up3 .up3-sub{margin:4px 0 0;font-size:12.5px;color:var(--text-3);line-height:1.7}
-#sp .sp-up3 .up3-card{background:var(--surface);border-color:var(--border-strong)}
-#sp .sp-up3 .up3-card > h3{color:var(--text);font-size:13.5px;letter-spacing:0}
-#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:18px;margin:0 0 12px}
+   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12），
+   并且**只有一个框**：项目级设置。每个 .blend 之间只用一条发丝线分开。 */
+#sp .sp-up3 .up3-head h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-head .up3-tip{margin-top:4px}
+#sp .sp-up3 .up3-meta{margin:12px 0 14px}
+/* 项目级设置：一个块，两行 */
+#sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
+#sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
+#sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-k{flex:0 0 68px;font-size:12.5px;color:var(--text-3);padding-top:1px}
+#sp .sp-up3 .up3-c{flex:1 1 auto;min-width:0}
+#sp .sp-up3 .up3-tip{font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .sp-up3 .up3-tiprow{flex:1 1 100%;margin-top:2px}
+#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:8px 18px}
 #sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
 #sp .sp-up3 .up3-opt input{margin:0}
 #sp .sp-up3 .up3-opt[title]{cursor:help}
-#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 12px}
-#sp .sp-up3 .up3-fld{flex:1 1 132px;min-width:0}
-#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 6px;font-size:12.5px;color:var(--text-2)}
+#sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
+#sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
+#sp .sp-up3 .up3-cmp{font-weight:600}
+/* 每个文件一块：只有一条上边线，不再套框 */
+#sp .sp-up3 .up3-blend{margin-top:18px;padding-top:16px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-bhead h4{margin:0;font-size:13.5px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
+#sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
+#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
 #sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
-#sp .sp-up3 .up3-cmpbox{flex:1 1 190px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-body{display:flex;flex-wrap:wrap;gap:16px}
-#sp .sp-up3 .up3-sec[data-sec="cpu"] .up3-cmp{font-weight:600}
-#sp .sp-up3 .up3-split{margin:0 0 12px}
-#sp .sp-up3 .up3-slider{display:block}
-#sp .sp-up3 .up3-slider > label{display:block;margin:0 0 8px}
-#sp .sp-up3 .up3-read{margin-left:10px;font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+#sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
+#sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+#sp .sp-up3 .up3-notes{margin-top:12px;font-size:12.5px;color:var(--text-2);line-height:1.75}
+#sp .sp-up3 .up3-notes > div + div{margin-top:3px}
+#sp .sp-up3 .up3-notes.up3-bad,#sp .sp-up3 .up3-notes .up3-bad{color:var(--accent)}
+#sp .sp-up3 .up3-notes.up3-warn{margin-top:16px;padding-left:10px;border-left:2px solid var(--accent);color:var(--text-2)}
+#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:14px}
+#sp .sp-up3 .up3-adv{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+#sp .sp-up3 .up3-ram{flex:0 1 190px;margin:0}
+#sp .sp-up3 .up3-ram > label{margin:0 6px 0 0;display:inline}
+#sp .sp-up3 .up3-ram > input{width:120px}
+#sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-msg{margin:14px 0 0;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.75}
+#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 button.up3-submit{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
 /* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
 #sp .sp-up3 input[type=range]{
-  appearance:none;-webkit-appearance:none;width:100%;max-width:340px;height:18px;background:transparent;
-  cursor:pointer;padding:0;border:none;margin:0;
+  appearance:none;-webkit-appearance:none;flex:1 1 200px;max-width:320px;height:18px;
+  background:transparent;cursor:pointer;padding:0;border:none;margin:0;
 }
 #sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
 #sp .sp-up3 input[type=range]::-webkit-slider-thumb{
@@ -916,18 +949,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 }
 #sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
 #sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
-#sp .sp-up3 .up3-adv{margin:0 0 12px}
-#sp .sp-up3 .up3-adv .up3-opt{margin:0 0 10px}
-#sp .sp-up3 .up3-slot{margin:0 0 10px;padding:10px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
-#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-note.up3-bad,#sp .sp-up3 .up3-note .up3-bad{color:var(--accent)}
-#sp .sp-up3 .up3-note > div + div{margin-top:6px}
-#sp .sp-up3 button.up3-submit{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-}
-#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
 #sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
 /* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
 #sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
