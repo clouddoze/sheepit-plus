@@ -259,6 +259,14 @@
       'proj.status.renderingN': '{n} 帧渲染中', 'proj.status.rendering': '渲染中',
       'proj.status.waiting': '等待中', 'proj.status.paused': '已暂停',
       'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}',
+      /* 「我发布的」：数据来自个人主页那张表，没有设备/内存可筛，所以那一档只放状态筛 */
+      'proj.scope.all': '全部', 'proj.scope.mine': '我发布的',
+      'proj.searchMine': '搜索我发布的…', 'proj.col.manage': '操作',
+      'proj.status.finished': '已完成', 'proj.status.blocked': '已被站点封禁',
+      'my.title': '我的项目', 'my.count': '共 {n} 个', 'my.all': '看全部',
+      'my.open': '项目设置',
+      'my.empty': '你还没有发布过项目',
+      'my.emptyCta': '上传一个项目',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
       'mode.toClassic': '切回原版界面',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
@@ -594,6 +602,13 @@
       'proj.status.renderingN': '{n} Rendering frames', 'proj.status.rendering': 'Rendering',
       'proj.status.waiting': 'Waiting', 'proj.status.paused': 'Paused',
       'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}',
+      'proj.scope.all': 'All', 'proj.scope.mine': 'Published by me',
+      'proj.searchMine': 'Search my projects…', 'proj.col.manage': 'Action',
+      'proj.status.finished': 'Rendered', 'proj.status.blocked': 'Blocked by the site',
+      'my.title': 'My projects', 'my.count': '{n} in total', 'my.all': 'See all',
+      'my.open': 'Project settings',
+      'my.empty': 'You have not published a project yet',
+      'my.emptyCta': 'Upload a project',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
       'mode.toClassic': 'Switch to the original interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
@@ -1721,6 +1736,55 @@
       .sort((a, b) => b.start - a.start);
   }
 
+  /* 「我的项目」= 个人主页上那张 <h2>Latest projects</h2> 表（**不是**页脚侧栏那个同名 <h4> 块，
+     后者是全站最新项目）。站点实况（2026-10-07 抓的真 HTML，`.tmp/recon/raw/profile-self.html`）：
+
+       <div class="w-box blog-post"><h2>Latest projects</h2><div class="padding-15">
+         <table class="table table-bordered table-striped table-comparision table-responsive">
+           <tr><td><a href="/project/1224469">sptest</a></td><td class="msg_finished">Rendered</td></tr>
+
+     三条站点行为决定了解析形状（都是上游源码 HTML.php:2551 printProjects 干的）：
+     ① 行里**没有项目 id**，id 只能从名字链上取；别人的主页不给链（canManageProject 为假），
+        所以那一侧解析出来 id 为空 —— 调用方据此判断"能不能进管理页"。
+     ② 状态是第二个 td 的 class `msg_<词>`（processing/finished/waiting/paused/unknown），
+        文案里另带百分比：「Rendering (88%)」。**用 class 判状态，不认英文文案**。
+     ③ 被封的项目整行 `class="danger"`；一个项目都没有时站点整块不渲染 → 返回空数组。 */
+  const MY_STATUS = { processing: 'rendering', waiting: 'waiting', paused: 'paused', finished: 'finished', unknown: 'other' };
+
+  function parseMyProjects(doc) {
+    // 页脚那个同名块是 <h4>，主页这块是 <h2>，且站的 h2 就是 w-box 的第一个孩子
+    const head = [...doc.querySelectorAll('h2')].find((h) => /latest projects/i.test(text(h)));
+    const table = head && head.parentElement ? head.parentElement.querySelector('table') : null;
+    if (!table) return [];
+
+    const out = [];
+    for (const tr of table.querySelectorAll('tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 2) continue;
+      const link = tds[0].querySelector('a[href*="/project/"]');
+      const id = link ? ((String(link.getAttribute('href')).match(/\/project\/(\d+)/) || [])[1] || '') : '';
+      const cell = tds[1];
+      const cls = (String(cell.getAttribute('class') || '').match(/\bmsg_([a-z]+)/i) || [])[1] || '';
+      const raw = text(cell);
+      const pct = Number((raw.match(/\((\d+)\s*%\)/) || [])[1]);
+      out.push({
+        id,
+        name: text(tds[0]),
+        statusKind: MY_STATUS[cls.toLowerCase()] || 'other',
+        status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
+        pct: Number.isFinite(pct) ? pct : null,
+        blocked: tr.classList.contains('danger'),
+        manageable: !!id,
+      });
+    }
+    /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
+       id 是 IDENTITY 自增（上游 Project.php:63），按 id 倒序 ≈ 新建在前；没有 id 的行保持原序排在后面。 */
+    return out
+      .map((x, i) => ({ x, i }))
+      .sort((a, b) => ((Number(b.x.id) || 0) - (Number(a.x.id) || 0)) || (a.i - b.i))
+      .map((p) => p.x);
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -1766,7 +1830,10 @@
 
     const derived = computeDerived(activity);
 
-    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived };
+    // 主页那张表：自己的主页每行带 id 可进 /project/<id>，别人的主页只有名字（见 parseMyProjects）
+    const myProjects = parseMyProjects(doc);
+
+    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived, myProjects };
   }
 
   /** 派生：口径与原站 dl 的 "Consecutive render days" 对齐（不含今天） */
@@ -2048,6 +2115,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
+    parseMyProjects,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };
@@ -2460,6 +2528,26 @@ ${Theme.css('#sp')}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
 @media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+
+/* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
+/* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
+#sp .myproj{display:flex;flex-direction:column}
+#sp .myproj .mp{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .myproj .mp:last-child{border-bottom:none}
+#sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .myproj .nm a{color:var(--text);text-decoration:none}
+#sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
+/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
+#sp .st.bad{color:var(--accent)}
+#sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
+#sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+#sp .tbl-mine{min-width:0}
+#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
+/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
+   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
+@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+@media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
 /* ==== 顶栏模式开关 ==== */
 #sp .modebtn{
@@ -3702,6 +3790,63 @@ ${Theme.css('#sp')}
     return s;
   }
 
+  /* ==== 我的项目（个人主页那张表，两处共用） ====
+     数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
+     站点**没给**最后更新时间、也不给设备/内存，所以这两处只画名字、状态、（渲染中的）百分比。 */
+
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+
+  /** 百分比站点只对"渲染中/等待中"给（HTML.php 的 printProjects），没有就只说状态 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    const base = key ? t(key) : (x.status || '—');
+    return x.pct === null || x.pct === undefined ? base : `${base} ${x.pct}%`;
+  }
+
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  const MY_SHOW = 5;
+
+  /** 总览的「我的项目」区块；不是自己的主页就整块不画（那张表没有 id，点不进管理页）。 */
+  function myPanel(state, p) {
+    if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
+    const rows = (p && p.myProjects) || [];
+    const head = (sub, right) => `<div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(sub)}</span>
+        <span class="spacer"></span>${right || ''}
+      </div>`;
+
+    if (!rows.length) {
+      return `<div class="panel" style="margin-top:16px">
+        ${head(t('my.count', { n: 0 }))}
+        <div class="state" style="padding:26px 12px 30px">
+          <div class="small">${esc(t('my.empty'))}</div>
+          ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+        </div>
+      </div>`;
+    }
+
+    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+        <span class="nm">${myName(x)}</span>
+        ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
+        <span class="st">${esc(myStatus(x))}</span>
+      </div>`).join('');
+
+    /* 「看全部」是这一块的入口，只要有一个项目就画（不是"超长才给"）：点进项目页的「我发布的」档 */
+    const all = `<a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>`;
+    return `<div class="panel" style="margin-top:16px">
+      ${head(t('my.count', { n: rows.length }), all)}
+      <div class="myproj">${list}</div>
+    </div>`;
+  }
+
   /* ==== 总览 ==== */
 
   function identity(p, st) {
@@ -3745,7 +3890,9 @@ ${Theme.css('#sp')}
     if (!hasData) {
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，空态文案下面那块"还没发布过项目"就不重复了
+      const mine = (p.myProjects && p.myProjects.length) ? myPanel(state, p) : '';
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + mine + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -3837,17 +3984,23 @@ ${Theme.css('#sp')}
       ${UI.machines(mc)}
     </div>`;
 
+    /* ---- 我的项目：有项目就摆在指标带下面（一进总览能看见），空态垫到页面最后（别占头条） ---- */
+    const myP = myPanel(state, p);
+    const myHas = !!(p.myProjects && p.myProjects.length);
+
     return identity(p, st)
       + kpiBand
+      + (myHas ? myP : '')
       + main
       + heat
       + machinesPanel
+      + (myHas ? '' : myP)
       + foot();
   }
 
   /* ==== 项目 ==== */
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null };
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -3865,6 +4018,7 @@ ${Theme.css('#sp')}
     }
     if (p.statusKind === 'waiting') return t('proj.status.waiting');
     if (p.statusKind === 'paused') return t('proj.status.paused');
+    if (p.statusKind === 'finished') return t('proj.status.finished');
     return p.status || '—';
   }
 
@@ -3951,7 +4105,77 @@ ${Theme.css('#sp')}
     </tr>`;
   }
 
+  /** 范围切换（全部 / 我发布的）：两档共用同一只控件，位置也一样。 */
+  const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
+    .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
+  function mineProjects(state) {
+    const all = state.myProjects || [];
+    const q = projState.q.trim().toLowerCase();
+    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
+    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+      rows = rows.filter((x) => x.statusKind === projState.filter);
+    }
+
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头才按列排 */
+    const cmp = {
+      name: (a, b) => a.name.localeCompare(b.name),
+      progress: (a, b) => (a.pct === null ? -1 : a.pct) - (b.pct === null ? -1 : b.pct),
+    }[projState.msort];
+    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+
+    const th = (key, label, span) => {
+      const on = projState.msort === key;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+    };
+
+    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
+        <td><div class="pn">${myName(x)}</div></td>
+        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
+        <td class="r">${x.id
+    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`).join('')
+      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('my.empty'))}</div>
+            ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+          </div></td></tr>`;
+
+    return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
+        <span class="spacer"></span>
+        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+      <div class="toolbar">
+        ${scopeSeg()}
+        <label class="input">${UI.icon('search')}
+          <input id="sp-q" type="search" placeholder="${esc(t('proj.searchMine'))}" value="${esc(projState.q)}">
+        </label>
+        <div class="seg" id="sp-filter">${opts.map(([k, label]) =>
+    `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
+      </div>
+      <div class="panel" style="padding:14px 6px 6px">
+        <div class="tablewrap"><table class="tbl tbl-mine">
+          <thead><tr>
+            ${th('name', t('proj.col.project'))}
+            <th>${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'))}
+            <th class="r">${esc(t('proj.col.manage'))}</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
+      </div>`;
+  }
+
   function projects(state) {
+    if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
 
@@ -3998,6 +4222,7 @@ ${Theme.css('#sp')}
         <span class="spacer"></span>
         <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
+        ${scopeSeg()}
         <label class="input">${UI.icon('search')}
           <input id="sp-q" type="search" placeholder="${esc(t('proj.search'))}" value="${esc(projState.q)}">
         </label>
@@ -7146,6 +7371,17 @@ ${Theme.css('#sp')}
       try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
     }
 
+    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
+       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
+    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
+      const own = state.userName && state.profileName === state.userName && state.profile
+        ? state.profile
+        : (state.userName
+          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+          : null);
+      state.myProjects = (own && own.myProjects) || [];
+    }
+
     if (view === 'ranking' && !state.ranking) {
       state.ranking = Api.parseRanking(await Api.fetchPage('/ranking/user'));
     }
@@ -7159,6 +7395,7 @@ ${Theme.css('#sp')}
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
+        || (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects)
         || (view === 'ranking' && !state.ranking)
         || (view === 'upload' && !state.uploadHtml)
         /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
@@ -7261,6 +7498,7 @@ ${Theme.css('#sp')}
       if (kind === 'refresh') {
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
+        state.myProjects = null;
         state.session = null;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
@@ -7404,8 +7642,36 @@ ${Theme.css('#sp')}
       return;
     }
 
+    // 「我发布的」那张表的表头（列少，跟全站那张分开记排序状态）
+    const msort = ev.target.closest('th[data-msort]');
+    if (msort) {
+      const k = msort.dataset.msort;
+      if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
+      else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      render();
+      return;
+    }
+
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+
+    /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
+    const sScope = ev.target.closest('#sp-scope [data-s]');
+    if (sScope) {
+      const v = sScope.dataset.s;
+      if (Views.projState.scope === v) return;
+      Views.projState.scope = v === 'mine' ? 'mine' : 'all';
+      Views.projState.filter = 'all';
+      Views.projState.limit = 120;
+      Views.projState.menu = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
+      else render();
+      return;
+    }
+
+    // 总览区块的「看全部」：先定好档位，再让 #/projects 这个链接照常跳
+    const jump = ev.target.closest('[data-scope]');
+    if (jump) { Views.projState.scope = jump.dataset.scope === 'mine' ? 'mine' : 'all'; Views.projState.filter = 'all'; }
 
     // 账户选项卡：只换面板，不重新取数
     const tb = ev.target.closest('#sp-acct-tabs [data-tab]');

@@ -100,6 +100,63 @@
     return s;
   }
 
+  /* ==== 我的项目（个人主页那张表，两处共用） ====
+     数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
+     站点**没给**最后更新时间、也不给设备/内存，所以这两处只画名字、状态、（渲染中的）百分比。 */
+
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+
+  /** 百分比站点只对"渲染中/等待中"给（HTML.php 的 printProjects），没有就只说状态 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    const base = key ? t(key) : (x.status || '—');
+    return x.pct === null || x.pct === undefined ? base : `${base} ${x.pct}%`;
+  }
+
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  const MY_SHOW = 5;
+
+  /** 总览的「我的项目」区块；不是自己的主页就整块不画（那张表没有 id，点不进管理页）。 */
+  function myPanel(state, p) {
+    if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
+    const rows = (p && p.myProjects) || [];
+    const head = (sub, right) => `<div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(sub)}</span>
+        <span class="spacer"></span>${right || ''}
+      </div>`;
+
+    if (!rows.length) {
+      return `<div class="panel" style="margin-top:16px">
+        ${head(t('my.count', { n: 0 }))}
+        <div class="state" style="padding:26px 12px 30px">
+          <div class="small">${esc(t('my.empty'))}</div>
+          ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+        </div>
+      </div>`;
+    }
+
+    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+        <span class="nm">${myName(x)}</span>
+        ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
+        <span class="st">${esc(myStatus(x))}</span>
+      </div>`).join('');
+
+    /* 「看全部」是这一块的入口，只要有一个项目就画（不是"超长才给"）：点进项目页的「我发布的」档 */
+    const all = `<a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>`;
+    return `<div class="panel" style="margin-top:16px">
+      ${head(t('my.count', { n: rows.length }), all)}
+      <div class="myproj">${list}</div>
+    </div>`;
+  }
+
   /* ==== 总览 ==== */
 
   function identity(p, st) {
@@ -143,7 +200,9 @@
     if (!hasData) {
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，空态文案下面那块"还没发布过项目"就不重复了
+      const mine = (p.myProjects && p.myProjects.length) ? myPanel(state, p) : '';
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + mine + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -235,17 +294,23 @@
       ${UI.machines(mc)}
     </div>`;
 
+    /* ---- 我的项目：有项目就摆在指标带下面（一进总览能看见），空态垫到页面最后（别占头条） ---- */
+    const myP = myPanel(state, p);
+    const myHas = !!(p.myProjects && p.myProjects.length);
+
     return identity(p, st)
       + kpiBand
+      + (myHas ? myP : '')
       + main
       + heat
       + machinesPanel
+      + (myHas ? '' : myP)
       + foot();
   }
 
   /* ==== 项目 ==== */
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null };
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -263,6 +328,7 @@
     }
     if (p.statusKind === 'waiting') return t('proj.status.waiting');
     if (p.statusKind === 'paused') return t('proj.status.paused');
+    if (p.statusKind === 'finished') return t('proj.status.finished');
     return p.status || '—';
   }
 
@@ -349,7 +415,77 @@
     </tr>`;
   }
 
+  /** 范围切换（全部 / 我发布的）：两档共用同一只控件，位置也一样。 */
+  const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
+    .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
+  function mineProjects(state) {
+    const all = state.myProjects || [];
+    const q = projState.q.trim().toLowerCase();
+    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
+    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+      rows = rows.filter((x) => x.statusKind === projState.filter);
+    }
+
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头才按列排 */
+    const cmp = {
+      name: (a, b) => a.name.localeCompare(b.name),
+      progress: (a, b) => (a.pct === null ? -1 : a.pct) - (b.pct === null ? -1 : b.pct),
+    }[projState.msort];
+    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+
+    const th = (key, label, span) => {
+      const on = projState.msort === key;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+    };
+
+    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
+        <td><div class="pn">${myName(x)}</div></td>
+        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
+        <td class="r">${x.id
+    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`).join('')
+      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('my.empty'))}</div>
+            ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+          </div></td></tr>`;
+
+    return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
+        <span class="spacer"></span>
+        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+      <div class="toolbar">
+        ${scopeSeg()}
+        <label class="input">${UI.icon('search')}
+          <input id="sp-q" type="search" placeholder="${esc(t('proj.searchMine'))}" value="${esc(projState.q)}">
+        </label>
+        <div class="seg" id="sp-filter">${opts.map(([k, label]) =>
+    `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
+      </div>
+      <div class="panel" style="padding:14px 6px 6px">
+        <div class="tablewrap"><table class="tbl tbl-mine">
+          <thead><tr>
+            ${th('name', t('proj.col.project'))}
+            <th>${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'))}
+            <th class="r">${esc(t('proj.col.manage'))}</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
+      </div>`;
+  }
+
   function projects(state) {
+    if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
 
@@ -396,6 +532,7 @@
         <span class="spacer"></span>
         <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
+        ${scopeSeg()}
         <label class="input">${UI.icon('search')}
           <input id="sp-q" type="search" placeholder="${esc(t('proj.search'))}" value="${esc(projState.q)}">
         </label>

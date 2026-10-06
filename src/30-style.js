@@ -405,6 +405,26 @@ ${Theme.css('#sp')}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
 @media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
+/* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
+/* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
+#sp .myproj{display:flex;flex-direction:column}
+#sp .myproj .mp{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .myproj .mp:last-child{border-bottom:none}
+#sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .myproj .nm a{color:var(--text);text-decoration:none}
+#sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
+/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
+#sp .st.bad{color:var(--accent)}
+#sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
+#sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+#sp .tbl-mine{min-width:0}
+#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
+/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
+   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
+@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+@media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+
 /* ==== 顶栏模式开关 ==== */
 #sp .modebtn{
   height:30px;flex:none;display:inline-flex;align-items:center;gap:6px;padding:0 10px;

@@ -266,6 +266,55 @@
       .sort((a, b) => b.start - a.start);
   }
 
+  /* 「我的项目」= 个人主页上那张 <h2>Latest projects</h2> 表（**不是**页脚侧栏那个同名 <h4> 块，
+     后者是全站最新项目）。站点实况（2026-10-07 抓的真 HTML，`.tmp/recon/raw/profile-self.html`）：
+
+       <div class="w-box blog-post"><h2>Latest projects</h2><div class="padding-15">
+         <table class="table table-bordered table-striped table-comparision table-responsive">
+           <tr><td><a href="/project/1224469">sptest</a></td><td class="msg_finished">Rendered</td></tr>
+
+     三条站点行为决定了解析形状（都是上游源码 HTML.php:2551 printProjects 干的）：
+     ① 行里**没有项目 id**，id 只能从名字链上取；别人的主页不给链（canManageProject 为假），
+        所以那一侧解析出来 id 为空 —— 调用方据此判断"能不能进管理页"。
+     ② 状态是第二个 td 的 class `msg_<词>`（processing/finished/waiting/paused/unknown），
+        文案里另带百分比：「Rendering (88%)」。**用 class 判状态，不认英文文案**。
+     ③ 被封的项目整行 `class="danger"`；一个项目都没有时站点整块不渲染 → 返回空数组。 */
+  const MY_STATUS = { processing: 'rendering', waiting: 'waiting', paused: 'paused', finished: 'finished', unknown: 'other' };
+
+  function parseMyProjects(doc) {
+    // 页脚那个同名块是 <h4>，主页这块是 <h2>，且站的 h2 就是 w-box 的第一个孩子
+    const head = [...doc.querySelectorAll('h2')].find((h) => /latest projects/i.test(text(h)));
+    const table = head && head.parentElement ? head.parentElement.querySelector('table') : null;
+    if (!table) return [];
+
+    const out = [];
+    for (const tr of table.querySelectorAll('tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 2) continue;
+      const link = tds[0].querySelector('a[href*="/project/"]');
+      const id = link ? ((String(link.getAttribute('href')).match(/\/project\/(\d+)/) || [])[1] || '') : '';
+      const cell = tds[1];
+      const cls = (String(cell.getAttribute('class') || '').match(/\bmsg_([a-z]+)/i) || [])[1] || '';
+      const raw = text(cell);
+      const pct = Number((raw.match(/\((\d+)\s*%\)/) || [])[1]);
+      out.push({
+        id,
+        name: text(tds[0]),
+        statusKind: MY_STATUS[cls.toLowerCase()] || 'other',
+        status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
+        pct: Number.isFinite(pct) ? pct : null,
+        blocked: tr.classList.contains('danger'),
+        manageable: !!id,
+      });
+    }
+    /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
+       id 是 IDENTITY 自增（上游 Project.php:63），按 id 倒序 ≈ 新建在前；没有 id 的行保持原序排在后面。 */
+    return out
+      .map((x, i) => ({ x, i }))
+      .sort((a, b) => ((Number(b.x.id) || 0) - (Number(a.x.id) || 0)) || (a.i - b.i))
+      .map((p) => p.x);
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -311,7 +360,10 @@
 
     const derived = computeDerived(activity);
 
-    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived };
+    // 主页那张表：自己的主页每行带 id 可进 /project/<id>，别人的主页只有名字（见 parseMyProjects）
+    const myProjects = parseMyProjects(doc);
+
+    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived, myProjects };
   }
 
   /** 派生：口径与原站 dl 的 "Consecutive render days" 对齐（不含今天） */
@@ -593,6 +645,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
+    parseMyProjects,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };

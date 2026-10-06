@@ -611,6 +611,17 @@
       try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
     }
 
+    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
+       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
+    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
+      const own = state.userName && state.profileName === state.userName && state.profile
+        ? state.profile
+        : (state.userName
+          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+          : null);
+      state.myProjects = (own && own.myProjects) || [];
+    }
+
     if (view === 'ranking' && !state.ranking) {
       state.ranking = Api.parseRanking(await Api.fetchPage('/ranking/user'));
     }
@@ -624,6 +635,7 @@
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
+        || (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects)
         || (view === 'ranking' && !state.ranking)
         || (view === 'upload' && !state.uploadHtml)
         /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
@@ -726,6 +738,7 @@
       if (kind === 'refresh') {
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
+        state.myProjects = null;
         state.session = null;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
@@ -869,8 +882,36 @@
       return;
     }
 
+    // 「我发布的」那张表的表头（列少，跟全站那张分开记排序状态）
+    const msort = ev.target.closest('th[data-msort]');
+    if (msort) {
+      const k = msort.dataset.msort;
+      if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
+      else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      render();
+      return;
+    }
+
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+
+    /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
+    const sScope = ev.target.closest('#sp-scope [data-s]');
+    if (sScope) {
+      const v = sScope.dataset.s;
+      if (Views.projState.scope === v) return;
+      Views.projState.scope = v === 'mine' ? 'mine' : 'all';
+      Views.projState.filter = 'all';
+      Views.projState.limit = 120;
+      Views.projState.menu = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
+      else render();
+      return;
+    }
+
+    // 总览区块的「看全部」：先定好档位，再让 #/projects 这个链接照常跳
+    const jump = ev.target.closest('[data-scope]');
+    if (jump) { Views.projState.scope = jump.dataset.scope === 'mine' ? 'mine' : 'all'; Views.projState.filter = 'all'; }
 
     // 账户选项卡：只换面板，不重新取数
     const tb = ev.target.closest('#sp-acct-tabs [data-tab]');
