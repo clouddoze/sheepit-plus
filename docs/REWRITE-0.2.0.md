@@ -563,25 +563,102 @@
 **每一排的宽度和 = 容器内容宽（±2px 取整）**，且**没有任何一格的数值被省略号截断**。
 截图 `31`–`34-kpi-*.png`。离线门禁：`probe-sort.mjs` 69 项全过；`check-ui-dict.mjs` = zh 504 / en 492。
 
-### 11.6 工具与验收环境（都在 `.tmp/recon/`，不进产物）
+### 11.6 窄窗口下迷你折线不再溢出格子（用户点名的可选小项）
+
+指标带（`.farm`，只出现在项目页那条「全站实时」）里每格右端挂一条走势迷你折线。
+`#sp .farm svg{...;flex:none}` 让它**不能收缩**：真机 868px 视口下四格各 166px，
+固定 160px 的折线加数值会溢出格右边缘 **43–77px**，被邻格的背景盖住（看着像被裁）。
+改成 `flex:1 1 auto;min-width:0`：宽格子仍由 `max-width:160px` 顶住，窄格子按剩余空间缩。
+真机 7 档（1400/1100/900/800/700/620/560）复测：**最大溢出 −14px**（都在格内），
+折线宽 69–160px 自适应（`.tmp/recon/shots/35-farm-before.png` / `35-farm-after.png`）。
+
+### 11.7 第六期遗留：上传页错误分支（桩验，2026-10-07）
+
+这三条**在真站上没法触发**（要站点开维护、要一个没上传头像的号、要把项目数顶到上限），
+所以用上游 PHP 原文造桩。上游事实（逐个核对）：
+
+- 页面 `/getstarted` 自己就拦：维护中（`HTML.php:2022`）、**没头像**（`:2027`）、
+  并发上限（`:2033`）、ACL 被禁（`:2040`）—— 四条都走 `printError()`（`:1637`，形状是
+  `section.slice.color-one .text-center h2 + p`）并且**提前 return、不给表单**。
+- `POST /project/internal/upload` 命中的同一条闸门（`ProjectController.php:1108-1125`）回的是
+  **HTTP 200 纯文本理由**（`add_step1` 的 `new Response($errorMessage)`）。
+
+**桩测出来的旧行为**（`.tmp/recon/inject-upload.js` + `run-upload-matrix.ps1`，10 个场景）：
+
+| 场景 | 旧行为 | 判定 |
+|---|---|---|
+| 页面闸门：维护中 / 无头像 / 并发上限 | 只剩通用兜底「站点这次没有给出上传表单（通常是没有渲染够帧数，或者正在维护）」 | ❌ 站点给的具体原因（含"去传头像"这种可操作指引）一个字没读 |
+| 页面闸门：欠 10 帧 | 站点英文原文 | ❌ 中文界面显英文 |
+| POST 拒绝：维护中 / 无头像 / 并发上限 / 无原因 | 英文原文 | ❌ 未汉化；且 `<br>` 处粘连成 `project.To add one`、`projects.The limit` |
+| 本地拦截：后缀不对 / 超过站点上限 | 中文、正确 | ✓ |
+
+**改了四处**（都在显示层）：
+
+1. `src/62-chain.js` 的 `uploadPage()` 新增 `gate:{title,body}` —— 解析 `printError` 那块；
+   并加 `brText()`：**先把 `<br>` 换成空格**再取文本（治粘连）。
+2. `src/64-step1.js` 的 `buildForm()`：`!hasForm` 时优先站点 `warning`（欠帧那条），
+   其次 `gate` 标题 + 正文（各走 `zh()`），最后才通用兜底；闸门命中时**连估算器与须知两块面板一起收掉**
+   （只清内容会留两个空壳标题，桩验截图抓到的）。
+3. `src/62-chain.js` 的 `messageFrom()`：解析前把 `<br>` 换成空格。
+4. `src/12-lang-zh.js`：补 7 条 pattern（维护中标题、无头像标题、无头像正文、并发上限正则、
+   ACL 被禁、欠 10 帧那段、`Internal error, please retry to upload your file`、`Oh no!`）。
+   并发上限那句上游有**两个时态变体**（页面 `has been set`、POST `have been set`），正则一起吃。
+
+**复验**（干净单实例：先让装着的那版 `uiMode=classic` 载入退场，再装 dev dist；
+本机浏览器 + 测试账号 `muwyelkoai3k`，`spCount=1`）：闸门三条分别是
+「站点正在维护，暂时不能添加项目。 {站点自填的 reason}」/「现在还加不了项目。我们很看重友好的社区氛围。
+请先在「账户设置」里上传一张头像，之后就能添加项目了。」/「哦不！你正在进行中的项目已经到上限…
+你当前的上限是 3 个项目。」；POST 四条全部中文（含无原因那条）。
+截图 `.tmp/recon/shots/36-upload-gate-noavatar.png`。
+
+### 11.8 第七期遗留：第三步三个形态 + `#/upload` 越档
+
+**第三步**（桩素材 = `.tmp/upload-test/step3-outer.html`，上一轮从真站抓到的**真实**碎片；
+它本身就是"降噪"那一支：隐藏的 animation radio + 隐藏的 `split_tiles_number` 输入 + 降噪说明）：
+
+| 形态 | 怎么造 | 结果 |
+|---|---|---|
+| 降噪（真碎片原样） | — | ✓ 切块显示「整帧」+ 悬停解释（`up3x.splitFixedTip`），降噪两句中文 |
+| EXR 清单 | 把降噪那句换成 `HTML.php:1209-1216` 的 EXR 清单 | ✓ 5 条全中文、各自成行 |
+| 多 `.blend` 存档 | 复制一份 blend 块并把 `_0` 改成 `_1` | ✓ 两张卡片 + `up3x.multi` 提示 |
+| 指纹过期 | 塞一个脚本没画过的控件（`addproject_brandnew_option_0`） | ✓ `up3x.unknown` 提示条并点名该元素 |
+
+**EXR 那一支逼出一个真缺陷**：解析器的「相邻碎片合成一行」把
+`EXR output detected` 与 `Limitation on EXR  support:` 并成了一句 →
+两边各自的 pattern 都匹配不上 → 整段留在英文。修法：**词典里有整句译文的碎片不许并**
+（`src/62-chain.js` 的 `notesOf()`；英文档 `siteText` 返回 null，合并行为照旧）。
+复验见 `.tmp/recon/step3-stub-results-after.txt`。
+
+**`#/upload` 越档**（用户实报的形态）：`boot()` 读 hash 与 `hashchange` 两处都只看
+`ROUTES[v]`、**不看上传页的重开开关**，所以 off/raw 档手打 `#/upload` 照样画新版上传页。
+改成：`#/upload` 只在 `uploadMode === 'new'` 时可达；另两档留在原视图并把地址改回
+`ROUTES[state.view]`（`src/80-app.js`）。真机三档复测（每次重载、单实例 `spCount=1`）：
+`new` → upload ✓；`raw`/`off` → 停在总览、无 `wrap.up`、地址回到 `#/overview` ✓。
+
+### 11.9 工具与验收环境（都在 `.tmp/recon/`，不进产物）
 
 - `probe-sort.mjs`：离线探针，69 项断言（排序 / 显隐 / 调序 / 机器详情 / 登录入口 / 暂停 / 时区解析）。
 - `check-ui-dict.mjs`：中英词条配对。修掉一个**行首锚定**的 bug（一行里第 2 个之后的键全被漏统计，
   "配对通过"是假的）。真实数字 **zh 504 / en 492**，差异**只有 12 条设计上中文独有的 `why.*`**
   （站点原因的原文措辞）。
-- `kpi-probe.js` / `kpi-tiers.js` / `inject-dist.js`：本轮新增的指标带探针，以及
-  「fetch 局域网上的产物 → 删 `#sp` 等 → `(0,eval)(code)`」的免重装验收脚本。
+- 指标带：`kpi-probe.js` / `kpi-tiers.js`；折线：`farm-probe.js`。
+- 上传页闸门：`inject-upload.js`（DOM 手术造闸门页面 + `fetch`/`XHR` 桩）、`run-upload-matrix.ps1`。
+- 第三步：`inject-step3.js`（从真碎片变出 EXR / 多块 / 未知控件三种形态）、`run-step3-matrix.ps1`。
+- `inject-dist.js`：免重装的装法（`fetch` 局域网上的产物 → 删 `#sp` 等 → `(0,eval)(code)`）。
+  **注意**：装着的那版旧实例还活着，会响应 `hashchange` 自己重画 —— 单实例复验必须先让它
+  `uiMode=classic` 载入退场（`run-clean-recheck.ps1` 就是这个配方）。
 - `LAN-RECIPE.md`：换机器调试的整套配方（第二台机 `magic@192.168.3.172`，**没有 node**；浏览器连回本机
   `wss://192.168.3.103:52800`；本机没有 ssh，用 Git 自带的 `ssh.exe` + `~/.ssh/bsk_lan_ed25519`）。
+  本轮中途那台 Linux 机器的浏览器从通道掉线，干净复验改在本机浏览器（`162038a8`）上做。
 
-### 11.7 还欠的
+### 11.10 还欠的
 
-- **未提交、未发布**：工作区裸着这一批改动；0.2.2 仍压着没发，`.tmp/critique/changelog.md`
-  还是 0.2.1 的内容（发版前必须先重写）。
-- 产物 **458,694 字节**、SHA-256 前 32 位 `3CFBCBC2D20D5E59583C05CD6E4F7EBB`，
-  超体积提示线 440,000 共 18,694 字节 —— `build.mjs` 只警告不拦；用户此前明确表态"接受，功能值这个字节"。
-- 窄窗口下指标带里的**迷你折线**（`#sp .farm svg{flex:none}`）右端被裁约 9px（可选小项）。
-- 上传页错误分支（站点维护中 / 无头像账号 / 并发上限 / 站点拒绝原因）、第三步 EXR 切块 / 多 `.blend` /
-  `up3x.unknown` 提示条、`#/upload` 手打 hash 在 off/raw 档仍画新版上传页 —— 第六/七期遗留，**未验**。
+- **未提交、未发布**：0.2.2 仍压着没发，`.tmp/critique/changelog.md` 还是 0.2.1 的内容（发版前必须先重写）。
+- 产物 **465,444 字节**、SHA-256 前 32 位 `169FD7FF1BA9DC628B2B39E6E1F161C9`，
+  超体积提示线 440,000 共 25,444 字节 —— `build.mjs` 只警告不拦；用户此前明确表态"接受，功能值这个字节"。
+- **本轮验过的都是桩**：上传页闸门（维护/无头像/并发）+ 第三步 EXR/多块/未知 四条在真站上无法触发，
+  只能对着上游原文造桩；站点真开维护或真换版时，应当重新跑一遍 `run-upload-matrix.ps1` /
+  `run-step3-matrix.ps1`（桩素材与判定都在脚本里）。
+- 仍未验：防闪守卫的 race、0.1.11 → 0.2.0 这一跳的装机实测（见 `docs/PUBLISHING.md`「七」）。
 
 
