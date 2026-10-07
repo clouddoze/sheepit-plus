@@ -109,12 +109,16 @@
       }
     };
     walk(scope);
-    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎 */
+    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎。
+       但**词典里有整句译文的句子不许并**：并完就成了 "EXR output detected Limitation on EXR support:"，
+       两边各自的 pattern 都匹配不上，于是整段留在英文（EXR 清单实测踩到）。 */
+    const known = (x) => !!(SP.I18n && SP.I18n.siteText && SP.I18n.siteText(x));
     const merged = [];
     out.forEach((s) => {
       const last = merged[merged.length - 1];
-      if (last && last.length < 40 && !/[.。:：]$/.test(last)) merged[merged.length - 1] = last + ' ' + s;
-      else merged.push(s);
+      if (last && last.length < 40 && !/[.。:：]$/.test(last) && !known(last) && !known(s)) {
+        merged[merged.length - 1] = last + ' ' + s;
+      } else merged.push(s);
     });
     return merged;
   }
@@ -362,15 +366,21 @@
     if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }), raw: text };
     const body = text.trim();
     if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
-    return { ok: false, message: messageFrom(body) || body.slice(0, 400), raw: body };
+    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400), raw: body };
   }
 
-  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。 */
+  /** 站点原文（错误体 / 纯文本理由）上屏前先过一遍中文字典；未命中就保持原文，
+      所以英文界面与站点新写的句子都不会被吃掉。 */
+  const zh = (s) => (SP.I18n && SP.I18n.siteText ? (SP.I18n.siteText(s) || s) : s);
+
+  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。
+      站点那几句纯文本理由里带 `<br>`（"…projects.<br>The limit have been set…"），
+      直接扔给 DOMParser 会把两段粘成 "projects.The limit" —— 换行处要先补空格。 */
   function messageFrom(html) {
     const s = str(html);
     if (!s.trim()) return '';
     if (/^(missing parameter|Failed to add project)$/i.test(s.trim())) return s.trim();
-    const d = parseDoc(s);
+    const d = parseDoc(s.replace(/<br\s*\/?>/gi, ' '));
     const box = d.querySelector('p.error, .error, .alert');
     const src = box || d.body;
     if (!src) return '';
@@ -399,10 +409,10 @@
        'Internal error, please retry to upload your file' */
     if (/^\s*<(!doctype|html)/i.test(text)) {
       if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
-      return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+      return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
     }
     if (/addproject_content_|id="token"/.test(text)) return { kind: 'done', html: text };
-    return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+    return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
@@ -444,10 +454,19 @@
       const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
       if (tk) return { ok: true, token: tk[1] };
     }
-    return { ok: false, message: messageFrom(text) || t('up3x.uploadOdd'), raw: text };
+    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd'), raw: text };
   }
 
   /* ------------------------------------------------------------- 「原版」用 */
+
+  /** 站点用 <br> 断句：直接取 textContent 会把两段粘成 "projects.The limit"。
+      先把 <br> 换成空格再取，顺带折掉多余空白。 */
+  function brText(el) {
+    if (!el) return '';
+    const c = el.cloneNode(true);
+    [].slice.call(c.querySelectorAll('br')).forEach((b) => b.replaceWith(' '));
+    return c.textContent.replace(/\s+/g, ' ').trim();
+  }
 
   /** /getstarted 那一页：上传表单在不在、站点是不是拦住了（HTML.php:2091-2108）。 */
   function uploadPage(html) {
@@ -455,6 +474,17 @@
     const form = d.querySelector('form[action*="/project/internal/upload"]');
     const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
+    /* 站点在 printError()（HTML.php:1637）里写的是"为什么没有表单"：维护中 / 没头像 /
+       并发上限 / ACL 被禁，四条都走它，而 printError 是提前 return 的 —— 页面上就只剩这一块。
+       形状：section.slice.color-one → .text-center → h2（带 fa-warning 图标标题）+ p（正文）。 */
+    const gate = (function () {
+      const h2 = d.querySelector('section.slice.color-one .text-center h2');
+      if (!h2) return null;
+      const p = h2.parentElement && h2.parentElement.querySelector('p');
+      const title = brText(h2).replace(/^\s*/, '');
+      const body = brText(p);
+      return (title || body) ? { title, body } : null;
+    })();
     const note = (function () {
       const cell = form && form.querySelector('input[name="addproject_archive"]');
       const td = cell && cell.closest('td');
@@ -463,7 +493,8 @@
     const lim = limitOf(note);
     return {
       hasForm: !!form,
-      warning: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
+      warning: warn ? brText(warn) : '',
+      gate,
       note,
       /* 上限文案（"Max: 2,048 MB"）在本地就能拦住选错的文件 —— 拿在手里只用来拼提示等于白解析。
          站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */

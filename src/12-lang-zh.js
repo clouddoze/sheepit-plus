@@ -457,6 +457,25 @@
       [/^Warning, files not found:$/, '警告：这些文件找不到：'],
       [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
       [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
+      /* 上传页的前置闸门。两条来源，文案逐字抄自上游源码：
+         ① 页面 /getstarted 的 printError（HTML.php:2022-2045，命中即提前 return、不给表单）；
+         ② POST /project/internal/upload 的纯文本理由（ProjectController.php:1108-1125）。
+         两处的同一句话时态不同（"have been set" vs "has been set"），用正则一起吃。 */
+      [/^Server in maintenance, you can't add a project\.\s*(.*)$/, '站点正在维护，暂时不能添加项目。 $1'],
+      [/^You can't add a project, yet\.$/, '现在还加不了项目。'],
+      [/^Oh no!$/, '哦不！'],
+      /* POST 那条纯文本是"标题 + 正文"拼成一句（页面上是 h2 + p 两块），单独一条兜住。 */
+      [/^You can't add a project, yet\.\s*Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '现在还加不了项目。我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^You can not add a project because you have exceeded your limit of concurrent projects\..*Your current limit is (\d+) projects\.$/,
+        '你正在进行中的项目已经到上限，暂时加不了新项目。站点设这个上限是为了不让一个人的项目把农场压满；等其中一个项目渲染完，就能再加。你当前的上限是 $1 个项目。'],
+      [/^You can not add a project because an admin explicitly disabled it for your account\.\s*If you think it is a mistake, contact us on Discord\.$/,
+        '管理员明确关掉了你添加项目的权限。如果你认为这是误操作，请在 Discord 上联系我们。'],
+      [/^SheepIt is a renderfarm kept alive thanks to the community\.\s*You have rendered less than 10 frames\..*You must have rendered at least 10 frames to be able to add a project\.$/,
+        '羊场靠社区贡献活着。你还没渲染够 10 帧 —— 不要求每个人都渲染得和索取的一样多，但每一份贡献都算数。至少要渲染满 10 帧才能添加项目。'],
+      [/^Internal error, please retry to upload your file$/, '站点内部错误，请重试上传。'],
     ],
   });
 })();

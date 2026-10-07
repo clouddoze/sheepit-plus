@@ -1156,7 +1156,14 @@
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (m && m[1] !== state.view) show(m[1]);
+    if (!m || m[1] === state.view) return;
+    /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
+       留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
+    if (m[1] === 'upload' && state.uploadMode !== 'new') {
+      history.replaceState(null, '', ROUTES[state.view] || location.pathname);
+      return;
+    }
+    show(m[1]);
   });
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
@@ -1197,7 +1204,9 @@
 
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
-      if (ROUTES[v]) state.view = v;
+      /* #/upload 是应用内的上传页 —— 只属于「新版」档。off/raw 档那一页归站点自己，
+         手打 hash 不该越档（2026-10-07 实报：raw 档下 #/upload 照样画新版上传页）。 */
+      if (ROUTES[v] && (v !== 'upload' || state.uploadMode === 'new')) state.view = v;
     }
 
     /* 项目管理页：站点没给出项目那一块（项目不存在 / 无权查看 → 站点自己那张 Forbidden 页）

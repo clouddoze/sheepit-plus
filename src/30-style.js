@@ -265,8 +265,11 @@ ${Theme.css('#sp')}
 #sp .farm .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 #sp .farm .row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
 #sp .farm .v{font-size:18px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;line-height:1.1}
-/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。 */
-#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:none}
+/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。
+   但**必须能收缩**：窄窗口下格子只有 166px 宽，固定 160px 的线加数值会溢出格右边缘、
+   被邻格盖住（实测溢出 43–77px）。flex-shrink:1 + min-width:0 让它按剩余空间缩，
+   宽格子时仍由 max-width 顶在 160px。 */
+#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:1 1 auto;min-width:0}
 @media (max-width:860px){
   #sp .farm{grid-template-columns:repeat(2,minmax(0,1fr))}
   #sp .farm div:nth-child(3){border-left:none}
@@ -790,6 +793,9 @@ ${Theme.css('#sp')}
 #sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+/* 站点 printError 那块：标题一行 + 正文（"没头像就去账户页传一张"这类可操作指引在正文里） */
+#sp .up1-msg .up1-gate-title{display:block;font-weight:600}
+#sp .up1-msg .up1-gate-body{margin-top:5px}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}

@@ -55,9 +55,18 @@
   function buildForm(slot, page, html) {
     slot.textContent = '';
     if (!page.hasForm) {
-      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限…），原文照译 */
+      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限/ACL…），**原文照译**：
+         站点在 printError 里写清了是哪一条、要用户做什么，别用我们那句"通常是因为…"去盖掉它。
+         `warning` 是欠帧那条（站点自己的 #addproject_warning_zero_frame），`gate` 是 printError 块。 */
       const box = mk('div', 'up1-msg bad');
-      box.textContent = page.warning ? zh(page.warning) : t('up1.gate');
+      if (page.warning) {
+        box.textContent = zh(page.warning);
+      } else if (page.gate && (page.gate.title || page.gate.body)) {
+        box.appendChild(mk('b', 'up1-gate-title', zh(page.gate.title) || ''));
+        if (page.gate.body) box.appendChild(mk('div', 'up1-gate-body', zh(page.gate.body)));
+      } else {
+        box.textContent = t('up1.gate');
+      }
       slot.appendChild(box);
       return;
     }
@@ -423,8 +432,16 @@
       buildEst(est);
       buildRules(rules, html);
     } else {
+      /* 闸门命中（维护/没头像/并发/欠帧）：估算器与须知都无从谈起。**连面板标题一起收掉** ——
+         只清内容会留下两个空壳标题，看着像页面坏了（2026-10-07 桩验截图抓到的）。 */
       est.textContent = '';
       rules.textContent = '';
+      [est, rules].forEach((el) => {
+        const panel = el.closest ? el.closest('.panel') : null;
+        if (panel) panel.hidden = true;
+      });
+      const src = root.querySelector('.up-src');
+      if (src) src.hidden = true;
     }
     return true;
   }

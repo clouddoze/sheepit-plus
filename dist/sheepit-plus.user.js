@@ -1556,6 +1556,25 @@
       [/^Warning, files not found:$/, '警告：这些文件找不到：'],
       [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
       [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
+      /* 上传页的前置闸门。两条来源，文案逐字抄自上游源码：
+         ① 页面 /getstarted 的 printError（HTML.php:2022-2045，命中即提前 return、不给表单）；
+         ② POST /project/internal/upload 的纯文本理由（ProjectController.php:1108-1125）。
+         两处的同一句话时态不同（"have been set" vs "has been set"），用正则一起吃。 */
+      [/^Server in maintenance, you can't add a project\.\s*(.*)$/, '站点正在维护，暂时不能添加项目。 $1'],
+      [/^You can't add a project, yet\.$/, '现在还加不了项目。'],
+      [/^Oh no!$/, '哦不！'],
+      /* POST 那条纯文本是"标题 + 正文"拼成一句（页面上是 h2 + p 两块），单独一条兜住。 */
+      [/^You can't add a project, yet\.\s*Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '现在还加不了项目。我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^You can not add a project because you have exceeded your limit of concurrent projects\..*Your current limit is (\d+) projects\.$/,
+        '你正在进行中的项目已经到上限，暂时加不了新项目。站点设这个上限是为了不让一个人的项目把农场压满；等其中一个项目渲染完，就能再加。你当前的上限是 $1 个项目。'],
+      [/^You can not add a project because an admin explicitly disabled it for your account\.\s*If you think it is a mistake, contact us on Discord\.$/,
+        '管理员明确关掉了你添加项目的权限。如果你认为这是误操作，请在 Discord 上联系我们。'],
+      [/^SheepIt is a renderfarm kept alive thanks to the community\.\s*You have rendered less than 10 frames\..*You must have rendered at least 10 frames to be able to add a project\.$/,
+        '羊场靠社区贡献活着。你还没渲染够 10 帧 —— 不要求每个人都渲染得和索取的一样多，但每一份贡献都算数。至少要渲染满 10 帧才能添加项目。'],
+      [/^Internal error, please retry to upload your file$/, '站点内部错误，请重试上传。'],
     ],
   });
 })();
@@ -2646,8 +2665,11 @@ ${Theme.css('#sp')}
 #sp .farm .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 #sp .farm .row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
 #sp .farm .v{font-size:18px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;line-height:1.1}
-/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。 */
-#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:none}
+/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。
+   但**必须能收缩**：窄窗口下格子只有 166px 宽，固定 160px 的线加数值会溢出格右边缘、
+   被邻格盖住（实测溢出 43–77px）。flex-shrink:1 + min-width:0 让它按剩余空间缩，
+   宽格子时仍由 max-width 顶在 160px。 */
+#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:1 1 auto;min-width:0}
 @media (max-width:860px){
   #sp .farm{grid-template-columns:repeat(2,minmax(0,1fr))}
   #sp .farm div:nth-child(3){border-left:none}
@@ -3171,6 +3193,9 @@ ${Theme.css('#sp')}
 #sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+/* 站点 printError 那块：标题一行 + 正文（"没头像就去账户页传一张"这类可操作指引在正文里） */
+#sp .up1-msg .up1-gate-title{display:block;font-weight:600}
+#sp .up1-msg .up1-gate-body{margin-top:5px}
 /* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
 #sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
 #sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
@@ -5594,12 +5619,16 @@ ${Theme.css('#sp')}
       }
     };
     walk(scope);
-    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎 */
+    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎。
+       但**词典里有整句译文的句子不许并**：并完就成了 "EXR output detected Limitation on EXR support:"，
+       两边各自的 pattern 都匹配不上，于是整段留在英文（EXR 清单实测踩到）。 */
+    const known = (x) => !!(SP.I18n && SP.I18n.siteText && SP.I18n.siteText(x));
     const merged = [];
     out.forEach((s) => {
       const last = merged[merged.length - 1];
-      if (last && last.length < 40 && !/[.。:：]$/.test(last)) merged[merged.length - 1] = last + ' ' + s;
-      else merged.push(s);
+      if (last && last.length < 40 && !/[.。:：]$/.test(last) && !known(last) && !known(s)) {
+        merged[merged.length - 1] = last + ' ' + s;
+      } else merged.push(s);
     });
     return merged;
   }
@@ -5847,15 +5876,21 @@ ${Theme.css('#sp')}
     if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }), raw: text };
     const body = text.trim();
     if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
-    return { ok: false, message: messageFrom(body) || body.slice(0, 400), raw: body };
+    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400), raw: body };
   }
 
-  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。 */
+  /** 站点原文（错误体 / 纯文本理由）上屏前先过一遍中文字典；未命中就保持原文，
+      所以英文界面与站点新写的句子都不会被吃掉。 */
+  const zh = (s) => (SP.I18n && SP.I18n.siteText ? (SP.I18n.siteText(s) || s) : s);
+
+  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。
+      站点那几句纯文本理由里带 `<br>`（"…projects.<br>The limit have been set…"），
+      直接扔给 DOMParser 会把两段粘成 "projects.The limit" —— 换行处要先补空格。 */
   function messageFrom(html) {
     const s = str(html);
     if (!s.trim()) return '';
     if (/^(missing parameter|Failed to add project)$/i.test(s.trim())) return s.trim();
-    const d = parseDoc(s);
+    const d = parseDoc(s.replace(/<br\s*\/?>/gi, ' '));
     const box = d.querySelector('p.error, .error, .alert');
     const src = box || d.body;
     if (!src) return '';
@@ -5884,10 +5919,10 @@ ${Theme.css('#sp')}
        'Internal error, please retry to upload your file' */
     if (/^\s*<(!doctype|html)/i.test(text)) {
       if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
-      return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+      return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
     }
     if (/addproject_content_|id="token"/.test(text)) return { kind: 'done', html: text };
-    return { kind: 'error', message: messageFrom(text) || t('up3x.analyseOdd') };
+    return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
   }
 
   /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
@@ -5929,10 +5964,19 @@ ${Theme.css('#sp')}
       const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
       if (tk) return { ok: true, token: tk[1] };
     }
-    return { ok: false, message: messageFrom(text) || t('up3x.uploadOdd'), raw: text };
+    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd'), raw: text };
   }
 
   /* ------------------------------------------------------------- 「原版」用 */
+
+  /** 站点用 <br> 断句：直接取 textContent 会把两段粘成 "projects.The limit"。
+      先把 <br> 换成空格再取，顺带折掉多余空白。 */
+  function brText(el) {
+    if (!el) return '';
+    const c = el.cloneNode(true);
+    [].slice.call(c.querySelectorAll('br')).forEach((b) => b.replaceWith(' '));
+    return c.textContent.replace(/\s+/g, ' ').trim();
+  }
 
   /** /getstarted 那一页：上传表单在不在、站点是不是拦住了（HTML.php:2091-2108）。 */
   function uploadPage(html) {
@@ -5940,6 +5984,17 @@ ${Theme.css('#sp')}
     const form = d.querySelector('form[action*="/project/internal/upload"]');
     const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
+    /* 站点在 printError()（HTML.php:1637）里写的是"为什么没有表单"：维护中 / 没头像 /
+       并发上限 / ACL 被禁，四条都走它，而 printError 是提前 return 的 —— 页面上就只剩这一块。
+       形状：section.slice.color-one → .text-center → h2（带 fa-warning 图标标题）+ p（正文）。 */
+    const gate = (function () {
+      const h2 = d.querySelector('section.slice.color-one .text-center h2');
+      if (!h2) return null;
+      const p = h2.parentElement && h2.parentElement.querySelector('p');
+      const title = brText(h2).replace(/^\s*/, '');
+      const body = brText(p);
+      return (title || body) ? { title, body } : null;
+    })();
     const note = (function () {
       const cell = form && form.querySelector('input[name="addproject_archive"]');
       const td = cell && cell.closest('td');
@@ -5948,7 +6003,8 @@ ${Theme.css('#sp')}
     const lim = limitOf(note);
     return {
       hasForm: !!form,
-      warning: warn ? warn.textContent.replace(/\s+/g, ' ').trim() : '',
+      warning: warn ? brText(warn) : '',
+      gate,
       note,
       /* 上限文案（"Max: 2,048 MB"）在本地就能拦住选错的文件 —— 拿在手里只用来拼提示等于白解析。
          站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
@@ -6082,9 +6138,18 @@ ${Theme.css('#sp')}
   function buildForm(slot, page, html) {
     slot.textContent = '';
     if (!page.hasForm) {
-      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限…），原文照译 */
+      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限/ACL…），**原文照译**：
+         站点在 printError 里写清了是哪一条、要用户做什么，别用我们那句"通常是因为…"去盖掉它。
+         `warning` 是欠帧那条（站点自己的 #addproject_warning_zero_frame），`gate` 是 printError 块。 */
       const box = mk('div', 'up1-msg bad');
-      box.textContent = page.warning ? zh(page.warning) : t('up1.gate');
+      if (page.warning) {
+        box.textContent = zh(page.warning);
+      } else if (page.gate && (page.gate.title || page.gate.body)) {
+        box.appendChild(mk('b', 'up1-gate-title', zh(page.gate.title) || ''));
+        if (page.gate.body) box.appendChild(mk('div', 'up1-gate-body', zh(page.gate.body)));
+      } else {
+        box.textContent = t('up1.gate');
+      }
       slot.appendChild(box);
       return;
     }
@@ -6450,8 +6515,16 @@ ${Theme.css('#sp')}
       buildEst(est);
       buildRules(rules, html);
     } else {
+      /* 闸门命中（维护/没头像/并发/欠帧）：估算器与须知都无从谈起。**连面板标题一起收掉** ——
+         只清内容会留下两个空壳标题，看着像页面坏了（2026-10-07 桩验截图抓到的）。 */
       est.textContent = '';
       rules.textContent = '';
+      [est, rules].forEach((el) => {
+        const panel = el.closest ? el.closest('.panel') : null;
+        if (panel) panel.hidden = true;
+      });
+      const src = root.querySelector('.up-src');
+      if (src) src.hidden = true;
     }
     return true;
   }
@@ -8418,7 +8491,14 @@ ${Theme.css('#sp')}
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (m && m[1] !== state.view) show(m[1]);
+    if (!m || m[1] === state.view) return;
+    /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
+       留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
+    if (m[1] === 'upload' && state.uploadMode !== 'new') {
+      history.replaceState(null, '', ROUTES[state.view] || location.pathname);
+      return;
+    }
+    show(m[1]);
   });
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
@@ -8459,7 +8539,9 @@ ${Theme.css('#sp')}
 
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
-      if (ROUTES[v]) state.view = v;
+      /* #/upload 是应用内的上传页 —— 只属于「新版」档。off/raw 档那一页归站点自己，
+         手打 hash 不该越档（2026-10-07 实报：raw 档下 #/upload 照样画新版上传页）。 */
+      if (ROUTES[v] && (v !== 'upload' || state.uploadMode === 'new')) state.view = v;
     }
 
     /* 项目管理页：站点没给出项目那一块（项目不存在 / 无权查看 → 站点自己那张 Forbidden 页）
