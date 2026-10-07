@@ -1157,15 +1157,20 @@
   function pageFor(view) {
     const me = state.userName;
     if (!me) return null;
-    if (view === 'account') return `/user/${encodeURIComponent(me)}/edit`;
-    if (view === 'upload') return state.uploadMode === 'new' ? '/getstarted' : null;
+    const onProfile = /^\/user\/[^/]+\/profile$/.test(location.pathname);
+    /* 账户设置与主页那一族一样**留在主页地址上**（用户 2026-10-07：账户设置也别改地址，地址还是
+       那个 profile 的）——它的数据本来就走 fetchPage('/user/<me>/edit')，不需要换页。
+       已经在自己的 edit 页上（站点自己的链接进来的）也不动。 */
+    if (view === 'account') {
+      if (onProfile || /^\/user\/[^/]+\/edit$/.test(location.pathname)) return location.pathname;
+      return `/user/${encodeURIComponent(me)}/profile`;
+    }
     if (view === 'overview' || view === 'projects' || view === 'ranking' || view === 'settings') {
       /* 主页那一族：**任何人的**主页都算（在别人主页上看总览/项目是既有能力，别跳回自己主页）。
          不在主页上（会话页 / 项目管理页 / 上传页…）才回自己的主页。 */
-      return /^\/user\/[^/]+\/profile$/.test(location.pathname)
-        ? location.pathname
-        : `/user/${encodeURIComponent(me)}/profile`;
+      return onProfile ? location.pathname : `/user/${encodeURIComponent(me)}/profile`;
     }
+    if (view === 'upload') return state.uploadMode === 'new' ? '/getstarted' : null;
     return null;
   }
 
