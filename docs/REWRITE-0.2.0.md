@@ -424,10 +424,58 @@
 - **删除项目没在真机上点过**（不可逆）：端点与站点自己的垃圾桶按钮同一个（上一期已实测过
   `remove_no_redirect` 的删除+404 效果），但自绘按钮 → confirm → 导航这条链路只有代码级核对。
 
-### 10.3 还欠的（后续重写）
+### 10.3 已补完（0.2.2 第二片：整页自绘，搬节点那套路整条删掉）
 
-- 权限（管理员 ACL）/ 渲染者白名单（人 + 团队）仍借站点的控件；`showjob.js` 的端点已查清：
-  `/acl/manager/user/{add,del}/<login>`、`/acl/renderer/user/{add,del}/<login>`、
-  `/acl/renderer/team/{add,del}/<team id>`（团队发**数字 id**，用户发 **login**），
-  自动补全源是 `/user/list_from_term` 与 `/team/list_from_term`。
-- 暂停 / 继续 / 重置 / 部分存档仍在站点那一行图标按钮里（`projectAction(id, resume|pause|reset)`）。
+用户 2026-10-07 明确：「现在只是兼容适配，最终还是会像上传那样彻底重写」。于是把 10.2 那片直接推到
+终态：**数据来自那一页 HTML 的副本，站点节点一个都不进我们的壳**。
+
+- `20-api.js: parseManage(doc, id)` → 全量模型：`name / statusText / statusCls / progression /
+  summary[{label,value}] / warn / actions[{kind,url,title,disabled}] / tiles[{src,frame,cost,time,state}] /
+  video / acl{managers,renderers,teams,hasManagerPanel,hasRendererPanel,hasTeamPanel} / canManage /
+  三处设置`。概要那几条按 `标签 + <span>值</span>` 拆两段（否则 `On reference per frame rendertime:`
+  那条语言包匹配不上）；动作按 onclick 与 title 归一成 kind；**站点"活跃项目太多"时那只灰按钮**
+  （`href="#"`、没有 onclick、原因写在 title 里）也认回来并标 disabled。
+- `50-views.js`：`manageActions / manageOps / manageAcl / manageSummary / manageTiles` 五个自绘块。
+  站点没渲染的那几项**不画**；公开渲染开着时站点不渲染名单，就明说「关掉公开渲染名单才会出现」。
+- `80-app.js`：删掉 `wireManageDoc` / `parkManage` / `hideSiteOps` 与 `mgNode` / `mgAnchor`（搬活节点
+  那整套），换成 `ensureData('project')` 里的 `Api.fetchPage('/project/<id>') → DOMParser →
+  parseManage`；新增 `mgAct`（pause / resume / reset / partialframearchive）、`mgAcl`（三种名单增删）、
+  `wireManage`（名单输入框的自动补全）。
+- 删除项目那次「一载只读一次」的补丁随之作废（现在读的是副本，随便读几次都不会被我们自己改坏）。
+- 端点（`ProjectController` 的 Route 表逐个核对）：`/{id}/{pause,resume,reset}`、
+  `/{id}/action/partialframearchive`、`/{id}/acl/manager/user/{add,del}/<login>`、
+  `/{id}/acl/renderer/user/{add,del}/<login>`、`/{id}/acl/renderer/team/{add,del}/<team id>`；
+  自动补全走 `/user/list_from_term` 与 `/team/list_from_term`。
+
+**自动补全踩到的站点坑**（写进 `80-app.js` 注释）：`/user/list_from_term` 回的是 **JSON 对象**
+`{"0":"alice",…}` 而不是数组 —— 站点那边 `natcasesort()` 保留了键，`json_encode` 就把非连续数组
+编成对象了。`/team/list_from_term` 反而是正常的 `[{value: 数字 id, label: 团队名}]`。两种形状都得认。
+
+**真机验收**（`.tmp/recon/inject-page.js`：真实页面 document.write 进被 mock 的 Document，再装 dev dist；
+它取页面时带 `?spraw=1`，这样"只 mock 精确 URL 的桩规则"不会连文档一起换掉）：
+
+| 场景 | 证据 |
+|---|---|
+| 真实 finished 项目页 | 全字段解析正确（sptest.blend / Rendered / 2/2 / 概要 4 行 + 红字 / 3 个动作链接 / 帧 2 + 视频预览），视觉复核通过 |
+| 管理员增删 | `POST /acl/manager/user/add/muwyelkoai3k → OK` → 刷新后名单出现 → `POST .../del/... → OK` → 名单复原为空 |
+| 公开渲染 off/on | `POST /visibility/0 → OK`（读到**私有形态**与两个名单面板 + 团队补全建议）→ `POST /visibility/1 → OK` 复原 |
+| 暂停/继续/重置/部分存档/灰按钮/非空名单/三种帧状态 | 只有合成桩能造（真项目是 finished）：桩里 5 个动作全渲染、灰按钮带站点原因当 tooltip、alice/bob/carol/Dragon Studio 四个名单行 + 三种边框色的帧方块 |
+
+**没在真机上点的**：删除项目（不可逆，按用户规矩不点）。**注意自动化会自动接受 `window.confirm`**
+（实测：移除管理员的确认框被自动接受，POST 照发）—— 所以真实站点上永远不要用自动化去点删除按钮。
+
+### 10.4 顺带清掉的东西
+
+- `.sp-manage*` 整块 CSS（只服务"搬进来的站点节点"）→ 换成自绘的 `.mg-*`。
+- `.up-body` 下已经没有对应 DOM 的站点标记规则：`#upload_progress_bar` / `#addproject_estimator_result`
+  （29 行）/ `form table,td` 那一组 / `input-group` / `input[type=submit]` / `.note`
+  —— 0.2.0 起上传三步全自绘，这些站点 id 与表格在页面上根本不存在了。删前逐段断言、删后自查
+  花括号与注释配平（脚本 `.tmp/recon/drop-dead-upbody.mjs`）。
+- 一字不差的重复 CSS（`.fp` 小卡 + `.sp-manage` 整块 + sp-rise 动画，7170 字节，第 874-951 行与
+  第 1040-1117 行逐字节相同）删掉一份（脚本 `.tmp/recon/drop-dup-css.mjs` 自带"两段必须逐行相等"的断言）。
+
+### 10.5 还欠的
+
+- 站点那一页本身仍在文档里（我们在它上面盖一层），所以它的 JS 照旧会跑（LazyLoad / masonry 那些）。
+  要彻底不加载它，得改成不接管 `/project/<id>` 而是自己造一页 —— 那是另一个量级的改动，没做。
+
