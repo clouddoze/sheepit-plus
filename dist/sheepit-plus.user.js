@@ -8543,7 +8543,35 @@ ${Theme.css('#sp')}
     }, 180);
   }
 
+  /** 视图"该在"的那一页（pathname）。地址栏必须和内容对得上：
+      从会话页点「总览」以前只改 hash → 停在 `/session/<id>#/overview`，地址和内容对不上
+      （用户 2026-10-07 实报）。所以跨页的视图切换改成**整页导航**到它自己那一页，
+      站点那一页照旧由我们接管，hash 决定落在哪个视图（boot 里读）。
+      同一页内的视图切换（总览 ↔ 项目 ↔ 排行榜 ↔ 设置）仍走 replaceState，不重载。 */
+  function pageFor(view) {
+    const me = state.userName;
+    if (!me) return null;
+    if (view === 'account') return `/user/${encodeURIComponent(me)}/edit`;
+    if (view === 'upload') return state.uploadMode === 'new' ? '/getstarted' : null;
+    if (view === 'overview' || view === 'projects' || view === 'ranking' || view === 'settings') {
+      /* 主页那一族：**任何人的**主页都算（在别人主页上看总览/项目是既有能力，别跳回自己主页）。
+         不在主页上（会话页 / 项目管理页 / 上传页…）才回自己的主页。 */
+      return /^\/user\/[^/]+\/profile$/.test(location.pathname)
+        ? location.pathname
+        : `/user/${encodeURIComponent(me)}/profile`;
+    }
+    return null;
+  }
+
   function go(view) {
+    const want = pageFor(view);
+    if (want && want !== location.pathname) {
+      /* 主页那一族带上 hash（地址里能看出落在哪个视图）；账户设置 / 上传页**不带** ——
+         那一页本身就是那个视图，`/user/<me>/edit#/account` 这种多余后缀只会让人以为有两层。 */
+      const hash = /^\/user\/[^/]+\/profile$/.test(want) ? (ROUTES[view] || '') : '';
+      location.assign(want + hash);
+      return;
+    }
     if (ROUTES[view]) history.replaceState(null, '', ROUTES[view]);
     show(view);
   }
