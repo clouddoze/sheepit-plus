@@ -654,9 +654,10 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 账户设置（**「移除」按钮正常**＝新增的空 URL 守卫不误伤）、上传页（真 `/getstarted` 捕获上渲染自绘卡片 + 估算器守卫文案）；
 第三步四个形态（降噪 / EXR / 多 `.blend` / 指纹过期）全部复现。跑法见 `docs/CLEANUP-AUDIT.md` §十（`tools/harness.mjs` + `.tmp/recon/step3-standalone.mjs`）。
 
-**仍未验**：估算器「推荐这么切」那行的绿色（`--positive`）——它要站点 `/project/estimator` 返回结果才渲染，本地夹具没有该端点（改动只是一行 CSS 颜色，静态已核）；真站装机复验、防闪守卫 race 仍按「七」的清单走。
+**仍未验**：估算器「推荐这么切」那行的取色（`--positive`）——它要站点 `/project/estimator` 返回结果才渲染，本地夹具没有该端点。2026-10-08 曾在真站上用 document mock 跑通整条估算链路（真实返回 112,960 积分 + 16 行切块方案），但**被用户装着的另一个实例盖掉、画面归属不可信，结论作废**；教训与复验配方记在 `docs/CLEANUP-AUDIT.md` §十「真站上试跑估算器这一趟」。
 
-**发布动作**：本版**尚未发布**，等用户点头。发布时按「四」的流程：`node build.mjs` → `.tmp/make-stage.mjs` → `.tmp/critique/gf-fill.js` 在 `/zh-CN/scripts/598624/versions/new` 填表（提交前复算 `script_version[code]` 的 SHA-256）→ 提交；`changelog.md` 已改写成当版内容。
+**发布动作**：**本版不单独发布，累计到下一次**（用户 2026-10-08 决定）。也就是说 0.2.2 → 下一版之间会一起带上：本次清理 + 缺陷修复 + 注释去重，以及后续的第三批（B5/B2/B11 三个修复与零风险删除）。
+届时按「四」的流程一次发：`node build.mjs` → `.tmp/make-stage.mjs` → `.tmp/critique/gf-fill.js` 填表（提交前复算 `script_version[code]` 的 SHA-256）→ 提交；`changelog.md` 要改写成**这一整段**的内容（现在的草稿只写了 0.2.3 的清理，累计后需覆盖第三批）。
 
 ### 0.2.2（2026-10-07 已发布）
 
