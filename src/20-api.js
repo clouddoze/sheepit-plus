@@ -176,6 +176,11 @@
     const table = tableAfter(headingByText(doc, /^session\s*information$/i));
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
+        /* 只认这张表**自己的**行。站点把 `Current frames` 画成「td 里再嵌一张表」
+           （running.html.twig:381-400），那种内层 tr 没有 th，会被下面"没有 th = 状态行"的判据
+           误吃成 note —— 机器明明在渲染，界面上却把 `project: … frame: …` 当成一种状态
+           （会话页的状态 chip 与在线机器那一格都会显示这段作业文本）。 */
+        if (tr.closest('table') !== table) continue;
         const th = tr.querySelector('th');
         const tds = [...tr.querySelectorAll('td')];
         if (!tds.length) continue;

@@ -186,12 +186,7 @@
       'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 这几条说的是**这个用户自己客户端**的状态（"Connected as 你" 框里），不是全站队列。 */
-      'status.idle': '客户端待命中',
-      'status.rendering': '正在渲染',
-      'status.renderingFor': '正在为 {user} 渲染',
-      'status.disconnected': '客户端未连接',
-      'hero.statusRaw': '站点原文：{raw} —— 指你自己客户端的状态，不是全站队列',
+      /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
       'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
@@ -254,6 +249,9 @@
       'machines.open': '查看会话', 'machines.unknown': '未识别机型',
       'machines.created': '开始 {v}',
       'machines.uptime': '已连接 {v}',
+      /* 在线机器那一格的**状态**（用户 2026-10-07）。判据见 40-ui.js 的 machineDetail：
+         Current frames 那行只在站点有帧在跑时才印 → 有=渲染中、没有=等待任务。 */
+      'machines.state.rendering': '渲染中', 'machines.state.idle': '等待任务',
       /* 渲染产出：日期轴 */
       'heat.weekday': '一,三,五', 'heat.tip': '{n} 帧',
       'heat.tipOn': '有渲染', 'heat.tipOff': '没有渲染',
@@ -569,11 +567,6 @@
       'stat.streakHint': 'Best {best}d · {d30}/30 active days',
       'stat.streakFull': 'Best {best}d · every day of the last 30',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
-      'status.idle': 'Client standing by',
-      'status.rendering': 'Rendering',
-      'status.renderingFor': 'Rendering for {user}',
-      'status.disconnected': 'Client not connected',
-      'hero.statusRaw': 'Site wording: {raw} \u2014 this is your own client\u2019s state, not the farm queue',
       'stat.avgPeak': 'Avg {avg} · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
@@ -631,6 +624,7 @@
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
       'machines.created': 'Started {v}',
       'machines.uptime': 'Connected {v}',
+      'machines.state.rendering': 'Rendering', 'machines.state.idle': 'Waiting for work',
       'heat.weekday': 'Mon,Wed,Fri', 'heat.tip': '{n} frames',
       'heat.tipOn': 'Rendered', 'heat.tipOff': 'No rendering',
       'nav.account': 'Account',

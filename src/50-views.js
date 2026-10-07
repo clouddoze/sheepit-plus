@@ -84,21 +84,9 @@
     return packLabel('why', s);
   }
 
-  const STATUS_RULES = [
-    [/^waiting to render/i, () => t('status.idle')],
-    [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
-    [/^rendering\b/i, () => t('status.rendering')],
-    [/^(disconnected|not connected|offline)/i, () => t('status.disconnected')],
-  ];
-  function statusText(raw) {
-    const s = String(raw || '').trim();
-    if (!s) return '';
-    for (const [re, fn] of STATUS_RULES) {
-      const m = s.match(re);
-      if (m) return fn(m);
-    }
-    return s;
-  }
+  /* 站点主页那个「Connected as …」框里的客户端状态（Waiting to render / Rendering for X / …）
+     **不再画**（用户 2026-10-07）：说的是"你自己客户端"的状态，现在在线机器那块把每台机器的
+     真实状态（等待任务 / 渲染中 / 暂停）逐台说清了，身份条上这一格只会重复且容易误读。 */
 
   /* ==== 我的项目（个人主页那张表，两处共用） ====
      数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
@@ -237,13 +225,13 @@
     const badge = packLabel('badge', p.badge, true);
     const team = statOf(st, ['Team']).trim().toUpperCase();
     const joined = isoDate(statOf(st, ['Registration']));
-    const status = statusText(p.status);
+    /* 站点那个「Connected as …」的客户端状态**不画**（用户 2026-10-07，见上面那段注释）：
+       在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (team) bits.push(`<span><b>${esc(team)}</b> ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
-    if (status) bits.push(`<span title="${esc(t('hero.statusRaw', { raw: p.status }))}">${esc(status)}</span>`);
 
     return `<div class="identity">
       ${UI.avatar(p.avatar, p.name, 'av')}

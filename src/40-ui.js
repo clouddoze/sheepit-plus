@@ -288,16 +288,21 @@
     const dev = devChips.length
       ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
     const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
-    /* **两种暂停是两件事，而且可以同时成立**（站点两行独立条件）。都只看 Action 会把它们报成
-       「运行中」（本地暂停时 Status 那格照样 Enable），所以以站点那行 note 为准；两条都在就都写出来，
-       中间用 ` · ` 分开（在线机器是紧凑数据行，这里不套 chip —— 那套语言留给会话页的身份条）。 */
+    /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
+       没有信息量）。三种状态，判据都在站点自己的页面上：
+         · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
+         · 渲染中：`Current frames` 那一行**只在 frames_processing 非空时才印**（running.html.twig:381），
+           所以"有这一行"就是正在干活；
+         · 等待任务：连着的、没暂停、也没有当前帧 —— 就是闲着等派活。 */
     const note = (d.info.note && d.info.note.value) || '';
     const pauseText = pauseKeys(note).map((k) => t(k)).join(' · ');
+    const working = !!val('currentFrames');
     const statusHtml = pauseText
       ? `<span title="${esc(t('sess.statusRaw', { raw: note }))}">${esc(pauseText)}</span>`
       : note ? `<span title="${esc(note)}">${esc(note)}</span>`
-        : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
-          : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
+        : working ? `<span>${esc(t('machines.state.rendering'))}</span>`
+          : d.running === false ? `<span>${esc(t('sess.off'))}</span>`
+            : d.running === true ? `<span>${esc(t('machines.state.idle'))}</span>` : '';
     const bits = [
       statusHtml,
       cRaw && cT && endT

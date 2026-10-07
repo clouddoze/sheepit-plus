@@ -210,12 +210,7 @@
       'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 这几条说的是**这个用户自己客户端**的状态（"Connected as 你" 框里），不是全站队列。 */
-      'status.idle': '客户端待命中',
-      'status.rendering': '正在渲染',
-      'status.renderingFor': '正在为 {user} 渲染',
-      'status.disconnected': '客户端未连接',
-      'hero.statusRaw': '站点原文：{raw} —— 指你自己客户端的状态，不是全站队列',
+      /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
       'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
@@ -278,6 +273,9 @@
       'machines.open': '查看会话', 'machines.unknown': '未识别机型',
       'machines.created': '开始 {v}',
       'machines.uptime': '已连接 {v}',
+      /* 在线机器那一格的**状态**（用户 2026-10-07）。判据见 40-ui.js 的 machineDetail：
+         Current frames 那行只在站点有帧在跑时才印 → 有=渲染中、没有=等待任务。 */
+      'machines.state.rendering': '渲染中', 'machines.state.idle': '等待任务',
       /* 渲染产出：日期轴 */
       'heat.weekday': '一,三,五', 'heat.tip': '{n} 帧',
       'heat.tipOn': '有渲染', 'heat.tipOff': '没有渲染',
@@ -593,11 +591,6 @@
       'stat.streakHint': 'Best {best}d · {d30}/30 active days',
       'stat.streakFull': 'Best {best}d · every day of the last 30',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
-      'status.idle': 'Client standing by',
-      'status.rendering': 'Rendering',
-      'status.renderingFor': 'Rendering for {user}',
-      'status.disconnected': 'Client not connected',
-      'hero.statusRaw': 'Site wording: {raw} \u2014 this is your own client\u2019s state, not the farm queue',
       'stat.avgPeak': 'Avg {avg} · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
@@ -655,6 +648,7 @@
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
       'machines.created': 'Started {v}',
       'machines.uptime': 'Connected {v}',
+      'machines.state.rendering': 'Rendering', 'machines.state.idle': 'Waiting for work',
       'heat.weekday': 'Mon,Wed,Fri', 'heat.tip': '{n} frames',
       'heat.tipOn': 'Rendered', 'heat.tipOff': 'No rendering',
       'nav.account': 'Account',
@@ -1760,6 +1754,11 @@
     const table = tableAfter(headingByText(doc, /^session\s*information$/i));
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
+        /* 只认这张表**自己的**行。站点把 `Current frames` 画成「td 里再嵌一张表」
+           （running.html.twig:381-400），那种内层 tr 没有 th，会被下面"没有 th = 状态行"的判据
+           误吃成 note —— 机器明明在渲染，界面上却把 `project: … frame: …` 当成一种状态
+           （会话页的状态 chip 与在线机器那一格都会显示这段作业文本）。 */
+        if (tr.closest('table') !== table) continue;
         const th = tr.querySelector('th');
         const tds = [...tr.querySelectorAll('td')];
         if (!tds.length) continue;
@@ -3743,16 +3742,21 @@ ${Theme.css('#sp')}
     const dev = devChips.length
       ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
     const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
-    /* **两种暂停是两件事，而且可以同时成立**（站点两行独立条件）。都只看 Action 会把它们报成
-       「运行中」（本地暂停时 Status 那格照样 Enable），所以以站点那行 note 为准；两条都在就都写出来，
-       中间用 ` · ` 分开（在线机器是紧凑数据行，这里不套 chip —— 那套语言留给会话页的身份条）。 */
+    /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
+       没有信息量）。三种状态，判据都在站点自己的页面上：
+         · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
+         · 渲染中：`Current frames` 那一行**只在 frames_processing 非空时才印**（running.html.twig:381），
+           所以"有这一行"就是正在干活；
+         · 等待任务：连着的、没暂停、也没有当前帧 —— 就是闲着等派活。 */
     const note = (d.info.note && d.info.note.value) || '';
     const pauseText = pauseKeys(note).map((k) => t(k)).join(' · ');
+    const working = !!val('currentFrames');
     const statusHtml = pauseText
       ? `<span title="${esc(t('sess.statusRaw', { raw: note }))}">${esc(pauseText)}</span>`
       : note ? `<span title="${esc(note)}">${esc(note)}</span>`
-        : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
-          : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
+        : working ? `<span>${esc(t('machines.state.rendering'))}</span>`
+          : d.running === false ? `<span>${esc(t('sess.off'))}</span>`
+            : d.running === true ? `<span>${esc(t('machines.state.idle'))}</span>` : '';
     const bits = [
       statusHtml,
       cRaw && cT && endT
@@ -4038,21 +4042,9 @@ ${Theme.css('#sp')}
     return packLabel('why', s);
   }
 
-  const STATUS_RULES = [
-    [/^waiting to render/i, () => t('status.idle')],
-    [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
-    [/^rendering\b/i, () => t('status.rendering')],
-    [/^(disconnected|not connected|offline)/i, () => t('status.disconnected')],
-  ];
-  function statusText(raw) {
-    const s = String(raw || '').trim();
-    if (!s) return '';
-    for (const [re, fn] of STATUS_RULES) {
-      const m = s.match(re);
-      if (m) return fn(m);
-    }
-    return s;
-  }
+  /* 站点主页那个「Connected as …」框里的客户端状态（Waiting to render / Rendering for X / …）
+     **不再画**（用户 2026-10-07）：说的是"你自己客户端"的状态，现在在线机器那块把每台机器的
+     真实状态（等待任务 / 渲染中 / 暂停）逐台说清了，身份条上这一格只会重复且容易误读。 */
 
   /* ==== 我的项目（个人主页那张表，两处共用） ====
      数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
@@ -4191,13 +4183,13 @@ ${Theme.css('#sp')}
     const badge = packLabel('badge', p.badge, true);
     const team = statOf(st, ['Team']).trim().toUpperCase();
     const joined = isoDate(statOf(st, ['Registration']));
-    const status = statusText(p.status);
+    /* 站点那个「Connected as …」的客户端状态**不画**（用户 2026-10-07，见上面那段注释）：
+       在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (team) bits.push(`<span><b>${esc(team)}</b> ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
-    if (status) bits.push(`<span title="${esc(t('hero.statusRaw', { raw: p.status }))}">${esc(status)}</span>`);
 
     return `<div class="identity">
       ${UI.avatar(p.avatar, p.name, 'av')}
