@@ -649,7 +649,12 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 
 **已过的门**：`node build.mjs`（语法 + `SP.CSS` 冒烟 + 体积/注释占比）、`.tmp/recon/probe-sort.mjs` **105 条断言全过**、`.tmp/recon/check-ui-dict.mjs` = `zh 502 / en 490`（仅那 12 条 `why.*`；退出码 1 是工具的差异报告方式，不是失败）、逐文件 `git diff` 复核。
 
-**未验（上线前补）**：浏览器桩验 —— `.tmp/recon/run-upload-matrix.ps1`、`run-step3-matrix.ps1` 与目视截图。本会话沙箱起不来 bsk daemon（写 `~/.bsk` 被拒 + 需要命名管道），这三条跑不了。改动集中在 62/68/80 的签名与死字段（grep 已确认零读者），风险低，但**未做 DOM 级验证**。
+**浏览器实测（2026-10-08，本机 Chrome，夹具方式）**：7 个视图全部正常且控制台零 JS 异常 ——
+总览（真数据）、总览空变体、项目表 21 行、会话页、排行榜 500 行、设置（**上游指纹行正常**＝删掉 `model.upstream/verified` 后 `fpRows()` 未受影响）、
+账户设置（**「移除」按钮正常**＝新增的空 URL 守卫不误伤）、上传页（真 `/getstarted` 捕获上渲染自绘卡片 + 估算器守卫文案）；
+第三步四个形态（降噪 / EXR / 多 `.blend` / 指纹过期）全部复现。跑法见 `docs/CLEANUP-AUDIT.md` §十（`tools/harness.mjs` + `.tmp/recon/step3-standalone.mjs`）。
+
+**仍未验**：估算器「推荐这么切」那行的绿色（`--positive`）——它要站点 `/project/estimator` 返回结果才渲染，本地夹具没有该端点（改动只是一行 CSS 颜色，静态已核）；真站装机复验、防闪守卫 race 仍按「七」的清单走。
 
 **发布动作**：本版**尚未发布**，等用户点头。发布时按「四」的流程：`node build.mjs` → `.tmp/make-stage.mjs` → `.tmp/critique/gf-fill.js` 在 `/zh-CN/scripts/598624/versions/new` 填表（提交前复算 `script_version[code]` 的 SHA-256）→ 提交；`changelog.md` 已改写成当版内容。
 
