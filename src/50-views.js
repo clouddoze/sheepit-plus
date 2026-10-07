@@ -529,10 +529,10 @@
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
-      <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
+      <td><span class="st ${p.statusKind}" title="${esc(statusLabel(p))}">${esc(statusLabel(p))}</span></td>
       ${pcell(p.pct, frac, frac)}
       <td>${UI.devices(p.cpu, p.gpu)}</td>
-      <td class="r num">${esc(p.memory || '—')}</td>
+      <td class="r num" title="${esc(p.memory || '—')}">${esc(p.memory || '—')}</td>
     </tr>`;
   }
 
@@ -1283,7 +1283,7 @@
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
             ${p ? pcell(p.pct, frac, frac) : '<td class="r"><span class="dash">—</span></td>'}
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
-            <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
+            <td class="r num" title="${p ? esc(p.memory || '—') : ''}">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}

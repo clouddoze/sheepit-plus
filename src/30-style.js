@@ -346,10 +346,14 @@ ${Theme.css('#sp')}
 }
 /* 进度：**条子与分数同一格**（用户 2026-10-07）。以前分数独占一列并右对齐，条子右端到数字
    之间空出近 100px（等于"列宽-条宽"再加"数字列左半截"），而项目名反被挤到截断。
-   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。 */
+   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。
+   ⚠ 分数必须**定宽**（min-width + 右对齐）：它宽度随数字位数变（498 / 500 是 29px，
+   8,439 / 11,000 是 72px），不定宽时条子右端参差不齐 —— 实测项目页 51 行右端差 42px
+   （用户 2026-10-07：「进度条也不等长」）。min-width 兜住最长的 16 字符分数，超长时盒子自己涨、
+   条子让位，绝不裁掉数字。 */
 #sp .pwrap{display:flex;align-items:center;gap:10px;min-width:0}
 #sp .pwrap .bar{flex:1 1 auto;min-width:48px}
-#sp .pwrap .frac{flex:none;font-size:11.5px;color:var(--text-3);white-space:nowrap}
+#sp .pwrap .frac{flex:0 0 auto;min-width:6.6em;text-align:right;font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
 #sp .dev{display:inline-flex;gap:4px}
@@ -360,6 +364,17 @@ ${Theme.css('#sp')}
    （实测差 129px）。给个上限 + 省略号，完整原因走 title。 */
 #sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap;display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
+/* 会话页「状态」列装的是站点给的一整句原因（"可用内存不足：需要 20 GB，现有 16 GB"）。
+   只给省略号 + 悬浮，用户读不到结果本身（2026-10-07 实报），所以这一列**换行显示全文**：
+   句子在列宽处折行，行高只对"真的长"的那几行变高。
+   ⚠ 别退回 .st 的 inline-block 默认行为：.tbl.fit .st 的 max-width:none 去掉上限后它是
+   "宽度=内容宽"，会撑出单元格被 td 的 overflow:hidden **硬裁**（没有省略号、没有换行）——这正是
+   "很别扭"的来源。这里显式给 max-width:100% + 换行，两个毛病一起治。 */
+/* 项目名过长也**换行显示全文**（用户 2026-10-07）：「既然能换行，那项目名过长也给换行了吧」。
+   与「状态」列同一个理由 —— 省略号 + 悬浮读不到名字本身。名字常是下划线连成的一长串，
+   得靠 overflow-wrap:anywhere 才断得开（不然一整个 token 撑破列宽）。 */
+#sp .tbl .pn{white-space:normal;overflow-wrap:anywhere;max-width:100%;overflow:visible;text-overflow:clip}
+#sp .tbl.dense.fit .st{white-space:normal;max-width:100%;overflow-wrap:break-word;overflow:visible;text-overflow:clip}
 @media (max-width:760px){
   #sp .tbl{min-width:660px}
   #sp .tbl th,#sp .tbl td{padding-left:12px;padding-right:12px}
@@ -607,7 +622,7 @@ ${Theme.css('#sp')}
 #sp .tbl.fit{table-layout:fixed}
 #sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
 /* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
-#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:none}
+#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:100%}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
