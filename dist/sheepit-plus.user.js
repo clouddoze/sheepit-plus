@@ -408,7 +408,29 @@
       'mg.public': '公开渲染', 'mg.publicHint': '关掉之后，只有「渲染者」名单里的人与团队能渲染这个项目。',
       'mg.del': '删除项目', 'mg.delHint': '不可撤销：项目与已渲染的帧会一起消失。',
       'mg.delConfirm': '确定删除这个项目吗？删了就回不来了。',
-      'mg.note': '这一页沿用站点自己的控件与动作（只统一了外观与文案）：改计算方式、生成 MP4、删除项目、加管理员，都直接作用在这个项目上。',
+      /* 项目管理页整页自绘：动作行 / 名单 / 概要 / 帧。站点没渲染的那几项不画。 */
+      'mg.noId': '地址里没有项目编号', 'mg.noData': '站点没有给出这一页的项目数据（站点改版了，或者你没有权限）',
+      'mg.act.frames': '查看帧图像', 'mg.act.zip': '下载帧图像', 'mg.act.video': '下载视频',
+      'mg.act.pause': '暂停', 'mg.act.resume': '继续', 'mg.act.reset': '重置', 'mg.act.partial': '申请部分帧压缩包',
+      'mg.act.disabled': '站点现在不允许这一步',
+      'mg.partialConfirm': '申请部分帧压缩包会**自动暂停**这个项目；打包好之后站点会发邮件告诉你怎么下载。'
+        + '收到之后要你自己把项目继续起来，而继续会销毁那份存档。确定要申请吗？',
+      'mg.partialOk': '已提交申请，站点打包好会发邮件', 'mg.resetConfirm': '确定重置这个项目吗？（这是管理员动作）',
+      'mg.summary': '概要', 'mg.frames': '帧', 'mg.framesN': '共 {n} 帧',
+      'mg.legend.done': '已完成', 'mg.legend.progress': '进行中', 'mg.legend.waiting': '等待中',
+      'mg.videoNote': '注意：这不是最终视频，而是降质缩略图。',
+      'mg.acl.managers': '管理员', 'mg.acl.managersHint': '名单里的人可以改这个项目的设置。',
+      'mg.acl.renderers': '渲染者', 'mg.acl.teams': '团队',
+      'mg.acl.publicOn': '现在是「公开渲染」：所有成员都能渲染这个项目。',
+      'mg.acl.publicOff': '现在只允许下面这些人（与团队）渲染。',
+      'mg.acl.teamsHint': '团队必须从建议列表里选（站点要的是团队编号，不是名字）。',
+      'mg.acl.add': '添加', 'mg.acl.remove': '移除', 'mg.acl.none': '名单还是空的',
+      'mg.delBtn': '删除',
+      'mg.acl.publicOnly': '现在是「公开渲染」：所有成员都能渲染这个项目，站点因此不渲染「渲染者名单」这一块。'
+        + '把上面「项目设置」里的公开渲染关掉，名单与添加框才会出现在这里。',
+      'mg.acl.needName': '先填一个名字', 'mg.acl.needPick': '请从建议列表里选一个团队',
+      'mg.acl.delConfirm': '把「{name}」从这个名单里移除？',
+      'mg.note': '这一页的设置、动作与名单全部由我们自绘，提交直发站点自己的接口 —— 和你原来在这一页点它们是一回事。',
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
@@ -744,7 +766,28 @@
       'mg.public': 'Renderable by all members', 'mg.publicHint': 'Turn it off and only the users and teams on your renderer list can render this project.',
       'mg.del': 'Delete project', 'mg.delHint': 'Cannot be undone: the project and its rendered frames go away.',
       'mg.delConfirm': 'Delete this project? It can NOT be undone.',
-      'mg.note': 'This page keeps the site\u2019s own controls and actions (only the look and the wording are unified): compute method, MP4, remove and managers all act on this project directly.',
+      'mg.noId': 'No project id in the URL', 'mg.noData': 'The site did not give project data for this page (layout changed, or you have no access)',
+      'mg.act.frames': 'See frames', 'mg.act.zip': 'Download frames', 'mg.act.video': 'Download video',
+      'mg.act.pause': 'Pause', 'mg.act.resume': 'Resume', 'mg.act.reset': 'Reset', 'mg.act.partial': 'Ask for a partial archive',
+      'mg.act.disabled': 'The site does not allow this right now',
+      'mg.partialConfirm': 'Asking for the partial archive will PAUSE this project; the site emails you download instructions. '
+        + 'You have to resume the project yourself afterwards, and resuming destroys that archive. Ask for it?',
+      'mg.partialOk': 'Requested \u2014 the site will email you when the archive is ready', 'mg.resetConfirm': 'Reset this project? (moderator action)',
+      'mg.summary': 'Summary', 'mg.frames': 'Frames', 'mg.framesN': '{n} frames',
+      'mg.legend.done': 'Finished', 'mg.legend.progress': 'In progress', 'mg.legend.waiting': 'Waiting',
+      'mg.videoNote': 'Note: this is not the final video. It is a reduced thumbnail.',
+      'mg.acl.managers': 'Managers', 'mg.acl.managersHint': 'People on this list can change this project\u2019s settings.',
+      'mg.acl.renderers': 'Renderers', 'mg.acl.teams': 'Teams',
+      'mg.acl.publicOn': 'Public rendering is on: every member can render this project.',
+      'mg.acl.publicOff': 'Only the users and teams below can render it.',
+      'mg.acl.teamsHint': 'Pick a team from the suggestions \u2014 the site wants the team id, not the name.',
+      'mg.acl.add': 'Add', 'mg.acl.remove': 'Remove', 'mg.acl.none': 'The list is empty',
+      'mg.delBtn': 'Delete',
+      'mg.acl.publicOnly': 'Public rendering is on: every member can render this project, so the site does not render the renderer list at all. '
+        + 'Turn public rendering off in Project settings above and the list (with its add box) appears here.',
+      'mg.acl.needName': 'Type a name first', 'mg.acl.needPick': 'Pick a team from the suggestions',
+      'mg.acl.delConfirm': 'Remove \u201c{name}\u201d from this list?',
+      'mg.note': 'Settings, actions and lists on this page are all drawn by the extension and POST straight to the site\u2019s own endpoints \u2014 the same thing the original page does.',
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
@@ -1289,8 +1332,9 @@
       'Memory used in Mbytes': '内存占用（MB）',
       'Add this blend': '添加这个 blend',
 
-      /* 项目管理页 /project/<数字>：站点把整块服务端渲染好，我们搬进壳里再翻（见 80-app.js 的 wireManageDoc）。
-         动作与 id 都不动，这里只翻文案。 */
+      /* 项目管理页 /project/<数字>：整页自绘（0.2.2 起），站点节点不进壳。这里这些词条
+         是给**解析出来的站点原文**用的（概要几行、动作按钮的 title、名单面板的占位符），
+         视图层自己那几句话走 10-core.js 的 UI 词典（mg.*）。 */
       'Administration': '项目管理',
       'Summary': '概要', 'Legend': '图例',
       'Finished': '已完成', 'In progress': '进行中', 'Waiting': '等待中',
@@ -1798,45 +1842,163 @@
       .map((p) => p.x);
   }
 
-  /* 项目管理页 /project/<id> 的**可改设置**：只读站点那一页的控件，产出一份数据模型，
-     视图层只吃模型、动作直发端点（和上传链路同一条路子 —— 站点 DOM 不是我们的状态容器）。
-     站点模板 templates/project/manage.html.twig:133-274，三处状态各有各的形态：
+  /* 项目管理页 /project/<id> 的**全量模型**：只读站点那一页（**传进来的是一份 HTML 副本**，
+     不是活文档 —— 和上传链路同一条路子），产出一份数据模型，视图层只吃模型、动作直发端点。
+     站点来源：templates/project/manage.html.twig:133-274 + src/UI/HTML.php 的 printBlend()，
+     2026-10-07 抓的真机 HTML 存在 `.tmp/recon/raw/manage-1224469-2.html`。
 
-     ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
-        （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
-        所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
-        GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
-     ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（`display_generate_mp4` 为假、或 canGenerateMp4
-        为假时站点不渲染它 → 解析出 null，视图就不画这一行）。
-     ③ 公开渲染有**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
-        + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
-        可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 而不是看 id。 */
-  function parseManage(doc) {
+     三处设置各有各的形态（坑写在下面），其余都是"照着站点自己的 id 读文本"：
+       ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+          （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+          所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+          GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+       ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（display_generate_mp4 为假时站点不渲染它）。
+       ③ 公开渲染**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+          + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+          可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 不看 id。 */
+  const MG_ACTION_TITLES = {
+    'see frames': 'frames', 'download frames': 'zip', 'download video': 'video',
+    'resume': 'resume', 'pause': 'pause', 'reset': 'reset', 'remove': 'delete',
+  };
+
+  function parseManage(doc, projectId) {
     const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
     const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+    const id = String(projectId || '');
 
+    /* ---- 标题 / 状态 / 进度 ---- */
+    const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
+    const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
+    const stCls = stEl ? ((String(stEl.getAttribute('class') || '').match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+
+    /* ---- 概要 Summary：一串 <li>，最后一条红字是"自动删除日期"（站点给的是整句）。
+       形状两种：`Storage used: 134.8 kB` 是纯文本，`On reference per frame rendertime: <span>0m00s</span>`
+       的是「标签 + span」。拆成 label/value 两段，视图那边才能分别套语言包（见 50-views 的 mgLine）。 ---- */
+    const sumHead = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(text(h).trim()));
+    const sumBox = sumHead ? sumHead.closest('.w-box') || sumHead.parentElement : null;
+    const summary = [];
+    let warn = { label: '', value: '' };
+    const pairOf = (li) => {
+      const span = li.querySelector('span');
+      if (span) {
+        const clone = li.cloneNode(true);
+        const dead = clone.querySelector('span');
+        if (dead) dead.remove();
+        return { label: text(clone).trim(), value: text(span).trim() };
+      }
+      const s = text(li);
+      const m = s.match(/^([^:]+):\s*(.+)$/);
+      return m ? { label: `${m[1]}:`, value: m[2].trim() } : { label: s, value: '' };
+    };
+    if (sumBox) {
+      for (const li of sumBox.querySelectorAll('li')) {
+        const p = pairOf(li);
+        if (!p.label && !p.value) continue;
+        if (li.querySelector('span[style*="red"]') || /automatically deleted/i.test(p.label + p.value)) warn = p;
+        else summary.push(p);
+      }
+    }
+
+    /* ---- 动作行：站点用 title 当唯一文字（图标按钮），按 title 归一成 kind ----
+       `resume` 在"活跃项目太多"时是 disabled 的 <a>（没有 onclick）→ 读出来但标记 disabled。 */
+    const box = id ? doc.getElementById(`project_job_${id}_div_actions`) : null;
+    const actions = [];
+    let canManage = false;
+    for (const a of box ? box.querySelectorAll('a') : []) {
+      const onclick = String(a.getAttribute('onclick') || '');
+      const href = String(a.getAttribute('href') || '');
+      const disabled = a.hasAttribute('disabled') || /\bdisabled\b/.test(String(a.getAttribute('class') || ''));
+      const title = String(a.getAttribute('title') || '').trim();
+      if (/remove_no_redirect/.test(onclick)) { canManage = true; continue; }
+      const partial = onclick.match(/doAskForProjectPartialArchiveFrame\('([^']+)'\)/);
+      if (partial) { actions.push({ kind: 'partial', url: partial[1], title, disabled }); continue; }
+      const act = onclick.match(/projectAction\('[^']*',\s*'([a-z_]+)'\)/);
+      if (act) {
+        const kind = MG_ACTION_TITLES[act[1]] || act[1];
+        actions.push({ kind, title, disabled });
+        continue;
+      }
+      if (!href || href === '#') {
+        /* 站点在"活跃项目太多"时渲染的是一只**没有 onclick、没有链接**的灰按钮，标题里写着原因：
+           `href="#"` + title="Resume is disabled because you have too many active projects"。
+           按 title 认回它并标 disabled —— 否则用户看到的是"这一栏什么都没有"，不知道为什么。 */
+        const low = title.toLowerCase();
+        const key = Object.keys(MG_ACTION_TITLES).find((k) => low.indexOf(k) === 0);
+        if (key) actions.push({ kind: MG_ACTION_TITLES[key], title, disabled: true });
+        continue;
+      }
+      const kind = MG_ACTION_TITLES[title.toLowerCase()] || (/\/frames\//.test(href) ? 'frames' : '');
+      if (kind === 'frames') { actions.push({ kind, url: href, title, disabled }); continue; }
+      /* 下载帧 / 下载视频是 shepherd 上的**绝对 URL**（主机名随项目变），原样留着 */
+      if (/\/zip$/.test(href) || /\/mp4\/final$/.test(href)) actions.push({ kind, url: href, title, disabled });
+    }
+
+    /* ---- 帧方块 + 视频预览：站点把 <img>/<video> 塞在 title 属性或 <source> 里 ---- */
+    const tiles = [];
+    for (const sq of doc.querySelectorAll('.tiles .square')) {
+      const raw = String(sq.getAttribute('title') || '');
+      const src = (/<img\s+src="([^"]+)"/i.exec(raw) || [])[1] || '';
+      if (!src) continue;
+      const cls = String(sq.getAttribute('class') || '');
+      const num = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
+      tiles.push({
+        src,
+        frame: num(/frame:\s*([^<]+)/i),
+        cost: num(/cost:\s*([^<]+)/i),
+        time: num(/rendertime:\s*([^<]+)/i),
+        state: /btn-warning/.test(cls) ? 'progress' : (/btn-neutral/.test(cls) ? 'done' : 'waiting'),
+      });
+    }
+    const videoEl = doc.querySelector('.tiles video source[src]');
+    const video = videoEl ? String(videoEl.getAttribute('src') || '') : '';
+
+    /* ---- 权限 / 渲染者：站点把名单渲染成 <ul><li><a>名字</a></li> ----
+       `#project_acl_team_current` 的链接是 /team/<数字 id>，名字在链接文字里（id 要从 href 抠，
+       加团队时站点发的就是那个数字 id）。公开渲染时站点**不渲染**这两份名单（只有那只 checkbox），
+       所以名单为空 ≠ 没人，视图要按 publicRender 说清。 */
+    const namesOf = (rootId) => {
+      const root = doc.getElementById(rootId);
+      if (!root) return [];
+      return [...root.querySelectorAll('li a')]
+        .map((a) => ({ name: text(a), url: Util.safePath(a.getAttribute('href')), id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '' }))
+        .filter((x) => x.name);
+    };
+    const acl = {
+      managers: namesOf('project_acl_manager_current'),
+      renderers: namesOf('project_acl_renderer_current'),
+      teams: namesOf('project_acl_team_current'),
+      hasManagerPanel: !!doc.getElementById('project_acl_manager_add_form_user'),
+      hasRendererPanel: !!doc.getElementById('project_acl_renderer_add_form_user'),
+      hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
+    };
+
+    /* ---- 设置三项（形态见文件头注释） ---- */
     let compute = '';
     for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
       if (!on(r)) continue;
       const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
       if (m) compute = m[1];
     }
-
     const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
     const pubA = doc.getElementById('project_public_render_checkbox_1');
     const pubB = doc.getElementById('project_public_render_checkbox_value');
     const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
 
     return {
+      found: !!(nameEl || box || acl.hasManagerPanel),
+      id,
+      name: nameEl ? text(nameEl) : '',
+      statusText: stEl ? text(stEl) : '',
+      statusCls: stCls.toLowerCase(),
+      progression: progEl ? text(progEl) : '',
+      summary, warn, actions, tiles, video, acl, canManage,
       compute,
       mp4: mp4Box ? on(mp4Box) : null,
       publicRender: pubEl ? on(pubEl) : null,
       hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
       hasMp4: !!mp4Box,
       hasPublic: !!pubEl,
-      /* 能不能管这个项目：站点自己的删除按钮只在 `$can_manage` 为真时渲染（printBlend 的
-         `..._action4`），直接拿它当判据 —— 自绘的删除行不该出现在别人（或只读管理员）的项目上 */
-      canManage: !!doc.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]'),
     };
   }
 
@@ -2828,18 +2990,6 @@ ${Theme.css('#sp')}
 #sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
 #sp .up-body strong{color:var(--text);font-weight:600}
 #sp .up-body a{color:var(--accent)}
-#sp .up-body #addproject_warning_zero_frame{font-size:13px}
-
-#sp .up-body form table,
-#sp .up-body form tbody,
-#sp .up-body form tr,
-#sp .up-body form td{display:block;width:auto;padding:0}
-#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
-#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
-#sp .up-body form td + td{margin-bottom:16px}
-#sp .up-body form td:last-child{margin-bottom:0}
-#sp .up-body form br + strong{color:var(--text-2)}
-
 
 #sp .up-body input[type=file]{
   display:block;width:100%;padding:11px 12px;margin:0 0 10px;
@@ -2852,30 +3002,9 @@ ${Theme.css('#sp')}
   border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
 }
 #sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
-#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
 
-#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-  transition:filter .12s;
-}
-#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
 
-/* 站点内联写死了 #EEB0A0 的底色，只能用 !important 压过去 —— 必要的例外。 */
-#sp .up-body #upload_progress_bar{
-  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
-  background:var(--surface-2) !important;border:1px solid var(--border) !important;
-}
-#sp .up-body #upload_progress_bar .ui-progressbar-value{
-  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
-}
-#sp .up-body #upload_progress_label{
-  position:static !important;text-shadow:none !important;text-align:right;
-  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
-}
 
-/* 这一行用的是 2013 版 Bootstrap 的 .input-group（table-cell + float），没管住时等效宽度
-   949px、OK 的右缘超出视口 5px；整行重声明成普通 flex 并给输入封顶。 */
 #sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
@@ -2883,57 +3012,6 @@ ${Theme.css('#sp')}
 #sp .up-body table input[type=text]{width:92px}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
-#sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
-#sp .up-body .input-group .form-control{flex:1 1 auto;min-width:0;width:auto;max-width:320px}
-#sp .up-body .input-group-btn{display:flex;flex:0 0 auto;width:auto;white-space:nowrap}
-#sp .up-body .input-group-btn > *{flex:0 0 auto}
-#sp .up-body #addproject_estimator_result{
-  font-size:12.5px;color:var(--text-2);line-height:1.7;
-  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
-}
-#sp .up-body #addproject_estimator_result:empty{display:none}
-/* 站点返回的结果表带 Bootstrap 的 .table，在深色卡片里白底白字（用户实报），整段按我们的表格重画。 */
-#sp .up-body #addproject_estimator_result table{
-  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
-  border:none !important;   /* .table-bordered 表格本身也画了一圈边框 */
-}
-#sp .up-body #addproject_estimator_result thead th,
-#sp .up-body #addproject_estimator_result th{
-  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
-  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
-}
-#sp .up-body #addproject_estimator_result td{
-  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
-  color:var(--text-2);vertical-align:baseline;
-}
-#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
-#sp .up-body #addproject_estimator_result td:last-child,
-#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
-#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
-#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
-  font-variant-numeric:tabular-nums;
-}
-#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
-#sp .up-body #addproject_estimator_result > br:first-child{display:none}
-/* 站点给耗时套了 Bootstrap 绿色小标签。调色板里没有绿色，2026-10-04 用户确认保持中性、
-   不恢复红 / 绿语义，别再翻回去。 */
-#sp .up-body #addproject_estimator_result .label{
-  background:none !important;border:none !important;color:var(--text) !important;
-  font-size:12.5px !important;font-weight:600;padding:0 !important;
-  text-shadow:none;border-radius:0;
-}
-/* 只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
-#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
-#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
-  border:none;border-bottom:1px solid var(--border);
-}
-/* 斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
-#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
-/* 站点给这些单元格写了内联的 text-align:center，只能用 !important 压过去（同类例外） */
-#sp .up-body #addproject_estimator_result th,
-#sp .up-body #addproject_estimator_result td{text-align:left !important}
-
 /* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -3057,67 +3135,37 @@ ${Theme.css('#sp')}
 #sp .fp .hint:last-child{margin-bottom:0}
 #sp .hint.bad{color:var(--accent)}
 
-/* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
-   80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
-   的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
-#sp .sp-manage{padding:18px 20px 20px;color:var(--text-2)}
-#sp .sp-manage .w-section,#sp .sp-manage .container,#sp .sp-manage .w-box,
-#sp .sp-manage .padding-15,#sp .sp-manage [class*="col-md-"]{padding:0;margin:0;background:none;border:none;box-shadow:none;max-width:none}
-/* 别改 .row 的布局方式：站点用 bootstrap 的 float 栅格，8/4 栏加起来正好 100%，
-   一旦给 .row 加 display:flex + gap，多出来的 gap 会把右栏挤到下一行（实测两栏会竖着叠）。 */
-#sp .sp-manage .row{margin:0}
-#sp .sp-manage .row::after{content:'';display:block;clear:both}
-#sp .sp-manage h2{margin:0 0 8px;font-size:14.5px;font-weight:600;color:var(--text)}
-#sp .sp-manage h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .sp-manage a{color:var(--accent);text-decoration:none}
-#sp .sp-manage a:hover{text-decoration:underline}
-#sp .sp-manage ul{padding:0;margin:0;list-style:none}
-#sp .sp-manage .meta-list{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
-#sp .sp-manage li{font-size:12.5px;color:var(--text-3);line-height:1.95}
-#sp .sp-manage .meta-list li[class^="msg_"]{font-weight:600;color:var(--text-2)}
-#sp .sp-manage .breadcrumb{display:none}
-/* 站点那几个方块本来就是「卡片」：它们的底色/边框被上面统一掉了，这里按我们的样式还回来，
-   免得整页糊成一片（Summary 与项目卡是 .w-box，右栏图例/页签是 .widget）。 */
-#sp .sp-manage .w-box,#sp .sp-manage .widget{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
-#sp .sp-manage .widget-heading{margin:0 0 10px}
-/* 图例：站点用三个 .square 当色块，色是 bootstrap 的 btn-neutral/warning/default */
-#sp .sp-manage .legend{display:flex;gap:16px;flex-wrap:wrap}
-#sp .sp-manage .legend a{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:12.5px;text-decoration:none}
-#sp .sp-manage .legend i{display:none}
-#sp .sp-manage .legend .square{width:14px !important;height:14px !important;margin:0 !important;border-radius:3px;border:none}
-#sp .sp-manage .legend .btn-neutral{background:var(--text-3)}
-#sp .sp-manage .legend .btn-warning{background:#e0a13a}
-#sp .sp-manage .legend .btn-default{background:var(--surface-3);border:1px solid var(--border-strong)}
-#sp .sp-manage div[style*="color:red"]{color:var(--accent) !important}
-#sp .sp-manage .nav-tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--border)}
-#sp .sp-manage .nav-tabs > li{margin:0}
-#sp .sp-manage .nav-tabs > li > a{display:block;padding:7px 12px;font-size:12.5px;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;text-decoration:none;color:var(--text-2)}
-#sp .sp-manage .nav-tabs > li > a:hover{text-decoration:none;color:var(--text)}
-#sp .sp-manage .nav-tabs > li.active > a{background:var(--surface-2);border-color:var(--border);color:var(--text)}
-#sp .sp-manage .btn:not(.square){font:inherit;font-size:12.5px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);cursor:pointer;box-shadow:none;text-shadow:none;text-decoration:none}
-#sp .sp-manage .btn:not(.square):hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}
-#sp .sp-manage .btn-primary:not(.square){background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
-#sp .sp-manage .btn:not(.square).btn-danger{color:var(--accent);border-color:var(--accent-weak)}
-#sp .sp-manage .btn-round i{display:none}   /* 图标是 FA4 类名、站点只装了 FA6：::before 根本没内容，留着就是空心圆 */
-/* 站点把 .btn-round 钉成 34×34 的圆（配一个根本画不出来的图标），字写进去就被裁掉 */
-#sp .sp-manage .btn-round{width:auto !important;height:auto !important;border-radius:var(--r-sm) !important;padding:6px 10px !important}
-/* 站点给 .btn.square 上了 !important 的 16×16：帧缩略图与图例色块必须跟着用 !important 才拨得动 */
-#sp .sp-manage .square{display:inline-block;width:22px !important;height:22px !important;margin:0 6px 0 0 !important;padding:0 !important;border-radius:4px;border:1px solid var(--border);vertical-align:middle;text-align:center;overflow:hidden}
-#sp .sp-manage .square img{display:block;width:100% !important;height:100% !important;object-fit:cover;border-radius:3px}
-#sp .sp-manage input[type=text],#sp .sp-manage input.form-control{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%}
-#sp .sp-manage input[type=text]::placeholder{color:var(--text-3)}
-#sp .sp-manage input[type=checkbox],#sp .sp-manage input[type=radio]{accent-color:var(--accent);margin-right:7px;vertical-align:middle}
-#sp .sp-manage label{font-size:12.5px;color:var(--text-2);margin:0}
-#sp .sp-manage .form-inline,#sp .sp-manage .checkbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#sp .sp-manage .tiles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-#sp .sp-manage .tiles .square{width:80px !important;height:60px !important;margin:0 !important}
-/* 站点给 .tab-content 铺了白底 + 边框，在暗色主题下是一块亮斑 */
-#sp .sp-manage .tab-content{background:none;border:none;padding:0;box-shadow:none}
-#sp .sp-manage .tab-pane{padding:0}
-#sp .sp-manage .tab-pane img{display:inline-block;vertical-align:middle;height:16px;margin:0 3px}
-#sp .sp-manage .tab-pane input[type=radio]{margin:0 2px 0 10px}
-#sp .sp-manage .text-right{text-align:right}
-#sp .sp-manage .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+/* ==== 项目管理页 /project/<数字>（整页自绘）====
+   数据来自 Api.parseManage(那一页 HTML 的**副本**)，站点节点一个都不进我们的壳 —— 所以这里全是
+   我们自己的类；旧的那套 .sp-manage*（给搬进来的站点节点统一外观用）已随搬节点一起删干净。 */
+#sp .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+#sp .mg-acts{margin:0 0 16px;gap:8px}
+#sp .mg-sum{margin:0;padding:0;list-style:none}
+#sp .mg-sum li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .mg-sum li::before{content:'·';margin-right:8px;color:var(--border-strong)}
+/* 帧方块：状态色跟站点自己那三个按钮类一致（已完成/进行中/等待中），悬停给 frame/cost/rendertime */
+#sp .mg-tiles{display:flex;gap:8px;flex-wrap:wrap}
+#sp .mg-tiles .tile{width:80px;height:60px;border-radius:4px;overflow:hidden;border:2px solid var(--border);background:var(--surface-2)}
+#sp .mg-tiles .tile img{width:100%;height:100%;object-fit:cover}
+#sp .mg-tiles .tile.done{border-color:var(--text-3)}
+#sp .mg-tiles .tile.progress{border-color:#e0a13a}
+#sp .mg-tiles .tile.waiting{border-color:var(--border-strong)}
+#sp .lg{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+#sp .lg i{width:11px;height:11px;border-radius:3px;flex:none}
+#sp .lg i.done{background:var(--text-3)}
+#sp .lg i.progress{background:#e0a13a}
+#sp .lg i.waiting{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .phead .lg + .lg{margin-left:12px}
+#sp .mg-video{width:100%;max-width:520px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;display:block}
+/* 名单：一行一个人 + 行内移除；下面输入框 + 建议 + 添加 */
+#sp .alist{display:flex;flex-direction:column}
+#sp .alist .arow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+#sp .alist .arow:last-child{border-bottom:none}
+#sp .alist .arow .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .alist .none{font-size:12.5px;color:var(--text-3);padding:6px 0}
+#sp .aadd{display:flex;align-items:flex-start;gap:10px;margin-top:12px;flex-wrap:wrap}
+#sp .aadd .up1-dev{flex:0 1 320px;min-width:0}
+#sp .aadd .input{width:100%}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
@@ -4891,43 +4939,145 @@ ${Theme.css('#sp')}
     </div>`;
   }
 
-  /** 项目管理页 /project/<id>：**设置区我们自绘**（状态来自 Api.parseManage，动作直发站点端点，
-   *  见 80-app.js 的 mgSet），站点那一大块只剩「权限 / 渲染者」两个页签还借它的节点。
-   *  名字 / 进度 / 状态仍从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
-  function project(state) {
-    const id = state.projectId || '';
-    const sec = document.getElementById('jobs_of_a_project');
-    const nameEl = id ? document.getElementById(`project_job_${id}_path`) : null;
-    const progEl = id ? document.getElementById(`project_job_${id}_progression`) : null;
-    const name = nameEl ? nameEl.textContent.trim() : '';
-    const prog = progEl ? progEl.textContent.trim() : '';
-    const stEl = sec && sec.querySelector('li[class^="msg_"]');
-    const stRaw = stEl ? stEl.textContent.trim() : '';
-    const stCls = stEl ? ((stEl.className.match(/msg_([a-z]+)/i) || [])[1] || '') : '';
-    const stText = stRaw ? (I18n.siteText(stRaw) || stRaw) : '';
-    const meta = [
-      name ? `<b>${esc(name)}</b>` : '',
-      prog ? `${esc(t('proj.col.progress'))} ${esc(prog)}` : '',
-      stText ? `<span class="sp-mg-badge s-${esc(stCls || 'x')}">${esc(stText)}</span>` : '',
-    ].filter(Boolean).join(' · ');
-    return `<div class="wrap">
-      <div class="sechead">
-        <h2>${esc(t('mg.title'))}</h2>
-        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+  /* ==== 项目管理页 /project/<id>：整页自绘 ====
+     数据来自 Api.parseManage(那份 HTML **副本**)——站点 DOM 一个节点都不进我们的壳，
+     动作直发站点端点（见 80-app.js 的 mgSet / mgAct / mgAcl）。站点没渲染的那几项不画，
+     不猜默认值：少一行比编一个错的强。 */
+
+  const MG_ACTION_KEY = {
+    frames: 'mg.act.frames', zip: 'mg.act.zip', video: 'mg.act.video',
+    pause: 'mg.act.pause', resume: 'mg.act.resume', reset: 'mg.act.reset', partial: 'mg.act.partial',
+  };
+
+  const mgActLabel = (a) => t(MG_ACTION_KEY[a.kind]);
+
+  function manageActions(m) {
+    const acts = (m.actions || []).filter((a) => MG_ACTION_KEY[a.kind]);
+    if (!acts.length) return '';
+    const one = (a) => {
+      const label = esc(mgActLabel(a));
+      const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
+      if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
+      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
+    };
+    return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
+  }
+
+  /** 站点那种「标签：值」两段式（`<li><span>值</span></li>` 与纯文本都在用）：
+   *  整句先按语言包翻（带捕获组的 patterns 走这条），翻不动再退回只翻标签。
+   *  红字那条 li 整句都在 span 里（label 为空），所以两段都要 trim、不能拼出前导空格。 */
+  function mgLine(label, value) {
+    const L = String(label || '').trim();
+    const V = String(value || '').trim();
+    const whole = [L, V].filter(Boolean).join(' ');
+    if (!whole) return '';
+    const one = I18n.siteText(whole);
+    if (one) return one;
+    const two = L ? I18n.siteText(L) : null;
+    return two ? [two.trim(), V].filter(Boolean).join(' ') : whole;
+  }
+
+  function manageSummary(m) {
+    if (!m.summary.length && !(m.warn && (m.warn.label || m.warn.value))) return '';
+    const rows = m.summary.map((s) => `<li>${esc(mgLine(s.label, s.value))}</li>`).join('');
+    const warn = m.warn ? mgLine(m.warn.label, m.warn.value) : '';
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.summary'))}</h2></div>
+      <div class="pbody">
+        ${rows ? `<ul class="mg-sum">${rows}</ul>` : ''}
+        ${warn ? `<div class="hint bad" style="margin:${rows ? '10px' : '0'} 0 0">${esc(warn)}</div>` : ''}
       </div>
-      ${manageOps(state)}
-      <div class="sp-manage" id="sp-mg-host"></div>
-      <div class="hint">${esc(t('mg.note'))}</div>
-      <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
 
-  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假），
-   *  不猜默认值 —— 少一行比编一个错的强。 */
-  function manageOps(state) {
-    const m = state.mg;
-    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic)) return '';
-    const id = state.projectId || '';
+  /** 帧方块：站点的方块没有背景（缩略图塞在 title 属性里，由解析器抠出来），状态色取它自己的
+   *  btn-neutral / btn-warning / btn-default。悬停给 frame / cost / rendertime 那三行。 */
+  function manageTiles(m) {
+    if (!m.tiles.length && !m.video) return '';
+    const tiles = m.tiles.map((x) => `<span class="tile ${esc(x.state)}" title="${esc([
+      x.frame ? `frame: ${x.frame}` : '', x.cost ? `cost: ${x.cost}` : '', x.time ? `rendertime: ${x.time}` : '',
+    ].filter(Boolean).join(' · '))}">
+        <img src="${esc(x.src)}" alt="" loading="lazy">
+      </span>`).join('');
+    const legend = [['done', t('mg.legend.done')], ['progress', t('mg.legend.progress')], ['waiting', t('mg.legend.waiting')]]
+      .map(([k, label]) => `<span class="lg"><i class="${esc(k)}"></i>${esc(label)}</span>`).join('');
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead"><h2>${esc(t('mg.frames'))}</h2>
+        <span class="sub num">${esc(t('mg.framesN', { n: m.tiles.length }))}</span>
+        <span class="spacer"></span>${legend}</div>
+      <div class="pbody">
+        ${tiles ? `<div class="mg-tiles">${tiles}</div>` : ''}
+        ${m.video ? `<video class="mg-video" controls preload="none" src="${esc(m.video)}"></video>
+          <div class="hint" style="margin:8px 0 0">${esc(t('mg.videoNote'))}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 名单面板（管理员 / 渲染者 / 团队共用）：一行一个人 + 行内移除；下面一个输入框 + 建议 + 添加。
+   *  团队那边站点要的是**数字 id**，所以必须从建议里选（选了才把 id 记在 input 的 data-pick 上）。 */
+  function aclPanel(title, hint, rows, o) {
+    const list = rows.length
+      ? rows.map((x) => `<div class="arow">
+          <span class="nm">${x.url ? `<a href="${esc(x.url)}" target="_self">${esc(x.name)}</a>` : esc(x.name)}</span>
+          <button class="btn sm" data-acl-del="${esc(o.kind)}" data-name="${esc(x.name)}" data-id="${esc(x.id || '')}">${esc(t('mg.acl.remove'))}</button>
+        </div>`).join('')
+      : `<div class="none">${esc(t('mg.acl.none'))}</div>`;
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(title)}</h2><span class="sub">${esc(hint)}</span></div>
+      <div class="pbody">
+        <div class="alist">${list}</div>
+        <div class="aadd">
+          <div class="up1-dev">
+            <label class="input"><input id="${esc(o.input)}" type="text" autocomplete="off" spellcheck="false"
+              placeholder="${esc(o.placeholder)}" data-acl-input="${esc(o.kind)}"></label>
+            <div class="up1-sug" hidden></div>
+          </div>
+          <button class="btn primary" data-acl-add="${esc(o.kind)}" data-input="${esc(o.input)}">${esc(t('mg.acl.add'))}</button>
+        </div>
+        <div class="hint" data-acl-msg="${esc(o.kind)}" hidden></div>
+      </div>
+    </div>`;
+  }
+
+  function manageAcl(m) {
+    const out = [];
+    if (m.acl.hasManagerPanel) {
+      out.push(aclPanel(t('mg.acl.managers'), t('mg.acl.managersHint'), m.acl.managers, {
+        kind: 'manager', input: 'sp-acl-manager',
+        placeholder: I18n.siteText('Add a user to manager list') || 'Add a user to manager list',
+      }));
+    }
+    if (m.acl.hasRendererPanel || m.acl.hasTeamPanel) {
+      const hint = m.publicRender === true ? t('mg.acl.publicOn') : t('mg.acl.publicOff');
+      const body = [];
+      if (m.acl.hasRendererPanel) {
+        body.push(aclPanel(t('mg.acl.renderers'), hint, m.acl.renderers, {
+          kind: 'renderer', input: 'sp-acl-renderer',
+          placeholder: I18n.siteText('Add a user to renderer list') || 'Add a user to renderer list',
+        }));
+      }
+      if (m.acl.hasTeamPanel) {
+        body.push(aclPanel(t('mg.acl.teams'), t('mg.acl.teamsHint'), m.acl.teams, {
+          kind: 'team', input: 'sp-acl-team', pick: true,
+          placeholder: I18n.siteText('Add a team to renderer list') || 'Add a team to renderer list',
+        }));
+      }
+      out.push(body.join(''));
+    } else if (m.publicRender === true) {
+      /* 站点自己的规矩：公开渲染开着时，那一页**根本不渲染**渲染者名单（只有一只 checkbox），
+         所以这里不是"没人"，而是"站点不给名单"。关掉公开渲染名单才会出现 —— 说清楚，别让人以为丢了。 */
+      out.push(`<div class="panel" style="margin-top:16px">
+        <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.acl.renderers'))}</h2></div>
+        <div class="pbody"><p class="hint" style="margin:0">${esc(t('mg.acl.publicOnly'))}</p></div>
+      </div>`);
+    }
+    return out.join('');
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假）。 */
+  function manageOps(m, id) {
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic && !m.canManage)) return '';
     const sw = (kind, on, onState, title, hint) => `<label class="sw">
       <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
         data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
@@ -4949,10 +5099,35 @@ ${Theme.css('#sp')}
         ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
         ${!id || !m.canManage ? '' : `<div class="mg-row danger">
           <div class="k">${esc(t('mg.del'))}</div>
-          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.delBtn'))}</button>
           <small>${esc(t('mg.delHint'))}</small>
         </div>`}
       </div>
+    </div>`;
+  }
+
+  function project(state) {
+    const m = state.mg;
+    if (!m || !m.found) return UI.state.empty(t('mg.noData'));
+    const id = state.projectId || m.id || '';
+    const stText = m.statusText ? (I18n.siteText(m.statusText) || m.statusText) : '';
+    const meta = [
+      m.name ? `<b>${esc(m.name)}</b>` : '',
+      m.progression ? `${esc(t('proj.col.progress'))} ${esc(m.progression)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(m.statusCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      ${manageActions(m)}
+      ${manageOps(m, id)}
+      ${manageAcl(m)}
+      ${manageSummary(m)}
+      ${manageTiles(m)}
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
 
@@ -6816,8 +6991,8 @@ ${Theme.css('#sp')}
     if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
-    /* 项目管理页 /project/<数字>：站点把那一大块服务端渲染好了，我们**搬活节点**进来
-       （见 wireManageDoc）——站点的 id 与内联 onclick 全不动，动作函数照旧可用。 */
+    /* 项目管理页 /project/<数字>：整页自绘。数据是那一页 HTML 的**副本**（Api.fetchPage →
+       DOMParser → Api.parseManage），动作直发站点端点 —— 站点节点一个都不进我们的壳。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
     // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
@@ -7033,14 +7208,7 @@ ${Theme.css('#sp')}
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
-    else if (state.view === 'project') {
-      /* 设置状态**这一载只读一次**：站点那一页是服务端渲染的真相，而读完之后 wireManageDoc 会把
-         站点那份重复控件藏掉、整只「操作」页签去掉 —— 再读就读不到了（实测：第二次 render 把
-         hasCompute/mp4 读成 false，自绘区跟着塌掉两行）。写操作成功后整页重载，所以不存在
-         "页面生命周期内站点状态变了而我们不知道"的情况。 */
-      if (!state.mg) state.mg = Api.parseManage(document);
-      html = Views.project(state);
-    }
+    else if (state.view === 'project') html = Views.project(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -7050,16 +7218,14 @@ ${Theme.css('#sp')}
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
-    /* 搬/借来的活节点先送回原位，别被下面这行连同旧 host 扔掉 */
-    parkManage();   // 管理页那一整块（站点的活节点）
-    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）
+    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）要先送回原位
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染
-    if (state.view === 'project') wireManageDoc(body);
+    if (state.view === 'project') wireManage(body);   // 名单输入框的自动补全
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -7245,123 +7411,10 @@ ${Theme.css('#sp')}
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
 
-  /* ---- 3.6 项目管理页 /project/<数字>：把站点那一大块**搬**进我们的壳 ----------------
-     站点把这一页服务端渲染好了（#jobs_of_a_project + 右侧图例/页签），动作全是内联 onclick
-     调它的全局函数（projectAction / doModifyComputeMethod / doModifyAttributeFromCheckbox /
-     doAddACLUserProjectManage）。所以搬**活节点**、不重新 fetch、不重建结构：id 与 onclick 原样
-     保留，站点脚本照旧能找到它们；我们只加外观与翻译。 */
-  let mgNode = null;    // 站点那一整块 .w-section
-  let mgAnchor = null;  // 它在原页里的锚（注释节点）：render() 前先把它送回去
-
-  /** render() 会重写 #sp-body.innerHTML：搬过来的活节点必须先送回原处，否则会被一起扔掉 */
-  function parkManage() {
-    if (mgNode && mgAnchor && mgNode.parentNode !== mgAnchor.parentNode) {
-      mgAnchor.parentNode.insertBefore(mgNode, mgAnchor.nextSibling);
-    }
-  }
-
-  /* 设置区自绘之后，站点那一份「计算方式 / MP4」就是重复的：先把这两块藏掉（用 style，不用
-     [hidden] —— #sp 里已有 display:flex 之类的规则压过 [hidden]，这个坑踩过一次）。
-     藏完页签里若只剩管理员工具（block / reset vram / 重生成 token 那些），普通用户看着是空页签，
-     就把整只「操作」页签连头一起去掉，并把第一个剩下的页签设为当前 —— 内容区不能没有 active 面板。
-     这一段要能重复跑（每次 render 都会回搬再搬进来），判据都写成"找不到就跳过"。 */
-  function hideSiteOps() {
-    if (!mgNode || !state.mg) return;
-    const acts = mgNode.querySelector('#tab_actions');
-    if (!acts) return;
-
-    const h4 = [...acts.querySelectorAll('h4')].find((h) => /compute method/i.test(h.textContent || ''));
-    if (h4) {
-      h4.style.display = 'none';
-      const box = h4.nextElementSibling;                   // 紧跟的那只 div 装的是两只 radio
-      if (box) box.style.display = 'none';
-    }
-    /* 藏 MP4 那块要藏**直接子元素**那一层：checkbox 自己埋在 label/form/div 里面，
-       藏它只藏掉控件，外层 div 还留着 "Generate MP4 video" 这段文字（实测：于是页签判不出空）。 */
-    const mp4 = acts.querySelector('#project_generate_mp4_checkbox_1');
-    if (mp4) {
-      let wrap = mp4;
-      while (wrap && wrap.parentElement && wrap.parentElement !== acts) wrap = wrap.parentElement;
-      if (wrap) wrap.style.display = 'none';
-    }
-
-    /* 站点那一行图标按钮里的「删除」和自绘的删除是同一个端点（admin.js 的 remove_no_redirect）：
-       留一个就够。暂停/继续/部分存档仍归站点那一行，不动。 */
-    const rm = mgNode.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]');
-    if (rm) rm.style.display = 'none';
-
-    const shown = [...acts.children].some((c) => c.style.display !== 'none' && (c.textContent || '').trim());
-    if (shown) return;
-
-    const li = [...mgNode.querySelectorAll('.nav-tabs a')].find((a) => a.getAttribute('href') === '#tab_actions');
-    if (li && li.closest('li')) li.closest('li').remove();
-    acts.remove();
-    const first = mgNode.querySelector('.tab-pane');
-    if (first) {
-      first.classList.add('active');
-      const a = [...mgNode.querySelectorAll('.nav-tabs a')].find((x) => x.getAttribute('href') === `#${first.id}`);
-      if (a && a.closest('li')) a.closest('li').classList.add('active');
-    }
-  }
-
-  function wireManageDoc(body) {
-    const host = body && body.querySelector('#sp-mg-host');
-    if (!host) return;
-    if (!mgNode) {
-      const sec = document.getElementById('jobs_of_a_project');
-      if (!sec) return;                  // 站点没这一块（boot 里已经 release，正常到不了这）
-      mgNode = sec.closest('.w-section') || sec;
-      mgAnchor = document.createComment('sp-manage');
-      mgNode.parentNode.insertBefore(mgAnchor, mgNode);
-    }
-    host.appendChild(mgNode);            // 搬进来；id / 内联 onclick / 表单全不动
-    mgNode.classList.add('sp-manage-sec');
-    hideSiteOps();
-    /* 站点这块是英文的：翻译器默认跳过 #sp，这里显式放行（同 analyse 的站点表单那条通道） */
-    if (SP.DomI18n) {
-      SP.DomI18n.enabled = state.translateSite !== false;
-      if (SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(mgNode);
-    }
-    /* 站点这几个动作按钮只有 FA4 的图标类名，而站点装的是 Font Awesome 6 —— ::before 没内容，
-       屏幕上就是三个空心圆。title 是唯一的文字来源，直接拿来当按钮文字（图标由 CSS 藏掉）。
-       注意 title 有两种：一种本身就是动作名（"删除项目"，上面已被 translateSubtree 翻过）；
-       另一种是站点塞进去的**状态 HTML**（"<strong>Generating archive.</strong><br>Current position: 1st…"）
-       —— 后者要去标签、只取第一行当按钮文字，整段净化后逐行翻译再放回 title 当悬停提示。
-       这一段要能重复跑（render() 会重入、搬回来的活节点还带着上次那个 span）：判据是
-       「title 里还有 HTML」而不是「有没有 span」，这样第二次跑是空操作、旧 span 也会被纠正。 */
-    const cutLines = s => s.replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]*>/g, '')
-      .split('\n').map(x => x.replace(/\s+/g, ' ').trim()).filter(Boolean);
-    const zhText = s => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
-    for (const a of mgNode.querySelectorAll('[id$="_div_actions"] .btn')) {
-      const raw = (a.getAttribute('title') || '').trim();
-      const span = a.querySelector('.sp-mg-act');
-      let label = null;
-      if (raw.indexOf('<') >= 0) {
-        const lines = cutLines(raw);
-        label = zhText(lines[0] || '');
-        if (lines.length) a.setAttribute('title', lines.map(zhText).join('\n'));
-      } else if (!span) {
-        label = raw;
-      }
-      if (!label) continue;
-      if (span) { span.textContent = label; continue; }
-      const el = document.createElement('span');
-      el.className = 'sp-mg-act';
-      el.textContent = label;
-      a.appendChild(el);
-    }
-    /* 帧缩略图：站点把 <img> 塞在 title 属性里（给它自己的 tooltip 用），方块本身没有背景，
-       于是每帧都是一个空白小方块。把 src 抠出来当真正的图放进方块里。 */
-    for (const sq of mgNode.querySelectorAll('.tiles .square')) {
-      if (sq.querySelector('img')) continue;
-      const m = /<img\s+src="([^"]+)"/i.exec(sq.getAttribute('title') || '');
-      if (!m) continue;
-      const img = document.createElement('img');
-      img.setAttribute('src', m[1]);
-      img.setAttribute('alt', '');
-      sq.appendChild(img);
-    }
-  }
+  /* ---- 3.6 项目管理页 /project/<数字>：整页自绘，站点 DOM 一个节点都不进我们的壳 ----------------
+     数据是**那一页 HTML 的一份副本**（Api.fetchPage → DOMParser → Api.parseManage），
+     动作直发站点端点（mgSet / mgAct / mgAcl）。0.2.2 之前这里是把站点那一整块活节点搬进来、
+     靠它的内联 onclick 发请求 —— 那条路已经删干净了。 */
 
   /* ---- 4. 数据编排 ---- */
 
@@ -7426,6 +7479,18 @@ ${Theme.css('#sp')}
 
     if (view === 'projects' && !state.projects) {
       state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
+    }
+
+    /* 项目管理页：站点那一页的**副本**当数据源（我们在这一页上，fetch 同源地址拿回服务端渲染的
+       HTML，走 DOMParser 进不了活文档）。解析不出那一页的形状就说清楚、给重试，不画半张脸。 */
+    if (view === 'project') {
+      if (!state.projectId) throw new Error(t('mg.noId'));
+      if (!state.mg) {
+        const html = await Api.fetchPage(`/project/${encodeURIComponent(state.projectId)}`);
+        const mg = Api.parseManage(Util.parse(html), state.projectId);
+        if (!mg.found) throw new Error(t('mg.noData'));
+        state.mg = mg;
+      }
     }
 
     if (view === 'projects' && !state.account && state.userName) {
@@ -7566,6 +7631,7 @@ ${Theme.css('#sp')}
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
         state.myProjects = null;
+        state.mg = null;
         state.session = null;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
@@ -7733,6 +7799,34 @@ ${Theme.css('#sp')}
       return;
     }
 
+    // 项目管理页：暂停 / 继续 / 重置 / 部分存档
+    const ma = ev.target.closest('[data-mg-act]');
+    if (ma) { mgAct(ma.dataset.mgAct); return; }
+
+    // 名单：加 / 移除（加的时候团队那栏必须是从建议里选过的）
+    const aa = ev.target.closest('[data-acl-add]');
+    if (aa) {
+      const kind = aa.dataset.aclAdd;
+      const inp = document.getElementById(aa.dataset.input);
+      const typed = inp ? inp.value.trim() : '';
+      const msg = document.querySelector(`[data-acl-msg="${kind}"]`);
+      const say = (text) => { if (msg) { msg.textContent = text; msg.hidden = !text; } };
+      if (!typed) { say(t('mg.acl.needName')); return; }
+      if (kind === 'team' && !(inp && inp.dataset.pick)) { say(t('mg.acl.needPick')); return; }
+      say('');
+      mgAcl(kind, 'add', kind === 'team' ? inp.dataset.pick : typed);
+      return;
+    }
+    const ad = ev.target.closest('[data-acl-del]');
+    if (ad) {
+      const kind = ad.dataset.aclDel;
+      const value = kind === 'team' ? (ad.dataset.id || ad.dataset.name) : ad.dataset.name;
+      if (!value) return;
+      if (!window.confirm(t('mg.acl.delConfirm', { name: ad.dataset.name }))) return;
+      mgAcl(kind, 'del', value);
+      return;
+    }
+
     /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
     const sScope = ev.target.closest('#sp-scope [data-s]');
     if (sScope) {
@@ -7811,31 +7905,70 @@ ${Theme.css('#sp')}
     if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
   }
 
-  /* ---- 项目设置：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） --------------
-     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*）成功后就是 window.location.reload()：
-     真相在服务端渲染的 DOM 里，我们不复制一份状态。这里照做，但先把结果说出来再重载。
-     端点在 showjob.js 里逐个核对过：/project/<id>/computemethod/<cpu|gpu>/<0|1>、
-     /mp4/<0|1>、/visibility/<0|1>、/remove_no_redirect。 */
+  /* ---- 项目设置 / 动作 / 名单：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） ----
+     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*、doAddACL*）成功后就是
+     window.location.reload()：真相在服务端，我们不复制一份状态。这里照做，但先把结果说出来再重载。
+     端点逐个核对过 showjob.js 与 ProjectController 的 Route 表。 */
   const MG_URL = {
     compute: (id, v) => `/project/${id}/computemethod/${v}/1`,
     mp4: (id, v) => `/project/${id}/mp4/${v}`,
     public: (id, v) => `/project/${id}/visibility/${v}`,
   };
+  const MG_ACT_URL = {
+    pause: (id) => `/project/${id}/pause`,
+    resume: (id) => `/project/${id}/resume`,
+    reset: (id) => `/project/${id}/reset`,
+  };
+  const MG_ACL_URL = {
+    /* 团队发**数字 id**（站点那只隐藏域就是它），用户发 **login** —— 见 showjob.js 的 doAddACL* */
+    manager: (id, op, name) => `/project/${id}/acl/manager/user/${op}/${encodeURIComponent(name)}`,
+    renderer: (id, op, name) => `/project/${id}/acl/renderer/user/${op}/${encodeURIComponent(name)}`,
+    team: (id, op, teamId) => `/project/${id}/acl/renderer/team/${op}/${encodeURIComponent(teamId)}`,
+  };
 
-  async function mgSet(kind, value) {
+  /** 成功后整页重载（站点自己的做法）；失败要把界面拨回服务端那个状态 */
+  async function mgDone(url, okMsg) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(url);
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); render(); return false; }
+      toast(okMsg || t('account.ok'));
+      setTimeout(() => location.reload(), 700);
+      return true;
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      render();
+      return false;
+    }
+  }
+
+  function mgSet(kind, value) {
     const id = state.projectId;
     if (!id || !MG_URL[kind]) return;
     if (kind === 'compute' && state.mg && state.mg.compute === value) return;   // 点的是当前那档
-    toast(t('account.saving'));
-    try {
-      const r = await Api.post(MG_URL[kind](id, value));
-      if (r && r !== 'OK') { toast(t('account.failed', { msg: r })); render(); return; }
-      toast(t('account.ok'));
-      setTimeout(() => location.reload(), 700);
-    } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
-      render();   // 失败要把开关拨回站点说的那个状态（模型是现读的）
+    mgDone(MG_URL[kind](id, value));
+  }
+
+  function mgAct(kind) {
+    const id = state.projectId;
+    if (!id) return;
+    if (kind === 'partial') {
+      /* 站点自己的确认文案（它那句话把后果说全了：会自动暂停、发邮件、恢复时存档销毁），照抄 */
+      if (!window.confirm(t('mg.partialConfirm'))) return;
+      const a = (state.mg.actions || []).find((x) => x.kind === 'partial');
+      if (!a || !a.url) return;
+      mgDone(a.url, t('mg.partialOk'));
+      return;
     }
+    if (!MG_ACT_URL[kind]) return;
+    if (kind === 'reset' && !window.confirm(t('mg.resetConfirm'))) return;
+    mgDone(MG_ACT_URL[kind](id));
+  }
+
+  async function mgAcl(kind, op, value) {
+    const id = state.projectId;
+    if (!id || !MG_ACL_URL[kind] || !value) return;
+    await mgDone(MG_ACL_URL[kind](id, op, value));
   }
 
   async function mgDelete(id) {
@@ -7847,6 +7980,75 @@ ${Theme.css('#sp')}
       location.href = '/home/projects';
     } catch (e) {
       toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+    }
+  }
+
+  /* ---- 名单输入框的自动补全：站点的 jQuery UI autocomplete 替代品，走它同一个端点 ----------
+     `/user/list_from_term` 回的是一串 **login**，但**不是 JSON 数组而是对象**（`{"0":"alice",…}`）
+     —— 站点那边 `natcasesort()` 保留了键，`json_encode` 就把非连续数组编成对象了。所以两种形状都要认。
+     `/team/list_from_term` 回 `[{value: 数字 id, label: 团队名}]`。团队加白名单要的是 id，
+     所以那一栏必须从建议里选。 */
+  const aclSeq = {};
+  async function aclSearch(kind, term) {
+    const path = kind === 'team' ? '/team/list_from_term' : '/user/list_from_term';
+    const res = await fetch(`${path}?term=${encodeURIComponent(term)}`, {
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let json = null;
+    try { json = await res.json(); } catch (e) { return []; }
+    const raw = Array.isArray(json) ? json
+      : (json && typeof json === 'object' ? Object.keys(json).sort((a, b) => a - b).map((k) => json[k]) : []);
+    return raw.map((o) => (typeof o === 'string'
+      ? { value: o, label: o }
+      : { value: String(o && o.value), label: String(o && o.label) }))
+      .filter((x) => x.value && x.value !== '#');
+  }
+
+  function wireManage(body) {
+    const box = body && body.querySelector('.aadd');
+    if (!box) return;
+    for (const wrap of body.querySelectorAll('.aadd .up1-dev')) {
+      const inp = wrap.querySelector('input[data-acl-input]');
+      const sug = wrap.querySelector('.up1-sug');
+      if (!inp || !sug) continue;
+      const kind = inp.dataset.aclInput;
+      let timer = null;
+      const close = () => { sug.hidden = true; sug.textContent = ''; };
+      inp.addEventListener('input', () => {
+        delete inp.dataset.pick;                        // 改了字就不再是"选过的那个"
+        close();
+        const term = inp.value.trim();
+        if (term.length < 3) return;
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
+          const list = await aclSearch(kind, term);
+          if (my !== aclSeq[kind]) return;
+          sug.textContent = '';
+          if (!list.length) { close(); return; }
+          list.slice(0, 12).forEach((o) => {
+            const li = document.createElement('div');
+            li.className = 'up1-sugitem';
+            li.textContent = o.label;
+            li.tabIndex = 0;
+            li.setAttribute('role', 'option');
+            const pickIt = () => {
+              inp.value = o.label;
+              inp.dataset.pick = o.value;
+              close();
+            };
+            li.addEventListener('click', pickIt);
+            li.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
+            });
+            sug.appendChild(li);
+          });
+          sug.hidden = false;
+        }, 250);
+      });
+      inp.addEventListener('blur', () => setTimeout(close, 180));
     }
   }
 
@@ -7916,8 +8118,9 @@ ${Theme.css('#sp')}
       if (ROUTES[v]) state.view = v;
     }
 
-    /* 项目管理页：站点没给出项目那一块（项目不存在 / 不是自己的 / 站点改了布局）就原样还回去，
-       别接管成一屏空壳。 */
+    /* 项目管理页：站点没给出项目那一块（项目不存在 / 无权查看 → 站点自己那张 Forbidden 页）
+       就原样还回去，别接管成一屏空壳。数据虽然改为从**副本**解析，这道判据仍然要留着：
+       它认的是"这一页到底是不是一个能管的项目页"，而不是"我们要不要搬它的节点"。 */
     if (state.view === 'project' && !document.getElementById('jobs_of_a_project')) { release(); return; }
 
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');

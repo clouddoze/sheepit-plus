@@ -1207,43 +1207,145 @@
     </div>`;
   }
 
-  /** 项目管理页 /project/<id>：**设置区我们自绘**（状态来自 Api.parseManage，动作直发站点端点，
-   *  见 80-app.js 的 mgSet），站点那一大块只剩「权限 / 渲染者」两个页签还借它的节点。
-   *  名字 / 进度 / 状态仍从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
-  function project(state) {
-    const id = state.projectId || '';
-    const sec = document.getElementById('jobs_of_a_project');
-    const nameEl = id ? document.getElementById(`project_job_${id}_path`) : null;
-    const progEl = id ? document.getElementById(`project_job_${id}_progression`) : null;
-    const name = nameEl ? nameEl.textContent.trim() : '';
-    const prog = progEl ? progEl.textContent.trim() : '';
-    const stEl = sec && sec.querySelector('li[class^="msg_"]');
-    const stRaw = stEl ? stEl.textContent.trim() : '';
-    const stCls = stEl ? ((stEl.className.match(/msg_([a-z]+)/i) || [])[1] || '') : '';
-    const stText = stRaw ? (I18n.siteText(stRaw) || stRaw) : '';
-    const meta = [
-      name ? `<b>${esc(name)}</b>` : '',
-      prog ? `${esc(t('proj.col.progress'))} ${esc(prog)}` : '',
-      stText ? `<span class="sp-mg-badge s-${esc(stCls || 'x')}">${esc(stText)}</span>` : '',
-    ].filter(Boolean).join(' · ');
-    return `<div class="wrap">
-      <div class="sechead">
-        <h2>${esc(t('mg.title'))}</h2>
-        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+  /* ==== 项目管理页 /project/<id>：整页自绘 ====
+     数据来自 Api.parseManage(那份 HTML **副本**)——站点 DOM 一个节点都不进我们的壳，
+     动作直发站点端点（见 80-app.js 的 mgSet / mgAct / mgAcl）。站点没渲染的那几项不画，
+     不猜默认值：少一行比编一个错的强。 */
+
+  const MG_ACTION_KEY = {
+    frames: 'mg.act.frames', zip: 'mg.act.zip', video: 'mg.act.video',
+    pause: 'mg.act.pause', resume: 'mg.act.resume', reset: 'mg.act.reset', partial: 'mg.act.partial',
+  };
+
+  const mgActLabel = (a) => t(MG_ACTION_KEY[a.kind]);
+
+  function manageActions(m) {
+    const acts = (m.actions || []).filter((a) => MG_ACTION_KEY[a.kind]);
+    if (!acts.length) return '';
+    const one = (a) => {
+      const label = esc(mgActLabel(a));
+      const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
+      if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
+      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
+    };
+    return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
+  }
+
+  /** 站点那种「标签：值」两段式（`<li><span>值</span></li>` 与纯文本都在用）：
+   *  整句先按语言包翻（带捕获组的 patterns 走这条），翻不动再退回只翻标签。
+   *  红字那条 li 整句都在 span 里（label 为空），所以两段都要 trim、不能拼出前导空格。 */
+  function mgLine(label, value) {
+    const L = String(label || '').trim();
+    const V = String(value || '').trim();
+    const whole = [L, V].filter(Boolean).join(' ');
+    if (!whole) return '';
+    const one = I18n.siteText(whole);
+    if (one) return one;
+    const two = L ? I18n.siteText(L) : null;
+    return two ? [two.trim(), V].filter(Boolean).join(' ') : whole;
+  }
+
+  function manageSummary(m) {
+    if (!m.summary.length && !(m.warn && (m.warn.label || m.warn.value))) return '';
+    const rows = m.summary.map((s) => `<li>${esc(mgLine(s.label, s.value))}</li>`).join('');
+    const warn = m.warn ? mgLine(m.warn.label, m.warn.value) : '';
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.summary'))}</h2></div>
+      <div class="pbody">
+        ${rows ? `<ul class="mg-sum">${rows}</ul>` : ''}
+        ${warn ? `<div class="hint bad" style="margin:${rows ? '10px' : '0'} 0 0">${esc(warn)}</div>` : ''}
       </div>
-      ${manageOps(state)}
-      <div class="sp-manage" id="sp-mg-host"></div>
-      <div class="hint">${esc(t('mg.note'))}</div>
-      <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
 
-  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假），
-   *  不猜默认值 —— 少一行比编一个错的强。 */
-  function manageOps(state) {
-    const m = state.mg;
-    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic)) return '';
-    const id = state.projectId || '';
+  /** 帧方块：站点的方块没有背景（缩略图塞在 title 属性里，由解析器抠出来），状态色取它自己的
+   *  btn-neutral / btn-warning / btn-default。悬停给 frame / cost / rendertime 那三行。 */
+  function manageTiles(m) {
+    if (!m.tiles.length && !m.video) return '';
+    const tiles = m.tiles.map((x) => `<span class="tile ${esc(x.state)}" title="${esc([
+      x.frame ? `frame: ${x.frame}` : '', x.cost ? `cost: ${x.cost}` : '', x.time ? `rendertime: ${x.time}` : '',
+    ].filter(Boolean).join(' · '))}">
+        <img src="${esc(x.src)}" alt="" loading="lazy">
+      </span>`).join('');
+    const legend = [['done', t('mg.legend.done')], ['progress', t('mg.legend.progress')], ['waiting', t('mg.legend.waiting')]]
+      .map(([k, label]) => `<span class="lg"><i class="${esc(k)}"></i>${esc(label)}</span>`).join('');
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead"><h2>${esc(t('mg.frames'))}</h2>
+        <span class="sub num">${esc(t('mg.framesN', { n: m.tiles.length }))}</span>
+        <span class="spacer"></span>${legend}</div>
+      <div class="pbody">
+        ${tiles ? `<div class="mg-tiles">${tiles}</div>` : ''}
+        ${m.video ? `<video class="mg-video" controls preload="none" src="${esc(m.video)}"></video>
+          <div class="hint" style="margin:8px 0 0">${esc(t('mg.videoNote'))}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 名单面板（管理员 / 渲染者 / 团队共用）：一行一个人 + 行内移除；下面一个输入框 + 建议 + 添加。
+   *  团队那边站点要的是**数字 id**，所以必须从建议里选（选了才把 id 记在 input 的 data-pick 上）。 */
+  function aclPanel(title, hint, rows, o) {
+    const list = rows.length
+      ? rows.map((x) => `<div class="arow">
+          <span class="nm">${x.url ? `<a href="${esc(x.url)}" target="_self">${esc(x.name)}</a>` : esc(x.name)}</span>
+          <button class="btn sm" data-acl-del="${esc(o.kind)}" data-name="${esc(x.name)}" data-id="${esc(x.id || '')}">${esc(t('mg.acl.remove'))}</button>
+        </div>`).join('')
+      : `<div class="none">${esc(t('mg.acl.none'))}</div>`;
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(title)}</h2><span class="sub">${esc(hint)}</span></div>
+      <div class="pbody">
+        <div class="alist">${list}</div>
+        <div class="aadd">
+          <div class="up1-dev">
+            <label class="input"><input id="${esc(o.input)}" type="text" autocomplete="off" spellcheck="false"
+              placeholder="${esc(o.placeholder)}" data-acl-input="${esc(o.kind)}"></label>
+            <div class="up1-sug" hidden></div>
+          </div>
+          <button class="btn primary" data-acl-add="${esc(o.kind)}" data-input="${esc(o.input)}">${esc(t('mg.acl.add'))}</button>
+        </div>
+        <div class="hint" data-acl-msg="${esc(o.kind)}" hidden></div>
+      </div>
+    </div>`;
+  }
+
+  function manageAcl(m) {
+    const out = [];
+    if (m.acl.hasManagerPanel) {
+      out.push(aclPanel(t('mg.acl.managers'), t('mg.acl.managersHint'), m.acl.managers, {
+        kind: 'manager', input: 'sp-acl-manager',
+        placeholder: I18n.siteText('Add a user to manager list') || 'Add a user to manager list',
+      }));
+    }
+    if (m.acl.hasRendererPanel || m.acl.hasTeamPanel) {
+      const hint = m.publicRender === true ? t('mg.acl.publicOn') : t('mg.acl.publicOff');
+      const body = [];
+      if (m.acl.hasRendererPanel) {
+        body.push(aclPanel(t('mg.acl.renderers'), hint, m.acl.renderers, {
+          kind: 'renderer', input: 'sp-acl-renderer',
+          placeholder: I18n.siteText('Add a user to renderer list') || 'Add a user to renderer list',
+        }));
+      }
+      if (m.acl.hasTeamPanel) {
+        body.push(aclPanel(t('mg.acl.teams'), t('mg.acl.teamsHint'), m.acl.teams, {
+          kind: 'team', input: 'sp-acl-team', pick: true,
+          placeholder: I18n.siteText('Add a team to renderer list') || 'Add a team to renderer list',
+        }));
+      }
+      out.push(body.join(''));
+    } else if (m.publicRender === true) {
+      /* 站点自己的规矩：公开渲染开着时，那一页**根本不渲染**渲染者名单（只有一只 checkbox），
+         所以这里不是"没人"，而是"站点不给名单"。关掉公开渲染名单才会出现 —— 说清楚，别让人以为丢了。 */
+      out.push(`<div class="panel" style="margin-top:16px">
+        <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.acl.renderers'))}</h2></div>
+        <div class="pbody"><p class="hint" style="margin:0">${esc(t('mg.acl.publicOnly'))}</p></div>
+      </div>`);
+    }
+    return out.join('');
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假）。 */
+  function manageOps(m, id) {
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic && !m.canManage)) return '';
     const sw = (kind, on, onState, title, hint) => `<label class="sw">
       <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
         data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
@@ -1265,10 +1367,35 @@
         ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
         ${!id || !m.canManage ? '' : `<div class="mg-row danger">
           <div class="k">${esc(t('mg.del'))}</div>
-          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.delBtn'))}</button>
           <small>${esc(t('mg.delHint'))}</small>
         </div>`}
       </div>
+    </div>`;
+  }
+
+  function project(state) {
+    const m = state.mg;
+    if (!m || !m.found) return UI.state.empty(t('mg.noData'));
+    const id = state.projectId || m.id || '';
+    const stText = m.statusText ? (I18n.siteText(m.statusText) || m.statusText) : '';
+    const meta = [
+      m.name ? `<b>${esc(m.name)}</b>` : '',
+      m.progression ? `${esc(t('proj.col.progress'))} ${esc(m.progression)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(m.statusCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      ${manageActions(m)}
+      ${manageOps(m, id)}
+      ${manageAcl(m)}
+      ${manageSummary(m)}
+      ${manageTiles(m)}
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
 

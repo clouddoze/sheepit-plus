@@ -247,8 +247,9 @@
       'Memory used in Mbytes': '内存占用（MB）',
       'Add this blend': '添加这个 blend',
 
-      /* 项目管理页 /project/<数字>：站点把整块服务端渲染好，我们搬进壳里再翻（见 80-app.js 的 wireManageDoc）。
-         动作与 id 都不动，这里只翻文案。 */
+      /* 项目管理页 /project/<数字>：整页自绘（0.2.2 起），站点节点不进壳。这里这些词条
+         是给**解析出来的站点原文**用的（概要几行、动作按钮的 title、名单面板的占位符），
+         视图层自己那几句话走 10-core.js 的 UI 词典（mg.*）。 */
       'Administration': '项目管理',
       'Summary': '概要', 'Legend': '图例',
       'Finished': '已完成', 'In progress': '进行中', 'Waiting': '等待中',

@@ -649,18 +649,6 @@ ${Theme.css('#sp')}
 #sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
 #sp .up-body strong{color:var(--text);font-weight:600}
 #sp .up-body a{color:var(--accent)}
-#sp .up-body #addproject_warning_zero_frame{font-size:13px}
-
-#sp .up-body form table,
-#sp .up-body form tbody,
-#sp .up-body form tr,
-#sp .up-body form td{display:block;width:auto;padding:0}
-#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
-#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
-#sp .up-body form td + td{margin-bottom:16px}
-#sp .up-body form td:last-child{margin-bottom:0}
-#sp .up-body form br + strong{color:var(--text-2)}
-
 
 #sp .up-body input[type=file]{
   display:block;width:100%;padding:11px 12px;margin:0 0 10px;
@@ -673,30 +661,9 @@ ${Theme.css('#sp')}
   border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
 }
 #sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
-#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
 
-#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-  transition:filter .12s;
-}
-#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
 
-/* 站点内联写死了 #EEB0A0 的底色，只能用 !important 压过去 —— 必要的例外。 */
-#sp .up-body #upload_progress_bar{
-  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
-  background:var(--surface-2) !important;border:1px solid var(--border) !important;
-}
-#sp .up-body #upload_progress_bar .ui-progressbar-value{
-  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
-}
-#sp .up-body #upload_progress_label{
-  position:static !important;text-shadow:none !important;text-align:right;
-  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
-}
 
-/* 这一行用的是 2013 版 Bootstrap 的 .input-group（table-cell + float），没管住时等效宽度
-   949px、OK 的右缘超出视口 5px；整行重声明成普通 flex 并给输入封顶。 */
 #sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
@@ -704,57 +671,6 @@ ${Theme.css('#sp')}
 #sp .up-body table input[type=text]{width:92px}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
-#sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
-#sp .up-body .input-group .form-control{flex:1 1 auto;min-width:0;width:auto;max-width:320px}
-#sp .up-body .input-group-btn{display:flex;flex:0 0 auto;width:auto;white-space:nowrap}
-#sp .up-body .input-group-btn > *{flex:0 0 auto}
-#sp .up-body #addproject_estimator_result{
-  font-size:12.5px;color:var(--text-2);line-height:1.7;
-  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
-}
-#sp .up-body #addproject_estimator_result:empty{display:none}
-/* 站点返回的结果表带 Bootstrap 的 .table，在深色卡片里白底白字（用户实报），整段按我们的表格重画。 */
-#sp .up-body #addproject_estimator_result table{
-  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
-  border:none !important;   /* .table-bordered 表格本身也画了一圈边框 */
-}
-#sp .up-body #addproject_estimator_result thead th,
-#sp .up-body #addproject_estimator_result th{
-  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
-  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
-}
-#sp .up-body #addproject_estimator_result td{
-  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
-  color:var(--text-2);vertical-align:baseline;
-}
-#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
-#sp .up-body #addproject_estimator_result td:last-child,
-#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
-#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
-#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
-  font-variant-numeric:tabular-nums;
-}
-#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
-#sp .up-body #addproject_estimator_result > br:first-child{display:none}
-/* 站点给耗时套了 Bootstrap 绿色小标签。调色板里没有绿色，2026-10-04 用户确认保持中性、
-   不恢复红 / 绿语义，别再翻回去。 */
-#sp .up-body #addproject_estimator_result .label{
-  background:none !important;border:none !important;color:var(--text) !important;
-  font-size:12.5px !important;font-weight:600;padding:0 !important;
-  text-shadow:none;border-radius:0;
-}
-/* 只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
-#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
-#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
-  border:none;border-bottom:1px solid var(--border);
-}
-/* 斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
-#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
-/* 站点给这些单元格写了内联的 text-align:center，只能用 !important 压过去（同类例外） */
-#sp .up-body #addproject_estimator_result th,
-#sp .up-body #addproject_estimator_result td{text-align:left !important}
-
 /* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -878,67 +794,37 @@ ${Theme.css('#sp')}
 #sp .fp .hint:last-child{margin-bottom:0}
 #sp .hint.bad{color:var(--accent)}
 
-/* 项目管理页 /project/<数字>：站点那一整块（.w-section，含 #jobs_of_a_project 与右侧图例/页签）由
-   80-app.js 的 wireManageDoc **搬**进 #sp-mg-host。结构、id、内联 onclick 全没动，这里只把它从原站
-   的深色底改成我们的卡片外观；两列仍用站点自己的 bootstrap 栅格（那套 CSS 本来就在这一页里加载）。 */
-#sp .sp-manage{padding:18px 20px 20px;color:var(--text-2)}
-#sp .sp-manage .w-section,#sp .sp-manage .container,#sp .sp-manage .w-box,
-#sp .sp-manage .padding-15,#sp .sp-manage [class*="col-md-"]{padding:0;margin:0;background:none;border:none;box-shadow:none;max-width:none}
-/* 别改 .row 的布局方式：站点用 bootstrap 的 float 栅格，8/4 栏加起来正好 100%，
-   一旦给 .row 加 display:flex + gap，多出来的 gap 会把右栏挤到下一行（实测两栏会竖着叠）。 */
-#sp .sp-manage .row{margin:0}
-#sp .sp-manage .row::after{content:'';display:block;clear:both}
-#sp .sp-manage h2{margin:0 0 8px;font-size:14.5px;font-weight:600;color:var(--text)}
-#sp .sp-manage h4{margin:0 0 10px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .sp-manage a{color:var(--accent);text-decoration:none}
-#sp .sp-manage a:hover{text-decoration:underline}
-#sp .sp-manage ul{padding:0;margin:0;list-style:none}
-#sp .sp-manage .meta-list{display:flex;gap:14px;flex-wrap:wrap;margin:6px 0 0}
-#sp .sp-manage li{font-size:12.5px;color:var(--text-3);line-height:1.95}
-#sp .sp-manage .meta-list li[class^="msg_"]{font-weight:600;color:var(--text-2)}
-#sp .sp-manage .breadcrumb{display:none}
-/* 站点那几个方块本来就是「卡片」：它们的底色/边框被上面统一掉了，这里按我们的样式还回来，
-   免得整页糊成一片（Summary 与项目卡是 .w-box，右栏图例/页签是 .widget）。 */
-#sp .sp-manage .w-box,#sp .sp-manage .widget{background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:14px}
-#sp .sp-manage .widget-heading{margin:0 0 10px}
-/* 图例：站点用三个 .square 当色块，色是 bootstrap 的 btn-neutral/warning/default */
-#sp .sp-manage .legend{display:flex;gap:16px;flex-wrap:wrap}
-#sp .sp-manage .legend a{display:flex;align-items:center;gap:7px;color:var(--text-2);font-size:12.5px;text-decoration:none}
-#sp .sp-manage .legend i{display:none}
-#sp .sp-manage .legend .square{width:14px !important;height:14px !important;margin:0 !important;border-radius:3px;border:none}
-#sp .sp-manage .legend .btn-neutral{background:var(--text-3)}
-#sp .sp-manage .legend .btn-warning{background:#e0a13a}
-#sp .sp-manage .legend .btn-default{background:var(--surface-3);border:1px solid var(--border-strong)}
-#sp .sp-manage div[style*="color:red"]{color:var(--accent) !important}
-#sp .sp-manage .nav-tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--border)}
-#sp .sp-manage .nav-tabs > li{margin:0}
-#sp .sp-manage .nav-tabs > li > a{display:block;padding:7px 12px;font-size:12.5px;border:1px solid transparent;border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;text-decoration:none;color:var(--text-2)}
-#sp .sp-manage .nav-tabs > li > a:hover{text-decoration:none;color:var(--text)}
-#sp .sp-manage .nav-tabs > li.active > a{background:var(--surface-2);border-color:var(--border);color:var(--text)}
-#sp .sp-manage .btn:not(.square){font:inherit;font-size:12.5px;padding:7px 12px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text-2);cursor:pointer;box-shadow:none;text-shadow:none;text-decoration:none}
-#sp .sp-manage .btn:not(.square):hover{border-color:var(--border-strong);color:var(--text);text-decoration:none}
-#sp .sp-manage .btn-primary:not(.square){background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
-#sp .sp-manage .btn:not(.square).btn-danger{color:var(--accent);border-color:var(--accent-weak)}
-#sp .sp-manage .btn-round i{display:none}   /* 图标是 FA4 类名、站点只装了 FA6：::before 根本没内容，留着就是空心圆 */
-/* 站点把 .btn-round 钉成 34×34 的圆（配一个根本画不出来的图标），字写进去就被裁掉 */
-#sp .sp-manage .btn-round{width:auto !important;height:auto !important;border-radius:var(--r-sm) !important;padding:6px 10px !important}
-/* 站点给 .btn.square 上了 !important 的 16×16：帧缩略图与图例色块必须跟着用 !important 才拨得动 */
-#sp .sp-manage .square{display:inline-block;width:22px !important;height:22px !important;margin:0 6px 0 0 !important;padding:0 !important;border-radius:4px;border:1px solid var(--border);vertical-align:middle;text-align:center;overflow:hidden}
-#sp .sp-manage .square img{display:block;width:100% !important;height:100% !important;object-fit:cover;border-radius:3px}
-#sp .sp-manage input[type=text],#sp .sp-manage input.form-control{font:inherit;font-size:12.5px;padding:7px 9px;border-radius:var(--r-sm);background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%}
-#sp .sp-manage input[type=text]::placeholder{color:var(--text-3)}
-#sp .sp-manage input[type=checkbox],#sp .sp-manage input[type=radio]{accent-color:var(--accent);margin-right:7px;vertical-align:middle}
-#sp .sp-manage label{font-size:12.5px;color:var(--text-2);margin:0}
-#sp .sp-manage .form-inline,#sp .sp-manage .checkbox{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-#sp .sp-manage .tiles{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-#sp .sp-manage .tiles .square{width:80px !important;height:60px !important;margin:0 !important}
-/* 站点给 .tab-content 铺了白底 + 边框，在暗色主题下是一块亮斑 */
-#sp .sp-manage .tab-content{background:none;border:none;padding:0;box-shadow:none}
-#sp .sp-manage .tab-pane{padding:0}
-#sp .sp-manage .tab-pane img{display:inline-block;vertical-align:middle;height:16px;margin:0 3px}
-#sp .sp-manage .tab-pane input[type=radio]{margin:0 2px 0 10px}
-#sp .sp-manage .text-right{text-align:right}
-#sp .sp-manage .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+/* ==== 项目管理页 /project/<数字>（整页自绘）====
+   数据来自 Api.parseManage(那一页 HTML 的**副本**)，站点节点一个都不进我们的壳 —— 所以这里全是
+   我们自己的类；旧的那套 .sp-manage*（给搬进来的站点节点统一外观用）已随搬节点一起删干净。 */
+#sp .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+#sp .mg-acts{margin:0 0 16px;gap:8px}
+#sp .mg-sum{margin:0;padding:0;list-style:none}
+#sp .mg-sum li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .mg-sum li::before{content:'·';margin-right:8px;color:var(--border-strong)}
+/* 帧方块：状态色跟站点自己那三个按钮类一致（已完成/进行中/等待中），悬停给 frame/cost/rendertime */
+#sp .mg-tiles{display:flex;gap:8px;flex-wrap:wrap}
+#sp .mg-tiles .tile{width:80px;height:60px;border-radius:4px;overflow:hidden;border:2px solid var(--border);background:var(--surface-2)}
+#sp .mg-tiles .tile img{width:100%;height:100%;object-fit:cover}
+#sp .mg-tiles .tile.done{border-color:var(--text-3)}
+#sp .mg-tiles .tile.progress{border-color:#e0a13a}
+#sp .mg-tiles .tile.waiting{border-color:var(--border-strong)}
+#sp .lg{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+#sp .lg i{width:11px;height:11px;border-radius:3px;flex:none}
+#sp .lg i.done{background:var(--text-3)}
+#sp .lg i.progress{background:#e0a13a}
+#sp .lg i.waiting{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .phead .lg + .lg{margin-left:12px}
+#sp .mg-video{width:100%;max-width:520px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;display:block}
+/* 名单：一行一个人 + 行内移除；下面输入框 + 建议 + 添加 */
+#sp .alist{display:flex;flex-direction:column}
+#sp .alist .arow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+#sp .alist .arow:last-child{border-bottom:none}
+#sp .alist .arow .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .alist .none{font-size:12.5px;color:var(--text-3);padding:6px 0}
+#sp .aadd{display:flex;align-items:flex-start;gap:10px;margin-top:12px;flex-wrap:wrap}
+#sp .aadd .up1-dev{flex:0 1 320px;min-width:0}
+#sp .aadd .input{width:100%}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */

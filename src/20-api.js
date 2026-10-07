@@ -315,45 +315,163 @@
       .map((p) => p.x);
   }
 
-  /* 项目管理页 /project/<id> 的**可改设置**：只读站点那一页的控件，产出一份数据模型，
-     视图层只吃模型、动作直发端点（和上传链路同一条路子 —— 站点 DOM 不是我们的状态容器）。
-     站点模板 templates/project/manage.html.twig:133-274，三处状态各有各的形态：
+  /* 项目管理页 /project/<id> 的**全量模型**：只读站点那一页（**传进来的是一份 HTML 副本**，
+     不是活文档 —— 和上传链路同一条路子），产出一份数据模型，视图层只吃模型、动作直发端点。
+     站点来源：templates/project/manage.html.twig:133-274 + src/UI/HTML.php 的 printBlend()，
+     2026-10-07 抓的真机 HTML 存在 `.tmp/recon/raw/manage-1224469-2.html`。
 
-     ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
-        （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
-        所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
-        GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
-     ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（`display_generate_mp4` 为假、或 canGenerateMp4
-        为假时站点不渲染它 → 解析出 null，视图就不画这一行）。
-     ③ 公开渲染有**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
-        + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
-        可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 而不是看 id。 */
-  function parseManage(doc) {
+     三处设置各有各的形态（坑写在下面），其余都是"照着站点自己的 id 读文本"：
+       ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+          （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+          所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+          GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+       ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（display_generate_mp4 为假时站点不渲染它）。
+       ③ 公开渲染**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+          + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+          可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 不看 id。 */
+  const MG_ACTION_TITLES = {
+    'see frames': 'frames', 'download frames': 'zip', 'download video': 'video',
+    'resume': 'resume', 'pause': 'pause', 'reset': 'reset', 'remove': 'delete',
+  };
+
+  function parseManage(doc, projectId) {
     const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
     const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+    const id = String(projectId || '');
 
+    /* ---- 标题 / 状态 / 进度 ---- */
+    const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
+    const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
+    const stCls = stEl ? ((String(stEl.getAttribute('class') || '').match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+
+    /* ---- 概要 Summary：一串 <li>，最后一条红字是"自动删除日期"（站点给的是整句）。
+       形状两种：`Storage used: 134.8 kB` 是纯文本，`On reference per frame rendertime: <span>0m00s</span>`
+       的是「标签 + span」。拆成 label/value 两段，视图那边才能分别套语言包（见 50-views 的 mgLine）。 ---- */
+    const sumHead = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(text(h).trim()));
+    const sumBox = sumHead ? sumHead.closest('.w-box') || sumHead.parentElement : null;
+    const summary = [];
+    let warn = { label: '', value: '' };
+    const pairOf = (li) => {
+      const span = li.querySelector('span');
+      if (span) {
+        const clone = li.cloneNode(true);
+        const dead = clone.querySelector('span');
+        if (dead) dead.remove();
+        return { label: text(clone).trim(), value: text(span).trim() };
+      }
+      const s = text(li);
+      const m = s.match(/^([^:]+):\s*(.+)$/);
+      return m ? { label: `${m[1]}:`, value: m[2].trim() } : { label: s, value: '' };
+    };
+    if (sumBox) {
+      for (const li of sumBox.querySelectorAll('li')) {
+        const p = pairOf(li);
+        if (!p.label && !p.value) continue;
+        if (li.querySelector('span[style*="red"]') || /automatically deleted/i.test(p.label + p.value)) warn = p;
+        else summary.push(p);
+      }
+    }
+
+    /* ---- 动作行：站点用 title 当唯一文字（图标按钮），按 title 归一成 kind ----
+       `resume` 在"活跃项目太多"时是 disabled 的 <a>（没有 onclick）→ 读出来但标记 disabled。 */
+    const box = id ? doc.getElementById(`project_job_${id}_div_actions`) : null;
+    const actions = [];
+    let canManage = false;
+    for (const a of box ? box.querySelectorAll('a') : []) {
+      const onclick = String(a.getAttribute('onclick') || '');
+      const href = String(a.getAttribute('href') || '');
+      const disabled = a.hasAttribute('disabled') || /\bdisabled\b/.test(String(a.getAttribute('class') || ''));
+      const title = String(a.getAttribute('title') || '').trim();
+      if (/remove_no_redirect/.test(onclick)) { canManage = true; continue; }
+      const partial = onclick.match(/doAskForProjectPartialArchiveFrame\('([^']+)'\)/);
+      if (partial) { actions.push({ kind: 'partial', url: partial[1], title, disabled }); continue; }
+      const act = onclick.match(/projectAction\('[^']*',\s*'([a-z_]+)'\)/);
+      if (act) {
+        const kind = MG_ACTION_TITLES[act[1]] || act[1];
+        actions.push({ kind, title, disabled });
+        continue;
+      }
+      if (!href || href === '#') {
+        /* 站点在"活跃项目太多"时渲染的是一只**没有 onclick、没有链接**的灰按钮，标题里写着原因：
+           `href="#"` + title="Resume is disabled because you have too many active projects"。
+           按 title 认回它并标 disabled —— 否则用户看到的是"这一栏什么都没有"，不知道为什么。 */
+        const low = title.toLowerCase();
+        const key = Object.keys(MG_ACTION_TITLES).find((k) => low.indexOf(k) === 0);
+        if (key) actions.push({ kind: MG_ACTION_TITLES[key], title, disabled: true });
+        continue;
+      }
+      const kind = MG_ACTION_TITLES[title.toLowerCase()] || (/\/frames\//.test(href) ? 'frames' : '');
+      if (kind === 'frames') { actions.push({ kind, url: href, title, disabled }); continue; }
+      /* 下载帧 / 下载视频是 shepherd 上的**绝对 URL**（主机名随项目变），原样留着 */
+      if (/\/zip$/.test(href) || /\/mp4\/final$/.test(href)) actions.push({ kind, url: href, title, disabled });
+    }
+
+    /* ---- 帧方块 + 视频预览：站点把 <img>/<video> 塞在 title 属性或 <source> 里 ---- */
+    const tiles = [];
+    for (const sq of doc.querySelectorAll('.tiles .square')) {
+      const raw = String(sq.getAttribute('title') || '');
+      const src = (/<img\s+src="([^"]+)"/i.exec(raw) || [])[1] || '';
+      if (!src) continue;
+      const cls = String(sq.getAttribute('class') || '');
+      const num = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
+      tiles.push({
+        src,
+        frame: num(/frame:\s*([^<]+)/i),
+        cost: num(/cost:\s*([^<]+)/i),
+        time: num(/rendertime:\s*([^<]+)/i),
+        state: /btn-warning/.test(cls) ? 'progress' : (/btn-neutral/.test(cls) ? 'done' : 'waiting'),
+      });
+    }
+    const videoEl = doc.querySelector('.tiles video source[src]');
+    const video = videoEl ? String(videoEl.getAttribute('src') || '') : '';
+
+    /* ---- 权限 / 渲染者：站点把名单渲染成 <ul><li><a>名字</a></li> ----
+       `#project_acl_team_current` 的链接是 /team/<数字 id>，名字在链接文字里（id 要从 href 抠，
+       加团队时站点发的就是那个数字 id）。公开渲染时站点**不渲染**这两份名单（只有那只 checkbox），
+       所以名单为空 ≠ 没人，视图要按 publicRender 说清。 */
+    const namesOf = (rootId) => {
+      const root = doc.getElementById(rootId);
+      if (!root) return [];
+      return [...root.querySelectorAll('li a')]
+        .map((a) => ({ name: text(a), url: Util.safePath(a.getAttribute('href')), id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '' }))
+        .filter((x) => x.name);
+    };
+    const acl = {
+      managers: namesOf('project_acl_manager_current'),
+      renderers: namesOf('project_acl_renderer_current'),
+      teams: namesOf('project_acl_team_current'),
+      hasManagerPanel: !!doc.getElementById('project_acl_manager_add_form_user'),
+      hasRendererPanel: !!doc.getElementById('project_acl_renderer_add_form_user'),
+      hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
+    };
+
+    /* ---- 设置三项（形态见文件头注释） ---- */
     let compute = '';
     for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
       if (!on(r)) continue;
       const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
       if (m) compute = m[1];
     }
-
     const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
     const pubA = doc.getElementById('project_public_render_checkbox_1');
     const pubB = doc.getElementById('project_public_render_checkbox_value');
     const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
 
     return {
+      found: !!(nameEl || box || acl.hasManagerPanel),
+      id,
+      name: nameEl ? text(nameEl) : '',
+      statusText: stEl ? text(stEl) : '',
+      statusCls: stCls.toLowerCase(),
+      progression: progEl ? text(progEl) : '',
+      summary, warn, actions, tiles, video, acl, canManage,
       compute,
       mp4: mp4Box ? on(mp4Box) : null,
       publicRender: pubEl ? on(pubEl) : null,
       hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
       hasMp4: !!mp4Box,
       hasPublic: !!pubEl,
-      /* 能不能管这个项目：站点自己的删除按钮只在 `$can_manage` 为真时渲染（printBlend 的
-         `..._action4`），直接拿它当判据 —— 自绘的删除行不该出现在别人（或只读管理员）的项目上 */
-      canManage: !!doc.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]'),
     };
   }
 
