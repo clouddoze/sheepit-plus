@@ -276,6 +276,8 @@
       'machines.title': '在线机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
       'machines.open': '查看会话', 'machines.unknown': '未识别机型',
+      'machines.created': '开始 {v}',
+      'machines.uptime': '已连接 {v}',
       /* 渲染产出：日期轴 */
       'heat.weekday': '一,三,五', 'heat.tip': '{n} 帧',
       'heat.tipOn': '有渲染', 'heat.tipOff': '没有渲染',
@@ -331,6 +333,11 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
+      'set.psort': '默认排序', 'set.psortHint': '项目列表按什么排。点表头排序也会一并记住 —— 下次打开还是这个排法。',
+      'set.pdir.asc': '升序', 'set.pdir.desc': '降序',
+      'set.ovblocks': '总览区块', 'set.ovblocksHint': '总览页显示哪些块、按什么顺序排。关掉的整块不画；开关与顺序都会被记住。',
+      'ovb.kpi': '指标带', 'ovb.charts': '图表',
+      'ovb.up': '上移', 'ovb.down': '下移', 'ovb.pinned': '固定在顶部',
       /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
       'set.upmode': '上传项目',
@@ -645,6 +652,8 @@
       'machines.title': 'Online machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
+      'machines.created': 'Started {v}',
+      'machines.uptime': 'Connected {v}',
       'heat.weekday': 'Mon,Wed,Fri', 'heat.tip': '{n} frames',
       'heat.tipOn': 'Rendered', 'heat.tipOff': 'No rendering',
       'nav.account': 'Account',
@@ -695,6 +704,11 @@
       'set.langHint': 'Language packs are data, not code: register a dictionary and the UI lists it automatically. No logic changes needed.',
       'set.translate': 'Translate original pages', 'set.on': 'On', 'set.off': 'Off',
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
+      'set.psort': 'Default sort', 'set.psortHint': 'How the project list is ordered. Clicking a column header is remembered too \u2014 the same order is in force next time.',
+      'set.pdir.asc': 'Ascending', 'set.pdir.desc': 'Descending',
+      'set.ovblocks': 'Dashboard blocks', 'set.ovblocksHint': 'Which blocks the dashboard shows and in what order. A block that is off is not drawn at all; both the switches and the order are remembered.',
+      'ovb.kpi': 'Key numbers', 'ovb.charts': 'Charts',
+      'ovb.up': 'Move up', 'ovb.down': 'Move down', 'ovb.pinned': 'Pinned to the top',
       'set.exp': 'Experimental',
       'set.upmode': 'Project upload',
       'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
@@ -1400,6 +1414,28 @@
       'Add a team to renderer list': '输入团队名，加入渲染者名单',
       'If you are using Eevee, CPU rendering is not available.': '使用 Eevee 时无法使用 CPU 渲染。',
       'MP4 generation disabled': 'MP4 生成已禁用',
+
+      /* 会话页（/session/<数字>）。**只在「原版界面」下才会走到这里** —— 新版界面把这一页整页
+         重制了，用的是 10-core.js 的 sess.f.* 词条。措辞与那边保持一致（处理器 / 显卡 /
+         物理内存 …），免得同一个字段在两个界面里叫两个名字。
+         2026-10-07 之前这一整块是空的：老版界面打开会话页，导航是中文、表格正文全英文。 */
+      'Session information': '会话信息', 'Owner': '属主', 'Hostname': '主机名', 'OS': '操作系统',
+      'RenderKey': '渲染密钥', 'RAM allowed': '渲染可用内存', 'RAM available': '物理内存',
+      'Max render time per frame': '单帧渲染时长上限', 'VRAM': '显存', 'Driver': '驱动',
+      'Compute device': '计算设备', 'Power CPU': 'CPU 性能', 'Power GPU': 'GPU 性能',
+      'Creation Time': '创建时间', 'Rendered Frames': '已渲染帧数', 'Points earned': '获得积分',
+      'Last request': '最后请求', 'Last request Job': '最后请求作业',
+      'Last Validated Job': '最后验证作业', 'User agent': '运行环境', 'Action': '可用动作',
+      'Version': '版本', 'Status': '状态',
+      /* 渲染密钥那个按钮的字写在 <input value> 里（DomI18n 会翻 input[type=button] 的 value） */
+      'Display renderkey': '显示渲染密钥',
+      /* 两种暂停不是一回事，站点那行的原文必须逐字对上 */
+      'Paused server side': '服务器端已暂停', 'Paused client side': '客户端已暂停',
+      'Enable': '启用',
+      /* 时间线：图例是站点的内部枚举，表头是三个词 */
+      'Timeline': '时间线', 'Type': '类型', 'Job': '作业', 'Start': '开始', 'End': '结束',
+      'login': '登录', 'request': '请求', 'rendering': '渲染', 'validate': '校验',
+      'senderror': '发送错误', 'frame_reset': '帧重置',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
@@ -1702,17 +1738,21 @@
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
         const th = tr.querySelector('th');
-        const td = tr.querySelector('td');
-        if (!th || !td) continue;
-        const label = text(th);
+        const tds = [...tr.querySelectorAll('td')];
+        if (!tds.length) continue;
+        const label = th ? text(th) : '';
         if (!label) {
           /* **server side** 与 **client side** 是两种暂停。早先是 `if (!label) continue`，整行丢掉后
              两种暂停界面上长得一样，且 Status 那格都写 Enable，本地暂停被误报成「运行中」。它是状态
-             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。 */
-          const note = text(td);
+             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。
+             ⚠ 这一行**没有 `<th>`**，而且是「空 td + 有字 td」两格（2026-10-07 真机原文：
+             `<tr><td style="…"></td><td><span style="color:red">Paused client side</span></td></tr>`）。
+             所以判据不能要求 th 存在、也不能只看第一个 td —— 这里取所有 td 里非空的那些。 */
+          const note = tds.map(text).filter(Boolean).join(' ');
           if (note) info.note = { value: note, key: 'note', href: '' };
           continue;
         }
+        const td = tds[0];
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');
@@ -2465,41 +2505,53 @@ ${Theme.css('#sp')}
 #sp .meta span:first-child{padding-left:0;border-left:none}
 #sp .meta b{font-weight:600;color:var(--text)}
 
-/* ==== 指标带 ==== */
+/* ==== 指标带 ====
+   格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n 由 UI.kpis 写死）。
+   布局用 flex + 一个变量 --kb（每格的基准宽度 = 容器宽 / 每排格数），两个好处：
+     ① --kb = 100% / 格数 时就是整齐的一行；窄到放不下才换档折行；
+     ② 每格都能伸（flex-grow:1），所以**折行后最后一排会自动铺满整行**，
+        不会像固定列数的栅格那样在右下角留一块空洞。
+   分隔线不用 border 而用 box-shadow：折行后"谁是每排第一个"由布局决定，CSS 选不出来；
+   每格各往左、往上画 1px，最左/最上那两条正好落在容器边框上被 overflow:hidden 吃掉，
+   于是任意排版下都只有一条线 —— 不缺线，也不双线。 */
 #sp .kpis{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  display:flex;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;box-shadow:var(--shadow);
 }
-#sp .kpi{padding:18px 20px;border-left:1px solid var(--border);min-width:0}
-#sp .kpi:first-child{border-left:none}
+#sp .kpi{
+  flex:1 1 var(--kb,25%);min-width:0;padding:18px 20px;
+  box-shadow:-1px 0 0 var(--border),0 -1px 0 var(--border);
+}
 #sp .kpi .k{font-size:11.5px;font-weight:500;color:var(--text-3);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .v{margin-top:8px;font-size:27px;font-weight:600;letter-spacing:-.6px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .d{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 #sp .kpi .d b{color:var(--text);font-weight:600}
-@media (max-width:860px){
-  #sp .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpi:nth-child(3){border-left:none}
-  #sp .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+/* 一行装几格：基准 = 容器宽 / 格数。减 1px 是留给亚像素取整的余量 —— 6 个 16.667% 相加
+   可能超过 100%，不减速会让第 6 格被挤到第二排（曾经就是这么出问题的）。 */
+#sp .kpis[data-n="3"]{--kb:calc(100% / 3 - 1px)}
+#sp .kpis[data-n="4"]{--kb:calc(100% / 4 - 1px)}
+#sp .kpis[data-n="5"]{--kb:calc(100% / 5 - 1px)}
+#sp .kpis[data-n="6"]{--kb:calc(100% / 6 - 1px)}
+/* 第一档（≤1240）：先缩内边距与数值字号，把一行**尽量保住** —— 越窄格越小，整条一起缩，
+   缩完每个格还能容下最长那类数字（356,569,549 ≈ 140px），于是折行可以再往后推一档 */
+@media (max-width:1240px){
+  #sp .kpi{padding:16px 15px}
+  #sp .kpi .v{font-size:24px;letter-spacing:-.4px}
+}
+/* 第二档：真放不下了才折成「一排 3 格」。阈值按"每格至少留约 145px 内容"倒推，
+   最长的那类数字（356,569,549）在这个宽度下刚好不被省略号截断。 */
+@media (max-width:1090px){#sp .kpis[data-n="6"]{--kb:calc(100% / 3 - 1px)}}
+@media (max-width:920px){#sp .kpis[data-n="5"]{--kb:calc(100% / 3 - 1px)}}
+/* 第三档：一排 2 格（4/3 格先掉到这档，5/6 格窄到 3 格也放不下时才掉） */
+@media (max-width:745px){#sp .kpis[data-n="4"]{--kb:calc(50% - 1px)}}
+@media (max-width:620px){#sp .kpis[data-n="3"]{--kb:calc(50% - 1px)}}
+@media (max-width:480px){
+  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{--kb:calc(50% - 1px)}
 }
 @media (max-width:560px){
   #sp .kpi{padding:15px 14px}
   #sp .kpi .v{font-size:22px;letter-spacing:-.4px}
-}
-/* 格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n）。
-   每折一次都要重算该画哪条内边线，否则折行处多一条竖线、或少一条横线。 */
-#sp .kpis[data-n="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
-#sp .kpis[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
-@media (max-width:1200px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(3n+1),#sp .kpis[data-n="6"] .kpi:nth-child(3n+1){border-left:none}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n+4),#sp .kpis[data-n="6"] .kpi:nth-child(n+4){border-top:1px solid var(--border)}
-}
-/* ≤860 折 2 列：上一档 3n+1 会连第 4 格一起去掉，所以整块重算左边线。 */
-@media (max-width:860px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n),#sp .kpis[data-n="6"] .kpi:nth-child(n){border-left:1px solid var(--border)}
-  #sp .kpis[data-n="5"] .kpi:nth-child(odd),#sp .kpis[data-n="6"] .kpi:nth-child(odd){border-left:none}
 }
 
 /* ==== 主区 ==== */
@@ -2733,18 +2785,31 @@ ${Theme.css('#sp')}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
 /* ==== 已连接的机器 ==== */
+/* 一行一台，三段：身份（标签 + 规格 + 查看会话）/ 状态与时间 / 产出。
+   字号一层层收（13.5 / 12 / 11.5+15），且**不套第二层盒子** —— 之前拿 .farm 画那排数值，
+   看着像面板里又嵌一个面板，跟总览其它块不是一套语言。 */
 #sp .machines{display:flex;flex-direction:column}
-#sp .machine{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .machine{display:flex;flex-direction:column;gap:9px;padding:13px 20px;border-bottom:1px solid var(--border)}
 #sp .machine:last-child{border-bottom:none}
+#sp .machine .mhead{display:flex;align-items:center;gap:10px}
 #sp .machine .tag{
   flex:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:4px;
   background:var(--accent-weak);color:var(--accent);
 }
-#sp .machine .spec{flex:1;min-width:0;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .machine a.open{font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
+#sp .machine .spec{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .machine a.open{flex:none;font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
+#sp .machine .mline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-3);min-width:0;overflow-wrap:anywhere}
+/* 产出那排贴着右边：左边是状态与时间，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
+   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块，和左边那行
+   文字对齐时会出来两条基线（标签浮在上面、数值和状态挤在一条线上），看着就是错位。 */
+#sp .machine .mfoot{display:flex;align-items:center;gap:10px 20px;flex-wrap:wrap}
+#sp .machine .mstats{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;margin-left:auto}
+#sp .machine .mstats .ms{display:flex;align-items:baseline;gap:5px;min-width:0}
+#sp .machine .mstats .k{font-size:11.5px;color:var(--text-3);white-space:nowrap}
+#sp .machine .mstats .v{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
-@media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+@media (max-width:560px){#sp .machine{padding:12px 16px} #sp .machine .mstats{gap:22px}}
 
 /* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
 /* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
@@ -2901,6 +2966,14 @@ ${Theme.css('#sp')}
 #sp .tbl.dense th{padding:0 14px 8px}
 #sp .tbl.dense td{padding:7px 14px}
 #sp .tbl.dense .job{color:var(--text-2)}
+/* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
+   → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
+   被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
+#sp .tbl.fit{table-layout:fixed}
+#sp .tbl.fit .bar{min-width:0}
+#sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+/* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
+#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:none}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
@@ -2940,6 +3013,10 @@ ${Theme.css('#sp')}
 #sp .settings .row.block{display:block}
 #sp .settings .row.block .lbl{margin-bottom:10px}
 #sp .settings .row .hint{font-size:12px;color:var(--text-3);margin-top:9px;line-height:1.65;max-width:520px}
+/* 总览区块：每块一行（开关 + 上/下移）。行序就是页面上的顺序，所以别给这里的 .seg 加 flex:1。 */
+#sp .ovlist{display:flex;flex-direction:column;gap:6px}
+#sp .ovrow{display:flex;align-items:center;gap:8px}
+#sp .ovrow .lock{font-size:11.5px;color:var(--text-3)}
 #sp .foot{font-size:12px;color:var(--text-3);margin-top:26px;text-align:center}
 #sp .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
@@ -3552,13 +3629,86 @@ ${Theme.css('#sp')}
     }).join('')}</div>`;
   }
 
+  /* 站点的时间字符串是 "06:40 Sep 29"（**不给年份**），认不出就返回 null —— 宁可不显示也不猜。 */
+  const MON3 = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  function whenOf(raw) {
+    const m = String(raw || '').trim().match(/^(\d{1,2}):(\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/);
+    const mo = m && MON3[m[3].toLowerCase()];
+    if (!mo) return null;
+    const now = new Date();
+    const mk = (y) => new Date(y, mo - 1, Number(m[4]), Number(m[1]), Number(m[2])).getTime();
+    const t = mk(now.getFullYear());
+    // 用它自己的年份算出来比现在晚一天以上 → 那是去年的（跨年那几天会踩到，所以留一天的余量）
+    return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
+  }
+
+  /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
+  function agoText(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return d ? `${d}d${h}h` : h ? `${h}h${m}m` : m ? `${m}m` : `${s}s`;
+  }
+
+  /** 一台连着的机器的详情。主页那块只给「客户端 + 规格」；其余都是**逐台取它自己的会话页**
+      解析出来的（见 80-app.js 的 machineDetails）。取不到就整截不画、照旧只显示规格 ——
+      不编数据。
+
+      渲染方式看站点的 **Compute device** 那一格，那才是"客户端这一路开着没有"的权威字段
+      （模型单元格不能用：客户端取消了 CPU，CPU 型号照样在页上）。没那一格就退回算力单元格
+      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。
+
+      算力百分比直接写在 CPU / GPU 标签里（`CPU 22 %` / `GPU 260 %`），不再单列「算力 CPU」
+      那种格子 —— 同一件事说两遍正是"看着杂"的来源。
+
+      时间显示**算出来的相对值**（跑着的算到"现在"，停了的算到最后一次请求），站点原文挂在
+      title 上，鼠标悬浮才出来；算不出来就整条不显示。 */
+  function machineDetail(d) {
+    if (!d || !d.info) return '';
+    const val = (k) => { const x = d.info[k]; return x && x.value ? String(x.value) : ''; };
+    const now = Date.now();
+    const cRaw = val('createdAt');
+    const cT = whenOf(cRaw);
+    const cd = val('computeDevice').toLowerCase();
+    const power = (k) => { const v = val(k).trim(); return v && !/^0\s*%?$/.test(v) ? v : ''; };
+    const pCpu = power('power'), pGpu = power('powerGpu');
+    const cpuOn = cd ? /cpu/.test(cd) : !!pCpu;
+    const gpuOn = cd ? /gpu/.test(cd) : !!pGpu;
+    const chip = (label, v, on) => `<span class="${on ? 'on' : ''}">${esc(label)}${on && v ? ` ${esc(v)}` : ''}</span>`;
+    const dev = (cd || pCpu || pGpu)
+      ? `<span class="dev">${chip(t('proj.cpu'), pCpu, cpuOn)}${chip(t('proj.gpu'), pGpu, gpuOn)}</span>` : '';
+    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    /* **两种暂停是两件事**，而且都只看 Action 会被报成「运行中」（本地暂停时 Status 那格照样 Enable）。
+       以站点那行 note 为准：Paused server side / Paused client side —— 和会话页视图同一套判据。 */
+    const note = (d.info.note && d.info.note.value) || '';
+    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
+      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
+    const statusHtml = note
+      ? `<span title="${esc(note)}">${esc(noteKey ? t(noteKey) : note)}</span>`
+      : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
+        : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
+    const bits = [
+      statusHtml,
+      cRaw && cT && endT
+        ? `<span title="${esc(t('machines.created', { v: cRaw }))}">${esc(t('machines.uptime', { v: agoText(endT - cT) }))}</span>` : '',
+    ].filter(Boolean);
+    const stats = [['frames', 'stat.frames'], ['points', 'stat.points']]
+      .filter(([k]) => val(k))
+      .map(([k, key]) => `<div class="ms"><span class="k">${esc(t(key))}</span><span class="v num">${esc(val(k))}</span></div>`);
+    if (!dev && !bits.length && !stats.length) return '';
+    const line = (dev || bits.length) ? `<div class="mline">${dev}${bits.join(' · ')}</div>` : '';
+    return `<div class="mfoot">${line}${stats.length ? `<div class="mstats">${stats.join('')}</div>` : ''}</div>`;
+  }
+
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
     return `<div class="machines">${list.map((x) => `<div class="machine">
-        <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
-        <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
-        ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
+        <div class="mhead">
+          <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
+          <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+          ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
+        </div>
+        ${machineDetail(x.detail)}
       </div>`).join('')}</div>`;
   }
 
@@ -3594,10 +3744,13 @@ ${Theme.css('#sp')}
         <button class="btn primary" id="${retryId || 'sp-retry'}">${icon('refresh')}${esc(t('state.retry'))}</button>
       </div>`,
     empty: (msg) => `<div class="state"><div class="small">${esc(msg || t('state.empty'))}</div></div>`,
+    /* 登录后跳回 /home。**重定向那段不能 URL 编码**：实测 /user/signin/%2Fhome 与
+       /user/signin%2Fhome 都是 404，站点路由认不出编码过的斜杠（2026-10-07 真机）。
+       /user/signin 与 /user/signin/home 都是 200，后者签完确实跳回 /home。 */
     loggedOut: () => `<div class="state">
         <div class="big">${esc(t('state.loggedOut'))}</div>
         <div class="small">${esc(t('state.loggedOutHint'))}</div>
-        <a class="btn primary" href="/user/signin/%2Fhome">${esc(t('state.loggedOutBtn'))}</a>
+        <a class="btn primary" href="/user/signin/home">${esc(t('state.loggedOutBtn'))}</a>
       </div>`,
   };
 
@@ -3881,6 +4034,89 @@ ${Theme.css('#sp')}
 
   /* ==== 总览 ==== */
 
+  /* 总览页的区块注册表与显隐。块名 → 文案；`identity` 与页脚**不做成可关的块**：
+     一个是这一页的身份，一个是数据来源那行，关掉只会让页面看着像出错了。
+     块标签优先复用区块自己的标题词条（我的项目 / 渲染产出 / 在线机器），只有没有现成
+     标题的两块才新增文案。 */
+  const OV_BLOCKS = {
+    kpi: { label: 'ovb.kpi' },
+    mine: { label: 'my.title' },
+    charts: { label: 'ovb.charts' },
+    heat: { label: 'heat.title' },
+    machines: { label: 'machines.title' },
+  };
+  /* 位置固定的块：不进可调序的那条列表（顶上那条数据看板钉死在那儿，用户 2026-10-07 拍板），
+     但**仍然可以关掉** —— "不挪位置"和"不许隐藏"是两件事。 */
+  const OV_PINNED = ['kpi'];
+  const OV_MOVABLE = Object.keys(OV_BLOCKS).filter((k) => !OV_PINNED.includes(k));
+  const OV_PREF = 'ovHidden';
+  const OV_PREF_ORDER = 'ovOrder';
+
+  /* 存的是**被关掉的那些键**，不是"开着的那些"。这样以后新加一个块，老用户的偏好里没有它
+     → 默认就是开着的；反过来存（存开着的集合）就会出现"加了新块但谁都不显示"。
+     认不出的键直接忽略，不留在集合里。 */
+  const ovHidden = new Set();
+  (function restoreOv() {
+    const s = Util.store.get(OV_PREF, null);
+    if (!Array.isArray(s)) return;
+    for (const k of s) if (OV_BLOCKS[k]) ovHidden.add(k);
+  })();
+
+  const ovOn = (k) => !ovHidden.has(k);
+
+  /** 单块开关（设置页那排按钮调它）。全部关掉也允许 —— 那是用户自己的选择。 */
+  function setOvHidden(key) {
+    if (!OV_BLOCKS[key]) return false;
+    if (ovHidden.has(key)) ovHidden.delete(key); else ovHidden.add(key);
+    Util.store.set(OV_PREF, [...ovHidden]);
+    return true;
+  }
+
+  /* 可调序的那条顺序。存法同样是"从宽"：认不出的键丢掉、重复的去掉、固定块不许进来，
+     而**偏好里没提到的块按注册表顺序补到末尾** —— 以后新加一块，老用户直接就能看见它，
+     不会被一份旧名单挡在外面（和 ovHidden 存"关掉的"是同一个思路）。 */
+  let ovSeq = OV_MOVABLE.slice();
+  (function restoreOvOrder() {
+    const s = Util.store.get(OV_PREF_ORDER, null);
+    if (!Array.isArray(s)) return;
+    const seen = new Set();
+    const out = [];
+    for (const k of s) {
+      if (!OV_BLOCKS[k] || OV_PINNED.includes(k) || seen.has(k)) continue;
+      seen.add(k); out.push(k);
+    }
+    for (const k of OV_MOVABLE) if (!seen.has(k)) out.push(k);
+    ovSeq = out;
+  })();
+
+  /** 页面上的渲染顺序：固定块在前（按注册表顺序），其余按用户排的 */
+  const ovDisplayOrder = () => OV_PINNED.concat(ovSeq);
+
+  /** 上/下移一格（设置页那对箭头调它）。到头了就返回 false，不落盘也不重画。 */
+  function moveOv(key, dir) {
+    const i = ovSeq.indexOf(key);
+    if (i < 0 || !dir) return false;
+    const j = i + (dir < 0 ? -1 : 1);
+    if (j < 0 || j >= ovSeq.length) return false;
+    ovSeq.splice(i, 1);
+    ovSeq.splice(j, 0, key);
+    Util.store.set(OV_PREF_ORDER, ovSeq);
+    return true;
+  }
+
+  /** 设置页里的一块：开关 + 上/下移。固定块只画开关，旁边标一句"固定在顶部"。 */
+  function ovRow(k) {
+    const i = OV_PINNED.includes(k) ? -1 : ovSeq.indexOf(k);
+    const last = ovSeq.length - 1;
+    const arrow = (dir, off, icon, key) => `<button class="btn sm" data-ov-move="${k}" data-ov-dir="${dir}"`
+      + `${off ? ' disabled' : ''} title="${esc(t(key))}" aria-label="${esc(t(key))}">${UI.icon(icon)}</button>`;
+    return `<div class="ovrow">
+      <div class="seg"><button data-ov-toggle="${k}" aria-pressed="${ovOn(k)}">${esc(t(OV_BLOCKS[k].label))}</button></div>
+      ${i < 0 ? `<span class="lock">${esc(t('ovb.pinned'))}</span>`
+    : arrow(-1, i === 0, 'caretUp', 'ovb.up') + arrow(1, i === last, 'caretDown', 'ovb.down')}
+    </div>`;
+  }
+
   function identity(p, st) {
     const rank = rankOf(st);
     const badge = packLabel('badge', p.badge, true);
@@ -3923,7 +4159,8 @@ ${Theme.css('#sp')}
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
       // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + myPanel(state, p) + foot();
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty())
+        + (ovOn('mine') ? myPanel(state, p) : '') + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -3965,7 +4202,7 @@ ${Theme.css('#sp')}
       ...(asCount(ordered) > 0
         ? [{ k: t('stat.ordered'), v: Util.statNum(ordered), d: t('stat.orderedHint') }] : []),
     ];
-    // 格数变了，栅格与分隔线要跟着重排（见 30-style.js 的 .kpis[data-n]）
+    // 格数变了，每排几格与分隔线由 CSS 按 data-n 自己算（见 30-style.js 的 .kpis[data-n]）
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
@@ -4015,19 +4252,78 @@ ${Theme.css('#sp')}
       ${UI.machines(mc)}
     </div>`;
 
-    /* ---- 我的项目：有项目就摆在指标带下面；一个都没有时 myPanel 返回空串（整块不画） ---- */
-    return identity(p, st)
-      + kpiBand
-      + myPanel(state, p)
-      + main
-      + heat
-      + machinesPanel
-      + foot();
+    /* ---- 按 OV_ORDER 拼块，用户关掉的整块跳过。顺序是固定的（拖拽排序还没做）；
+           myPanel 自己在"没项目 / 不是自己的主页"时返回空串，所以"被关掉"和"本来就没有"
+           在页面上是同一种结果，不需要分开处理。 ---- */
+    const blocks = { kpi: kpiBand, mine: myPanel(state, p), charts: main, heat, machines: machinesPanel };
+    let body = identity(p, st);
+    for (const k of ovDisplayOrder()) if (ovOn(k)) body += blocks[k];
+    return body + foot();
   }
 
   /* ==== 项目 ==== */
 
+  /* 可排序列的注册表：字段 → { 表头词条, 取值 }。
+     表头词条复用既有的 `proj.col.*`，所以加一列排序**不需要新文案**；取值一律用站点给的
+     原始数值（memKb / pct），不用 "1.3 G" 这种显示文本 —— 否则按字面量排。
+     「我发布的」那张表站点只给得出名字与百分比，所以它有一份自己的注册表。 */
+  const P_SORTS = {
+    name: { label: 'proj.col.project', get: (p) => p.name, text: true },
+    owner: { label: 'proj.col.owner', get: (p) => p.owner, text: true },
+    progress: { label: 'proj.col.progress', get: (p) => p.pct || 0 },
+    memory: { label: 'proj.col.memory', get: (p) => p.memKb || 0 },
+  };
+  const M_SORTS = {
+    name: { label: 'proj.col.project', get: (x) => x.name, text: true },
+    /* 站点对"没给百分比"的行就是不排进度，摆到最小那一头，别当成 0% 混进去 */
+    progress: { label: 'proj.col.progress', get: (x) => (x.pct === null || x.pct === undefined ? -1 : x.pct) },
+  };
+  const SORT_PREF = 'projSort';
+
   const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+
+  /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
+     存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
+     不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
+  (function restoreSort() {
+    const s = Util.store.get(SORT_PREF, null);
+    if (!s || typeof s !== 'object') return;
+    if (P_SORTS[s.sort]) projState.sort = s.sort;
+    if (M_SORTS[s.msort]) projState.msort = s.msort;
+    if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
+  })();
+
+  function saveSort() {
+    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+  }
+
+  /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
+      选到它排不了的列（发布者 / 内存）就**不动它自己那份偏好**，不硬塞一个无效字段。 */
+  function setSortPref(key) {
+    if (!P_SORTS[key] || projState.sort === key) return false;
+    projState.sort = key;
+    if (M_SORTS[key]) projState.msort = key;
+    saveSort();
+    return true;
+  }
+
+  function setDirPref(dir) {
+    if (dir !== 'asc' && dir !== 'desc') return false;
+    if (projState.dir === dir) return false;
+    projState.dir = dir;
+    saveSort();
+    return true;
+  }
+
+  /** 比较器：文本 localeCompare、数值相减；升降方向由调用处统一翻，注册表里不写两遍 */
+  function sortCmp(spec, key) {
+    const s = spec[key];
+    if (!s) return null;
+    return s.text
+      ? (a, b) => String(s.get(a) || '').localeCompare(String(s.get(b) || ''))
+      : (a, b) => s.get(a) - s.get(b);
+  }
+
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -4148,11 +4444,8 @@ ${Theme.css('#sp')}
       rows = rows.filter((x) => x.statusKind === projState.filter);
     }
 
-    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头才按列排 */
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      progress: (a, b) => (a.pct === null ? -1 : a.pct) - (b.pct === null ? -1 : b.pct),
-    }[projState.msort];
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
+    const cmp = sortCmp(M_SORTS, projState.msort);
     if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -4215,12 +4508,8 @@ ${Theme.css('#sp')}
       return p.statusKind === projState.filter;
     });
 
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      owner: (a, b) => a.owner.localeCompare(b.owner),
-      progress: (a, b) => (a.pct || 0) - (b.pct || 0),
-      memory: (a, b) => (a.memKb || 0) - (b.memKb || 0),
-    }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
+    /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
+    const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -4257,7 +4546,11 @@ ${Theme.css('#sp')}
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap"><table class="tbl fit">
+          <colgroup>
+            <col style="width:22%"><col style="width:17%"><col style="width:13%"><col style="width:13%">
+            <col style="width:13%"><col style="width:12%"><col style="width:10%">
+          </colgroup>
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
@@ -4342,6 +4635,21 @@ ${Theme.css('#sp')}
           <div class="lbl">${esc(t('set.translate'))}</div>
           ${seg('sp-translate', state.translateSite ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
           <div class="hint">${esc(t('set.translateHint', { n: covTotal }))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.psort'))}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            ${seg('sp-psort', projState.sort, Object.keys(P_SORTS).map((k) => [k, t(P_SORTS[k].label)]))}
+            ${seg('sp-pdir', projState.dir, [['asc', t('set.pdir.asc')], ['desc', t('set.pdir.desc')]])}
+          </div>
+          <div class="hint">${esc(t('set.psortHint'))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.ovblocks'))}</div>
+          <div class="ovlist">${ovDisplayOrder().map(ovRow).join('')}</div>
+          <div class="hint">${esc(t('set.ovblocksHint'))}</div>
         </div>
 
         <div class="row block">
@@ -4841,7 +5149,11 @@ ${Theme.css('#sp')}
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+        <colgroup>
+          <col style="width:20%"><col style="width:13%"><col style="width:17%"><col style="width:13%">
+          <col style="width:13%"><col style="width:15%"><col style="width:9%">
+        </colgroup>
         <thead><tr>
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
@@ -4860,7 +5172,7 @@ ${Theme.css('#sp')}
             <td>${who}</td>
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
             <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
-            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            <td class="r num frac" title="${p ? esc(frac) : ''}">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
             <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
@@ -5167,7 +5479,7 @@ ${Theme.css('#sp')}
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, saveSort, setSortPref, setDirPref, ovDisplayOrder, setOvHidden, moveOv, rankState, acctState, sessState, dailySeries, mount };
 })();
 
 /* ===== src/62-chain.js ===== */
@@ -7151,7 +7463,7 @@ ${Theme.css('#sp')}
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
         <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname">${Util.esc(u)}</b></span>` : ''}
+        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -7418,6 +7730,19 @@ ${Theme.css('#sp')}
 
   /* ---- 4. 数据编排 ---- */
 
+  /* 在线机器：主页那块只给「客户端 + 规格」，而运行状态 / 渲染方式 / 性能 / 帧数 / 积分
+     都在**每一台自己的会话页**上 —— 逐台取一次（最多 3 台，走 Api 的 60 秒缓存），
+     解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
+     `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
+  async function machineDetails(profile) {
+    const list = (profile && profile.machines && profile.machines.list) || [];
+    for (const m of list.slice(0, 3)) {
+      if (m.detail !== undefined || !m.url) continue;
+      m.detail = null;
+      try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
+    }
+  }
+
   async function ensureData(view) {
     if (view === 'settings') return;
 
@@ -7469,6 +7794,7 @@ ${Theme.css('#sp')}
         state.profile = Api.parseProfile(html, target);
         SP.state = state;   // 供 shell 里取头像
       }
+      await machineDetails(state.profile);
       if (!state.home) {
         try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
       }
@@ -7771,6 +8097,7 @@ ${Theme.css('#sp')}
       const k = sort.dataset.sort;
       if (Views.projState.sort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.sort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();   // 点表头 = 记住这个默认（用户自定义排序）
       render();
       return;
     }
@@ -7781,6 +8108,7 @@ ${Theme.css('#sp')}
       const k = msort.dataset.msort;
       if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();
       render();
       return;
     }
@@ -7864,6 +8192,22 @@ ${Theme.css('#sp')}
       render();
       return;
     }
+
+    /* 默认排序：改完落盘（两个列表下次打开都用它）。认不出的值、或点的就是当前那档，
+       set*Pref 会返回 false —— 那就没什么可画的，不白重画一次。 */
+    const ps = ev.target.closest('#sp-psort [data-v]');
+    if (ps) { if (Views.setSortPref(ps.dataset.v)) render(); return; }
+
+    const pd = ev.target.closest('#sp-pdir [data-v]');
+    if (pd) { if (Views.setDirPref(pd.dataset.v)) render(); return; }
+
+    // 总览区块的开关：点一下翻一个
+    const ob = ev.target.closest('[data-ov-toggle]');
+    if (ob) { if (Views.setOvHidden(ob.dataset.ovToggle)) render(); return; }
+
+    // 总览区块的上/下移：到头了 moveOv 返回 false，什么都不用画
+    const om = ev.target.closest('[data-ov-move]');
+    if (om) { if (Views.moveOv(om.dataset.ovMove, Number(om.dataset.ovDir))) render(); return; }
 
     const lg = ev.target.closest('#sp-lang [data-v]');
     if (lg) {

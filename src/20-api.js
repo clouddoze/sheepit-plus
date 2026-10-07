@@ -175,17 +175,21 @@
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
         const th = tr.querySelector('th');
-        const td = tr.querySelector('td');
-        if (!th || !td) continue;
-        const label = text(th);
+        const tds = [...tr.querySelectorAll('td')];
+        if (!tds.length) continue;
+        const label = th ? text(th) : '';
         if (!label) {
           /* **server side** 与 **client side** 是两种暂停。早先是 `if (!label) continue`，整行丢掉后
              两种暂停界面上长得一样，且 Status 那格都写 Enable，本地暂停被误报成「运行中」。它是状态
-             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。 */
-          const note = text(td);
+             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。
+             ⚠ 这一行**没有 `<th>`**，而且是「空 td + 有字 td」两格（2026-10-07 真机原文：
+             `<tr><td style="…"></td><td><span style="color:red">Paused client side</span></td></tr>`）。
+             所以判据不能要求 th 存在、也不能只看第一个 td —— 这里取所有 td 里非空的那些。 */
+          const note = tds.map(text).filter(Boolean).join(' ');
           if (note) info.note = { value: note, key: 'note', href: '' };
           continue;
         }
+        const td = tds[0];
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');

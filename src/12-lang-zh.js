@@ -315,6 +315,28 @@
       'Add a team to renderer list': '输入团队名，加入渲染者名单',
       'If you are using Eevee, CPU rendering is not available.': '使用 Eevee 时无法使用 CPU 渲染。',
       'MP4 generation disabled': 'MP4 生成已禁用',
+
+      /* 会话页（/session/<数字>）。**只在「原版界面」下才会走到这里** —— 新版界面把这一页整页
+         重制了，用的是 10-core.js 的 sess.f.* 词条。措辞与那边保持一致（处理器 / 显卡 /
+         物理内存 …），免得同一个字段在两个界面里叫两个名字。
+         2026-10-07 之前这一整块是空的：老版界面打开会话页，导航是中文、表格正文全英文。 */
+      'Session information': '会话信息', 'Owner': '属主', 'Hostname': '主机名', 'OS': '操作系统',
+      'RenderKey': '渲染密钥', 'RAM allowed': '渲染可用内存', 'RAM available': '物理内存',
+      'Max render time per frame': '单帧渲染时长上限', 'VRAM': '显存', 'Driver': '驱动',
+      'Compute device': '计算设备', 'Power CPU': 'CPU 性能', 'Power GPU': 'GPU 性能',
+      'Creation Time': '创建时间', 'Rendered Frames': '已渲染帧数', 'Points earned': '获得积分',
+      'Last request': '最后请求', 'Last request Job': '最后请求作业',
+      'Last Validated Job': '最后验证作业', 'User agent': '运行环境', 'Action': '可用动作',
+      'Version': '版本', 'Status': '状态',
+      /* 渲染密钥那个按钮的字写在 <input value> 里（DomI18n 会翻 input[type=button] 的 value） */
+      'Display renderkey': '显示渲染密钥',
+      /* 两种暂停不是一回事，站点那行的原文必须逐字对上 */
+      'Paused server side': '服务器端已暂停', 'Paused client side': '客户端已暂停',
+      'Enable': '启用',
+      /* 时间线：图例是站点的内部枚举，表头是三个词 */
+      'Timeline': '时间线', 'Type': '类型', 'Job': '作业', 'Start': '开始', 'End': '结束',
+      'login': '登录', 'request': '请求', 'rendering': '渲染', 'validate': '校验',
+      'senderror': '发送错误', 'frame_reset': '帧重置',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。

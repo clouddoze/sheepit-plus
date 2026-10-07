@@ -220,13 +220,86 @@
     }).join('')}</div>`;
   }
 
+  /* 站点的时间字符串是 "06:40 Sep 29"（**不给年份**），认不出就返回 null —— 宁可不显示也不猜。 */
+  const MON3 = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  function whenOf(raw) {
+    const m = String(raw || '').trim().match(/^(\d{1,2}):(\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/);
+    const mo = m && MON3[m[3].toLowerCase()];
+    if (!mo) return null;
+    const now = new Date();
+    const mk = (y) => new Date(y, mo - 1, Number(m[4]), Number(m[1]), Number(m[2])).getTime();
+    const t = mk(now.getFullYear());
+    // 用它自己的年份算出来比现在晚一天以上 → 那是去年的（跨年那几天会踩到，所以留一天的余量）
+    return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
+  }
+
+  /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
+  function agoText(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return d ? `${d}d${h}h` : h ? `${h}h${m}m` : m ? `${m}m` : `${s}s`;
+  }
+
+  /** 一台连着的机器的详情。主页那块只给「客户端 + 规格」；其余都是**逐台取它自己的会话页**
+      解析出来的（见 80-app.js 的 machineDetails）。取不到就整截不画、照旧只显示规格 ——
+      不编数据。
+
+      渲染方式看站点的 **Compute device** 那一格，那才是"客户端这一路开着没有"的权威字段
+      （模型单元格不能用：客户端取消了 CPU，CPU 型号照样在页上）。没那一格就退回算力单元格
+      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。
+
+      算力百分比直接写在 CPU / GPU 标签里（`CPU 22 %` / `GPU 260 %`），不再单列「算力 CPU」
+      那种格子 —— 同一件事说两遍正是"看着杂"的来源。
+
+      时间显示**算出来的相对值**（跑着的算到"现在"，停了的算到最后一次请求），站点原文挂在
+      title 上，鼠标悬浮才出来；算不出来就整条不显示。 */
+  function machineDetail(d) {
+    if (!d || !d.info) return '';
+    const val = (k) => { const x = d.info[k]; return x && x.value ? String(x.value) : ''; };
+    const now = Date.now();
+    const cRaw = val('createdAt');
+    const cT = whenOf(cRaw);
+    const cd = val('computeDevice').toLowerCase();
+    const power = (k) => { const v = val(k).trim(); return v && !/^0\s*%?$/.test(v) ? v : ''; };
+    const pCpu = power('power'), pGpu = power('powerGpu');
+    const cpuOn = cd ? /cpu/.test(cd) : !!pCpu;
+    const gpuOn = cd ? /gpu/.test(cd) : !!pGpu;
+    const chip = (label, v, on) => `<span class="${on ? 'on' : ''}">${esc(label)}${on && v ? ` ${esc(v)}` : ''}</span>`;
+    const dev = (cd || pCpu || pGpu)
+      ? `<span class="dev">${chip(t('proj.cpu'), pCpu, cpuOn)}${chip(t('proj.gpu'), pGpu, gpuOn)}</span>` : '';
+    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    /* **两种暂停是两件事**，而且都只看 Action 会被报成「运行中」（本地暂停时 Status 那格照样 Enable）。
+       以站点那行 note 为准：Paused server side / Paused client side —— 和会话页视图同一套判据。 */
+    const note = (d.info.note && d.info.note.value) || '';
+    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
+      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
+    const statusHtml = note
+      ? `<span title="${esc(note)}">${esc(noteKey ? t(noteKey) : note)}</span>`
+      : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
+        : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
+    const bits = [
+      statusHtml,
+      cRaw && cT && endT
+        ? `<span title="${esc(t('machines.created', { v: cRaw }))}">${esc(t('machines.uptime', { v: agoText(endT - cT) }))}</span>` : '',
+    ].filter(Boolean);
+    const stats = [['frames', 'stat.frames'], ['points', 'stat.points']]
+      .filter(([k]) => val(k))
+      .map(([k, key]) => `<div class="ms"><span class="k">${esc(t(key))}</span><span class="v num">${esc(val(k))}</span></div>`);
+    if (!dev && !bits.length && !stats.length) return '';
+    const line = (dev || bits.length) ? `<div class="mline">${dev}${bits.join(' · ')}</div>` : '';
+    return `<div class="mfoot">${line}${stats.length ? `<div class="mstats">${stats.join('')}</div>` : ''}</div>`;
+  }
+
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
     return `<div class="machines">${list.map((x) => `<div class="machine">
-        <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
-        <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
-        ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
+        <div class="mhead">
+          <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
+          <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+          ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
+        </div>
+        ${machineDetail(x.detail)}
       </div>`).join('')}</div>`;
   }
 
@@ -262,10 +335,13 @@
         <button class="btn primary" id="${retryId || 'sp-retry'}">${icon('refresh')}${esc(t('state.retry'))}</button>
       </div>`,
     empty: (msg) => `<div class="state"><div class="small">${esc(msg || t('state.empty'))}</div></div>`,
+    /* 登录后跳回 /home。**重定向那段不能 URL 编码**：实测 /user/signin/%2Fhome 与
+       /user/signin%2Fhome 都是 404，站点路由认不出编码过的斜杠（2026-10-07 真机）。
+       /user/signin 与 /user/signin/home 都是 200，后者签完确实跳回 /home。 */
     loggedOut: () => `<div class="state">
         <div class="big">${esc(t('state.loggedOut'))}</div>
         <div class="small">${esc(t('state.loggedOutHint'))}</div>
-        <a class="btn primary" href="/user/signin/%2Fhome">${esc(t('state.loggedOutBtn'))}</a>
+        <a class="btn primary" href="/user/signin/home">${esc(t('state.loggedOutBtn'))}</a>
       </div>`,
   };
 

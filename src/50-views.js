@@ -149,6 +149,89 @@
 
   /* ==== 总览 ==== */
 
+  /* 总览页的区块注册表与显隐。块名 → 文案；`identity` 与页脚**不做成可关的块**：
+     一个是这一页的身份，一个是数据来源那行，关掉只会让页面看着像出错了。
+     块标签优先复用区块自己的标题词条（我的项目 / 渲染产出 / 在线机器），只有没有现成
+     标题的两块才新增文案。 */
+  const OV_BLOCKS = {
+    kpi: { label: 'ovb.kpi' },
+    mine: { label: 'my.title' },
+    charts: { label: 'ovb.charts' },
+    heat: { label: 'heat.title' },
+    machines: { label: 'machines.title' },
+  };
+  /* 位置固定的块：不进可调序的那条列表（顶上那条数据看板钉死在那儿，用户 2026-10-07 拍板），
+     但**仍然可以关掉** —— "不挪位置"和"不许隐藏"是两件事。 */
+  const OV_PINNED = ['kpi'];
+  const OV_MOVABLE = Object.keys(OV_BLOCKS).filter((k) => !OV_PINNED.includes(k));
+  const OV_PREF = 'ovHidden';
+  const OV_PREF_ORDER = 'ovOrder';
+
+  /* 存的是**被关掉的那些键**，不是"开着的那些"。这样以后新加一个块，老用户的偏好里没有它
+     → 默认就是开着的；反过来存（存开着的集合）就会出现"加了新块但谁都不显示"。
+     认不出的键直接忽略，不留在集合里。 */
+  const ovHidden = new Set();
+  (function restoreOv() {
+    const s = Util.store.get(OV_PREF, null);
+    if (!Array.isArray(s)) return;
+    for (const k of s) if (OV_BLOCKS[k]) ovHidden.add(k);
+  })();
+
+  const ovOn = (k) => !ovHidden.has(k);
+
+  /** 单块开关（设置页那排按钮调它）。全部关掉也允许 —— 那是用户自己的选择。 */
+  function setOvHidden(key) {
+    if (!OV_BLOCKS[key]) return false;
+    if (ovHidden.has(key)) ovHidden.delete(key); else ovHidden.add(key);
+    Util.store.set(OV_PREF, [...ovHidden]);
+    return true;
+  }
+
+  /* 可调序的那条顺序。存法同样是"从宽"：认不出的键丢掉、重复的去掉、固定块不许进来，
+     而**偏好里没提到的块按注册表顺序补到末尾** —— 以后新加一块，老用户直接就能看见它，
+     不会被一份旧名单挡在外面（和 ovHidden 存"关掉的"是同一个思路）。 */
+  let ovSeq = OV_MOVABLE.slice();
+  (function restoreOvOrder() {
+    const s = Util.store.get(OV_PREF_ORDER, null);
+    if (!Array.isArray(s)) return;
+    const seen = new Set();
+    const out = [];
+    for (const k of s) {
+      if (!OV_BLOCKS[k] || OV_PINNED.includes(k) || seen.has(k)) continue;
+      seen.add(k); out.push(k);
+    }
+    for (const k of OV_MOVABLE) if (!seen.has(k)) out.push(k);
+    ovSeq = out;
+  })();
+
+  /** 页面上的渲染顺序：固定块在前（按注册表顺序），其余按用户排的 */
+  const ovDisplayOrder = () => OV_PINNED.concat(ovSeq);
+
+  /** 上/下移一格（设置页那对箭头调它）。到头了就返回 false，不落盘也不重画。 */
+  function moveOv(key, dir) {
+    const i = ovSeq.indexOf(key);
+    if (i < 0 || !dir) return false;
+    const j = i + (dir < 0 ? -1 : 1);
+    if (j < 0 || j >= ovSeq.length) return false;
+    ovSeq.splice(i, 1);
+    ovSeq.splice(j, 0, key);
+    Util.store.set(OV_PREF_ORDER, ovSeq);
+    return true;
+  }
+
+  /** 设置页里的一块：开关 + 上/下移。固定块只画开关，旁边标一句"固定在顶部"。 */
+  function ovRow(k) {
+    const i = OV_PINNED.includes(k) ? -1 : ovSeq.indexOf(k);
+    const last = ovSeq.length - 1;
+    const arrow = (dir, off, icon, key) => `<button class="btn sm" data-ov-move="${k}" data-ov-dir="${dir}"`
+      + `${off ? ' disabled' : ''} title="${esc(t(key))}" aria-label="${esc(t(key))}">${UI.icon(icon)}</button>`;
+    return `<div class="ovrow">
+      <div class="seg"><button data-ov-toggle="${k}" aria-pressed="${ovOn(k)}">${esc(t(OV_BLOCKS[k].label))}</button></div>
+      ${i < 0 ? `<span class="lock">${esc(t('ovb.pinned'))}</span>`
+    : arrow(-1, i === 0, 'caretUp', 'ovb.up') + arrow(1, i === last, 'caretDown', 'ovb.down')}
+    </div>`;
+  }
+
   function identity(p, st) {
     const rank = rankOf(st);
     const badge = packLabel('badge', p.badge, true);
@@ -191,7 +274,8 @@
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
       // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + myPanel(state, p) + foot();
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty())
+        + (ovOn('mine') ? myPanel(state, p) : '') + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -233,7 +317,7 @@
       ...(asCount(ordered) > 0
         ? [{ k: t('stat.ordered'), v: Util.statNum(ordered), d: t('stat.orderedHint') }] : []),
     ];
-    // 格数变了，栅格与分隔线要跟着重排（见 30-style.js 的 .kpis[data-n]）
+    // 格数变了，每排几格与分隔线由 CSS 按 data-n 自己算（见 30-style.js 的 .kpis[data-n]）
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
@@ -283,19 +367,78 @@
       ${UI.machines(mc)}
     </div>`;
 
-    /* ---- 我的项目：有项目就摆在指标带下面；一个都没有时 myPanel 返回空串（整块不画） ---- */
-    return identity(p, st)
-      + kpiBand
-      + myPanel(state, p)
-      + main
-      + heat
-      + machinesPanel
-      + foot();
+    /* ---- 按 OV_ORDER 拼块，用户关掉的整块跳过。顺序是固定的（拖拽排序还没做）；
+           myPanel 自己在"没项目 / 不是自己的主页"时返回空串，所以"被关掉"和"本来就没有"
+           在页面上是同一种结果，不需要分开处理。 ---- */
+    const blocks = { kpi: kpiBand, mine: myPanel(state, p), charts: main, heat, machines: machinesPanel };
+    let body = identity(p, st);
+    for (const k of ovDisplayOrder()) if (ovOn(k)) body += blocks[k];
+    return body + foot();
   }
 
   /* ==== 项目 ==== */
 
+  /* 可排序列的注册表：字段 → { 表头词条, 取值 }。
+     表头词条复用既有的 `proj.col.*`，所以加一列排序**不需要新文案**；取值一律用站点给的
+     原始数值（memKb / pct），不用 "1.3 G" 这种显示文本 —— 否则按字面量排。
+     「我发布的」那张表站点只给得出名字与百分比，所以它有一份自己的注册表。 */
+  const P_SORTS = {
+    name: { label: 'proj.col.project', get: (p) => p.name, text: true },
+    owner: { label: 'proj.col.owner', get: (p) => p.owner, text: true },
+    progress: { label: 'proj.col.progress', get: (p) => p.pct || 0 },
+    memory: { label: 'proj.col.memory', get: (p) => p.memKb || 0 },
+  };
+  const M_SORTS = {
+    name: { label: 'proj.col.project', get: (x) => x.name, text: true },
+    /* 站点对"没给百分比"的行就是不排进度，摆到最小那一头，别当成 0% 混进去 */
+    progress: { label: 'proj.col.progress', get: (x) => (x.pct === null || x.pct === undefined ? -1 : x.pct) },
+  };
+  const SORT_PREF = 'projSort';
+
   const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+
+  /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
+     存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
+     不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
+  (function restoreSort() {
+    const s = Util.store.get(SORT_PREF, null);
+    if (!s || typeof s !== 'object') return;
+    if (P_SORTS[s.sort]) projState.sort = s.sort;
+    if (M_SORTS[s.msort]) projState.msort = s.msort;
+    if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
+  })();
+
+  function saveSort() {
+    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+  }
+
+  /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
+      选到它排不了的列（发布者 / 内存）就**不动它自己那份偏好**，不硬塞一个无效字段。 */
+  function setSortPref(key) {
+    if (!P_SORTS[key] || projState.sort === key) return false;
+    projState.sort = key;
+    if (M_SORTS[key]) projState.msort = key;
+    saveSort();
+    return true;
+  }
+
+  function setDirPref(dir) {
+    if (dir !== 'asc' && dir !== 'desc') return false;
+    if (projState.dir === dir) return false;
+    projState.dir = dir;
+    saveSort();
+    return true;
+  }
+
+  /** 比较器：文本 localeCompare、数值相减；升降方向由调用处统一翻，注册表里不写两遍 */
+  function sortCmp(spec, key) {
+    const s = spec[key];
+    if (!s) return null;
+    return s.text
+      ? (a, b) => String(s.get(a) || '').localeCompare(String(s.get(b) || ''))
+      : (a, b) => s.get(a) - s.get(b);
+  }
+
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -416,11 +559,8 @@
       rows = rows.filter((x) => x.statusKind === projState.filter);
     }
 
-    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头才按列排 */
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      progress: (a, b) => (a.pct === null ? -1 : a.pct) - (b.pct === null ? -1 : b.pct),
-    }[projState.msort];
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
+    const cmp = sortCmp(M_SORTS, projState.msort);
     if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -483,12 +623,8 @@
       return p.statusKind === projState.filter;
     });
 
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      owner: (a, b) => a.owner.localeCompare(b.owner),
-      progress: (a, b) => (a.pct || 0) - (b.pct || 0),
-      memory: (a, b) => (a.memKb || 0) - (b.memKb || 0),
-    }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
+    /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
+    const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -525,7 +661,11 @@
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap"><table class="tbl fit">
+          <colgroup>
+            <col style="width:22%"><col style="width:17%"><col style="width:13%"><col style="width:13%">
+            <col style="width:13%"><col style="width:12%"><col style="width:10%">
+          </colgroup>
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
@@ -610,6 +750,21 @@
           <div class="lbl">${esc(t('set.translate'))}</div>
           ${seg('sp-translate', state.translateSite ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
           <div class="hint">${esc(t('set.translateHint', { n: covTotal }))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.psort'))}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            ${seg('sp-psort', projState.sort, Object.keys(P_SORTS).map((k) => [k, t(P_SORTS[k].label)]))}
+            ${seg('sp-pdir', projState.dir, [['asc', t('set.pdir.asc')], ['desc', t('set.pdir.desc')]])}
+          </div>
+          <div class="hint">${esc(t('set.psortHint'))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.ovblocks'))}</div>
+          <div class="ovlist">${ovDisplayOrder().map(ovRow).join('')}</div>
+          <div class="hint">${esc(t('set.ovblocksHint'))}</div>
         </div>
 
         <div class="row block">
@@ -1109,7 +1264,11 @@
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+        <colgroup>
+          <col style="width:20%"><col style="width:13%"><col style="width:17%"><col style="width:13%">
+          <col style="width:13%"><col style="width:15%"><col style="width:9%">
+        </colgroup>
         <thead><tr>
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
@@ -1128,7 +1287,7 @@
             <td>${who}</td>
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
             <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
-            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            <td class="r num frac" title="${p ? esc(frac) : ''}">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
             <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
@@ -1435,5 +1594,5 @@
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, saveSort, setSortPref, setDirPref, ovDisplayOrder, setOvHidden, moveOv, rankState, acctState, sessState, dailySeries, mount };
 })();

@@ -201,7 +201,7 @@
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
         <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname">${Util.esc(u)}</b></span>` : ''}
+        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -468,6 +468,19 @@
 
   /* ---- 4. 数据编排 ---- */
 
+  /* 在线机器：主页那块只给「客户端 + 规格」，而运行状态 / 渲染方式 / 性能 / 帧数 / 积分
+     都在**每一台自己的会话页**上 —— 逐台取一次（最多 3 台，走 Api 的 60 秒缓存），
+     解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
+     `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
+  async function machineDetails(profile) {
+    const list = (profile && profile.machines && profile.machines.list) || [];
+    for (const m of list.slice(0, 3)) {
+      if (m.detail !== undefined || !m.url) continue;
+      m.detail = null;
+      try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
+    }
+  }
+
   async function ensureData(view) {
     if (view === 'settings') return;
 
@@ -519,6 +532,7 @@
         state.profile = Api.parseProfile(html, target);
         SP.state = state;   // 供 shell 里取头像
       }
+      await machineDetails(state.profile);
       if (!state.home) {
         try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
       }
@@ -821,6 +835,7 @@
       const k = sort.dataset.sort;
       if (Views.projState.sort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.sort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();   // 点表头 = 记住这个默认（用户自定义排序）
       render();
       return;
     }
@@ -831,6 +846,7 @@
       const k = msort.dataset.msort;
       if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();
       render();
       return;
     }
@@ -914,6 +930,22 @@
       render();
       return;
     }
+
+    /* 默认排序：改完落盘（两个列表下次打开都用它）。认不出的值、或点的就是当前那档，
+       set*Pref 会返回 false —— 那就没什么可画的，不白重画一次。 */
+    const ps = ev.target.closest('#sp-psort [data-v]');
+    if (ps) { if (Views.setSortPref(ps.dataset.v)) render(); return; }
+
+    const pd = ev.target.closest('#sp-pdir [data-v]');
+    if (pd) { if (Views.setDirPref(pd.dataset.v)) render(); return; }
+
+    // 总览区块的开关：点一下翻一个
+    const ob = ev.target.closest('[data-ov-toggle]');
+    if (ob) { if (Views.setOvHidden(ob.dataset.ovToggle)) render(); return; }
+
+    // 总览区块的上/下移：到头了 moveOv 返回 false，什么都不用画
+    const om = ev.target.closest('[data-ov-move]');
+    if (om) { if (Views.moveOv(om.dataset.ovMove, Number(om.dataset.ovDir))) render(); return; }
 
     const lg = ev.target.closest('#sp-lang [data-v]');
     if (lg) {

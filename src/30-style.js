@@ -124,41 +124,53 @@ ${Theme.css('#sp')}
 #sp .meta span:first-child{padding-left:0;border-left:none}
 #sp .meta b{font-weight:600;color:var(--text)}
 
-/* ==== 指标带 ==== */
+/* ==== 指标带 ====
+   格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n 由 UI.kpis 写死）。
+   布局用 flex + 一个变量 --kb（每格的基准宽度 = 容器宽 / 每排格数），两个好处：
+     ① --kb = 100% / 格数 时就是整齐的一行；窄到放不下才换档折行；
+     ② 每格都能伸（flex-grow:1），所以**折行后最后一排会自动铺满整行**，
+        不会像固定列数的栅格那样在右下角留一块空洞。
+   分隔线不用 border 而用 box-shadow：折行后"谁是每排第一个"由布局决定，CSS 选不出来；
+   每格各往左、往上画 1px，最左/最上那两条正好落在容器边框上被 overflow:hidden 吃掉，
+   于是任意排版下都只有一条线 —— 不缺线，也不双线。 */
 #sp .kpis{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  display:flex;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;box-shadow:var(--shadow);
 }
-#sp .kpi{padding:18px 20px;border-left:1px solid var(--border);min-width:0}
-#sp .kpi:first-child{border-left:none}
+#sp .kpi{
+  flex:1 1 var(--kb,25%);min-width:0;padding:18px 20px;
+  box-shadow:-1px 0 0 var(--border),0 -1px 0 var(--border);
+}
 #sp .kpi .k{font-size:11.5px;font-weight:500;color:var(--text-3);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .v{margin-top:8px;font-size:27px;font-weight:600;letter-spacing:-.6px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .d{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 #sp .kpi .d b{color:var(--text);font-weight:600}
-@media (max-width:860px){
-  #sp .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpi:nth-child(3){border-left:none}
-  #sp .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+/* 一行装几格：基准 = 容器宽 / 格数。减 1px 是留给亚像素取整的余量 —— 6 个 16.667% 相加
+   可能超过 100%，不减速会让第 6 格被挤到第二排（曾经就是这么出问题的）。 */
+#sp .kpis[data-n="3"]{--kb:calc(100% / 3 - 1px)}
+#sp .kpis[data-n="4"]{--kb:calc(100% / 4 - 1px)}
+#sp .kpis[data-n="5"]{--kb:calc(100% / 5 - 1px)}
+#sp .kpis[data-n="6"]{--kb:calc(100% / 6 - 1px)}
+/* 第一档（≤1240）：先缩内边距与数值字号，把一行**尽量保住** —— 越窄格越小，整条一起缩，
+   缩完每个格还能容下最长那类数字（356,569,549 ≈ 140px），于是折行可以再往后推一档 */
+@media (max-width:1240px){
+  #sp .kpi{padding:16px 15px}
+  #sp .kpi .v{font-size:24px;letter-spacing:-.4px}
+}
+/* 第二档：真放不下了才折成「一排 3 格」。阈值按"每格至少留约 145px 内容"倒推，
+   最长的那类数字（356,569,549）在这个宽度下刚好不被省略号截断。 */
+@media (max-width:1090px){#sp .kpis[data-n="6"]{--kb:calc(100% / 3 - 1px)}}
+@media (max-width:920px){#sp .kpis[data-n="5"]{--kb:calc(100% / 3 - 1px)}}
+/* 第三档：一排 2 格（4/3 格先掉到这档，5/6 格窄到 3 格也放不下时才掉） */
+@media (max-width:745px){#sp .kpis[data-n="4"]{--kb:calc(50% - 1px)}}
+@media (max-width:620px){#sp .kpis[data-n="3"]{--kb:calc(50% - 1px)}}
+@media (max-width:480px){
+  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{--kb:calc(50% - 1px)}
 }
 @media (max-width:560px){
   #sp .kpi{padding:15px 14px}
   #sp .kpi .v{font-size:22px;letter-spacing:-.4px}
-}
-/* 格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n）。
-   每折一次都要重算该画哪条内边线，否则折行处多一条竖线、或少一条横线。 */
-#sp .kpis[data-n="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
-#sp .kpis[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
-@media (max-width:1200px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(3n+1),#sp .kpis[data-n="6"] .kpi:nth-child(3n+1){border-left:none}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n+4),#sp .kpis[data-n="6"] .kpi:nth-child(n+4){border-top:1px solid var(--border)}
-}
-/* ≤860 折 2 列：上一档 3n+1 会连第 4 格一起去掉，所以整块重算左边线。 */
-@media (max-width:860px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n),#sp .kpis[data-n="6"] .kpi:nth-child(n){border-left:1px solid var(--border)}
-  #sp .kpis[data-n="5"] .kpi:nth-child(odd),#sp .kpis[data-n="6"] .kpi:nth-child(odd){border-left:none}
 }
 
 /* ==== 主区 ==== */
@@ -392,18 +404,31 @@ ${Theme.css('#sp')}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
 /* ==== 已连接的机器 ==== */
+/* 一行一台，三段：身份（标签 + 规格 + 查看会话）/ 状态与时间 / 产出。
+   字号一层层收（13.5 / 12 / 11.5+15），且**不套第二层盒子** —— 之前拿 .farm 画那排数值，
+   看着像面板里又嵌一个面板，跟总览其它块不是一套语言。 */
 #sp .machines{display:flex;flex-direction:column}
-#sp .machine{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .machine{display:flex;flex-direction:column;gap:9px;padding:13px 20px;border-bottom:1px solid var(--border)}
 #sp .machine:last-child{border-bottom:none}
+#sp .machine .mhead{display:flex;align-items:center;gap:10px}
 #sp .machine .tag{
   flex:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:4px;
   background:var(--accent-weak);color:var(--accent);
 }
-#sp .machine .spec{flex:1;min-width:0;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .machine a.open{font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
+#sp .machine .spec{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .machine a.open{flex:none;font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
+#sp .machine .mline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-3);min-width:0;overflow-wrap:anywhere}
+/* 产出那排贴着右边：左边是状态与时间，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
+   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块，和左边那行
+   文字对齐时会出来两条基线（标签浮在上面、数值和状态挤在一条线上），看着就是错位。 */
+#sp .machine .mfoot{display:flex;align-items:center;gap:10px 20px;flex-wrap:wrap}
+#sp .machine .mstats{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;margin-left:auto}
+#sp .machine .mstats .ms{display:flex;align-items:baseline;gap:5px;min-width:0}
+#sp .machine .mstats .k{font-size:11.5px;color:var(--text-3);white-space:nowrap}
+#sp .machine .mstats .v{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
-@media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+@media (max-width:560px){#sp .machine{padding:12px 16px} #sp .machine .mstats{gap:22px}}
 
 /* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
 /* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
@@ -560,6 +585,14 @@ ${Theme.css('#sp')}
 #sp .tbl.dense th{padding:0 14px 8px}
 #sp .tbl.dense td{padding:7px 14px}
 #sp .tbl.dense .job{color:var(--text-2)}
+/* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
+   → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
+   被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
+#sp .tbl.fit{table-layout:fixed}
+#sp .tbl.fit .bar{min-width:0}
+#sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+/* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
+#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:none}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
@@ -599,6 +632,10 @@ ${Theme.css('#sp')}
 #sp .settings .row.block{display:block}
 #sp .settings .row.block .lbl{margin-bottom:10px}
 #sp .settings .row .hint{font-size:12px;color:var(--text-3);margin-top:9px;line-height:1.65;max-width:520px}
+/* 总览区块：每块一行（开关 + 上/下移）。行序就是页面上的顺序，所以别给这里的 .seg 加 flex:1。 */
+#sp .ovlist{display:flex;flex-direction:column;gap:6px}
+#sp .ovrow{display:flex;align-items:center;gap:8px}
+#sp .ovrow .lock{font-size:11.5px;color:var(--text-3)}
 #sp .foot{font-size:12px;color:var(--text-3);margin-top:26px;text-align:center}
 #sp .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
