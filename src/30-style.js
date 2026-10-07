@@ -344,11 +344,14 @@ ${Theme.css('#sp')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-/* 分数放自己的列（td.frac）：挂在条子后面，轨道长度会随数字宽度变化、整列参差不齐。 */
-#sp .bar{min-width:180px}
+/* 进度：**条子与分数同一格**（用户 2026-10-07）。以前分数独占一列并右对齐，条子右端到数字
+   之间空出近 100px（等于"列宽-条宽"再加"数字列左半截"），而项目名反被挤到截断。
+   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。 */
+#sp .pwrap{display:flex;align-items:center;gap:10px;min-width:0}
+#sp .pwrap .bar{flex:1 1 auto;min-width:48px}
+#sp .pwrap .frac{flex:none;font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
@@ -602,7 +605,6 @@ ${Theme.css('#sp')}
    → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
    被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
 #sp .tbl.fit{table-layout:fixed}
-#sp .tbl.fit .bar{min-width:0}
 #sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
 /* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
 #sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:none}

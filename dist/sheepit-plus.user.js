@@ -2754,11 +2754,14 @@ ${Theme.css('#sp')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-/* 分数放自己的列（td.frac）：挂在条子后面，轨道长度会随数字宽度变化、整列参差不齐。 */
-#sp .bar{min-width:180px}
+/* 进度：**条子与分数同一格**（用户 2026-10-07）。以前分数独占一列并右对齐，条子右端到数字
+   之间空出近 100px（等于"列宽-条宽"再加"数字列左半截"），而项目名反被挤到截断。
+   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。 */
+#sp .pwrap{display:flex;align-items:center;gap:10px;min-width:0}
+#sp .pwrap .bar{flex:1 1 auto;min-width:48px}
+#sp .pwrap .frac{flex:none;font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
@@ -3012,7 +3015,6 @@ ${Theme.css('#sp')}
    → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
    被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
 #sp .tbl.fit{table-layout:fixed}
-#sp .tbl.fit .bar{min-width:0}
 #sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
 /* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
 #sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:none}
@@ -4476,14 +4478,19 @@ ${Theme.css('#sp')}
       : null;
   }
 
+  /** 进度：条子与分数**同一格**（用户 2026-10-07）。早先是两列、分数右对齐 → 条子右端到数字
+      之间空出近 100px（列宽减去条宽 + 数字列左半截），而项目名反被挤到截断。
+      合成一格后条子 `flex:1` 吃满剩余宽度，和数字之间只隔一个 10px 的 gap。 */
+  const pcell = (pct, frac, title) => `<td><div class="pwrap">${UI.progress(pct, frac)}`
+    + `<span class="frac num"${title ? ` title="${esc(title)}"` : ''}>${esc(frac)}</span></div></td>`;
+
   function projectRow(p, me, maps) {
     const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
       <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
-      <td>${UI.progress(p.pct, frac)}</td>
-      <td class="r num frac">${esc(frac)}</td>
+      ${pcell(p.pct, frac, frac)}
       <td>${UI.devices(p.cpu, p.gpu)}</td>
       <td class="r num">${esc(p.memory || '—')}</td>
     </tr>`;
@@ -4609,19 +4616,19 @@ ${Theme.css('#sp')}
       <div class="panel" style="padding:14px 6px 6px">
         <div class="tablewrap"><table class="tbl fit">
           <colgroup>
-            <col style="width:22%"><col style="width:17%"><col style="width:13%"><col style="width:13%">
-            <col style="width:13%"><col style="width:12%"><col style="width:10%">
+            <col style="width:28%"><col style="width:19%"><col style="width:13%">
+            <col style="width:19%"><col style="width:11%"><col style="width:10%">
           </colgroup>
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
             <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'), 2)}
+            ${th('progress', t('proj.col.progress'))}
             <th>${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="7"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>
@@ -5214,14 +5221,14 @@ ${Theme.css('#sp')}
       </div>
       ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
         <colgroup>
-          <col style="width:20%"><col style="width:13%"><col style="width:17%"><col style="width:13%">
-          <col style="width:13%"><col style="width:15%"><col style="width:9%">
+          <col style="width:29%"><col style="width:19%"><col style="width:17%">
+          <col style="width:19%"><col style="width:9%"><col style="width:7%">
         </colgroup>
         <thead><tr>
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
           <th>${esc(t('proj.col.status'))}</th>
-          <th colspan="2">${esc(t('proj.col.progress'))}</th>
+          <th>${esc(t('proj.col.progress'))}</th>
           <th>${esc(t('proj.col.device'))}</th>
           <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
@@ -5234,8 +5241,7 @@ ${Theme.css('#sp')}
               isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
-            <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
-            <td class="r num frac" title="${p ? esc(frac) : ''}">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            ${p ? pcell(p.pct, frac, frac) : '<td class="r"><span class="dash">—</span></td>'}
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
             <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
