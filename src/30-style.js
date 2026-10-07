@@ -6,9 +6,6 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
-/* .sp-acmenu 单独生成一份：唯一长在 #sp 外面的家具（jQuery UI 的补全菜单挂在 <body> 上）。
-   不能合并成选择器列表 Theme.css('#sp, ul.sp-acmenu') —— 两处条件选择器只绑最后一项，实测暗色下整壳变白。 */
-${Theme.css('ul.sp-acmenu')}
 
 /* ==== 骨架 ==== */
 #sp{
@@ -107,6 +104,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .btn:hover{border-color:var(--border-strong);color:var(--text)}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
+/* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
+   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+#sp .btn:disabled{opacity:.5;cursor:not-allowed}
+#sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
@@ -123,41 +124,53 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .meta span:first-child{padding-left:0;border-left:none}
 #sp .meta b{font-weight:600;color:var(--text)}
 
-/* ==== 指标带 ==== */
+/* ==== 指标带 ====
+   格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n 由 UI.kpis 写死）。
+   布局用 flex + 一个变量 --kb（每格的基准宽度 = 容器宽 / 每排格数），两个好处：
+     ① --kb = 100% / 格数 时就是整齐的一行；窄到放不下才换档折行；
+     ② 每格都能伸（flex-grow:1），所以**折行后最后一排会自动铺满整行**，
+        不会像固定列数的栅格那样在右下角留一块空洞。
+   分隔线不用 border 而用 box-shadow：折行后"谁是每排第一个"由布局决定，CSS 选不出来；
+   每格各往左、往上画 1px，最左/最上那两条正好落在容器边框上被 overflow:hidden 吃掉，
+   于是任意排版下都只有一条线 —— 不缺线，也不双线。 */
 #sp .kpis{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  display:flex;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;box-shadow:var(--shadow);
 }
-#sp .kpi{padding:18px 20px;border-left:1px solid var(--border);min-width:0}
-#sp .kpi:first-child{border-left:none}
+#sp .kpi{
+  flex:1 1 var(--kb,25%);min-width:0;padding:18px 20px;
+  box-shadow:-1px 0 0 var(--border),0 -1px 0 var(--border);
+}
 #sp .kpi .k{font-size:11.5px;font-weight:500;color:var(--text-3);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .v{margin-top:8px;font-size:27px;font-weight:600;letter-spacing:-.6px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .d{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 #sp .kpi .d b{color:var(--text);font-weight:600}
-@media (max-width:860px){
-  #sp .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpi:nth-child(3){border-left:none}
-  #sp .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+/* 一行装几格：基准 = 容器宽 / 格数。减 1px 是留给亚像素取整的余量 —— 6 个 16.667% 相加
+   可能超过 100%，不减速会让第 6 格被挤到第二排（曾经就是这么出问题的）。 */
+#sp .kpis[data-n="3"]{--kb:calc(100% / 3 - 1px)}
+#sp .kpis[data-n="4"]{--kb:calc(100% / 4 - 1px)}
+#sp .kpis[data-n="5"]{--kb:calc(100% / 5 - 1px)}
+#sp .kpis[data-n="6"]{--kb:calc(100% / 6 - 1px)}
+/* 第一档（≤1240）：先缩内边距与数值字号，把一行**尽量保住** —— 越窄格越小，整条一起缩，
+   缩完每个格还能容下最长那类数字（356,569,549 ≈ 140px），于是折行可以再往后推一档 */
+@media (max-width:1240px){
+  #sp .kpi{padding:16px 15px}
+  #sp .kpi .v{font-size:24px;letter-spacing:-.4px}
+}
+/* 第二档：真放不下了才折成「一排 3 格」。阈值按"每格至少留约 145px 内容"倒推，
+   最长的那类数字（356,569,549）在这个宽度下刚好不被省略号截断。 */
+@media (max-width:1090px){#sp .kpis[data-n="6"]{--kb:calc(100% / 3 - 1px)}}
+@media (max-width:920px){#sp .kpis[data-n="5"]{--kb:calc(100% / 3 - 1px)}}
+/* 第三档：一排 2 格（4/3 格先掉到这档，5/6 格窄到 3 格也放不下时才掉） */
+@media (max-width:745px){#sp .kpis[data-n="4"]{--kb:calc(50% - 1px)}}
+@media (max-width:620px){#sp .kpis[data-n="3"]{--kb:calc(50% - 1px)}}
+@media (max-width:480px){
+  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{--kb:calc(50% - 1px)}
 }
 @media (max-width:560px){
   #sp .kpi{padding:15px 14px}
   #sp .kpi .v{font-size:22px;letter-spacing:-.4px}
-}
-/* 格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n）。
-   每折一次都要重算该画哪条内边线，否则折行处多一条竖线、或少一条横线。 */
-#sp .kpis[data-n="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
-#sp .kpis[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
-@media (max-width:1200px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(3n+1),#sp .kpis[data-n="6"] .kpi:nth-child(3n+1){border-left:none}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n+4),#sp .kpis[data-n="6"] .kpi:nth-child(n+4){border-top:1px solid var(--border)}
-}
-/* ≤860 折 2 列：上一档 3n+1 会连第 4 格一起去掉，所以整块重算左边线。 */
-@media (max-width:860px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n),#sp .kpis[data-n="6"] .kpi:nth-child(n){border-left:1px solid var(--border)}
-  #sp .kpis[data-n="5"] .kpi:nth-child(odd),#sp .kpis[data-n="6"] .kpi:nth-child(odd){border-left:none}
 }
 
 /* ==== 主区 ==== */
@@ -252,8 +265,11 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .farm .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 #sp .farm .row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
 #sp .farm .v{font-size:18px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;line-height:1.1}
-/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。 */
-#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:none}
+/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。
+   但**必须能收缩**：窄窗口下格子只有 166px 宽，固定 160px 的线加数值会溢出格右边缘、
+   被邻格盖住（实测溢出 43–77px）。flex-shrink:1 + min-width:0 让它按剩余空间缩，
+   宽格子时仍由 max-width 顶在 160px。 */
+#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:1 1 auto;min-width:0}
 @media (max-width:860px){
   #sp .farm{grid-template-columns:repeat(2,minmax(0,1fr))}
   #sp .farm div:nth-child(3){border-left:none}
@@ -328,11 +344,18 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-/* 分数放自己的列（td.frac）：挂在条子后面，轨道长度会随数字宽度变化、整列参差不齐。 */
-#sp .bar{min-width:180px}
+/* 进度：**条子与分数同一格**（用户 2026-10-07）。以前分数独占一列并右对齐，条子右端到数字
+   之间空出近 100px（等于"列宽-条宽"再加"数字列左半截"），而项目名反被挤到截断。
+   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。
+   ⚠ 分数必须**定宽**（min-width + 右对齐）：它宽度随数字位数变（498 / 500 是 29px，
+   8,439 / 11,000 是 72px），不定宽时条子右端参差不齐 —— 实测项目页 51 行右端差 42px
+   （用户 2026-10-07：「进度条也不等长」）。min-width 兜住最长的 16 字符分数，超长时盒子自己涨、
+   条子让位，绝不裁掉数字。 */
+#sp .pwrap{display:flex;align-items:center;gap:10px;min-width:0}
+#sp .pwrap .bar{flex:1 1 auto;min-width:48px}
+#sp .pwrap .frac{flex:0 0 auto;min-width:6.6em;text-align:right;font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
@@ -341,6 +364,17 @@ ${Theme.css('ul.sp-acmenu')}
    （实测差 129px）。给个上限 + 省略号，完整原因走 title。 */
 #sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap;display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
+/* 会话页「状态」列装的是站点给的一整句原因（"可用内存不足：需要 20 GB，现有 16 GB"）。
+   只给省略号 + 悬浮，用户读不到结果本身（2026-10-07 实报），所以这一列**换行显示全文**：
+   句子在列宽处折行，行高只对"真的长"的那几行变高。
+   ⚠ 别退回 .st 的 inline-block 默认行为：.tbl.fit .st 的 max-width:none 去掉上限后它是
+   "宽度=内容宽"，会撑出单元格被 td 的 overflow:hidden **硬裁**（没有省略号、没有换行）——这正是
+   "很别扭"的来源。这里显式给 max-width:100% + 换行，两个毛病一起治。 */
+/* 项目名过长也**换行显示全文**（用户 2026-10-07）：「既然能换行，那项目名过长也给换行了吧」。
+   与「状态」列同一个理由 —— 省略号 + 悬浮读不到名字本身。名字常是下划线连成的一长串，
+   得靠 overflow-wrap:anywhere 才断得开（不然一整个 token 撑破列宽）。 */
+#sp .tbl .pn{white-space:normal;overflow-wrap:anywhere;max-width:100%;overflow:visible;text-overflow:clip}
+#sp .tbl.dense.fit .st{white-space:normal;max-width:100%;overflow-wrap:break-word;overflow:visible;text-overflow:clip}
 @media (max-width:760px){
   #sp .tbl{min-width:660px}
   #sp .tbl th,#sp .tbl td{padding-left:12px;padding-right:12px}
@@ -390,19 +424,62 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .empty .cta{margin-top:26px;display:inline-flex;gap:9px;flex-wrap:wrap;justify-content:center}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
-/* ==== 已连接的机器 ==== */
+/* ==== 已连接的机器 ====
+   **一行一台**（用户 2026-10-07）：身份（标签 + 规格）/ 运行状态与时间 / 产出 / 查看会话 全在同一条线上。
+   规格是唯一可伸缩的那段（窗口不够先省略号化），其余各段 nowrap；窄到 900px 以下才折行，
+   那时身份独占第一行。之前是"标题一行 + 明细一行"两层盒子，两台机器就吃掉四行。 */
 #sp .machines{display:flex;flex-direction:column}
-#sp .machine{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .machine{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
+  padding:12px 20px;border-bottom:1px solid var(--border);
+}
 #sp .machine:last-child{border-bottom:none}
+#sp .machine .mhead{display:flex;align-items:center;gap:10px;flex:1 1 200px;min-width:0}
 #sp .machine .tag{
   flex:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:4px;
   background:var(--accent-weak);color:var(--accent);
 }
-#sp .machine .spec{flex:1;min-width:0;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .machine a.open{font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
+#sp .machine .spec{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .machine a.open{flex:none;font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
+/* 状态与时间那一段：现在是**一条不折的行**（用「 · 」连起来），跟着规格后面走 */
+#sp .machine .mline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);min-width:0}
+#sp .machine .mline > span{white-space:nowrap}
+/* 产出那排贴着右边：左边是身份与状态，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
+   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块。 */
+#sp .machine .mfoot{display:flex;align-items:center;gap:10px 18px;min-width:0}
+#sp .machine .mstats{display:flex;align-items:baseline;gap:18px}
+#sp .machine .mstats .ms{display:flex;align-items:baseline;gap:5px;min-width:0}
+#sp .machine .mstats .k{font-size:11.5px;color:var(--text-3);white-space:nowrap}
+#sp .machine .mstats .v{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap}
+/* 窄到 900px：一行真放不下了才折 —— 身份占满第一行，明细与链接落到第二行，链接靠右 */
+@media (max-width:900px){
+  #sp .machine .mhead{flex:1 1 100%}
+  #sp .machine .mfoot{flex:1 1 auto;flex-wrap:wrap}
+  #sp .machine a.open{margin-left:auto}
+}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
-@media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+@media (max-width:560px){#sp .machine{padding:12px 16px} #sp .machine .mstats{gap:22px}}
+
+/* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
+/* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
+#sp .myproj{display:flex;flex-direction:column}
+#sp .myproj .mp{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .myproj .mp:last-child{border-bottom:none}
+#sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .myproj .nm a{color:var(--text);text-decoration:none}
+#sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
+/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
+#sp .st.bad{color:var(--accent)}
+#sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
+#sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+#sp .tbl-mine{min-width:0}
+#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
+/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
+   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
+@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+@media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
 /* ==== 顶栏模式开关 ==== */
 #sp .modebtn{
@@ -438,6 +515,23 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .sw .txt small{display:block;font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.55}
 #sp .sw:hover .track{border-color:var(--border-strong)}
 
+/* ==== 项目管理页自绘的「项目设置」区 ====
+   一行一件事：左边标签、右边控件、下面一句后果。开关行直接用 .sw，所以分隔线统一下在直接子元素上。 */
+#sp .mg-ops .pbody > *{border-bottom:1px solid var(--border)}
+#sp .mg-ops .pbody > *:last-child{border-bottom:none}
+#sp .mg-ops .mg-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+#sp .mg-ops .mg-row .k{flex:none;width:96px;font-size:13px;color:var(--text-2)}
+#sp .mg-ops .mg-row .seg{flex:none}
+#sp .mg-ops .mg-row small{font-size:12px;color:var(--text-3);line-height:1.5;min-width:0}
+#sp .mg-ops .mg-row.danger .k{color:var(--text);font-weight:550}
+/* 危险动作：只有这一处用强调色描边，不做实心红按钮（误点的代价不可逆，宁可它不显眼） */
+#sp .btn.danger{color:var(--accent);border-color:var(--accent)}
+#sp .btn.danger:hover{background:var(--accent-weak);border-color:var(--accent);color:var(--accent)}
+@media (max-width:560px){
+  #sp .mg-ops .mg-row{flex-wrap:wrap;gap:8px 12px}
+  #sp .mg-ops .mg-row .k{width:100%}
+}
+
 #sp .ulist{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 #sp .ulist .u{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border)}
 #sp .ulist .u:last-child{border-bottom:none}
@@ -472,7 +566,6 @@ ${Theme.css('ul.sp-acmenu')}
 /* file input 让 label 当按钮，但绝不能 display:none —— 那会把它从 Tab 顺序里摘掉；改成 1px 透明。 */
 #sp .filepick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 #sp .filepick:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
-#sp .toast.ok{border-color:var(--border-strong);color:var(--text)}
 
 #sp .state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:88px 20px;text-align:center}
 #sp .state .big{font-size:15px;color:var(--text-2);font-weight:600}
@@ -522,11 +615,17 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .tbl.dense th{padding:0 14px 8px}
 #sp .tbl.dense td{padding:7px 14px}
 #sp .tbl.dense .job{color:var(--text-2)}
+/* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
+   → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
+   被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
+#sp .tbl.fit{table-layout:fixed}
+#sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+/* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
+#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:100%}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
-#sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 #sp .acts{padding:2px 0 0}
 #sp .acthead,#sp .actrow{display:flex;align-items:center;gap:12px;padding:0 20px}
@@ -561,6 +660,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .settings .row.block{display:block}
 #sp .settings .row.block .lbl{margin-bottom:10px}
 #sp .settings .row .hint{font-size:12px;color:var(--text-3);margin-top:9px;line-height:1.65;max-width:520px}
+/* 总览区块：每块一行（开关 + 上/下移）。行序就是页面上的顺序，所以别给这里的 .seg 加 flex:1。 */
+#sp .ovlist{display:flex;flex-direction:column;gap:6px}
+#sp .ovrow{display:flex;align-items:center;gap:8px}
+#sp .ovrow .lock{font-size:11.5px;color:var(--text-3)}
 #sp .foot{font-size:12px;color:var(--text-3);margin-top:26px;text-align:center}
 #sp .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
@@ -568,8 +671,9 @@ ${Theme.css('ul.sp-acmenu')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
-/* ==== 上传页 / 分析等待页（局部换装）====
-   站点渲染的表单 / 估算器 / 进度条原样搬过来：addproject.js 认 id 不认外观，不重实现上传逻辑。 */
+/* ==== 上传页 / 分析等待页：骨架与控件都是我们自绘的（64-step1.js / 68-step3.js）====
+   这一版没有兼容档了：站点那份 HTML 只当数据源，页面上没有搬过来的站点节点。
+   下面 .up-body 那几组规则是给它里面的槽位兜底的（自绘控件落在同一个槽位里）。 */
 
 /* 必须 align-items:start 而不是 stretch：估算结果撑高右卡时，stretch 会把左卡一起拉长（用户实报）。 */
 #sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
@@ -581,43 +685,20 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
-#sp .expnote{
-  margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
-}
 
-#sp .up-rules .up-body h4{
-  font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.02em;
-  margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--border);
-}
-#sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
-#sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
-/* 试过把数字钉到卡片最右（空出 686px）、给说明分两栏（「积分」被劈开），都不行；
-   正解：说明限宽 44em、数字紧跟其后一行。 */
-#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:6px}
-#sp .up-rules .qtext p{margin:0;max-width:44em}
-#sp .up-rules .qdata{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 30px;min-width:0;padding-top:1px}
-#sp .up-rules .qdata .qlead{margin:0;font-size:12px;color:var(--text-3);max-width:none}
-#sp .up-rules .qdata .qtotal{margin:0}
-
-#sp .up-rules .up-body .qpos{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px 26px;margin:0}
-#sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
-#sp .up-rules .up-body .qpos li::before{display:none}
-#sp .up-rules .up-body .qpos li strong{
-  margin-left:6px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
-}
-#sp .up-rules .up-body .qtotal{display:inline;margin:0;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
-
-/* 多栏只对块级容器生效：ul 在别处是 flex 列，这里要还原成 block（.qpos 是数据，排除）。 */
+/* 须知那一列：站点原文的 <li> 被原样克隆进我们的 ul.up1-rules（64-step1.js），这里只管排版。
+   多栏只对块级容器生效：ul 在别处是 flex 列（见下面 .up-body ul），这里要还原成 block。 */
 @media (min-width:820px){
-  #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:9px}
+  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:9px}
 }
 @media (min-width:1200px){
-  #sp .up-rules .up-body ul:not(.qpos){columns:3}
+  #sp .up-rules .up-body ul{columns:3}
 }
 
 /* ==== 抹掉原站外观 ==== */
+/* 兼容档（把站点节点搬进卡片）已删，所以下面这一组压制规则**当前没有匹配对象**（页面上只有我们自己造的节点）。
+   留着当级联底座：真要恢复搬节点的路线，它们是必需的；别再往下加同类规则。 */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
 #sp .up-body .sign-in-wr,#sp .up-body .blog-post{
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
@@ -635,18 +716,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
 #sp .up-body strong{color:var(--text);font-weight:600}
 #sp .up-body a{color:var(--accent)}
-#sp .up-body #addproject_warning_zero_frame{font-size:13px}
-
-#sp .up-body form table,
-#sp .up-body form tbody,
-#sp .up-body form tr,
-#sp .up-body form td{display:block;width:auto;padding:0}
-#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
-#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
-#sp .up-body form td + td{margin-bottom:16px}
-#sp .up-body form td:last-child{margin-bottom:0}
-#sp .up-body form br + strong{color:var(--text-2)}
-
 
 #sp .up-body input[type=file]{
   display:block;width:100%;padding:11px 12px;margin:0 0 10px;
@@ -659,108 +728,15 @@ ${Theme.css('ul.sp-acmenu')}
   border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
 }
 #sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
-#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
 
-#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-  transition:filter .12s;
-}
-#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
 
-/* 站点内联写死了 #EEB0A0 的底色，只能用 !important 压过去 —— 必要的例外。 */
-#sp .up-body #upload_progress_bar{
-  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
-  background:var(--surface-2) !important;border:1px solid var(--border) !important;
-}
-#sp .up-body #upload_progress_bar .ui-progressbar-value{
-  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
-}
-#sp .up-body #upload_progress_label{
-  position:static !important;text-shadow:none !important;text-align:right;
-  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
-}
 
-/* 这一行用的是 2013 版 Bootstrap 的 .input-group（table-cell + float），没管住时等效宽度
-   949px、OK 的右缘超出视口 5px；整行重声明成普通 flex 并给输入封顶。 */
 #sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
-#sp .up-body table input[type=text]{width:92px}
-/* 估算器那两个数字是「标签 + 值」两列，站点用的是内容自适应 <table>，这里摊平成两列网格
-   （标签列必须 max-content）。只认 .numband：站点稍后返回的结果表格是另一个形状，被误伤过
-   一次 —— 单元格被摊成网格项，分块数和耗时对调了。 */
-#sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
-#sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
-#sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
-#sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
-#sp .up-body .input-group .form-control{flex:1 1 auto;min-width:0;width:auto;max-width:320px}
-#sp .up-body .input-group-btn{display:flex;flex:0 0 auto;width:auto;white-space:nowrap}
-#sp .up-body .input-group-btn > *{flex:0 0 auto}
-#sp .up-body #addproject_estimator_result{
-  font-size:12.5px;color:var(--text-2);line-height:1.7;
-  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
-}
-#sp .up-body #addproject_estimator_result:empty{display:none}
-/* 站点返回的结果表带 Bootstrap 的 .table，在深色卡片里白底白字（用户实报），整段按我们的表格重画。 */
-#sp .up-body #addproject_estimator_result table{
-  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
-  border:none !important;   /* .table-bordered 表格本身也画了一圈边框 */
-}
-#sp .up-body #addproject_estimator_result thead th,
-#sp .up-body #addproject_estimator_result th{
-  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
-  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
-}
-#sp .up-body #addproject_estimator_result td{
-  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
-  color:var(--text-2);vertical-align:baseline;
-}
-#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
-#sp .up-body #addproject_estimator_result td:last-child,
-#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
-#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
-#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
-  font-variant-numeric:tabular-nums;
-}
-#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
-#sp .up-body #addproject_estimator_result > br:first-child{display:none}
-/* 站点给耗时套了 Bootstrap 绿色小标签。调色板里没有绿色，2026-10-04 用户确认保持中性、
-   不恢复红 / 绿语义，别再翻回去。 */
-#sp .up-body #addproject_estimator_result .label{
-  background:none !important;border:none !important;color:var(--text) !important;
-  font-size:12.5px !important;font-weight:600;padding:0 !important;
-  text-shadow:none;border-radius:0;
-}
-/* 只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
-#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
-#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
-  border:none;border-bottom:1px solid var(--border);
-}
-/* 斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
-#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
-/* 站点给这些单元格写了内联的 text-align:center，只能用 !important 压过去（同类例外） */
-#sp .up-body #addproject_estimator_result th,
-#sp .up-body #addproject_estimator_result td{text-align:left !important}
-
-/* 设备名补全菜单是 jQuery UI 的 widget，挂在 <body> 上 —— 唯一一件长在 #sp 外面的家具
-   （见 injectGuard：挂进 #sp 会被 CSS zoom 把定位算成 0）。选择器因此不带 #sp，用我们
-   自己的类名 .sp-acmenu 划边界，不碰站点可能有的其他 .ui-autocomplete。 */
-body > ul.sp-acmenu{
-  position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
-  max-height:280px;overflow:auto;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
-  box-shadow:0 14px 30px rgba(0,0,0,.30);
-  font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
-  color:var(--text-2);
-}
-body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
-body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
-
 /* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -771,35 +747,152 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
 #sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
 @keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-#sp .an-done{padding:20px 20px 0}
-#sp .an-done .an-sub{margin-bottom:14px}
-#sp .an-foot{padding:0 20px 20px}
+/* 分析完成那张卡片：结果直接接在状态行下面 —— 「新版」自绘进 #sp-an-result（即 .sp-up3，自带内边距）；
+   认不出来时那里放的是一句明说 + 一个「交回站点自己界面」的按钮（见 80-app.js 的 handBackToSite）。 */
 
-/* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
-#sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-siteform section,#sp .sp-siteform .slice,
-#sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
-#sp .sp-siteform .form-light,#sp .sp-siteform .padding-15{
-  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+/* ---- 控件皮肤：全自绘（0.1.18 起；0.2.0 只有 .sp-up3 这一套）------------------------
+   勾选框、单选框、输入框、下拉箭头一律 appearance:none + 我们自己的画法，颜色走主题变量 ⇒
+   暗色、亮色自动跟随。作用域只剩 #sp .sp-up3：兼容档（把站点表单搬进卡片）已砍掉，
+   站点那些控件不再出现在我们的壳里。 */
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
+#sp .sp-up3 select{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+  appearance:none;-webkit-appearance:none;
 }
-#sp .sp-siteform .row{margin:0}
-#sp .sp-siteform [class*="col-md-"],#sp .sp-siteform [class*="col-sm-"]{float:none;width:auto;padding:0}
-#sp .sp-siteform h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
-#sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
-#sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
-#sp .sp-siteform .form-group{margin-bottom:14px}
-#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
-#sp .sp-siteform select,#sp .sp-siteform textarea{
-  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+#sp .sp-up3 select{
+  padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
 }
-#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
-#sp .sp-siteform input[type=submit],#sp .sp-siteform button{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
+#sp .sp-up3 select:hover{border-color:var(--border-strong)}
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
+#sp .sp-up3 select:focus{border-color:var(--accent)}
+#sp .sp-up3 input:disabled,
+#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+#sp .sp-up3 input::placeholder{color:var(--text-3)}
+
+#sp .sp-up3 input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
+  transition:background .12s,border-color .12s;
 }
-#sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
-#sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=checkbox]:checked{
+  border-color:var(--accent);
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
+}
+#sp .sp-up3 input[type=radio]{
+  appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
+  transition:border-color .12s,border-width .12s;
+}
+#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
+#sp .sp-up3 input[type=checkbox]:disabled,
+#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
+
+/* ==== 新版上传 · 第三步的容器（68-step3.js 自绘那一块）====
+   2026-10-07 用户拍板砍掉兼容档之后，这一版不再有"把站点表单搬进来重排"那条路：只服务它的
+   那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
+   清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
+#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
+
+/* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
+   拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
+#sp .up1-drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:20px 16px;text-align:center;
+  cursor:pointer;transition:border-color .12s,background .12s}
+#sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
+#sp .up1-droptitle{font-size:13px;color:var(--text)}
+#sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
+/* 上传页的文件框：槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（见上）。
+   我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
+#sp .up-body .up1-drop input[type=file]{
+  position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
+}
+/* 文件名现在长在虚线框里，是这一屏的主要反馈对象：用正文墨，别再压成三级墨 */
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text)}
+#sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
+#sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+/* 站点 printError 那块：标题一行 + 正文（"没头像就去账户页传一张"这类可操作指引在正文里） */
+#sp .up1-msg .up1-gate-title{display:block;font-weight:600}
+#sp .up1-msg .up1-gate-body{margin-top:5px}
+/* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
+#sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
+#sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
+#sp .up1-dev{position:relative}
+#sp .up1-devin{display:block;width:100%}
+#sp .up1-sug{position:absolute;z-index:6;left:0;right:0;top:100%;margin-top:4px;max-height:230px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow)}
+#sp .up1-sugitem{padding:7px 10px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+#sp .up1-sugitem:hover{background:var(--surface-2);color:var(--text)}
+#sp .up1-estfields{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+#sp .up1-fld{flex:1 1 140px;min-width:0}
+#sp .up1-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-fld > input{width:100%}
+#sp .up1-estout{margin-top:14px}
+#sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
+#sp .up1-cost b{color:var(--accent);font-weight:600}
+#sp .up1-tbl{margin-top:10px}
+/* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
+   "推荐这么切" 与普通行长得一模一样，等于白算。 */
+#sp .up1-tbl td.ok{color:var(--positive);font-weight:600}
+#sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
+#sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .up1-rules li + li{margin-top:6px}
+/* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
+#sp .up1-devin,#sp .up1-fld > input{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+
+/* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
+#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
+#sp .fp .hint{margin:0 0 6px}
+#sp .fp .hint:last-child{margin-bottom:0}
+#sp .hint.bad{color:var(--accent)}
+
+/* ==== 项目管理页 /project/<数字>（整页自绘）====
+   数据来自 Api.parseManage(那一页 HTML 的**副本**)，站点节点一个都不进我们的壳 —— 所以这里全是
+   我们自己的类；旧的那套 .sp-manage*（给搬进来的站点节点统一外观用）已随搬节点一起删干净。 */
+#sp .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+#sp .mg-acts{margin:0 0 16px;gap:8px}
+#sp .mg-sum{margin:0;padding:0;list-style:none}
+#sp .mg-sum li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .mg-sum li::before{content:'·';margin-right:8px;color:var(--border-strong)}
+/* 帧方块：状态色跟站点自己那三个按钮类一致（已完成/进行中/等待中），悬停给 frame/cost/rendertime */
+#sp .mg-tiles{display:flex;gap:8px;flex-wrap:wrap}
+#sp .mg-tiles .tile{width:80px;height:60px;border-radius:4px;overflow:hidden;border:2px solid var(--border);background:var(--surface-2)}
+#sp .mg-tiles .tile img{width:100%;height:100%;object-fit:cover}
+#sp .mg-tiles .tile.done{border-color:var(--text-3)}
+#sp .mg-tiles .tile.progress{border-color:#e0a13a}
+#sp .mg-tiles .tile.waiting{border-color:var(--border-strong)}
+#sp .lg{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+#sp .lg i{width:11px;height:11px;border-radius:3px;flex:none}
+#sp .lg i.done{background:var(--text-3)}
+#sp .lg i.progress{background:#e0a13a}
+#sp .lg i.waiting{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .phead .lg + .lg{margin-left:12px}
+#sp .mg-video{width:100%;max-width:520px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;display:block}
+/* 名单：一行一个人 + 行内移除；下面输入框 + 建议 + 添加 */
+#sp .alist{display:flex;flex-direction:column}
+#sp .alist .arow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+#sp .alist .arow:last-child{border-bottom:none}
+#sp .alist .arow .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .alist .none{font-size:12.5px;color:var(--text-3);padding:6px 0}
+#sp .aadd{display:flex;align-items:flex-start;gap:10px;margin-top:12px;flex-wrap:wrap}
+#sp .aadd .up1-dev{flex:0 1 320px;min-width:0}
+#sp .aadd .input{width:100%}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
@@ -810,6 +903,87 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   #sp.sp-anim .grid{animation-delay:.06s}
   #sp.sp-anim .farm{animation-delay:.1s}
 }
+
+/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
+   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
+   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
+   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
+/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
+   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
+#sp .sp-up3 [hidden]{display:none !important}
+/* 硬件需求：一个块，三行，行间发丝线 */
+#sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
+#sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
+#sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-k{flex:0 0 68px;font-size:12.5px;color:var(--text-3);padding-top:1px}
+#sp .sp-up3 .up3-c{flex:1 1 auto;min-width:0}
+#sp .sp-up3 .up3-tip{font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .sp-up3 .up3-tiprow{flex:1 1 100%;margin-top:2px}
+#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
+#sp .sp-up3 .up3-opt input{margin:0}
+#sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
+#sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
+#sp .sp-up3 .up3-cmp{font-weight:600}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+#sp .sp-up3 .up3-ramck{margin:0}
+#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
+#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
+#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .sp-up3 .up3-ram > input{width:130px}
+/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
+#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
+#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
+#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
+#sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
+#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+/* 切块：三种形态都摆成"名字: 值" */
+#sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
+#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
+#sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
+#sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
+#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
+  font-size:12.5px;color:var(--accent);line-height:1.7}
+#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
+#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
+#sp .sp-up3 .up3-notes > div + div{margin-top:3px}
+#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
+#sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 button.up3-submit{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
+/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
+#sp .sp-up3 input[type=range]{
+  appearance:none;-webkit-appearance:none;flex:1 1 200px;max-width:320px;height:18px;
+  background:transparent;cursor:pointer;padding:0;border:none;margin:0;
+}
+#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);
+}
+#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
+
 `;
 
   /* 原版界面模式下「切回现代化」小开关的样式：那种模式下整套 SP.CSS 故意不加载（它给 #sp 用）。 */
@@ -865,13 +1039,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
-    /* 唯一的例外 .sp-acmenu：jQuery UI 的补全菜单由我们的控件创建，却被它挂在 <body> 上，
-       不放开的表现是「输入了没反应」。不 appendTo 进 #sp 的原因：实测在 #sp 的 CSS zoom 下
-       jQuery 的 offset() 会把差值算成 0，菜单落到左上角。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp):not(.sp-acmenu){display:none !important}
+      body > *:not(#sp){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);

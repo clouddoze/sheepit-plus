@@ -34,6 +34,9 @@
     return '';
   }
 
+  /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
+  const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
+
   const rankOf = (st) => {
     const raw = statOf(st, ['Rank']);
     const digits = String(raw).replace(/[^\d]/g, '');
@@ -65,8 +68,8 @@
     return upper ? s.toUpperCase() : s;
   }
 
-  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
-     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用 WHY_RULES 规则匹配；
+     英文词典里没有 why.* 条目，所以没命中要回落原句。 */
   const WHY_RULES = [
     [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
       const key = 'why.notEnoughMemory';
@@ -81,36 +84,154 @@
     return packLabel('why', s);
   }
 
-  const STATUS_RULES = [
-    [/^waiting to render/i, () => t('status.idle')],
-    [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
-    [/^rendering\b/i, () => t('status.rendering')],
-    [/^(disconnected|not connected|offline)/i, () => t('status.disconnected')],
-  ];
-  function statusText(raw) {
-    const s = String(raw || '').trim();
-    if (!s) return '';
-    for (const [re, fn] of STATUS_RULES) {
-      const m = s.match(re);
-      if (m) return fn(m);
-    }
-    return s;
+  /* 站点主页那个「Connected as …」框里的客户端状态（Waiting to render / Rendering for X / …）
+     **不再画**（用户 2026-10-07）：说的是"你自己客户端"的状态，现在在线机器那块把每台机器的
+     真实状态（等待任务 / 渲染中 / 暂停）逐台说清了，身份条上这一格只会重复且容易误读。 */
+
+  /* ==== 我的项目（个人主页那张表，两处共用） ====
+     数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
+     站点**没给**最后更新时间、也不给设备/内存，所以这两处只画名字、状态、（渲染中的）百分比。 */
+
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+
+  /** 百分比站点只对"渲染中/等待中"给（HTML.php 的 printProjects），没有就只说状态 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    const base = key ? t(key) : (x.status || '—');
+    return x.pct === null || x.pct === undefined ? base : `${base} ${x.pct}%`;
+  }
+
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  const MY_SHOW = 5;
+
+  /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
+   *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
+   *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
+  function myPanel(state, p) {
+    if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
+    const rows = (p && p.myProjects) || [];
+    if (!rows.length) return '';
+
+    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+        <span class="nm">${myName(x)}</span>
+        ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
+        <span class="st">${esc(myStatus(x))}</span>
+      </div>`).join('');
+
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        <span class="spacer"></span>
+        <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
+      </div>
+      <div class="myproj">${list}</div>
+    </div>`;
   }
 
   /* ==== 总览 ==== */
+
+  /* 总览页的区块注册表与显隐。块名 → 文案；`identity` 与页脚**不做成可关的块**：
+     一个是这一页的身份，一个是数据来源那行，关掉只会让页面看着像出错了。
+     块标签优先复用区块自己的标题词条（我的项目 / 渲染产出 / 在线机器），只有没有现成
+     标题的两块才新增文案。 */
+  const OV_BLOCKS = {
+    kpi: { label: 'ovb.kpi' },
+    mine: { label: 'my.title' },
+    charts: { label: 'ovb.charts' },
+    heat: { label: 'heat.title' },
+    machines: { label: 'machines.title' },
+  };
+  /* 位置固定的块：不进可调序的那条列表（顶上那条数据看板钉死在那儿，用户 2026-10-07 拍板），
+     但**仍然可以关掉** —— "不挪位置"和"不许隐藏"是两件事。 */
+  const OV_PINNED = ['kpi'];
+  const OV_MOVABLE = Object.keys(OV_BLOCKS).filter((k) => !OV_PINNED.includes(k));
+  const OV_PREF = 'ovHidden';
+  const OV_PREF_ORDER = 'ovOrder';
+
+  /* 存的是**被关掉的那些键**，不是"开着的那些"。这样以后新加一个块，老用户的偏好里没有它
+     → 默认就是开着的；反过来存（存开着的集合）就会出现"加了新块但谁都不显示"。
+     认不出的键直接忽略，不留在集合里。 */
+  const ovHidden = new Set();
+  (function restoreOv() {
+    const s = Util.store.get(OV_PREF, null);
+    if (!Array.isArray(s)) return;
+    for (const k of s) if (OV_BLOCKS[k]) ovHidden.add(k);
+  })();
+
+  const ovOn = (k) => !ovHidden.has(k);
+
+  /** 单块开关（设置页那排按钮调它）。全部关掉也允许 —— 那是用户自己的选择。 */
+  function setOvHidden(key) {
+    if (!OV_BLOCKS[key]) return false;
+    if (ovHidden.has(key)) ovHidden.delete(key); else ovHidden.add(key);
+    Util.store.set(OV_PREF, [...ovHidden]);
+    return true;
+  }
+
+  /* 可调序的那条顺序。存法同样是"从宽"：认不出的键丢掉、重复的去掉、固定块不许进来，
+     而**偏好里没提到的块按注册表顺序补到末尾** —— 以后新加一块，老用户直接就能看见它，
+     不会被一份旧名单挡在外面（和 ovHidden 存"关掉的"是同一个思路）。 */
+  let ovSeq = OV_MOVABLE.slice();
+  (function restoreOvOrder() {
+    const s = Util.store.get(OV_PREF_ORDER, null);
+    if (!Array.isArray(s)) return;
+    const seen = new Set();
+    const out = [];
+    for (const k of s) {
+      if (!OV_BLOCKS[k] || OV_PINNED.includes(k) || seen.has(k)) continue;
+      seen.add(k); out.push(k);
+    }
+    for (const k of OV_MOVABLE) if (!seen.has(k)) out.push(k);
+    ovSeq = out;
+  })();
+
+  /** 页面上的渲染顺序：固定块在前（按注册表顺序），其余按用户排的 */
+  const ovDisplayOrder = () => OV_PINNED.concat(ovSeq);
+
+  /** 上/下移一格（设置页那对箭头调它）。到头了就返回 false，不落盘也不重画。 */
+  function moveOv(key, dir) {
+    const i = ovSeq.indexOf(key);
+    if (i < 0 || !dir) return false;
+    const j = i + (dir < 0 ? -1 : 1);
+    if (j < 0 || j >= ovSeq.length) return false;
+    ovSeq.splice(i, 1);
+    ovSeq.splice(j, 0, key);
+    Util.store.set(OV_PREF_ORDER, ovSeq);
+    return true;
+  }
+
+  /** 设置页里的一块：开关 + 上/下移。固定块只画开关，旁边标一句"固定在顶部"。 */
+  function ovRow(k) {
+    const i = OV_PINNED.includes(k) ? -1 : ovSeq.indexOf(k);
+    const last = ovSeq.length - 1;
+    const arrow = (dir, off, icon, key) => `<button class="btn sm" data-ov-move="${k}" data-ov-dir="${dir}"`
+      + `${off ? ' disabled' : ''} title="${esc(t(key))}" aria-label="${esc(t(key))}">${UI.icon(icon)}</button>`;
+    return `<div class="ovrow">
+      <div class="seg"><button data-ov-toggle="${k}" aria-pressed="${ovOn(k)}">${esc(t(OV_BLOCKS[k].label))}</button></div>
+      ${i < 0 ? `<span class="lock">${esc(t('ovb.pinned'))}</span>`
+    : arrow(-1, i === 0, 'caretUp', 'ovb.up') + arrow(1, i === last, 'caretDown', 'ovb.down')}
+    </div>`;
+  }
 
   function identity(p, st) {
     const rank = rankOf(st);
     const badge = packLabel('badge', p.badge, true);
     const team = statOf(st, ['Team']).trim().toUpperCase();
     const joined = isoDate(statOf(st, ['Registration']));
-    const status = statusText(p.status);
+    /* 站点那个「Connected as …」的客户端状态**不画**（用户 2026-10-07，见上面那段注释）：
+       在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (team) bits.push(`<span><b>${esc(team)}</b> ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
-    if (status) bits.push(`<span title="${esc(t('hero.statusRaw', { raw: p.status }))}">${esc(status)}</span>`);
 
     return `<div class="identity">
       ${UI.avatar(p.avatar, p.name, 'av')}
@@ -121,18 +242,27 @@
 
   function overview(state) {
     const p = state.profile;
-    const home = state.home;
     if (!p) return UI.state.error('profile parse failed');
 
     const st = p.stats || {};
     const d = p.derived || {};
     const daily = dailySeries(p.frames);
-    const hasData = (p.points && p.points.length > 1) || daily.length > 0 || (p.activity && p.activity.length > 0);
+    const hasCalendar = daily.length > 0 || !!(p.activity && p.activity.length > 0);
+    /* 新账号站点常常"只给统计表、不给图表数组"（line_*_timeline 与热力图整段不渲染）。
+       数字是真的（Frames rendered 148 / Points 20,062），所以判据不能只看图表：
+       统计表里任何一个数 > 0、或者有在线机器/历史会话，都算"有记录"（用户实报：总览说"还没有渲染记录"）。 */
+    const hasStat = asCount(statOf(st, ['Frames rendered'])) > 0
+      || asCount(statOf(st, ['Points'])) > 0
+      || asCount(statOf(st, ['Time rendered'])) > 0;
+    const hasData = (p.points && p.points.length > 1) || hasCalendar || hasStat
+      || (p.machines && p.machines.count > 0) || (p.sessions && p.sessions.length > 0);
 
     if (!hasData) {
-      // 统计读到了但没有任何渲染记录 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
+      // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty())
+        + (ovOn('mine') ? myPanel(state, p) : '') + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -146,7 +276,6 @@
     const points = statOf(st, ['Points']);
     const created = statOf(st, ['Projects created']);
     const ordered = statOf(st, ['Frames ordered']);
-    const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, ''));
 
     const kpiItems = [
       {
@@ -162,19 +291,20 @@
         d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
-      {
+      /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */
+      ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
         d: d.best !== undefined
           ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
           : '',
-      },
+      }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
       ...(asCount(ordered) > 0
         ? [{ k: t('stat.ordered'), v: Util.statNum(ordered), d: t('stat.orderedHint') }] : []),
     ];
-    // 格数变了，栅格与分隔线要跟着重排（见 30-style.js 的 .kpis[data-n]）
+    // 格数变了，每排几格与分隔线由 CSS 按 data-n 自己算（见 30-style.js 的 .kpis[data-n]）
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
@@ -224,17 +354,78 @@
       ${UI.machines(mc)}
     </div>`;
 
-    return identity(p, st)
-      + kpiBand
-      + main
-      + heat
-      + machinesPanel
-      + foot();
+    /* ---- 按 OV_ORDER 拼块，用户关掉的整块跳过。顺序是固定的（拖拽排序还没做）；
+           myPanel 自己在"没项目 / 不是自己的主页"时返回空串，所以"被关掉"和"本来就没有"
+           在页面上是同一种结果，不需要分开处理。 ---- */
+    const blocks = { kpi: kpiBand, mine: myPanel(state, p), charts: main, heat, machines: machinesPanel };
+    let body = identity(p, st);
+    for (const k of ovDisplayOrder()) if (ovOn(k)) body += blocks[k];
+    return body + foot();
   }
 
   /* ==== 项目 ==== */
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null };
+  /* 可排序列的注册表：字段 → { 表头词条, 取值 }。
+     表头词条复用既有的 `proj.col.*`，所以加一列排序**不需要新文案**；取值一律用站点给的
+     原始数值（memKb / pct），不用 "1.3 G" 这种显示文本 —— 否则按字面量排。
+     「我发布的」那张表站点只给得出名字与百分比，所以它有一份自己的注册表。 */
+  const P_SORTS = {
+    name: { label: 'proj.col.project', get: (p) => p.name, text: true },
+    owner: { label: 'proj.col.owner', get: (p) => p.owner, text: true },
+    progress: { label: 'proj.col.progress', get: (p) => p.pct || 0 },
+    memory: { label: 'proj.col.memory', get: (p) => p.memKb || 0 },
+  };
+  const M_SORTS = {
+    name: { label: 'proj.col.project', get: (x) => x.name, text: true },
+    /* 站点对"没给百分比"的行就是不排进度，摆到最小那一头，别当成 0% 混进去 */
+    progress: { label: 'proj.col.progress', get: (x) => (x.pct === null || x.pct === undefined ? -1 : x.pct) },
+  };
+  const SORT_PREF = 'projSort';
+
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+
+  /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
+     存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
+     不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
+  (function restoreSort() {
+    const s = Util.store.get(SORT_PREF, null);
+    if (!s || typeof s !== 'object') return;
+    if (P_SORTS[s.sort]) projState.sort = s.sort;
+    if (M_SORTS[s.msort]) projState.msort = s.msort;
+    if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
+  })();
+
+  function saveSort() {
+    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+  }
+
+  /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
+      选到它排不了的列（发布者 / 内存）就**不动它自己那份偏好**，不硬塞一个无效字段。 */
+  function setSortPref(key) {
+    if (!P_SORTS[key] || projState.sort === key) return false;
+    projState.sort = key;
+    if (M_SORTS[key]) projState.msort = key;
+    saveSort();
+    return true;
+  }
+
+  function setDirPref(dir) {
+    if (dir !== 'asc' && dir !== 'desc') return false;
+    if (projState.dir === dir) return false;
+    projState.dir = dir;
+    saveSort();
+    return true;
+  }
+
+  /** 比较器：文本 localeCompare、数值相减；升降方向由调用处统一翻，注册表里不写两遍 */
+  function sortCmp(spec, key) {
+    const s = spec[key];
+    if (!s) return null;
+    return s.text
+      ? (a, b) => String(s.get(a) || '').localeCompare(String(s.get(b) || ''))
+      : (a, b) => s.get(a) - s.get(b);
+  }
+
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -252,6 +443,7 @@
     }
     if (p.statusKind === 'waiting') return t('proj.status.waiting');
     if (p.statusKind === 'paused') return t('proj.status.paused');
+    if (p.statusKind === 'finished') return t('proj.status.finished');
     return p.status || '—';
   }
 
@@ -325,20 +517,91 @@
       : null;
   }
 
+  /** 进度：条子与分数**同一格**（用户 2026-10-07）。
+      合成一格后条子 `flex:1` 吃满剩余宽度，和数字之间只隔一个 10px 的 gap。 */
+  const pcell = (pct, frac, title) => `<td><div class="pwrap">${UI.progress(pct, frac)}`
+    + `<span class="frac num"${title ? ` title="${esc(title)}"` : ''}>${esc(frac)}</span></div></td>`;
+
   function projectRow(p, me, maps) {
     const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
-      <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
-      <td>${UI.progress(p.pct, frac)}</td>
-      <td class="r num frac">${esc(frac)}</td>
+      <td><span class="st ${p.statusKind}" title="${esc(statusLabel(p))}">${esc(statusLabel(p))}</span></td>
+      ${pcell(p.pct, frac, frac)}
       <td>${UI.devices(p.cpu, p.gpu)}</td>
-      <td class="r num">${esc(p.memory || '—')}</td>
+      <td class="r num" title="${esc(p.memory || '—')}">${esc(p.memory || '—')}</td>
     </tr>`;
   }
 
+  /** 范围切换（全部 / 我发布的）：两档共用同一只控件，位置也一样。 */
+  const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
+    .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
+  function mineProjects(state) {
+    const all = state.myProjects || [];
+    const q = projState.q.trim().toLowerCase();
+    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
+    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+      rows = rows.filter((x) => x.statusKind === projState.filter);
+    }
+
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
+    const cmp = sortCmp(M_SORTS, projState.msort);
+    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+
+    const th = (key, label, span) => {
+      const on = projState.msort === key;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+    };
+
+    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
+        <td><div class="pn">${myName(x)}</div></td>
+        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
+        <td class="r">${x.id
+    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`).join('')
+      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('my.empty'))}</div>
+            ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+          </div></td></tr>`;
+
+    return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
+        <span class="spacer"></span>
+        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+      <div class="toolbar">
+        ${scopeSeg()}
+        <label class="input">${UI.icon('search')}
+          <input id="sp-q" type="search" placeholder="${esc(t('proj.searchMine'))}" value="${esc(projState.q)}">
+        </label>
+        <div class="seg" id="sp-filter">${opts.map(([k, label]) =>
+    `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
+      </div>
+      <div class="panel" style="padding:14px 6px 6px">
+        <div class="tablewrap"><table class="tbl tbl-mine">
+          <thead><tr>
+            ${th('name', t('proj.col.project'))}
+            <th>${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'))}
+            <th class="r">${esc(t('proj.col.manage'))}</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
+      </div>`;
+  }
+
   function projects(state) {
+    if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
 
@@ -351,12 +614,8 @@
       return p.statusKind === projState.filter;
     });
 
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      owner: (a, b) => a.owner.localeCompare(b.owner),
-      progress: (a, b) => (a.pct || 0) - (b.pct || 0),
-      memory: (a, b) => (a.memKb || 0) - (b.memKb || 0),
-    }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
+    /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
+    const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -385,6 +644,7 @@
         <span class="spacer"></span>
         <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
+        ${scopeSeg()}
         <label class="input">${UI.icon('search')}
           <input id="sp-q" type="search" placeholder="${esc(t('proj.search'))}" value="${esc(projState.q)}">
         </label>
@@ -392,17 +652,21 @@
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap"><table class="tbl fit">
+          <colgroup>
+            <col style="width:28%"><col style="width:19%"><col style="width:13%">
+            <col style="width:19%"><col style="width:11%"><col style="width:10%">
+          </colgroup>
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
             <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'), 2)}
+            ${th('progress', t('proj.col.progress'))}
             <th>${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="7"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>
@@ -480,10 +744,26 @@
         </div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.psort'))}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            ${seg('sp-psort', projState.sort, Object.keys(P_SORTS).map((k) => [k, t(P_SORTS[k].label)]))}
+            ${seg('sp-pdir', projState.dir, [['asc', t('set.pdir.asc')], ['desc', t('set.pdir.desc')]])}
+          </div>
+          <div class="hint">${esc(t('set.psortHint'))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.ovblocks'))}</div>
+          <div class="ovlist">${ovDisplayOrder().map(ovRow).join('')}</div>
+          <div class="hint">${esc(t('set.ovblocksHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
-          ${seg('sp-exp', state.expUpload ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
-          <div class="hint" style="margin-top:9px"><b>${esc(t('set.expUpload'))}</b></div>
-          <div class="hint">${esc(t('set.expUploadHint'))}</div>
+          <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['new', t('set.upmode.new')]])}
+          <div class="hint">${esc(t('set.upmodeHint'))}</div>
+          ${SP.Step3x ? SP.Step3x.fpRows() : ''}
         </div>
 
         <div class="row block">
@@ -636,6 +916,46 @@
     return hit === k ? f.label : hit;
   }
 
+  /* 站点在「机器信息」里塞的有些值是**内部枚举**，不是给人看的字：OS 那格印 `linux`，
+     Scheduler 那格印 `very_slow_computer`（它说的是这台机器跑多快，跟"调度模式"没关系），
+     从没活动过的机器几格印 `Never`。这些翻成人话、原文进悬停提示；
+     **认不出的值一律原样显示** —— 站点哪天加新档，界面上照样看得见。 */
+  const OS_NAME = {
+    linux: 'Linux', windows: 'Windows', win32: 'Windows',
+    'mac os x': 'macOS', macos: 'macOS', darwin: 'macOS', freebsd: 'FreeBSD',
+  };
+  const MACHINE_CLASS = [
+    [/^very[_\s-]*slow[_\s-]*computer$/i, 'verySlow'],
+    [/^(slow|low)[_\s-]*computer$/i, 'slow'],
+    [/^(medium|average|normal)[_\s-]*computer$/i, 'medium'],
+    [/^(fast|high)[_\s-]*computer$/i, 'fast'],
+    [/^very[_\s-]*fast[_\s-]*computer$/i, 'veryFast'],
+  ];
+  /* Action 那格站点放的是 `<input type="button" value="Pause">`（值是英文按钮字，
+     实测只有 Pause / Resume 两种），只在没显示我们自己的控制面板时才走到这里。 */
+  const ACTION_NAME = { pause: 'sess.act.pause', resume: 'sess.act.resume' };
+  function valueHuman(key, raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return null;
+    if (/^never$/i.test(s)) return { text: t('sess.never'), title: t('sess.rawTip', { raw: s }) };
+    if (key === 'os') {
+      const n = OS_NAME[s.toLowerCase()];
+      if (n) return { text: n, title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'scheduler') {
+      const hit = MACHINE_CLASS.find(([re]) => re.test(s));
+      if (hit) return { text: t(`sess.class.${hit[1]}`), title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'action' && ACTION_NAME[s.toLowerCase()]) {
+      return { text: t(ACTION_NAME[s.toLowerCase()]), title: t('sess.rawTip', { raw: s }) };
+    }
+    /* 值里带站点日期形状（`20th Oct 06:10` / `06:40 Sep 29`）就按语言包本地化；
+       转换没变化说明不是日期，交给后面原样显示。 */
+    const loc = I18n.date(s);
+    if (loc !== s) return { text: loc, title: '' };
+    return null;
+  }
+
   function typeLabel(raw) {
     const s = String(raw || '').trim();
     if (!s) return '—';
@@ -710,18 +1030,20 @@
     const val = (k) => (s.info[k] ? s.info[k].value : '');
     const owner = s.info.owner || null;
 
-    /* **两种暂停是两件事**："Paused server side" 与客户端自己的 "Paused client side" 以站点那行为准；
-       Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），只看 Action 会报成「运行中」。 */
+    /* **两种暂停是两件事，而且可以同时成立**："Paused server side" 与 "Paused client side" 以站点那行为准
+       （站点是两条独立条件、各写一行）；Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），
+       只看 Action 会报成「运行中」。两个都在就画两个 chip —— 合成一个词会丢掉"哪一端停的"。
+       词条与 40-ui.js 的 pauseKeys() 共用一份判据。 */
     const status = val('status');
     const note = s.info.note ? s.info.note.value : '';
-    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
-      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
     const noteTitle = note ? ` title="${esc(t('sess.statusRaw', { raw: note }))}"` : '';
-    const chip = note
-      ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
-      : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
-          : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
+    const pauseChip = UI.pauseKeys(note).map((k) => `<span class="chip off"${noteTitle}>${esc(t(k))}</span>`).join('');
+    const chip = pauseChip
+      ? pauseChip
+      : note ? `<span class="chip off"${noteTitle}>${esc(note)}</span>`
+        : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
+          : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
+            : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
     /* "Current frames"：这台机器此刻在跑什么（空闲不印）。它是**活的**，留身份条、不进「机器信息」表；
@@ -736,7 +1058,10 @@
     } else if (cur) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cur)}</b></span>`);
     }
-    if (val('os')) bits.push(`<span>${esc(val('os'))}</span>`);
+    if (val('os')) {
+      const os = valueHuman('os', val('os'));
+      bits.push(`<span${os ? ` title="${esc(os.title)}"` : ''}>${esc(os ? os.text : val('os'))}</span>`);
+    }
     if (owner) {
       const href = owner.href || (owner.user ? `/user/${encodeURIComponent(owner.user)}/profile` : '');
       bits.push(`<span>${esc(t('sess.owner'))} ${href
@@ -760,7 +1085,7 @@
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
+    const since = I18n.date(tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt'));
 
     /* 算力那格跟着站点印了哪一行走（"Power CPU" / "Power GPU" 都开就两行都在）；**不写死** —— 早先写死读
        Power CPU，纯 GPU 机器上那格永远是"—"，被读成"CPU 有问题"。 */
@@ -813,8 +1138,11 @@
             `<button class="btn sm" data-act="reveal-key" aria-pressed="false">${esc(t('sess.reveal'))}</button>`;
         } else {
           const raw = f.value || '—';
-          const txt = f.href ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>` : esc(raw);
-          v = `<span class="num">${txt}</span>`;
+          const human = f.href ? null : valueHuman(f.key, f.value);
+          const txt = f.href
+            ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>`
+            : esc(human ? human.text : raw);
+          v = `<span class="num"${human ? ` title="${esc(human.title)}"` : ''}>${txt}</span>`;
         }
         return `<div class="fact"><span class="k">${esc(sessLabel(f))}</span><span class="v">${v}</span></div>`;
       }).join('')}</div>
@@ -929,12 +1257,16 @@
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+        <colgroup>
+          <col style="width:29%"><col style="width:19%"><col style="width:17%">
+          <col style="width:19%"><col style="width:9%"><col style="width:7%">
+        </colgroup>
         <thead><tr>
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
           <th>${esc(t('proj.col.status'))}</th>
-          <th colspan="2">${esc(t('proj.col.progress'))}</th>
+          <th>${esc(t('proj.col.progress'))}</th>
           <th>${esc(t('proj.col.device'))}</th>
           <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
@@ -947,10 +1279,9 @@
               isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
-            <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
-            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            ${p ? pcell(p.pct, frac, frac) : '<td class="r"><span class="dash">—</span></td>'}
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
-            <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
+            <td class="r num" title="${p ? esc(p.memory || '—') : ''}">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}
@@ -960,8 +1291,8 @@
   }
 
   /* ==== 挂载后补丁：只有总览的积分曲线需要真实像素宽度 ==== */
-  /* ==== 项目上传页 / 分析等待页：等待页整页重建；上传页是**换装** —— 骨架我们画，能干活的节点
-     从抓回来的 /getstarted 里搬进来，不接管那一页（Borrowed Controls Rule 见 docs/DESIGN.md）。 */
+  /* ==== 项目上传页 / 分析等待页：骨架与内容都我们画。上传页把抓回来的 /getstarted 只当**数据源**
+     （64-step1.js 解析后自绘三个槽位），等待页同理由 62-chain/68-step3 接手。 */
 
   function upload(state) {
     return `<div class="wrap up">
@@ -969,7 +1300,6 @@
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      <div class="expnote">${esc(t('up.expNote'))}</div>
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -990,188 +1320,18 @@
     </div>`;
   }
 
-  /** 站点那句「Max: 2,048 MB …」和 `<input type="file">` 挤在同一 `<td>`：**整块替换会把文件框删掉**
-      （见 70-i18n-dom.js），逐节点拼不回中文 —— 故由卡片自己说 `up.maxNote`，大小从站点原文里读。 */
-  function rewordFileLimit(scope) {
-    const file = scope.querySelector('input[type=file]');
-    if (!file) return;
-    const cell = file.closest('td') || file.parentElement;
-    if (!cell) return;
-    const txt = cell.textContent || '';
-    const m = txt.match(/Max:\s*([\d.,]+\s*[KMGT]?B)/i) || txt.match(/上限：\s*([\d.,]+\s*[KMGT]?B)/);
-    if (!m) return;
-    [...cell.childNodes].forEach((n) => { if (n !== file) n.remove(); });
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = t('up.maxNote', { size: m[1] });
-    file.after(note);
-  }
-
-  /** 须知块**只贴标签、只去掉多余字符**：站点把「项目总数: 29」写成裸文本节点（包 span 才能排版）；
-      `…3.0 or higher</strong>.` 的句号在 <strong> 外 → 中文译文双句号，只在前面已有句末标点时删 "."。 */
-  function tidyRules(scope) {
-    const col = scope.firstElementChild;
-    if (!col) return;
-    for (const n of [...col.childNodes]) {
-      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
-      const span = document.createElement('span');
-      span.className = 'qtotal';
-      span.textContent = n.nodeValue.trim();
-      n.replaceWith(span);
-    }
-    const firstUl = col.querySelector('ul');
-    if (firstUl) firstUl.classList.add('qpos');
-    for (const li of scope.querySelectorAll('li')) {
-      const last = li.lastChild;
-      if (!last || last.nodeType !== 3) continue;
-      const tail = last.nodeValue.trim();
-      if (!/^[.．。]+$/.test(tail)) continue;
-      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
-      if (/[。．.！!？?]$/.test(before)) last.remove();
-    }
-
-    const h4s = [...col.querySelectorAll(':scope > h4')];
-    const head = h4s[0];
-    if (head) {
-      const stop = h4s[1] || null;
-      const group = [];
-      for (let n = head.nextSibling; n && n !== stop; n = n.nextSibling) group.push(n);
-      if (group.length) {
-        const band = document.createElement('div');
-        band.className = 'qband';
-        const text = document.createElement('div');
-        text.className = 'qtext';
-        const data = document.createElement('div');
-        data.className = 'qdata';
-        band.appendChild(text);
-        band.appendChild(data);
-
-        let lead = null;
-        const para = group.find((n) => n.nodeType === 1 && n.tagName === 'P');
-        const br = para ? [...para.childNodes].find((n) => n.nodeType === 1 && n.tagName === 'BR') : null;
-        if (para && br) {
-          const tail = [];
-          for (let n = br.nextSibling; n; n = n.nextSibling) tail.push(n);
-          if (tail.some((n) => n.nodeValue && n.nodeValue.trim())) {
-            lead = document.createElement('p');
-            lead.className = 'qlead';
-            for (const n of tail) lead.appendChild(n);
-          }
-          br.remove();
-        }
-        if (lead) data.appendChild(lead);
-
-        for (const n of group) {
-          const isData = n.nodeType === 1 && (n.classList.contains('qpos') || n.classList.contains('qtotal'));
-          (isData ? data : text).appendChild(n);
-        }
-        head.after(band);
-      }
-    }
-  }
-
-  /** 估算器结果是站点 AJAX 回来的一段英文 HTML：`DomI18n.translateSubtree()` 允许翻译器走进 #sp
-      （DOM 在容器里、文字却是站点的）；另去掉中文译文后吊着的英文句号。 */
-  function watchEstimatorResult(box) {
-    if (!box) return;
-    const fix = () => {
-      if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
-      for (const n of [...box.childNodes]) {
-        if (n.nodeType !== 3 || n.nodeValue.trim() !== '.') continue;
-        const before = n.previousSibling ? (n.previousSibling.textContent || '') : '';
-        if (/[\u4e00-\u9fff]$/.test(before.replace(/\s+$/, ''))) n.remove();
-      }
-    };
-    new MutationObserver(fix).observe(box, { childList: true });
-    if (box.innerHTML.trim()) fix();
-  }
-
-  /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
-      （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
-  function wireUploadDoc(root, html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const main = doc.querySelector('#addproject_main_div');
-    const blocked = doc.querySelector('#addproject_warning_zero_frame');
-    if (!main && !blocked) return false;
-    const slotForm = root.querySelector('[data-up="form"]');
-    const slotEst = root.querySelector('[data-up="est"]');
-    const slotRules = root.querySelector('[data-up="rules"]');
-    const estPanel = root.querySelector('[data-up="estPanel"]');
-    const grab = (el) => (el ? el : null);
-
-    if (main) {
-      const left = main.querySelector(':scope > .row > .col-md-5');
-      const right = main.querySelector(':scope > .row > .col-md-6');
-      const blocks = left ? [...left.children] : [];
-      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
-      const estBlock = blocks.find((b) => b !== formBlock) || null;
-      if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
-      if (estBlock && slotEst) {
-        slotEst.appendChild(grab(estBlock));
-        const numTable = estBlock.querySelector('table');
-        if (numTable) numTable.classList.add('numband');
-        watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
-        rebindDeviceSearch(estBlock, html);
-      } else if (estPanel) estPanel.remove();
-      if (right && slotRules) slotRules.appendChild(grab(right));
-    } else if (slotForm) {
-      slotForm.appendChild(grab(blocked));
-      if (estPanel) estPanel.remove();
-    }
-
-    /* **先翻译、再整理**，顺序不能反：整块翻译的规则按站点原句写，而 tidyRules 会把「排队情况」在 <br>
-       处切开，切完不再以 "Predicted position in queue:" 结尾 → 规则失配，那一段永远是英文。 */
-    for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
-    if (slotForm) rewordFileLimit(slotForm);
-    if (slotRules) tidyRules(slotRules);
-    return true;
-  }
-
-  /** 设备名自动补全要自己重绑（内联脚本不执行），source 从站点脚本里读、不写死。**坑在菜单**：
-      jQuery UI 把菜单挂 `<body>`，被守卫 `body > *:not(#sp){display:none}` 挡成"输入了没反应"
-      （2026-10-04 实报）—— 所以贴类名 `ul.sp-acmenu` 放行并同步主题。 */
-  function rebindDeviceSearch(estBlock, html) {
-    const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
-    const $ = window.jQuery;
-    if (!src || !$ || !$.fn || !$.fn.autocomplete) return;
-    const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
-    const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
-    if (!label) return;
-
-    /* 每次重画卡片都绑一个新 widget，而菜单挂 <body> 上不跟旧卡片消失 —— 绑之前先清上一批。 */
-    document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
-
-    const paintMenu = () => {
-      const inst = $(label).data('uiAutocomplete') || $(label).data('ui-autocomplete');
-      const menu = inst && inst.menu && inst.menu.element;
-      if (!menu || !menu.length) return;
-      menu.addClass('sp-acmenu');
-      const host = document.getElementById('sp');
-      const th = host && host.getAttribute('data-theme');
-      if (th) menu.attr('data-theme', th);
-    };
-
-    $(label).autocomplete({
-      minLength: 3,
-      source: src,
-      select(event, ui) {
-        $(label).val(ui.item.label);
-        if (value) $(value).val(ui.item.value);
-        return false;
-      },
-      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着时被换掉
-    });
-    paintMenu();
-
-    /* 关闭时机得自己管：这个 jQuery UI（1.10.2）实测**既不 blur 关、也不"点外面"关**
-       —— 打「2060」弹出菜单后点导航切走，那块菜单会留在屏幕上（display 还是 block）。
-       菜单又挂在 <body> 上、不跟卡片一起消失，所以失焦与点外面各补一次关闭。
-       点菜单项不会误关：jQuery UI 在菜单项 mousedown 里 preventDefault，输入框不失焦。 */
-    const closeMenu = () => { try { $(label).autocomplete('close'); } catch (e) { /* 没初始化就无所谓 */ } };
-    $(label).on('blur', () => setTimeout(closeMenu, 160));
-    $(document).off('mousedown.spacmenu').on('mousedown.spacmenu', (ev) => {
-      if (!$(ev.target).closest('ul.sp-acmenu, #addproject_estimator_device_form_search_text_label').length) closeMenu();
-    });
+  /** 上传卡片接线失败（站点这一版认不出要用的那几块）时，别给用户一张空白卡片：
+      说清楚 + 给出切档办法。 */
+  function shapeNotice(root) {
+    const box = document.createElement('div');
+    box.className = 'wrap';
+    box.innerHTML = `<div class="sechead"><h2>${esc(t('up.title'))}</h2></div>
+      <div class="panel" style="padding:16px 20px">
+        <div class="hint bad">${esc(t('up.shapeNew'))}</div>
+        <div class="hint" style="margin-top:8px">${esc(t('up.shapeHow'))}</div>
+      </div>`;
+    root.textContent = '';
+    root.appendChild(box);
   }
 
   /* ---- 分析等待页 ---- */
@@ -1180,8 +1340,8 @@
   function analyse() {
     return `<div class="wrap">
       <div class="sechead">
-        <h2>${esc(t('an.title'))}</h2>
-        <span class="sub">${esc(t('an.sub'))}</span>
+        <h2 data-an="title">${esc(t('an.title'))}</h2>
+        <span class="sub" data-an="titleSub">${esc(t('an.sub'))}</span>
       </div>
       <div class="panel an-card">
         <div class="an-head">
@@ -1192,15 +1352,204 @@
           </div>
         </div>
         <div class="an-track" data-an="track"><i data-an="bar"></i></div>
-        <div class="an-done" data-an="done" hidden>
-          <div class="an-sub">${esc(t('an.doneNote'))}</div>
-          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
-        </div>
-        <div id="sp-an-result" class="sp-siteform" hidden></div>
+        <div id="sp-an-result" class="sp-up3" hidden></div>
       </div>
       <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
+
+  /* ==== 项目管理页 /project/<id>：整页自绘 ====
+     数据来自 Api.parseManage(那份 HTML **副本**)——站点 DOM 一个节点都不进我们的壳，
+     动作直发站点端点（见 80-app.js 的 mgSet / mgAct / mgAcl）。站点没渲染的那几项不画，
+     不猜默认值：少一行比编一个错的强。 */
+
+  const MG_ACTION_KEY = {
+    frames: 'mg.act.frames', zip: 'mg.act.zip', video: 'mg.act.video',
+    pause: 'mg.act.pause', resume: 'mg.act.resume', reset: 'mg.act.reset', partial: 'mg.act.partial',
+  };
+
+  const mgActLabel = (a) => t(MG_ACTION_KEY[a.kind]);
+
+  function manageActions(m) {
+    const acts = (m.actions || []).filter((a) => MG_ACTION_KEY[a.kind]);
+    if (!acts.length) return '';
+    const one = (a) => {
+      const label = esc(mgActLabel(a));
+      const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
+      if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
+      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
+    };
+    return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
+  }
+
+  /** 站点那种「标签：值」两段式（`<li><span>值</span></li>` 与纯文本都在用）：
+   *  整句先按语言包翻（带捕获组的 patterns 走这条），翻不动再退回只翻标签。
+   *  红字那条 li 整句都在 span 里（label 为空），所以两段都要 trim、不能拼出前导空格。 */
+  function mgLine(label, value) {
+    const L = String(label || '').trim();
+    const V = String(value || '').trim();
+    const whole = [L, V].filter(Boolean).join(' ');
+    if (!whole) return '';
+    const one = I18n.siteText(whole);
+    if (one) return one;
+    const two = L ? I18n.siteText(L) : null;
+    return two ? [two.trim(), V].filter(Boolean).join(' ') : whole;
+  }
+
+  function manageSummary(m) {
+    if (!m.summary.length && !(m.warn && (m.warn.label || m.warn.value))) return '';
+    const rows = m.summary.map((s) => `<li>${esc(mgLine(s.label, s.value))}</li>`).join('');
+    const warn = m.warn ? mgLine(m.warn.label, m.warn.value) : '';
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.summary'))}</h2></div>
+      <div class="pbody">
+        ${rows ? `<ul class="mg-sum">${rows}</ul>` : ''}
+        ${warn ? `<div class="hint bad" style="margin:${rows ? '10px' : '0'} 0 0">${esc(warn)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 帧方块：站点的方块没有背景（缩略图塞在 title 属性里，由解析器抠出来），状态色取它自己的
+   *  btn-neutral / btn-warning / btn-default。悬停给 frame / cost / rendertime 那三行。 */
+  function manageTiles(m) {
+    if (!m.tiles.length && !m.video) return '';
+    const tiles = m.tiles.map((x) => `<span class="tile ${esc(x.state)}" title="${esc([
+      x.frame ? `frame: ${x.frame}` : '', x.cost ? `cost: ${x.cost}` : '', x.time ? `rendertime: ${x.time}` : '',
+    ].filter(Boolean).join(' · '))}">
+        <img src="${esc(x.src)}" alt="" loading="lazy">
+      </span>`).join('');
+    const legend = [['done', t('mg.legend.done')], ['progress', t('mg.legend.progress')], ['waiting', t('mg.legend.waiting')]]
+      .map(([k, label]) => `<span class="lg"><i class="${esc(k)}"></i>${esc(label)}</span>`).join('');
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead"><h2>${esc(t('mg.frames'))}</h2>
+        <span class="sub num">${esc(t('mg.framesN', { n: m.tiles.length }))}</span>
+        <span class="spacer"></span>${legend}</div>
+      <div class="pbody">
+        ${tiles ? `<div class="mg-tiles">${tiles}</div>` : ''}
+        ${m.video ? `<video class="mg-video" controls preload="none" src="${esc(m.video)}"></video>
+          <div class="hint" style="margin:8px 0 0">${esc(t('mg.videoNote'))}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 名单面板（管理员 / 渲染者 / 团队共用）：一行一个人 + 行内移除；下面一个输入框 + 建议 + 添加。
+   *  团队那边站点要的是**数字 id**，所以必须从建议里选（选了才把 id 记在 input 的 data-pick 上）。 */
+  function aclPanel(title, hint, rows, o) {
+    const list = rows.length
+      ? rows.map((x) => `<div class="arow">
+          <span class="nm">${x.url ? `<a href="${esc(x.url)}" target="_self">${esc(x.name)}</a>` : esc(x.name)}</span>
+          <button class="btn sm" data-acl-del="${esc(o.kind)}" data-name="${esc(x.name)}" data-id="${esc(x.id || '')}">${esc(t('mg.acl.remove'))}</button>
+        </div>`).join('')
+      : `<div class="none">${esc(t('mg.acl.none'))}</div>`;
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(title)}</h2><span class="sub">${esc(hint)}</span></div>
+      <div class="pbody">
+        <div class="alist">${list}</div>
+        <div class="aadd">
+          <div class="up1-dev">
+            <label class="input"><input id="${esc(o.input)}" type="text" autocomplete="off" spellcheck="false"
+              placeholder="${esc(o.placeholder)}" data-acl-input="${esc(o.kind)}"></label>
+            <div class="up1-sug" hidden></div>
+          </div>
+          <button class="btn primary" data-acl-add="${esc(o.kind)}" data-input="${esc(o.input)}">${esc(t('mg.acl.add'))}</button>
+        </div>
+        <div class="hint" data-acl-msg="${esc(o.kind)}" hidden></div>
+      </div>
+    </div>`;
+  }
+
+  function manageAcl(m) {
+    const out = [];
+    if (m.acl.hasManagerPanel) {
+      out.push(aclPanel(t('mg.acl.managers'), t('mg.acl.managersHint'), m.acl.managers, {
+        kind: 'manager', input: 'sp-acl-manager',
+        placeholder: I18n.siteText('Add a user to manager list') || 'Add a user to manager list',
+      }));
+    }
+    if (m.acl.hasRendererPanel || m.acl.hasTeamPanel) {
+      const hint = m.publicRender === true ? t('mg.acl.publicOn') : t('mg.acl.publicOff');
+      const body = [];
+      if (m.acl.hasRendererPanel) {
+        body.push(aclPanel(t('mg.acl.renderers'), hint, m.acl.renderers, {
+          kind: 'renderer', input: 'sp-acl-renderer',
+          placeholder: I18n.siteText('Add a user to renderer list') || 'Add a user to renderer list',
+        }));
+      }
+      if (m.acl.hasTeamPanel) {
+        body.push(aclPanel(t('mg.acl.teams'), t('mg.acl.teamsHint'), m.acl.teams, {
+          kind: 'team', input: 'sp-acl-team', pick: true,
+          placeholder: I18n.siteText('Add a team to renderer list') || 'Add a team to renderer list',
+        }));
+      }
+      out.push(body.join(''));
+    } else if (m.publicRender === true) {
+      /* 站点自己的规矩：公开渲染开着时，那一页**根本不渲染**渲染者名单（只有一只 checkbox），
+         所以这里不是"没人"，而是"站点不给名单"。关掉公开渲染名单才会出现 —— 说清楚，别让人以为丢了。 */
+      out.push(`<div class="panel" style="margin-top:16px">
+        <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.acl.renderers'))}</h2></div>
+        <div class="pbody"><p class="hint" style="margin:0">${esc(t('mg.acl.publicOnly'))}</p></div>
+      </div>`);
+    }
+    return out.join('');
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假）。 */
+  function manageOps(m, id) {
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic && !m.canManage)) return '';
+    const sw = (kind, on, onState, title, hint) => `<label class="sw">
+      <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
+        data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
+      <span class="track"><span class="knob"></span></span>
+      <span class="txt"><b>${esc(title)}</b><small>${esc(hint)}</small></span>
+    </label>`;
+    return `<div class="panel mg-ops">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.ops'))}</h2><span class="sub">${esc(t('mg.opsSub'))}</span></div>
+      <div class="pbody">
+        ${!m.hasCompute ? '' : `<div class="mg-row">
+          <div class="k">${esc(t('mg.compute'))}</div>
+          <div class="seg" id="sp-mg-compute">
+            <button data-v="cpu" aria-pressed="${m.compute === 'cpu'}">${esc(t('proj.cpu'))}</button>
+            <button data-v="gpu" aria-pressed="${m.compute === 'gpu'}">${esc(t('proj.gpu'))}</button>
+          </div>
+          <small>${esc(t('mg.computeHint'))}</small>
+        </div>`}
+        ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
+        ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
+        ${!id || !m.canManage ? '' : `<div class="mg-row danger">
+          <div class="k">${esc(t('mg.del'))}</div>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.delBtn'))}</button>
+          <small>${esc(t('mg.delHint'))}</small>
+        </div>`}
+      </div>
+    </div>`;
+  }
+
+  function project(state) {
+    const m = state.mg;
+    if (!m || !m.found) return UI.state.empty(t('mg.noData'));
+    const id = state.projectId || m.id || '';
+    const stText = m.statusText ? (I18n.siteText(m.statusText) || m.statusText) : '';
+    const meta = [
+      m.name ? `<b>${esc(m.name)}</b>` : '',
+      m.progression ? `${esc(t('proj.col.progress'))} ${esc(m.progression)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(m.statusCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      ${manageActions(m)}
+      ${manageOps(m, id)}
+      ${manageAcl(m)}
+      ${manageSummary(m)}
+      ${manageTiles(m)}
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
 
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
@@ -1210,7 +1559,8 @@
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
       SP.DomI18n.enabled = !!state.translateSite;
-      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+      /* 三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；认不出站点结构才走 shapeNotice */
+      if (!SP.Step1 || SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root); return false; }
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -1236,5 +1586,5 @@
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, saveSort, setSortPref, setDirPref, ovDisplayOrder, setOvHidden, moveOv, rankState, acctState, sessState, dailySeries, mount };
 })();

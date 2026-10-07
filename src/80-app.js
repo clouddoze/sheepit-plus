@@ -9,6 +9,18 @@
 
   /* ---- 1. 接管判定 ---- */
 
+  /** 上传链路三态（用户 2026-10-07 拍板砍掉兼容档后只剩这三档）：
+      off = 关：整条链路不接管，顶栏也不出入口
+      raw = 原版：顶栏入口在，点一下**新标签页**打开站点自己的 /getstarted（我们完全不接管那一页）
+      new = 新版：站点给的三个契约由 62-chain.js 解析、界面自绘、提交自己发 —— 唯一被重制的上传界面
+      历史值（'site' 是 0.2.0 中途用过的名字，'compat' 是已砍掉的兼容档）与空值都归到新版：
+      它们不该把用户留在一条已经不存在的路径上。 */
+  function uploadMode() {
+    const v = Util.store.get('uploadMode', 'new');
+    if (v === 'off' || v === 'raw' || v === 'new') return v;
+    return 'new';
+  }
+
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
   function viewForPath(pathname) {
     const p = pathname.replace(/\/+$/, '') || '/home';
@@ -21,11 +33,16 @@
     if (/^\/user\/[^/]+\/edit$/.test(p)) return 'account';
     // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    /* /getstarted **不接管**（用户拍板）：上传表单只是那页最后一段，局部接手会让"上传项目"有两种
-       界面。上传只走应用内 `#/upload`。 */
+    /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
+       有两种界面 —— 所以重制只发生在应用内 #/upload（「新版」档）；「原版」档点一下是**新标签页**
+       打开站点自己那一页（见 onClick），这里返回 null，那一页照常由站点自己渲染。 */
+    const um = uploadMode();
+    const takeover = um === 'new';
+    if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
-    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
-    // 还没接管：新增项目表单、/project/<数字>（见 docs/PUBLISHING.md「五」）
+    if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
+    if (/^\/project\/\d+$/.test(p)) return 'project';
+    // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
   }
 
@@ -59,7 +76,6 @@
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
@@ -88,6 +104,7 @@
   /** 守卫已注入、后来发现不该接管：把页面原样还给用户 */
   function release() {
     released = true;
+    parkAnalyse();   // 壳下面那份站点结果容器还挂着：先送回页面，再拆 #sp
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
@@ -112,13 +129,14 @@
     session: null,
     sessionId: null,       // /session/<数字>
     analyseToken: null,    // /project/add/<token>
+    projectId: null,       // /project/<数字>
     myAvatar: '',          // 顶栏那张：**自己**的头像（不是正在看的档案）
     loading: false,
     error: null,
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    expUpload: false,      // 实验性：顶栏的上传入口（设置里开，默认关）
+    uploadMode: 'new',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -128,7 +146,7 @@
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    state.expUpload = Util.store.get('expUpload', false) === true;
+    state.uploadMode = uploadMode();
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -160,13 +178,14 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口走**应用内** #/upload，不跳原站那页 */
-    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
+    if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
+    /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
+    const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
-      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
+      `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -176,7 +195,7 @@
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
         <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname">${Util.esc(u)}</b></span>` : ''}
+        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -233,6 +252,7 @@
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
+    else if (state.view === 'project') html = Views.project(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -242,12 +262,14 @@
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
+    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）要先送回原位
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染
+    if (state.view === 'project') wireManage(body);   // 名单输入框的自动补全
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -280,30 +302,69 @@
   async function analyseTick() {
     const token = state.analyseToken;
     if (!token) return;
-    let raw;
+    /* 轮询与判形都在 62-chain.js 里（契约 B）：RETRY / PROCESSING / 完成的碎片 / 编号已失效 */
+    let r;
     try {
-      // ttl 0：轮的就是"现在"，缓存会停在第一次的结果
-      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+      r = await SP.Chain.analyse(token);
     } catch (e) {
       // 不自己重试：卡片上的文案已说"重新载入这一页"
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    let json = null;
-    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
-    if (json === null) {
-      /* 完成吐的是**没有布局的片段**，"找不到编号"吐的是整页 error.html.twig → 按形状分开
-         （否则整页错误会被当成表单）。 */
-      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
-      paintAnalyse({ html: raw });
-      return;
-    }
-    if (json && json.status === 'PROCESSING') {
-      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
-    } else {
-      paintAnalyse({ waiting: true });
-    }
+    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
+    if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
+    if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
+    else paintAnalyse({ waiting: true });
     analyseTimer = setTimeout(analyseTick, 5000);
+  }
+
+  /* ---- 3.4b 分析完成页那份站点结果容器 ----------------------------------------
+     站点渲染 /project/add/<token> 时，它自己的轮询（doAnalyseUploadedProject）会把
+     GET /project/add_analyse/<token> 的 HTML 整块塞进页面里的 #project_add_analyse_result。
+     我们自己拉的也是同一个地址：如果两边各留一份，全站就有两套同名 id，而 $('#id') 命中的是
+     站点那份（在壳后面）—— doAddProject 读它、用户在壳里改的控件白改（0.1.18 修的真缺陷）。
+     做法跟管理页的 park 一个套路：把站点那份**摘下来留着**，离开这一页再原样还回去。 */
+  let anStale = null;    // 站点那份容器（摘下来后挂在这儿，不删除）
+  let anAnchor = null;   // 它在原页里的锚（注释节点）
+
+  /** 把站点那份摘出文档（只摘一次；它空着也摘，反正内容我们自己渲染） */
+  function hideStaleAnalyse() {
+    if (anStale) return;
+    const live = document.getElementById('project_add_analyse_result');
+    if (!live || live.closest('#sp')) return;          // 站点没这块 / 已经在我们壳里
+    if (!anAnchor || !anAnchor.parentNode || anAnchor.closest('#sp')) {
+      anAnchor = document.createComment('sp-analyse');
+      live.parentNode.insertBefore(anAnchor, live);
+    }
+    live.remove();
+    anStale = live;
+  }
+
+  /** 离开这一页（或整个交还页面）时把它放回去，站点页面保持原样 */
+  function parkAnalyse() {
+    if (anStale && anAnchor && anAnchor.parentNode) {
+      anAnchor.parentNode.insertBefore(anStale, anAnchor.nextSibling);
+    }
+    anStale = null;
+  }
+
+  /** 第三步认不出来时的**交还页面**（砍掉兼容档后这是唯一的降级动作）。
+      原则：认不出来就不半新半旧地渲染 —— 老路（把站点碎片塞进我们的卡片、再按站点 id 点名提交）
+      随兼容档一起删了。做法是 release() 把页面还给站点，再把站点自己那份碎片放回站点自己的容器：
+      站点自己的轮询就是这么写的（addproject.js:204 的 $('#project_add_analyse_result').html(data)），
+      而它被我们用空函数顶掉了（见 startAnalysePoll），这一份因此得由我们送回去。
+      容器、表单 id、内联 onsubmit 全是站点的原件，提交照旧走站点的 doAddProject。
+      为什么不是 release() + location.reload()：重载后脚本照样接管这一页、照样认不出来 ——
+      用户会原地转圈；而只 release() 不送碎片的话，站点那一页会停在他自己的「正在分析」上
+      （它的轮询已被顶掉，不会再有人往里写）。 */
+  function handBackToSite(html) {
+    release();   // 拆掉 #sp 与守卫，并把站点那份结果容器放回页面原位
+    const host = document.getElementById('project_add_analyse_result');
+    if (!host) return;   // 站点连这块都没有（改版了）→ 页面已经在站点自己手里，到此为止
+    host.innerHTML = html || '';
+    SP.DomI18n.enabled = state.translateSite !== false;
+    if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(host);
   }
 
   /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
@@ -336,15 +397,54 @@
       return;
     }
     if (s.html !== undefined) {
-      // 站点表单进来：本版没重制它，只做可读性兜底
+      // 站点把第三步（服务端渲染的那块表单）当 HTML 吐回来：它是唯一的数据源，界面我们自己画
       stopAnalysePoll();
       const spin = q('spin'); if (spin) spin.remove();
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      const done = q('done'); if (done) done.hidden = false;
+      /* 页头接过"这是什么页"和"接下来做什么"：标题用步骤名（顶栏那一项也是它），副标题说明
+         分析已结束。卡片里那句重复的状态行**必须真的隐藏** —— .an-head 有 display:flex，
+         UA 的 [hidden]{display:none} 会被它压掉（这个坑代码里已经记过一次，别再踩）。 */
+      const ttl = q('title');
+      const tsub = q('titleSub');
+      if (ttl) ttl.textContent = t('up3x.title');
+      if (tsub) { tsub.textContent = t('an.doneSechead'); tsub.hidden = false; }
+      const anHead = host.querySelector('.an-head');
+      if (anHead) { anHead.hidden = true; anHead.style.display = 'none'; }
       const box = document.getElementById('sp-an-result');
-      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      if (box) {
+        /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
+           两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
+           东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
+           就是那份原件。先把站点那份请出文档（留着，离开这一页或交还页面时还回去）。 */
+        hideStaleAnalyse();
+        /* 站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 —— 它永远不进活文档，
+           也就不存在"两份同名控件"这一整类问题。 */
+        const model = (SP.Chain && SP.Chain.parseStep3) ? SP.Chain.parseStep3(s.html) : null;
+        const drawn = (model && SP.Step3x) ? SP.Step3x.render(box, model) : null;
+        /* 解析不认识 / 画不出来：不半新半旧地渲染。明说这一版认不出来，并给一个出口 ——
+           点一下就把整页还给站点自己（见 handBackToSite）。 */
+        if (!(drawn && drawn.ok)) {
+          box.textContent = '';
+          box.hidden = false;
+          const note = document.createElement('div');
+          note.className = 'up3-notes up3-bad';
+          note.textContent = t('up3x.degrade');
+          const foot = document.createElement('div');
+          foot.className = 'up3-bfoot';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn up3-submit';
+          btn.textContent = t('up3x.degradeGo');
+          btn.addEventListener('click', () => handBackToSite(s.html));
+          foot.appendChild(btn);
+          box.appendChild(note);
+          box.appendChild(foot);
+          if (tsub) { tsub.textContent = ''; tsub.hidden = true; }
+          return;
+        }
+      }
       return;
     }
     say('state', s.total
@@ -355,7 +455,24 @@
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
 
+  /* ---- 3.6 项目管理页 /project/<数字>：整页自绘，站点 DOM 一个节点都不进我们的壳 ----------------
+     数据是**那一页 HTML 的一份副本**（Api.fetchPage → DOMParser → Api.parseManage），
+     动作直发站点端点（mgSet / mgAct / mgAcl）。 */
+
   /* ---- 4. 数据编排 ---- */
+
+  /* 在线机器：主页那块只给「客户端 + 规格」，而运行状态 / 渲染方式 / 性能 / 帧数 / 积分
+     都在**每一台自己的会话页**上 —— 逐台取一次（最多 3 台，走 Api 的 60 秒缓存），
+     解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
+     `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
+  async function machineDetails(profile) {
+    const list = (profile && profile.machines && profile.machines.list) || [];
+    for (const m of list.slice(0, 3)) {
+      if (m.detail !== undefined || !m.url) continue;
+      m.detail = null;
+      try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
+    }
+  }
 
   async function ensureData(view) {
     if (view === 'settings') return;
@@ -367,7 +484,7 @@
     }
 
     if (view === 'upload') {
-      // /getstarted 就是数据源（见 50-views.js wireUploadDoc）：站点没给单独接口
+      // /getstarted 就是数据源（由 64-step1.js 解析成自绘界面）：站点没给单独接口
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
@@ -408,6 +525,7 @@
         state.profile = Api.parseProfile(html, target);
         SP.state = state;   // 供 shell 里取头像
       }
+      await machineDetails(state.profile);
       if (!state.home) {
         try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
       }
@@ -420,6 +538,18 @@
       state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
     }
 
+    /* 项目管理页：站点那一页的**副本**当数据源（我们在这一页上，fetch 同源地址拿回服务端渲染的
+       HTML，走 DOMParser 进不了活文档）。解析不出那一页的形状就说清楚、给重试，不画半张脸。 */
+    if (view === 'project') {
+      if (!state.projectId) throw new Error(t('mg.noId'));
+      if (!state.mg) {
+        const html = await Api.fetchPage(`/project/${encodeURIComponent(state.projectId)}`);
+        const mg = Api.parseManage(Util.parse(html), state.projectId);
+        if (!mg.found) throw new Error(t('mg.noData'));
+        state.mg = mg;
+      }
+    }
+
     if (view === 'projects' && !state.account && state.userName) {
       try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
       catch (e) { state.account = null; }
@@ -428,6 +558,17 @@
     // 顶部全站实时来自首页：直接落到这页也得取一次
     if (view === 'projects' && !state.home) {
       try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
+    }
+
+    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
+       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
+    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
+      const own = state.userName && state.profileName === state.userName && state.profile
+        ? state.profile
+        : (state.userName
+          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+          : null);
+      state.myProjects = (own && own.myProjects) || [];
     }
 
     if (view === 'ranking' && !state.ranking) {
@@ -443,8 +584,11 @@
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
+        || (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects)
         || (view === 'ranking' && !state.ranking)
         || (view === 'upload' && !state.uploadHtml)
+        /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
+        || (view === 'account' && !state.account)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -494,6 +638,11 @@
       Api.invalidate();
       state.account = null;
       state.session = null;
+      /* 重取期间必须留下"在加载"的表示：数据已经置空，而 show({silent}) 不设 loading，这段窗口里
+         任何一次 render() 都会把整页画成「暂无数据」（实测：移出渲染优先后菜单还开着，随手点一下
+         菜单外面就中）。这里**不**立刻 render()：正常路径旧内容留到重取完，只有真发生 stray render
+         才显示骨架。 */
+      state.loading = true;
       await show(state.view, { silent: true });
       toast(okMsg || t('account.ok'));
       return true;
@@ -516,7 +665,14 @@
     }
 
     const nav = ev.target.closest('[data-nav]');
-    if (nav) { go(nav.dataset.nav); return; }
+    if (nav) {
+      if (nav.dataset.nav === 'upload') {
+        /* 「原版」档：站点自己的脚本才在那一页上，干脆开新标签页，我们一点都不碰。
+           「新版」档走下面的 go() → 应用内 #/upload。 */
+        if (state.uploadMode === 'raw') { window.open('/getstarted', '_blank', 'noopener'); return; }
+      }
+      go(nav.dataset.nav); return;
+    }
 
     const act = ev.target.closest('[data-act]');
     if (act) {
@@ -531,6 +687,8 @@
       if (kind === 'refresh') {
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
+        state.myProjects = null;
+        state.mg = null;
         state.session = null;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
@@ -637,6 +795,8 @@
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
+        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。 */
+        Views.projState.menu = null;
         submit(() => Api.post(url));
         return;
       }
@@ -646,6 +806,7 @@
     const del = ev.target.closest('[data-del]');
     if (del) {
       if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
+      if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
       submit(() => Api.post(del.dataset.del));
       return;
     }
@@ -667,12 +828,81 @@
       const k = sort.dataset.sort;
       if (Views.projState.sort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.sort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();   // 点表头 = 记住这个默认（用户自定义排序）
+      render();
+      return;
+    }
+
+    // 「我发布的」那张表的表头（列少，跟全站那张分开记排序状态）
+    const msort = ev.target.closest('th[data-msort]');
+    if (msort) {
+      const k = msort.dataset.msort;
+      if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
+      else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();
       render();
       return;
     }
 
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+
+    // 项目设置：计算方式（站点那只 radio 是"点了就翻"，我们是"点了就是它"，发的是目标值）
+    const mc = ev.target.closest('#sp-mg-compute [data-v]');
+    if (mc) { mgSet('compute', mc.dataset.v); return; }
+
+    const md = ev.target.closest('[data-mg-del]');
+    if (md) {
+      if (!window.confirm(t('mg.delConfirm'))) return;
+      mgDelete(md.dataset.mgDel);
+      return;
+    }
+
+    // 项目管理页：暂停 / 继续 / 重置 / 部分存档
+    const ma = ev.target.closest('[data-mg-act]');
+    if (ma) { mgAct(ma.dataset.mgAct); return; }
+
+    // 名单：加 / 移除（加的时候团队那栏必须是从建议里选过的）
+    const aa = ev.target.closest('[data-acl-add]');
+    if (aa) {
+      const kind = aa.dataset.aclAdd;
+      const inp = document.getElementById(aa.dataset.input);
+      const typed = inp ? inp.value.trim() : '';
+      const msg = document.querySelector(`[data-acl-msg="${kind}"]`);
+      const say = (text) => { if (msg) { msg.textContent = text; msg.hidden = !text; } };
+      if (!typed) { say(t('mg.acl.needName')); return; }
+      if (kind === 'team' && !(inp && inp.dataset.pick)) { say(t('mg.acl.needPick')); return; }
+      say('');
+      mgAcl(kind, 'add', kind === 'team' ? inp.dataset.pick : typed);
+      return;
+    }
+    const ad = ev.target.closest('[data-acl-del]');
+    if (ad) {
+      const kind = ad.dataset.aclDel;
+      const value = kind === 'team' ? (ad.dataset.id || ad.dataset.name) : ad.dataset.name;
+      if (!value) return;
+      if (!window.confirm(t('mg.acl.delConfirm', { name: ad.dataset.name }))) return;
+      mgAcl(kind, 'del', value);
+      return;
+    }
+
+    /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
+    const sScope = ev.target.closest('#sp-scope [data-s]');
+    if (sScope) {
+      const v = sScope.dataset.s;
+      if (Views.projState.scope === v) return;
+      Views.projState.scope = v === 'mine' ? 'mine' : 'all';
+      Views.projState.filter = 'all';
+      Views.projState.limit = 120;
+      Views.projState.menu = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
+      else render();
+      return;
+    }
+
+    // 总览区块的「看全部」：先定好档位，再让 #/projects 这个链接照常跳
+    const jump = ev.target.closest('[data-scope]');
+    if (jump) { Views.projState.scope = jump.dataset.scope === 'mine' ? 'mine' : 'all'; Views.projState.filter = 'all'; }
 
     // 账户选项卡：只换面板，不重新取数
     const tb = ev.target.closest('#sp-acct-tabs [data-tab]');
@@ -694,6 +924,22 @@
       return;
     }
 
+    /* 默认排序：改完落盘（两个列表下次打开都用它）。认不出的值、或点的就是当前那档，
+       set*Pref 会返回 false —— 那就没什么可画的，不白重画一次。 */
+    const ps = ev.target.closest('#sp-psort [data-v]');
+    if (ps) { if (Views.setSortPref(ps.dataset.v)) render(); return; }
+
+    const pd = ev.target.closest('#sp-pdir [data-v]');
+    if (pd) { if (Views.setDirPref(pd.dataset.v)) render(); return; }
+
+    // 总览区块的开关：点一下翻一个
+    const ob = ev.target.closest('[data-ov-toggle]');
+    if (ob) { if (Views.setOvHidden(ob.dataset.ovToggle)) render(); return; }
+
+    // 总览区块的上/下移：到头了 moveOv 返回 false，什么都不用画
+    const om = ev.target.closest('[data-ov-move]');
+    if (om) { if (Views.moveOv(om.dataset.ovMove, Number(om.dataset.ovDir))) render(); return; }
+
     const lg = ev.target.closest('#sp-lang [data-v]');
     if (lg) {
       I18n.set(lg.dataset.v);
@@ -713,15 +959,15 @@
       return;
     }
 
-    /* 开关决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
-    const ex = ev.target.closest('#sp-exp [data-v]');
-    if (ex) {
-      const on = ex.dataset.v === 'on';
-      Util.store.set('expUpload', on);
-      state.expUpload = on;
-      const host = document.getElementById('sp');
-      if (host) host.innerHTML = shell();
-      show(state.view, { silent: true });
+    /* 三态决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
+    const um = ev.target.closest('#sp-upmode [data-v]');
+    if (um) {
+      const v = um.dataset.v;
+      if (v === state.uploadMode) return;
+      Util.store.set('uploadMode', v);
+      state.uploadMode = v;
+      /* 换档会改变"哪些页接管、入口指向哪"，而这些判定在 boot 时就做完了 —— 老实重载一次 */
+      location.reload();
       return;
     }
   }
@@ -729,7 +975,156 @@
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`));
+    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    const mg = ev.target.closest('[data-mg]');
+    if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
+  }
+
+  /* ---- 项目设置 / 动作 / 名单：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） ----
+     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*、doAddACL*）成功后就是
+     window.location.reload()：真相在服务端，我们不复制一份状态。这里照做，但先把结果说出来再重载。
+     端点逐个核对过 showjob.js 与 ProjectController 的 Route 表。 */
+  const MG_URL = {
+    compute: (id, v) => `/project/${id}/computemethod/${v}/1`,
+    mp4: (id, v) => `/project/${id}/mp4/${v}`,
+    public: (id, v) => `/project/${id}/visibility/${v}`,
+  };
+  const MG_ACT_URL = {
+    pause: (id) => `/project/${id}/pause`,
+    resume: (id) => `/project/${id}/resume`,
+    reset: (id) => `/project/${id}/reset`,
+  };
+  const MG_ACL_URL = {
+    /* 团队发**数字 id**（站点那只隐藏域就是它），用户发 **login** —— 见 showjob.js 的 doAddACL* */
+    manager: (id, op, name) => `/project/${id}/acl/manager/user/${op}/${encodeURIComponent(name)}`,
+    renderer: (id, op, name) => `/project/${id}/acl/renderer/user/${op}/${encodeURIComponent(name)}`,
+    team: (id, op, teamId) => `/project/${id}/acl/renderer/team/${op}/${encodeURIComponent(teamId)}`,
+  };
+
+  /** 成功后整页重载（站点自己的做法）；失败要把界面拨回服务端那个状态 */
+  async function mgDone(url, okMsg) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(url);
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); render(); return false; }
+      toast(okMsg || t('account.ok'));
+      setTimeout(() => location.reload(), 700);
+      return true;
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      render();
+      return false;
+    }
+  }
+
+  function mgSet(kind, value) {
+    const id = state.projectId;
+    if (!id || !MG_URL[kind]) return;
+    if (kind === 'compute' && state.mg && state.mg.compute === value) return;   // 点的是当前那档
+    mgDone(MG_URL[kind](id, value));
+  }
+
+  function mgAct(kind) {
+    const id = state.projectId;
+    if (!id) return;
+    if (kind === 'partial') {
+      /* 站点自己的确认文案（它那句话把后果说全了：会自动暂停、发邮件、恢复时存档销毁），照抄 */
+      if (!window.confirm(t('mg.partialConfirm'))) return;
+      const a = (state.mg.actions || []).find((x) => x.kind === 'partial');
+      if (!a || !a.url) return;
+      mgDone(a.url, t('mg.partialOk'));
+      return;
+    }
+    if (!MG_ACT_URL[kind]) return;
+    if (kind === 'reset' && !window.confirm(t('mg.resetConfirm'))) return;
+    mgDone(MG_ACT_URL[kind](id));
+  }
+
+  async function mgAcl(kind, op, value) {
+    const id = state.projectId;
+    if (!id || !MG_ACL_URL[kind] || !value) return;
+    await mgDone(MG_ACL_URL[kind](id, op, value));
+  }
+
+  async function mgDelete(id) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(`/project/${id}/remove_no_redirect`);
+      /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      location.href = '/home/projects';
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+    }
+  }
+
+  /* ---- 名单输入框的自动补全：站点的 jQuery UI autocomplete 替代品，走它同一个端点 ----------
+     `/user/list_from_term` 回的是一串 **login**，但**不是 JSON 数组而是对象**（`{"0":"alice",…}`）
+     —— 站点那边 `natcasesort()` 保留了键，`json_encode` 就把非连续数组编成对象了。所以两种形状都要认。
+     `/team/list_from_term` 回 `[{value: 数字 id, label: 团队名}]`。团队加白名单要的是 id，
+     所以那一栏必须从建议里选。 */
+  const aclSeq = {};
+  async function aclSearch(kind, term) {
+    const path = kind === 'team' ? '/team/list_from_term' : '/user/list_from_term';
+    const res = await fetch(`${path}?term=${encodeURIComponent(term)}`, {
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let json = null;
+    try { json = await res.json(); } catch (e) { return []; }
+    const raw = Array.isArray(json) ? json
+      : (json && typeof json === 'object' ? Object.keys(json).sort((a, b) => a - b).map((k) => json[k]) : []);
+    return raw.map((o) => (typeof o === 'string'
+      ? { value: o, label: o }
+      : { value: String(o && o.value), label: String(o && o.label) }))
+      .filter((x) => x.value && x.value !== '#');
+  }
+
+  function wireManage(body) {
+    const box = body && body.querySelector('.aadd');
+    if (!box) return;
+    for (const wrap of body.querySelectorAll('.aadd .up1-dev')) {
+      const inp = wrap.querySelector('input[data-acl-input]');
+      const sug = wrap.querySelector('.up1-sug');
+      if (!inp || !sug) continue;
+      const kind = inp.dataset.aclInput;
+      let timer = null;
+      const close = () => { sug.hidden = true; sug.textContent = ''; };
+      inp.addEventListener('input', () => {
+        delete inp.dataset.pick;                        // 改了字就不再是"选过的那个"
+        close();
+        const term = inp.value.trim();
+        if (term.length < 3) return;
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
+          const list = await aclSearch(kind, term);
+          if (my !== aclSeq[kind]) return;
+          sug.textContent = '';
+          if (!list.length) { close(); return; }
+          list.slice(0, 12).forEach((o) => {
+            const li = document.createElement('div');
+            li.className = 'up1-sugitem';
+            li.textContent = o.label;
+            li.tabIndex = 0;
+            li.setAttribute('role', 'option');
+            const pickIt = () => {
+              inp.value = o.label;
+              inp.dataset.pick = o.value;
+              close();
+            };
+            li.addEventListener('click', pickIt);
+            li.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
+            });
+            sug.appendChild(li);
+          });
+          sug.hidden = false;
+        }, 250);
+      });
+      inp.addEventListener('blur', () => setTimeout(close, 180));
+    }
   }
 
   let inputTimer = null;
@@ -738,23 +1133,61 @@
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
-      const host = document.getElementById('sp');
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* noop */ } }
-      void host;
     }, 180);
   }
 
+  /** 视图"该在"的那一页（pathname）。地址栏必须和内容对得上：
+      从会话页点「总览」以前只改 hash → 停在 `/session/<id>#/overview`，地址和内容对不上
+      （用户 2026-10-07 实报）。所以跨页的视图切换改成**整页导航**到它自己那一页，
+      站点那一页照旧由我们接管，hash 决定落在哪个视图（boot 里读）。
+      同一页内的视图切换（总览 ↔ 项目 ↔ 排行榜 ↔ 设置）仍走 replaceState，不重载。 */
+  function pageFor(view) {
+    const me = state.userName;
+    if (!me) return null;
+    const onProfile = /^\/user\/[^/]+\/profile$/.test(location.pathname);
+    /* 账户设置与主页那一族一样**留在主页地址上**（用户 2026-10-07：账户设置也别改地址，地址还是
+       那个 profile 的）——它的数据本来就走 fetchPage('/user/<me>/edit')，不需要换页。
+       已经在自己的 edit 页上（站点自己的链接进来的）也不动。 */
+    if (view === 'account') {
+      if (onProfile || /^\/user\/[^/]+\/edit$/.test(location.pathname)) return location.pathname;
+      return `/user/${encodeURIComponent(me)}/profile`;
+    }
+    if (view === 'overview' || view === 'projects' || view === 'ranking' || view === 'settings') {
+      /* 主页那一族：**任何人的**主页都算（在别人主页上看总览/项目是既有能力，别跳回自己主页）。
+         不在主页上（会话页 / 项目管理页 / 上传页…）才回自己的主页。 */
+      return onProfile ? location.pathname : `/user/${encodeURIComponent(me)}/profile`;
+    }
+    if (view === 'upload') return state.uploadMode === 'new' ? '/getstarted' : null;
+    return null;
+  }
+
   function go(view) {
+    const want = pageFor(view);
+    if (want && want !== location.pathname) {
+      /* 主页那一族带上 hash（地址里能看出落在哪个视图）；账户设置 / 上传页**不带** ——
+         那一页本身就是那个视图，`/user/<me>/edit#/account` 这种多余后缀只会让人以为有两层。 */
+      const hash = /^\/user\/[^/]+\/profile$/.test(want) ? (ROUTES[view] || '') : '';
+      location.assign(want + hash);
+      return;
+    }
     if (ROUTES[view]) history.replaceState(null, '', ROUTES[view]);
     show(view);
   }
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (m && m[1] !== state.view) show(m[1]);
+    if (!m || m[1] === state.view) return;
+    /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
+       留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
+    if (m[1] === 'upload' && state.uploadMode !== 'new') {
+      history.replaceState(null, '', ROUTES[state.view] || location.pathname);
+      return;
+    }
+    show(m[1]);
   });
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
@@ -789,10 +1222,21 @@
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
+    // 项目管理页的编号只从地址来（同会话页）
+    const pj = location.pathname.match(/^\/project\/(\d+)/);
+    state.projectId = pj ? pj[1] : null;
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
-      if (ROUTES[v]) state.view = v;
+      /* #/upload 是应用内的上传页 —— 只属于「新版」档。off/raw 档那一页归站点自己，
+         手打 hash 不该越档（2026-10-07 实报：raw 档下 #/upload 照样画新版上传页）。 */
+      if (ROUTES[v] && (v !== 'upload' || state.uploadMode === 'new')) state.view = v;
     }
+
+    /* 项目管理页：站点没给出项目那一块（项目不存在 / 无权查看 → 站点自己那张 Forbidden 页）
+       就原样还回去，别接管成一屏空壳。数据虽然改为从**副本**解析，这道判据仍然要留着：
+       它认的是"这一页到底是不是一个能管的项目页"，而不是"我们要不要搬它的节点"。 */
+    if (state.view === 'project' && !document.getElementById('jobs_of_a_project')) { release(); return; }
 
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 

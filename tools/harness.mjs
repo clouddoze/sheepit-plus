@@ -9,7 +9,7 @@
 // 内联脚本保留原样 —— 但 $ / jQuery / google.charts / LazyLoad 用桩顶住，
 // 于是它们什么都不做、也不报错。这样控制台里剩下的错误一定是我们自己的。
 import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -30,6 +30,8 @@ const FIXTURES = {
   '/home/projects': '_home_projects.html',
   '/ranking/user': '_ranking_user.html',
   '/ranking': '_ranking_user.html',
+  // 上传页（不是上传接口）：把抓下来的 /getstarted 当数据源，验 64-step1 的自绘卡片
+  '/getstarted': '_getstarted.html',
 };
 
 const STUB = `<script>
@@ -171,7 +173,12 @@ const server = createServer((req, res) => {
 
   let name = FIXTURES[p];
   if (!name && /^\/session\/\d+$/.test(p)) name = 'session.html';
-  if (!name && /^\/user\/[^/]+\/profile$/.test(p)) name = '_user_profile.html';
+  if (!name && /^\/user\/[^/]+\/profile$/.test(p)) {
+    // 夹具文件常被按账号命名（_user_<名字>_profile.html），别只认死一个名字：
+    // 认不到时会走 page() 的 null 分支 → 空 200，界面表现为"总览没有数据"，很难查。
+    name = existsSync(join(RAW, '_user_profile.html')) ? '_user_profile.html'
+      : (readdirSync(RAW).find((x) => /^_user_.+_profile\.html$/.test(x)) || '_user_profile.html');
+  }
   if (!name && /^\/user\/[^/]+\/edit$/.test(p)) name = 'edit.html';
   if (!name) return send('text/plain', `no fixture for ${p}`, 404);
 

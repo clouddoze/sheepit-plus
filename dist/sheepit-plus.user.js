@@ -2,9 +2,9 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.1.12
-// @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
-// @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
+// @version      0.2.3
+// @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表与项目管理、排行榜、会话页、上传页、账户设置；中英双语、明暗双主题。读写都在站点自己的页面上完成，不向第三方发送。
+// @description:en  A new front end for SheepIt Render Farm: dashboard, projects (plus per-project management), ranking, sessions, uploading and account settings. Bilingual (zh/en), dark and light. Every read and write goes through the site's own pages.
 // @author       clouddoze
 // @match        https://www.sheepit-renderfarm.com/*
 // @exclude      https://www.sheepit-renderfarm.com/forum/*
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.1.12 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.2.3 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -28,7 +28,6 @@
 
   const NS = 'sheepit-plus';
   const SP = (window.__SHEEPIT_PLUS__ = window.__SHEEPIT_PLUS__ || {});
-  SP.NS = NS;
 
   /* ==== 工具 ==== */
 
@@ -69,17 +68,6 @@
       if (rd > 0 || y > 0) out += `${rd}d`;
       if (h > 0 || !out) out += `${h}h`;
       return out || `${Math.floor((s % 3600) / 60)}m`;
-    },
-
-    /** 大数压缩：1339098454 -> 1.3 G */
-    compact(v) {
-      const n = Number(v);
-      if (!Number.isFinite(n)) return Util.num(v);
-      const abs = Math.abs(n);
-      if (abs >= 1e9) return (n / 1e9).toFixed(1) + ' G';
-      if (abs >= 1e6) return (n / 1e6).toFixed(1) + ' M';
-      if (abs >= 1e3) return (n / 1e3).toFixed(1) + ' K';
-      return String(n);
     },
 
     /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
@@ -201,32 +189,26 @@
   const DICT = {
     zh: {
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
-      'nav.account': '账户设置', 'nav.rankingShort': '排行', 'nav.accountShort': '账户',
-      'top.refresh': '刷新', 'top.updated': '更新于', 'top.loading': '加载中…',
-      'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于', 'hero.points': '积分',
+      'nav.rankingShort': '排行', 'nav.accountShort': '账户',
+      'top.refresh': '刷新', 'top.updated': '更新于',
+      'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
       'stat.streak': '当前连续', 'stat.days': '天',
       'stat.streakHint': '历史最长 {best} 天 · 近 30 天活跃 {d30} 天',
       'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 这几条说的是**这个用户自己客户端**的状态（"Connected as 你" 框里），不是全站队列。 */
-      'status.idle': '客户端待命中',
-      'status.rendering': '正在渲染',
-      'status.renderingFor': '正在为 {user} 渲染',
-      'status.disconnected': '客户端未连接',
-      'hero.statusRaw': '站点原文：{raw} —— 指你自己客户端的状态，不是全站队列',
+      /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
       'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
       'stat.ordered': '订的帧', 'stat.orderedHint': '为你自己的项目下单的帧数',
-      'site.title': '全站实时', 'site.frames': '待渲染帧', 'site.projects': '进行中项目',
+      'site.frames': '待渲染帧', 'site.projects': '进行中项目',
       'site.clients': '在线客户端', 'site.processing': '正在处理帧',
-      'chart.points': '积分增长', 'chart.frames': '渲染帧数增长',
+      'chart.points': '积分增长',
       'chart.tipPoints': '积分',
       'chart.pointsSub': '{n} 个采样点 · {from} → {to} · 当前 {now}',
-      'chart.framesSub': '{n} 个采样点 · 当前 {now} 帧',
       'months.title': '月度产出', 'months.sub': '按月汇总',
       'months.max': '最高月', 'months.min': '最低月',
       'heat.title': '渲染产出', 'heat.sub': '近 53 周 · 每格一天 · 按当天帧数着色',
@@ -245,9 +227,6 @@
       'empty.s2h': '挂着它', 'empty.s2b': '不需要开着 Blender。空闲算力会自动领活。',
       'empty.s3h': '换积分', 'empty.s3b': '渲染别人 38 分/分钟，自己的项目花 10 分/分钟。',
       'empty.cta1': '下载客户端', 'empty.cta2': '了解规则',
-      'machines.title': '在线机器', 'machines.sub': '当前连接', 'machines.online': '在线',
-      'sessions.title': '最近会话', 'sessions.sub': '共 {n} 条记录',
-      'news.title': '最新动态',
       'proj.title': '进行中项目', 'proj.count': '共 {n} 个',
       'proj.prio.inList': '已在你的渲染优先级名单里',
       /* 3 点菜单 = 放进某份名单：优先 / 捐赠积分（你挣的给 TA）/ 黑名单（不渲染 TA 的项目）。 */
@@ -259,19 +238,32 @@
       'proj.search': '搜索项目或渲染者…', 'proj.all': '全部',
       'proj.col.project': '项目', 'proj.col.owner': '发布者', 'proj.col.status': '状态',
       'proj.col.progress': '进度', 'proj.col.device': '设备', 'proj.col.memory': '内存',
-      'proj.cpu': 'CPU', 'proj.gpu': 'GPU', 'proj.frames': '帧',
+      'proj.cpu': 'CPU', 'proj.gpu': 'GPU',
       'proj.status.renderingN': '{n} 帧渲染中', 'proj.status.rendering': '渲染中',
       'proj.status.waiting': '等待中', 'proj.status.paused': '已暂停',
-      'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}', 'proj.showingN': '显示前 {n} 个',
+      'proj.empty': '没有匹配的项目', 'proj.showing': '显示 {n} / {total}',
+      /* 「我发布的」：数据来自个人主页那张表，没有设备/内存可筛，所以那一档只放状态筛 */
+      'proj.scope.all': '全部', 'proj.scope.mine': '我发布的',
+      'proj.searchMine': '搜索我发布的…', 'proj.col.manage': '操作',
+      'proj.status.finished': '已完成', 'proj.status.blocked': '已被站点封禁',
+      'my.title': '我的项目', 'my.count': '共 {n} 个', 'my.all': '看全部',
+      'my.open': '项目设置',
+      'my.empty': '你还没有发布过项目',
+      'my.emptyCta': '上传一个项目',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
-      'mode.toClassic': '切回原版界面', 'mode.toModern': '切换到现代化界面',
+      'mode.toClassic': '切回原版界面',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
       /* 已连接的机器 */
-      'machines.title': '已连接的机器', 'machines.count': '共 {n} 台',
+      'machines.title': '在线机器', 'machines.count': '共 {n} 台',
       'machines.none': '当前没有连着算力的客户端',
       'machines.open': '查看会话', 'machines.unknown': '未识别机型',
+      'machines.created': '开始 {v}',
+      'machines.uptime': '已连接 {v}',
+      /* 在线机器那一格的**状态**（用户 2026-10-07）。判据见 40-ui.js 的 machineDetail：
+         Current frames 那行只在站点有帧在跑时才印 → 有=渲染中、没有=等待任务。 */
+      'machines.state.rendering': '渲染中', 'machines.state.idle': '等待任务',
       /* 渲染产出：日期轴 */
       'heat.weekday': '一,三,五', 'heat.tip': '{n} 帧',
       'heat.tipOn': '有渲染', 'heat.tipOff': '没有渲染',
@@ -281,7 +273,6 @@
       'account.tab.sched': '调度与名单',
       'account.tab.sponsor': '捐赠积分', 'account.tab.account': '账户',
       'account.only': '只能管理自己的账户',
-      'account.onlyHint': '你正在查看 {user} 的账户设置，但那不是你的账号。',
       'account.scheduler': '调度设置', 'account.schedulerHint': '决定优先渲染谁的项目：优先级由低到高是 其他用户 < 我的团队 < 我自己。',
       'account.sched.mine': '优先渲染我自己的项目',
       'account.sched.mineHint': '默认开启。如果你的机器较旧，交给调度器挑更轻的帧可能更划算。',
@@ -328,14 +319,29 @@
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
       'set.translate': '翻译原站页面', 'set.on': '开启', 'set.off': '关闭',
       'set.translateHint': '未重建的页面（FAQ、服务器、Get started 等）用 {n} 条词条在本地翻译。不联网、不上传任何文本；词典里没有的字符串（项目名、用户名、新闻正文）保持原样，不会被误译。',
-      /* 文案要说清：未经验证 / 只统一风格 / 没全部重写。 */
+      'set.psort': '默认排序', 'set.psortHint': '项目列表按什么排。点表头排序也会一并记住 —— 下次打开还是这个排法。',
+      'set.pdir.asc': '升序', 'set.pdir.desc': '降序',
+      'set.ovblocks': '总览区块', 'set.ovblocksHint': '总览页显示哪些块、按什么顺序排。关掉的整块不画；开关与顺序都会被记住。',
+      'ovb.kpi': '指标带', 'ovb.charts': '图表',
+      'ovb.up': '上移', 'ovb.down': '下移', 'ovb.pinned': '固定在顶部',
+      /* 文案要说清：哪一档做了什么、新版未经验证。 */
       'set.exp': '实验性',
-      'set.expUpload': '项目上传（兼容界面）',
-      'set.expUploadHint': '打开后，顶栏会多出一个「上传项目」入口，点进去是 /getstarted 上「Add your project」那一段。'
-        + '这一页未经验证：只统一了风格，没有重写 —— 上传表单、估算器、进度条都还是站点自己的控件。'
-        + '分析完成后的项目设置表单、以及项目管理页，也仍然是原站界面。',
+      'set.upmode': '上传项目',
+      'set.upmodeHint': '三档：关闭（顶栏不出现入口，整条链路不接管）；'
+        + '原版（顶栏入口点一下＝新标签页打开站点自己的上传页，我们完全不接管那一页）；'
+        + '新版（默认这一档：上传 / 等待 / 设置全部自绘 —— 解析站点的分析结果、自己发提交，不依赖站点的页面结构）。',
+      'set.upmode.off': '关闭', 'set.upmode.raw': '原版', 'set.upmode.new': '新版',
+      'set.fp.title': '上游指纹',
+      'set.fp.one': '{v} · 已核对 {n}/{n}',
+      'set.fp.oneNew': '{v} · 还没走过第三步',
+      'set.fp.now': '站点资源版本 {v} —— 就是线上 www 仓库的 commit 短 id',
+      'set.fp.unknown': '这一页读不到站点资源版本。',
+      'set.fp.same': '与本脚本验证过的版本一致：{v}。',
+      'set.fp.diff': '站点已经更新：现在是 {now}，本脚本验证过的是 {known} —— 新版上传可能已经对不上；真认不出来时它会明说，并把那一页交回站点自己。',
+      'set.fp.enter': '上次进入第三步：{time} · 服务端给了 {n} 个控件，全部搬进新界面。',
+      'set.fp.ok': '上次提交前点名：{time} · {n} 个控件全部在位。',
+      'set.fp.never': '还没走过第三步，所以没有点名记录。',
       'nav.upload': '上传项目',
-      'nav.uploadTip': '实验性：兼容界面（未经验证，只统一了风格）',
       'set.about': '关于', 'set.aboutText':
         'SheepIt Plus 是一个纯前端的界面重制脚本。它读取你本来就能看到的站点页面，用新界面渲染出来；不调用未公开的接口，也不向第三方发送数据。会改动服务器状态的只有三处，都是你自己点下的按钮：账户设置里的提交、机器会话页上的暂停/恢复、以及项目列表里发布者那格的「优先 / 移出」。它们提交的是站点自己的地址，和你原来在那些页面上操作是同一件事。',
       'set.dangerHint': '如需恢复原版界面，用右上角的「切回原版界面」，或在设置里停用本脚本后刷新。',
@@ -345,6 +351,7 @@
       'sess.on': '运行中', 'sess.off': '已暂停',
       'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
       'sess.statusRaw': '站点原文：{raw}',
+      'sess.computeRaw': '站点给的计算方式：{raw}',
       // 暂停时说"当前作业"，否则和旁边的「已暂停」徽章自相矛盾。
       'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
@@ -353,13 +360,17 @@
       'sess.kpi.maxTime': '单帧渲染时长上限',
       'sess.kpi.since': '自 {t} 起', 'sess.kpi.perFrame': '每帧约 {n} 分',
       'sess.kpi.powerLink': '各机型算力榜',
-      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算',
+      'sess.facts': '机器信息', 'sess.factsSub': '站点报告的原值，未做换算；内部枚举翻成了人话，原文在悬停提示里',
+      'sess.never': '从未', 'sess.rawTip': '站点内部值：{raw}',
+      'sess.class.verySlow': '极慢档', 'sess.class.slow': '偏慢档', 'sess.class.medium': '中等档',
+      'sess.class.fast': '偏快档', 'sess.class.veryFast': '极快档',
+      'sess.act.pause': '暂停', 'sess.act.resume': '继续',
       'sess.f.cpu': '处理器',
       'sess.f.power': 'CPU 性能', 'sess.f.powerGpu': 'GPU 性能',
       'sess.f.gpu': '显卡', 'sess.f.vram': '显存',
       'sess.f.driver': '驱动', 'sess.f.computeDevice': '计算设备',
       'sess.f.ramAllowed': '渲染可用内存', 'sess.f.ramAvailable': '物理内存',
-      'sess.f.scheduler': '调度模式', 'sess.f.createdAt': '创建时间',
+      'sess.f.scheduler': '速度档位', 'sess.f.createdAt': '创建时间',
       'sess.f.lastRequest': '最后请求', 'sess.f.lastRequestJob': '最后请求作业',
       'sess.f.lastValidatedJob': '最后验证作业', 'sess.f.ua': '运行环境',
       'sess.f.renderKey': '渲染密钥', 'sess.f.action': '可用动作',
@@ -374,7 +385,6 @@
       'sess.act.events': '事件', 'sess.act.jobs': '作业', 'sess.act.failed': '失败',
       'sess.act.moreDay': '更早的 {n} 天没有列在这里', 'sess.act.moreMonth': '更早的 {n} 个月没有列在这里',
       'sess.logOpen': '查看完整日志（{n} 条）', 'sess.logClose': '收起完整日志',
-      'sess.publisher': '发布者',
       'sess.col.type': '事件', 'sess.col.job': '作业', 'sess.col.start': '开始',
       'sess.col.end': '结束', 'sess.col.span': '时长',
       'sess.projects': '可渲染项目', 'sess.prjSub': '共 {n} 个',
@@ -384,16 +394,44 @@
       'sess.tl.error': '错误',
 
       /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
+      'mg.title': '项目管理', 'mg.unknown': '项目',
+      /* 设置区自绘：三行开关 + 一行危险动作，动作直发站点端点（见 80-app.js 的 mgSet） */
+      'mg.ops': '项目设置', 'mg.opsSub': '这些开关直接提交到站点自己的接口，和你原来在这一页点它们是一回事。',
+      'mg.compute': '计算方式', 'mg.computeHint': 'CPU 与 GPU 二选一。GPU 不支持站点的全部渲染特性，结果可能有差异。',
+      'mg.mp4': '生成 MP4 视频', 'mg.mp4Hint': '把渲染好的帧打成一段 MP4。很吃服务器资源，真需要再开。',
+      'mg.public': '公开渲染', 'mg.publicHint': '关掉之后，只有「渲染者」名单里的人与团队能渲染这个项目。',
+      'mg.del': '删除项目', 'mg.delHint': '不可撤销：项目与已渲染的帧会一起消失。',
+      'mg.delConfirm': '确定删除这个项目吗？删了就回不来了。',
+      /* 项目管理页整页自绘：动作行 / 名单 / 概要 / 帧。站点没渲染的那几项不画。 */
+      'mg.noId': '地址里没有项目编号', 'mg.noData': '站点没有给出这一页的项目数据（站点改版了，或者你没有权限）',
+      'mg.act.frames': '查看帧图像', 'mg.act.zip': '下载帧图像', 'mg.act.video': '下载视频',
+      'mg.act.pause': '暂停', 'mg.act.resume': '继续', 'mg.act.reset': '重置', 'mg.act.partial': '申请部分帧压缩包',
+      'mg.act.disabled': '站点现在不允许这一步',
+      'mg.partialConfirm': '申请部分帧压缩包会**自动暂停**这个项目；打包好之后站点会发邮件告诉你怎么下载。'
+        + '收到之后要你自己把项目继续起来，而继续会销毁那份存档。确定要申请吗？',
+      'mg.partialOk': '已提交申请，站点打包好会发邮件', 'mg.resetConfirm': '确定重置这个项目吗？（这是管理员动作）',
+      'mg.summary': '概要', 'mg.frames': '帧', 'mg.framesN': '共 {n} 帧',
+      'mg.legend.done': '已完成', 'mg.legend.progress': '进行中', 'mg.legend.waiting': '等待中',
+      'mg.videoNote': '注意：这不是最终视频，而是降质缩略图。',
+      'mg.acl.managers': '管理员', 'mg.acl.managersHint': '名单里的人可以改这个项目的设置。',
+      'mg.acl.renderers': '渲染者', 'mg.acl.teams': '团队',
+      'mg.acl.publicOn': '现在是「公开渲染」：所有成员都能渲染这个项目。',
+      'mg.acl.publicOff': '现在只允许下面这些人（与团队）渲染。',
+      'mg.acl.teamsHint': '团队必须从建议列表里选（站点要的是团队编号，不是名字）。',
+      'mg.acl.add': '添加', 'mg.acl.remove': '移除', 'mg.acl.none': '名单还是空的',
+      'mg.delBtn': '删除',
+      'mg.acl.publicOnly': '现在是「公开渲染」：所有成员都能渲染这个项目，站点因此不渲染「渲染者名单」这一块。'
+        + '把上面「项目设置」里的公开渲染关掉，名单与添加框才会出现在这里。',
+      'mg.acl.needName': '先填一个名字', 'mg.acl.needPick': '请从建议列表里选一个团队',
+      'mg.acl.delConfirm': '把「{name}」从这个名单里移除？',
+      'mg.note': '这一页的设置、动作与名单全部由我们自绘，提交直发站点自己的接口 —— 和你原来在这一页点它们是一回事。',
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
       'up.estTitle': '渲染用时估算',
       'up.rulesTitle': '交之前先过一遍',
       'up.origin': '这些数字（体积上限、渲染器、图块数、单帧上限）都是站点这次渲染时当场给的，脚本里没有写死任何一个。',
-      'up.expNote': '实验性 · 兼容界面：这一页只统一了风格，没有全部重写 —— '
-        + '上传表单、估算器、进度条都还是站点自己的控件，处理逻辑也是站点的；未经验证，个别地方可能与站点不一致。',
       /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
          <td> 里，翻译层整块替换会把文件框一起删掉。 */
-      'up.maxNote': '单个文件上限 {size}，指的是 ZIP 压缩之前的大小；Blender 自带的压缩受支持，也推荐用。',
       /* 上传后的分析等待页 */
       'an.title': '正在分析你的项目',
       'an.sub': '站点要先读一遍存档，才知道里面有几个 .blend、帧区间和分辨率是多少',
@@ -405,7 +443,115 @@
       'an.noToken': '地址里没有分析编号，这一页打不开。',
       'an.gone': '这个分析编号已经找不到了 —— 多半是分析早就完成、这一页过期了。回「上传项目」重新传一次，或者去项目列表看看。',
       'an.doneTitle': '分析完成',
-      'an.doneNote': '接下来这一步（引擎、帧区间、切块、采样、分辨率…）本版还没有重制，用的是站点自己的表单：功能完整，外观是原站的。填完提交就会跳到项目管理页。',
+      'an.doneSechead': '分析完成 —— 接下来只需确认设置',
+
+      /* 新版上传 · 第三步（68-step3.js 自绘那一块用的标签） */
+      'up3.vis': '可见性',
+      'up3.cpu': '计算方式',
+
+      /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
+      'up3x.title': '项目设置',
+      'up3x.type': '类型',
+      'up3x.frames': '帧范围',
+      'up3x.split': '切块',
+      'up3x.mEngine': '引擎 {v}',
+      'up3x.mBlender': 'Blender {v}',
+      'up3x.mRes': '{w}×{h}',
+      'up3x.mFps': '{v} fps',
+      'up3x.mSamples': '采样 {v}',
+      'up3x.mPerPixel': '{v}/像素',
+      'up3x.mDenoise': '降噪',
+      'up3x.mAdaptive': '自适应采样',
+      'up3x.mHeadless': '无头渲染',
+      'up3x.mColorMgmt': '自定义色彩管理',
+      'up3x.mOutput': '输出「{v}」',
+      'up3x.render': '所有成员都可渲染',
+      'up3x.renderTip': '默认所有成员都能渲染你的项目；不想开放就别勾。之后在项目管理页还能改，也可以单独指定谁能渲染。',
+      'up3x.mp4': '生成 MP4 视频',
+      'up3x.mp4Tip': '给项目生成 MP4 视频。对服务器很吃资源，确实需要才勾。',
+      'up3x.thumb': '缩略图对所有成员可见',
+      'up3x.thumbTip': '默认所有成员都能看到你项目的缩略图；不想公开就别勾。之后在项目管理页还能改。',
+      'up3x.forcedTip': '这个开关站点没开放：界面上的样子只是"站点最终会怎么处理"，提交时按站点的规则走（不会照你勾的发）。最终结果：{state}。',
+      'up3x.ramAuto': '默认不指定：站点在渲染第一帧时自动探测。项目很吃内存（比如超过 20GB）再手动填。',
+      'up3x.ramManual': '手动指定',
+      'up3x.picture': '画面设置',
+      'up3x.splitFixedTip': '站点分析这个文件后认定它不能切块（EXR 或降噪项目），所以只能整帧渲染 —— 这里没有可选项。',
+      'up3x.yes': '是',
+      'up3x.no': '否',
+      'up3x.cpu': 'CPU',
+      'up3x.gpu': 'GPU',
+      'up3x.queue': '预计排队第 {v} 位',
+      'up3x.total': '项目总数 {n}',
+      'up3x.anim': '动画',
+      'up3x.single': '单帧',
+      'up3x.start': '起始帧',
+      'up3x.end': '结束帧',
+      'up3x.step': '步长',
+      'up3x.frame': '帧',
+      'up3x.splitEach': '每帧切成几份',
+      /* 管着这两行的硬约束，长在决策行上 —— 以前只在上一步的须知里出现过（记忆桥） */
+      'up3x.rule20': '基准机上单帧（或每块）超过 20 分钟就该切块 —— 站点按它那台基准机算。',
+      'up3x.ruleTiles': '一次最多 12,000 个分块：8×8 切法下大约到 187 帧就到顶了。',
+      'up3x.nTiles': '{n} 份',
+      'up3x.fullFrame': '整帧',
+      'up3x.ram': '内存占用',
+      'up3x.ramTip': '可选。项目很吃内存（比如超过 20GB）时填上，服务器会把帧派给内存够的机器；不填就在渲染第一帧时自动探测。',
+      'up3x.ramPh': '单位 MB',
+      'up3x.submit': '添加这个文件',
+      'up3x.sending': '正在提交…',
+      'up3x.done': '已提交，正在跳转…',
+      'up3x.multi': '这份存档里有多个 .blend：站点的分析编号在第一次成功提交后就会被删掉，想接着加下一个要重新上传一次。',
+      'up3x.rejectedBlend': '站点不给这个文件建表单（缺相机 / 有活动的输出节点 / 分析报错）。',
+      'up3x.rejected': '站点没有接受这次提交。',
+      'up3x.netFail': '提交没有送到（网络或登录状态）。',
+      'up3x.httpFail': '站点回了 HTTP {code}。',
+      'up3x.uploadOdd': '上传没有被接受，但站点没给原因。',
+      'up3x.analyseOdd': '分析接口回了个看不懂的响应。',
+      'up3x.needCompute': '先选一个计算方式（CPU 或 GPU）再提交。',
+      'up3x.badFrame': '{name}：帧必须是整数（站点那边收到空值会直接报错）。',
+      'up3x.badRange': '{name}：结束帧不能小于起始帧。',
+      'up3x.badStep': '{name}：步长至少为 1。',
+      'up3x.badRam': '{name}：内存只能填数字（单位 MB）。',
+      'up3x.degrade': '这份表单的结构与脚本核对过的上游版本不一样，脚本不认它 —— 这一页不自己画，点下面的按钮交回站点自己的界面（站点的表单与提交照旧可用）。设置里能看到两边的版本号。',
+      'up3x.degradeGo': '用站点自己的界面打开这一页',
+      /* 0.2.0 源码重写 · 第一步（64-step1.js 自绘的上传页） */
+      'up1.pick': '把 .blend / .zip 拖到这里，或',
+      'up1.pickBtn': '选择文件',
+      'up1.pickSub': '单个文件上限 {size}（ZIP 压缩之前）；Blender 自带的压缩受支持，也推荐用。',
+      'up1.anySize': '以站点这次给的上限为准',
+      'up1.picked': '已选择 {name}（{size}）',
+      'up1.noFile': '先选一个文件。',
+      'up1.go': '开始上传',
+      'up1.goBusy': '正在上传…',
+      'up1.tooBig': '{name} 有 {size}，超过站点这次的 {max} 上限 —— 先用 Blender 自带的压缩，或把项目拆小。',
+      'up1.badType': '{name} 不是 .blend 或 .zip，站点不收。',
+      'up1.after': '传完之后站点要先读一遍存档（几分钟是正常的），再让你确认项目设置。',
+      'up1.uploading': '正在上传 {pct}%',
+      'up1.progressNoEta': '已传 {done} / {total}',
+      'up1.progress': '已传 {done} / {total} · 约剩 {eta}',
+      'up1.sending': '文件传完了，等站点接手…',
+      'up1.jumping': '上传完成，正在跳到分析页…',
+      'up1.fail': '上传没有被接受，站点没给原因。',
+      'up1.gate': '站点这次没有给出上传表单（通常是没有渲染够帧数，或者正在维护）。',
+      'up1.estTip': '填这两项、再选一台设备，站点会算出大概花多少积分、切多少块比较合适。',
+      'up1.devPh': '处理器或显卡型号（至少 3 个字）',
+      'up1.devPick': '先从建议列表里选一台设备 —— 站点认不出自由输入的名字。',
+      'up1.time': '单帧渲染时间（分钟）',
+      'up1.count': '帧数',
+      'up1.estGo': '估算',
+      'up1.estimating': '估算中…',
+      'up1.estNeed': '渲染时间和帧数都要填正数。',
+      'up1.estFail': '站点没有给出估算结果。',
+      'up1.cost': '大概要花 {pts} 积分。',
+      'up1.tiles': '切块数',
+      'up1.perTile': '每块预计用时',
+      'up1.noSplit': '不切块',
+      'up1.noRules': '站点这一页没给须知清单。',
+      /* 站点结构变了：不许沉默 —— 说清 + 给出切档办法 */
+      'up.shapeNew': '站点这一版的页面结构变了，新版认不出要用的那几块。',
+      'up.shapeHow': '可以到「设置 → 上传项目」切到「原版」，用站点自己的上传页（换档会重新载入这一页）。',
+      'up3x.unknown': '站点这一版多了 {n} 个脚本没画过的元素（{list}…）—— 它们会按站点给的默认值提交。',
+      'set.fp.unknownEls': '站点多了 {n} 个新控件（{list}…）—— 新版还没跟上，它们会按默认值提交。',
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
       /* user 是**机器主人**，time limit 指他设的单帧上限，不是发布者时限（早先译错过）。 */
@@ -425,30 +571,24 @@
     },
     en: {
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
-      'nav.account': 'Account', 'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
-      'top.refresh': 'Refresh', 'top.updated': 'Updated', 'top.loading': 'Loading…',
-      'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined', 'hero.points': 'Points',
+      'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
+      'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
       'stat.streak': 'Current streak', 'stat.days': 'days',
       'stat.streakHint': 'Best {best}d · {d30}/30 active days',
       'stat.streakFull': 'Best {best}d · every day of the last 30',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
-      'status.idle': 'Client standing by',
-      'status.rendering': 'Rendering',
-      'status.renderingFor': 'Rendering for {user}',
-      'status.disconnected': 'Client not connected',
-      'hero.statusRaw': 'Site wording: {raw} \u2014 this is your own client\u2019s state, not the farm queue',
       'stat.avgPeak': 'Avg {avg} · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
       'stat.created': 'Projects created', 'stat.createdHint': 'Tasks you uploaded',
       'stat.ordered': 'Frames ordered', 'stat.orderedHint': 'Frames you ordered for your own projects',
-      'site.title': 'Farm status', 'site.frames': 'Frames remaining', 'site.projects': 'Active projects',
+      'site.frames': 'Frames remaining', 'site.projects': 'Active projects',
       'site.clients': 'Connected clients', 'site.processing': 'Processing frames',
-      'chart.points': 'Points growth', 'chart.frames': 'Frames growth',
+      'chart.points': 'Points growth',
       'chart.tipPoints': 'points',
       'chart.pointsSub': '{n} samples · {from} → {to} · now {now}',
-      'chart.framesSub': '{n} samples · now {now} frames',
       'months.title': 'Monthly output', 'months.sub': 'By calendar month',
       'months.max': 'Best month', 'months.min': 'Lowest month',
       'heat.title': 'Render output', 'heat.sub': 'Last 53 weeks · one cell per day · shaded by frames',
@@ -466,9 +606,6 @@
       'empty.s2h': 'Leave it running', 'empty.s2b': 'No need to have Blender open. Idle cycles pick up work automatically.',
       'empty.s3h': 'Earn points', 'empty.s3b': 'Rendering for others earns 38 points/minute; your own project spends 10.',
       'empty.cta1': 'Download the client', 'empty.cta2': 'How it works',
-      'machines.title': 'Online machines', 'machines.sub': 'Currently connected', 'machines.online': 'online',
-      'sessions.title': 'Recent sessions', 'sessions.sub': '{n} records',
-      'news.title': 'Latest news',
       'proj.title': 'Active projects', 'proj.count': '{n} projects',
       'proj.prio.inList': 'Already in your render priority',
       'proj.menu.open': 'More actions', 'proj.menu.title': 'This publisher\u2026',
@@ -479,17 +616,27 @@
       'proj.search': 'Search project or renderer…', 'proj.all': 'All',
       'proj.col.project': 'Project', 'proj.col.owner': 'Owner', 'proj.col.status': 'Status',
       'proj.col.progress': 'Progress', 'proj.col.device': 'Device', 'proj.col.memory': 'Memory',
-      'proj.cpu': 'CPU', 'proj.gpu': 'GPU', 'proj.frames': 'frames',
+      'proj.cpu': 'CPU', 'proj.gpu': 'GPU',
       'proj.status.renderingN': '{n} Rendering frames', 'proj.status.rendering': 'Rendering',
       'proj.status.waiting': 'Waiting', 'proj.status.paused': 'Paused',
-      'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}', 'proj.showingN': 'Top {n}',
+      'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}',
+      'proj.scope.all': 'All', 'proj.scope.mine': 'Published by me',
+      'proj.searchMine': 'Search my projects…', 'proj.col.manage': 'Action',
+      'proj.status.finished': 'Rendered', 'proj.status.blocked': 'Blocked by the site',
+      'my.title': 'My projects', 'my.count': '{n} in total', 'my.all': 'See all',
+      'my.open': 'Project settings',
+      'my.empty': 'You have not published a project yet',
+      'my.emptyCta': 'Upload a project',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
-      'mode.toClassic': 'Switch to the original interface', 'mode.toModern': 'Switch to the modern interface',
+      'mode.toClassic': 'Switch to the original interface',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
-      'machines.title': 'Connected machines', 'machines.count': '{n} machines',
+      'machines.title': 'Online machines', 'machines.count': '{n} machines',
       'machines.none': 'No machine is connected right now',
       'machines.open': 'Open session', 'machines.unknown': 'Unknown machine',
+      'machines.created': 'Started {v}',
+      'machines.uptime': 'Connected {v}',
+      'machines.state.rendering': 'Rendering', 'machines.state.idle': 'Waiting for work',
       'heat.weekday': 'Mon,Wed,Fri', 'heat.tip': '{n} frames',
       'heat.tipOn': 'Rendered', 'heat.tipOff': 'No rendering',
       'nav.account': 'Account',
@@ -497,7 +644,6 @@
       'account.tab.sched': 'Scheduler & lists',
       'account.tab.sponsor': 'Donating points', 'account.tab.account': 'Account',
       'account.only': 'Your own account only',
-      'account.onlyHint': 'You are looking at {user}\u2019s account settings, which is not your account.',
       'account.scheduler': 'Scheduler', 'account.schedulerHint': 'Who gets rendered first: other users < my team < myself.',
       'account.sched.mine': 'Render my projects first',
       'account.sched.mineHint': 'On by default. On an older machine it may be better to let the scheduler pick an easier frame.',
@@ -541,13 +687,28 @@
       'set.langHint': 'Language packs are data, not code: register a dictionary and the UI lists it automatically. No logic changes needed.',
       'set.translate': 'Translate original pages', 'set.on': 'On', 'set.off': 'Off',
       'set.translateHint': 'Pages that were not rebuilt (FAQ, Servers, Get started…) are translated locally with {n} entries. No network, nothing uploaded. Strings absent from the dictionary (project names, usernames, news bodies) are left untouched.',
+      'set.psort': 'Default sort', 'set.psortHint': 'How the project list is ordered. Clicking a column header is remembered too \u2014 the same order is in force next time.',
+      'set.pdir.asc': 'Ascending', 'set.pdir.desc': 'Descending',
+      'set.ovblocks': 'Dashboard blocks', 'set.ovblocksHint': 'Which blocks the dashboard shows and in what order. A block that is off is not drawn at all; both the switches and the order are remembered.',
+      'ovb.kpi': 'Key numbers', 'ovb.charts': 'Charts',
+      'ovb.up': 'Move up', 'ovb.down': 'Move down', 'ovb.pinned': 'Pinned to the top',
       'set.exp': 'Experimental',
-      'set.expUpload': 'Project upload (compatibility surface)',
-      'set.expUploadHint': 'Turning this on adds an "Upload a project" entry to the top bar; it opens the "Add your project" section of /getstarted. '
-        + 'It is unverified: the style is unified, the page is not rewritten \u2014 the upload form, the estimator and the progress bar are still the site\u2019s own controls. '
-        + 'The project settings form that follows the analysis, and the project management page, are still the original interface.',
+      'set.upmode': 'Project upload',
+      'set.upmodeHint': 'Three settings: Off (no entry in the top bar, the whole chain is left alone); '
+        + 'Original (the top-bar entry opens the site\u2019s own upload page in a new tab; this script does not touch that page); '
+        + 'New (the default: this script draws upload, wait and settings itself and sends the submit, independent of the site\u2019s page structure).',
+      'set.upmode.off': 'Off', 'set.upmode.raw': 'Original', 'set.upmode.new': 'New',
+      'set.fp.title': 'Upstream fingerprint',
+      'set.fp.one': '{v} \u00b7 {n}/{n} controls checked',
+      'set.fp.oneNew': '{v} \u00b7 the third step has not been opened yet',
+      'set.fp.now': 'Site asset version {v} \u2014 the commit short id of the live www repository',
+      'set.fp.unknown': 'This page does not expose a site asset version.',
+      'set.fp.same': 'Same version this script was verified against: {v}.',
+      'set.fp.diff': 'The site has moved on: it is now {now}, this script was verified against {known} \u2014 the new upload may no longer match; when it cannot read the page it says so and hands that page back to the site.',
+      'set.fp.enter': 'Last time the third step opened: {time} \u00b7 the server rendered {n} controls, all of them moved into the new layout.',
+      'set.fp.ok': 'Last pre-submit check: {time} \u00b7 all {n} controls were in place.',
+      'set.fp.never': 'The third step has not been opened yet, so there is no pre-submit check on record.',
       'nav.upload': 'Upload a project',
-      'nav.uploadTip': 'Experimental: compatibility surface (unverified, style only)',
       'set.about': 'About', 'set.aboutText':
         'SheepIt Plus is a pure front-end UI rebuild. It reads the pages you could already see and renders them in a new interface; it calls no undocumented endpoints and sends nothing to a third party. Three things can change server state, all of them buttons you press yourself: the forms in Account settings, pause/resume on a machine\u2019s session page, and the priority toggle on a publisher in the project list. They post to the site\u2019s own endpoints, the same ones those pages use.',
       'set.dangerHint': 'To get the original interface back, use "Switch to the original interface" in the top bar, or disable this script and reload.',
@@ -556,6 +717,7 @@
       'sess.on': 'Running', 'sess.off': 'Paused',
       'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
       'sess.statusRaw': 'the site writes: {raw}',
+      'sess.computeRaw': 'compute method from the site: {raw}',
       'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
@@ -563,13 +725,17 @@
       'sess.kpi.maxTime': 'Per-frame render time limit',
       'sess.kpi.since': 'since {t}', 'sess.kpi.perFrame': '≈ {n} points per frame',
       'sess.kpi.powerLink': 'Power by machine model',
-      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted',
+      'sess.facts': 'Machine', 'sess.factsSub': 'the site\u2019s raw values, unconverted; internal enums are glossed \u2014 hover for the original',
+      'sess.never': 'Never', 'sess.rawTip': 'the site calls this {raw}',
+      'sess.class.verySlow': 'very slow', 'sess.class.slow': 'slow', 'sess.class.medium': 'medium',
+      'sess.class.fast': 'fast', 'sess.class.veryFast': 'very fast',
+      'sess.act.pause': 'Pause', 'sess.act.resume': 'Resume',
       'sess.f.cpu': 'Processor',
       'sess.f.power': 'CPU power', 'sess.f.powerGpu': 'GPU power',
       'sess.f.gpu': 'Graphics card', 'sess.f.vram': 'VRAM',
       'sess.f.driver': 'Driver', 'sess.f.computeDevice': 'Compute device',
       'sess.f.ramAllowed': 'RAM allowed for rendering', 'sess.f.ramAvailable': 'RAM installed',
-      'sess.f.scheduler': 'Scheduler', 'sess.f.createdAt': 'Created',
+      'sess.f.scheduler': 'Speed class', 'sess.f.createdAt': 'Created',
       'sess.f.lastRequest': 'Last request', 'sess.f.lastRequestJob': 'Last request job',
       'sess.f.lastValidatedJob': 'Last validated job', 'sess.f.ua': 'Runtime',
       'sess.f.renderKey': 'Render key', 'sess.f.action': 'Action',
@@ -583,7 +749,6 @@
       'sess.act.events': 'Events', 'sess.act.jobs': 'Jobs', 'sess.act.failed': 'Failed',
       'sess.act.moreDay': '{n} earlier days are not listed here', 'sess.act.moreMonth': '{n} earlier months are not listed here',
       'sess.logOpen': 'Show the full log ({n} events)', 'sess.logClose': 'Hide the full log',
-      'sess.publisher': 'Publisher',
       'sess.col.type': 'Event', 'sess.col.job': 'Job', 'sess.col.start': 'Start',
       'sess.col.end': 'End', 'sess.col.span': 'Duration',
       'sess.projects': 'Renderable projects', 'sess.prjSub': '{n} projects',
@@ -592,14 +757,40 @@
       'sess.tl.login': 'Login', 'sess.tl.senderror': 'Send error', 'sess.tl.send': 'Send',
       'sess.tl.error': 'Error',
 
+      'mg.title': 'Project', 'mg.unknown': 'Project',
+      'mg.ops': 'Project settings', 'mg.opsSub': 'These switches POST to the site\u2019s own endpoints \u2014 the same thing the original page does.',
+      'mg.compute': 'Compute method', 'mg.computeHint': 'CPU or GPU. Not every render feature is supported on GPU; results can differ.',
+      'mg.mp4': 'Generate MP4 video', 'mg.mp4Hint': 'Pack the rendered frames into an MP4. Very heavy on the server \u2014 only if you really need it.',
+      'mg.public': 'Renderable by all members', 'mg.publicHint': 'Turn it off and only the users and teams on your renderer list can render this project.',
+      'mg.del': 'Delete project', 'mg.delHint': 'Cannot be undone: the project and its rendered frames go away.',
+      'mg.delConfirm': 'Delete this project? It can NOT be undone.',
+      'mg.noId': 'No project id in the URL', 'mg.noData': 'The site did not give project data for this page (layout changed, or you have no access)',
+      'mg.act.frames': 'See frames', 'mg.act.zip': 'Download frames', 'mg.act.video': 'Download video',
+      'mg.act.pause': 'Pause', 'mg.act.resume': 'Resume', 'mg.act.reset': 'Reset', 'mg.act.partial': 'Ask for a partial archive',
+      'mg.act.disabled': 'The site does not allow this right now',
+      'mg.partialConfirm': 'Asking for the partial archive will PAUSE this project; the site emails you download instructions. '
+        + 'You have to resume the project yourself afterwards, and resuming destroys that archive. Ask for it?',
+      'mg.partialOk': 'Requested \u2014 the site will email you when the archive is ready', 'mg.resetConfirm': 'Reset this project? (moderator action)',
+      'mg.summary': 'Summary', 'mg.frames': 'Frames', 'mg.framesN': '{n} frames',
+      'mg.legend.done': 'Finished', 'mg.legend.progress': 'In progress', 'mg.legend.waiting': 'Waiting',
+      'mg.videoNote': 'Note: this is not the final video. It is a reduced thumbnail.',
+      'mg.acl.managers': 'Managers', 'mg.acl.managersHint': 'People on this list can change this project\u2019s settings.',
+      'mg.acl.renderers': 'Renderers', 'mg.acl.teams': 'Teams',
+      'mg.acl.publicOn': 'Public rendering is on: every member can render this project.',
+      'mg.acl.publicOff': 'Only the users and teams below can render it.',
+      'mg.acl.teamsHint': 'Pick a team from the suggestions \u2014 the site wants the team id, not the name.',
+      'mg.acl.add': 'Add', 'mg.acl.remove': 'Remove', 'mg.acl.none': 'The list is empty',
+      'mg.delBtn': 'Delete',
+      'mg.acl.publicOnly': 'Public rendering is on: every member can render this project, so the site does not render the renderer list at all. '
+        + 'Turn public rendering off in Project settings above and the list (with its add box) appears here.',
+      'mg.acl.needName': 'Type a name first', 'mg.acl.needPick': 'Pick a team from the suggestions',
+      'mg.acl.delConfirm': 'Remove \u201c{name}\u201d from this list?',
+      'mg.note': 'Settings, actions and lists on this page are all drawn by the extension and POST straight to the site\u2019s own endpoints \u2014 the same thing the original page does.',
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
       'up.estTitle': 'Render time estimator',
       'up.rulesTitle': 'Check before you upload',
       'up.origin': 'Every number below (size limit, renderers, tile count, per-frame limit) is the one the site gave for this request. None of them is written into the script.',
-      'up.expNote': 'Experimental \u00b7 compatibility surface: this page is a style unification, not a rewrite \u2014 '
-        + 'the upload form, the estimator and the progress bar are still the site\u2019s own controls and the site\u2019s own logic. Unverified; some details may not match the site.',
-      'up.maxNote': 'One file, up to {size} \u2014 that is the size before ZIP compression. Blender\u2019s own compression is supported and recommended.',
       'an.title': 'Analysing your project',
       'an.sub': 'The site has to read the archive first to learn how many .blend files it holds, and their frame range and resolution',
       'an.waiting': 'Waiting for an analyser to pick it up…',
@@ -610,7 +801,108 @@
       'an.noToken': 'There is no analysis id in the address, so this page cannot open.',
       'an.gone': 'That analysis id cannot be found any more \u2014 usually because the analysis finished long ago, or this page is stale. Upload the file again, or look for the project in the project list.',
       'an.doneTitle': 'Analysis finished',
-      'an.doneNote': 'The next step (engine, frame range, tiles, samples, resolution…) is not rebuilt in this version, so it is the site\u2019s own form: fully functional, in the site\u2019s own look. Submitting it lands on the project management page.',
+      'an.doneSechead': 'Analysis finished \u2014 all that is left is to confirm the settings',
+      'up3.vis': 'Visibility',
+      'up3.cpu': 'Compute method',
+      'up3x.title': 'Project settings',
+      'up3x.type': 'Type',
+      'up3x.frames': 'Frame range',
+      'up3x.split': 'Split',
+      'up3x.mEngine': 'Engine {v}',
+      'up3x.mBlender': 'Blender {v}',
+      'up3x.mRes': '{w}\u00d7{h}',
+      'up3x.mFps': '{v} fps',
+      'up3x.mSamples': 'Samples {v}',
+      'up3x.mPerPixel': '{v}/px',
+      'up3x.mDenoise': 'Denoising',
+      'up3x.mAdaptive': 'Adaptive sampling',
+      'up3x.mHeadless': 'Headless',
+      'up3x.mColorMgmt': 'Custom colour management',
+      'up3x.mOutput': 'Output \u201c{v}\u201d',
+      'up3x.render': 'Renderable by all members',
+      'up3x.renderTip': 'By default every member can render your project. Clear this to restrict access; you can change it later on the project page and allow specific members.',
+      'up3x.mp4': 'Generate MP4 video',
+      'up3x.mp4Tip': 'Generates an MP4 video of the project. It is really resource intensive for the server, so only check it if you need it.',
+      'up3x.thumb': 'Thumbnail viewable by all members',
+      'up3x.thumbTip': 'By default every member can see a thumbnail of your project. Clear this to restrict access; you can change it later on the project page.',
+      'up3x.forcedTip': 'The site does not offer this switch here: what you see is what the site will do, not what will be sent. Final result: {state}.',
+      'up3x.ramAuto': 'Not set by default: the site detects the memory need on the first rendered frame. Set it manually only for very heavy projects (over 20GB).',
+      'up3x.ramManual': 'Set manually',
+      'up3x.picture': 'Image settings',
+      'up3x.splitFixedTip': 'The analysis says this file cannot be split (EXR or denoising project), so it is rendered as full frames \u2014 there is nothing to choose here.',
+      'up3x.yes': 'yes',
+      'up3x.no': 'no',
+      'up3x.cpu': 'CPU',
+      'up3x.gpu': 'GPU',
+      'up3x.queue': 'Est. queue position {v}',
+      'up3x.total': 'Total projects {n}',
+      'up3x.anim': 'Animation',
+      'up3x.single': 'Single frame',
+      'up3x.start': 'Start frame',
+      'up3x.end': 'End frame',
+      'up3x.step': 'Step',
+      'up3x.frame': 'Frame',
+      'up3x.splitEach': 'Divide each frame into',
+      'up3x.rule20': 'If one frame (or tile) takes over 20 minutes on the reference machine, split it \u2014 that is the site\u2019s rule.',
+      'up3x.ruleTiles': 'At most 12,000 tiles per submission: with an 8\u00d78 split that is about 187 frames.',
+      'up3x.nTiles': '{n} tiles',
+      'up3x.fullFrame': 'Full frame',
+      'up3x.ram': 'Memory used',
+      'up3x.ramTip': 'Optional. If the project needs a lot of RAM (more than 20GB), fill this in so the server can hand the frame to a machine with enough memory. Otherwise it is detected on the first rendered frame.',
+      'up3x.ramPh': 'Mbytes',
+      'up3x.submit': 'Add this file',
+      'up3x.sending': 'Submitting\u2026',
+      'up3x.done': 'Submitted, navigating\u2026',
+      'up3x.multi': 'This archive holds several .blend files: the site deletes the analysis id after the first **successful** submit, so adding the next one needs a fresh upload.',
+      'up3x.rejectedBlend': 'The site does not offer a form for this file (no camera / active output node / analysis error).',
+      'up3x.rejected': 'The site did not accept this submission.',
+      'up3x.netFail': 'The submission did not go through (network or session).',
+      'up3x.httpFail': 'The site answered HTTP {code}.',
+      'up3x.uploadOdd': 'The upload was not accepted and the site gave no reason.',
+      'up3x.analyseOdd': 'The analysis endpoint answered something unreadable.',
+      'up3x.needCompute': 'Pick a compute method (CPU or GPU) before submitting.',
+      'up3x.badFrame': '{name}: frames must be integers (the site errors out on an empty value).',
+      'up3x.badRange': '{name}: the end frame cannot be lower than the start frame.',
+      'up3x.badStep': '{name}: the step must be at least 1.',
+      'up3x.badRam': '{name}: memory must be a number (Mbytes).',
+      'up3x.degrade': 'This form does not match the upstream version this script was verified against, so the script will not draw it \u2014 the button below hands this page back to the site\u2019s own interface (its form and submit still work). Settings shows both versions.',
+      'up3x.degradeGo': 'Open this page in the site\u2019s own interface',
+      'up1.pick': 'Drop a .blend / .zip here, or',
+      'up1.pickBtn': 'choose a file',
+      'up1.pickSub': 'One file, up to {size} (before ZIP compression). Blender\u2019s own compression is supported and recommended.',
+      'up1.anySize': 'whatever limit the site gave this time',
+      'up1.picked': 'Selected {name} ({size})',
+      'up1.noFile': 'Choose a file first.',
+      'up1.go': 'Start upload',
+      'up1.goBusy': 'Uploading\u2026',
+      'up1.tooBig': '{name} is {size}, over the site\u2019s {max} limit right now \u2014 try Blender\u2019s own compression, or split the project.',
+      'up1.badType': '{name} is not a .blend or .zip; the site will not take it.',
+      'up1.after': 'After the upload the site reads the archive first (a few minutes is normal), then you confirm the project settings.',
+      'up1.uploading': 'Uploading {pct}%',
+      'up1.progressNoEta': '{done} / {total} sent',
+      'up1.progress': '{done} / {total} sent \u00b7 about {eta} left',
+      'up1.sending': 'File sent; waiting for the site\u2026',
+      'up1.jumping': 'Upload done, going to the analysis page\u2026',
+      'up1.fail': 'The upload was not accepted and the site gave no reason.',
+      'up1.gate': 'The site did not offer an upload form this time (usually not enough rendered frames, or maintenance).',
+      'up1.estTip': 'Give these two numbers and pick a device: the site computes the point cost and a sensible split.',
+      'up1.devPh': 'Processor or GPU name (3 characters or more)',
+      'up1.devPick': 'Pick a device from the suggestion list \u2014 the site cannot resolve a free-typed name.',
+      'up1.time': 'Render time per frame (minutes)',
+      'up1.count': 'Frames',
+      'up1.estGo': 'Estimate',
+      'up1.estimating': 'Estimating\u2026',
+      'up1.estNeed': 'Render time and frame count must both be positive numbers.',
+      'up1.estFail': 'The site returned no estimate.',
+      'up1.cost': 'This will cost you about {pts} points.',
+      'up1.tiles': 'Tiles',
+      'up1.perTile': 'Expected time per tile',
+      'up1.noSplit': 'No split',
+      'up1.noRules': 'The site did not list any checks on this page.',
+      'up.shapeNew': 'The page structure changed on this version, so New mode cannot find the blocks it needs.',
+      'up.shapeHow': 'Switch to \u201cOriginal\u201d under Settings \u2192 Upload to use the site\u2019s own upload page (switching reloads this page).',
+      'up3x.unknown': 'This version adds {n} element(s) this script does not draw ({list}\u2026) \u2014 they will be submitted with the site\u2019s defaults.',
+      'set.fp.unknownEls': 'The site added {n} new control(s) ({list}\u2026) \u2014 New mode has not caught up, so they go out with their defaults.',
     },
   };
 
@@ -624,7 +916,6 @@
     BASE: 'en',
     lang: 'en',
     pref: 'auto',
-    LANGS: DICT,
     SITE,
 
     register(code, pack) {
@@ -634,6 +925,7 @@
         blocks: Object.assign({}, (SITE[code] || {}).blocks, pack.blocks || {}),
         patterns: [].concat((SITE[code] || {}).patterns || [], pack.patterns || []),
         blockPatterns: [].concat((SITE[code] || {}).blockPatterns || [], pack.blockPatterns || []),
+        dateText: pack.dateText || (SITE[code] || {}).dateText,
       });
       if (pack.label) LANG_LABELS[code] = pack.label;
       return code;
@@ -681,11 +973,15 @@
       return null;
     },
 
-    /** 整块替换：被内联标签切碎的句子；未命中返回 null */
-    blockText(text) {
-      if (this.lang === this.BASE) return null;
+    /**
+     * 语言包可选的日期本地化：站点把日期写成「20th Oct 06:10」或「06:40 Sep 29」两种形状，
+     * 语言包用 pack.dateText 提供转换；没有（en 就是这种情况）就原样返回。
+     * 只处理这两种形状、认不出的原样返回 —— 站点换格式时界面不会变空。
+     */
+    date(s) {
       const pack = SITE[this.lang];
-      return pack && pack.blocks[text] !== undefined ? pack.blocks[text] : null;
+      const raw = String(s == null ? '' : s);
+      return pack && pack.dateText ? pack.dateText(raw) : raw;
     },
 
     canTranslateSite() {
@@ -723,6 +1019,8 @@
       '--heat-5': 'rgba(224,109,88,1)',
       '--shadow': '0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)',
       '--r': '10px', '--r-sm': '6px',
+      // 上传页估算器的「推荐这么切」行（30-style 的 .up1-tbl td.ok）：站点原本用 label-success 标它
+      '--positive': '#3fb950',
     },
     light: {
       '--bg': '#fbfbfc', '--surface': '#ffffff', '--surface-2': '#f5f6f8', '--surface-3': '#eceef1',
@@ -737,6 +1035,7 @@
       '--heat-5': 'rgba(182,71,47,1)',
       '--shadow': '0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)',
       '--r': '10px', '--r-sm': '6px',
+      '--positive': '#1a7f37',
     },
   };
 
@@ -769,7 +1068,6 @@
   SP.Util = Util;
   SP.I18n = I18n;
   SP.Theme = Theme;
-  SP.TOKENS = TOKENS;
   SP.t = (k, v) => I18n.t(k, v);
 })();
 
@@ -781,8 +1079,28 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP || !SP.I18n) return;
 
+  /* 站点把日期写成「20th Oct 06:10」（项目管理页）或「06:40 Sep 29」（会话页）两种形状，
+     照抄进中文句子太刺眼：只本地化这两种。作为 pack.dateText 注册，视图层可以直接用
+     I18n.date() 要本地化结果（10-core.js 的 I18n.date）。
+     （patterns 的替换值可以是函数——10-core.js 用的是 String.replace(re, rep)。） */
+  const MONTH_ZH = { Jan: '1月', Feb: '2月', Mar: '3月', Apr: '4月', May: '5月', Jun: '6月',
+    Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' };
+  const monthOf = (mon) => MONTH_ZH[String(mon).slice(0, 3).charAt(0).toUpperCase() + String(mon).slice(1, 3).toLowerCase()];
+  const farmDate = (s) => String(s == null ? '' : s)
+    .replace(/\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/g,
+      (m, d, mon, time) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      })
+    .replace(/\b(\d{1,2}:\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})\b/g,
+      (m, time, mon, d) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      });
+
   SP.I18n.register('zh', {
     label: '中文',
+    dateText: farmDate,
 
     /* 短词条 */
     site: {
@@ -817,7 +1135,6 @@
       'Privacy policy': '隐私政策',
 
       /* 首页 */
-      'SheepIt is a free distributed renderfarm for Blender. Try it now!': 'SheepIt 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
       'Free': '免费',
       'No subscription, no credit card.': '无需订阅，无需信用卡。',
       'Free forever — since 2007.': '自 2007 年起永久免费。',
@@ -841,7 +1158,6 @@
       'total frames rendered': '累计渲染帧数',
       'computed projects': '已完成项目',
       'Latest news': '最新动态',
-      'Read more': '阅读更多',
 
       /* 开始使用 */
       'Get started!': '开始使用！',
@@ -850,8 +1166,6 @@
       "You don't need to have Blender installed, it will be downloaded for you.": '你不需要安装 Blender，客户端会自动下载。',
       'Your own project will be rendered first, then your computer will help other users.':
         '你自己的项目会优先渲染，之后你的电脑再帮助其他用户。',
-      "If you don't want to share your computer, but still help SheepIt, you should consider donating":
-        '如果你不想共享电脑，但仍想支持 SheepIt，可以考虑捐赠',
       'Download the client and start rendering now.': '下载客户端，立刻开始渲染。',
       'Minimum client requirements': '客户端最低要求',
       'Add your project': '添加你的项目',
@@ -888,7 +1202,6 @@
       'Be aware that': '请注意：',
       'scripts are disabled due to security reasons.': '出于安全原因，脚本已被禁用。',
       'Your blend version is': '你的 blend 版本需要是',
-      'or higher.': '或更高。',
       'You set the output file to an': '你需要把输出文件设为',
       'image': '图片',
       ', for example jpg or png.': '，例如 jpg 或 png。',
@@ -931,14 +1244,12 @@
       'Traffic per month': '每月流量',
       'Shepherds status': 'Shepherd 节点状态',
       'Server': '服务器',
-      'Processing': '处理中',
       'Storage': '存储',
       'Tasks': '任务',
       'binary mirror': '二进制镜像',
       ": stores Blender binary copy. Traffic is handled by Cloudflare's CDN.": '：存放 Blender 二进制副本，流量由 Cloudflare CDN 承载。',
       'project mirror': '项目镜像',
       ': stores blend file copy. Traffic is handled by Cloudflare\'s CDN.': '：存放 blend 文件副本，流量由 Cloudflare CDN 承载。',
-      'shepherd': 'shepherd',
       '(blue): stores the actual render. Creates zip and mp4.': '（蓝色）：存放实际渲染结果，生成 zip 和 mp4。',
       '(yellow), situated in Texas, USA. It handles users, project creation and rendering request.':
         '（黄色），位于美国德州，负责用户、项目创建和渲染请求。',
@@ -952,7 +1263,6 @@
       'Loading': '加载中',
 
       /* 属性文案（title / alt / placeholder） */
-      'CPU disabled': 'CPU 已禁用',
       'cpu disabled': 'CPU 已禁用',
       'GPU nvidia enabled': 'GPU（NVIDIA）已启用',
       'gpu enabled': 'GPU 已启用',
@@ -978,11 +1288,126 @@
       'Number of tiles': '分块数',
       'Expected render time': '预计耗时',
       'No split': '不拆分',
+
+      /* 分析完成后的站点「新增项目」表单：站点把它整块塞进 #sp-an-result，我们只翻文案、
+         不动结构（站点 JS 按 id 拼参数）。键必须与站点 DOM 归一化后的文本逐字一致——
+         原文快照见 .tmp/upload-test/step3-outer.html。 */
+      'Renderable by all members': '所有成员均可渲染',
+      'By default every member can render your project. If you want to restrict the access to your project do not check this box. On the project administration page you will be able to modify this setting and add specific members to renderers.':
+        '默认每个成员都能渲染你的项目。想限制访问就别勾这一项；之后可以在项目管理页改这个设置，并把指定成员加进渲染者名单。',
+      'Generate MP4 video': '生成 MP4 视频',
+      'Generates an MP4 video of the projects, it is really resource intensive for the server so only check it if you really need it.':
+        '为项目生成一段 MP4 视频。这非常吃服务器资源，确实需要时才勾。',
+      'Compute method:': '计算方式：',
+      'Denoising detected: Splits (multiple smaller frames with reduced samples) are not supported.':
+        '检测到降噪：本项目不支持拆分（把帧切成小块、再降低每块的采样）。',
+      'It does not make sense to denoise separate splits and recombine them together.':
+        '把拆分后的各块分别降噪、再拼回一起，是没有意义的。',
+      'Start frame': '起始帧',
+      'End frame': '结束帧',
+      'Step': '步长',
+      'Advanced options': '高级选项',
+      'Memory used': '内存占用',
+      'You can specify the memory used your project. If you think your project will take a lot of ram (more than 20GB), please fill the amount. You can find this value on the top right of Blender. It will help the renderfarm, by allowing the server to give a frame to a small configuration. It is an optional attribute, this value will be detected on the first frame rendered.':
+        '可以在这里指定项目要用的内存。预计占用很大（超过 20GB）就填上——这个值显示在 Blender 界面右上角。填了能帮农场把帧派给小机器。可选项，不填会在渲染第一帧时自动探测。',
+      'Memory used in Mbytes': '内存占用（MB）',
+      'Add this blend': '添加这个 blend',
+
+      /* 项目管理页 /project/<数字>：整页自绘（0.2.2 起），站点节点不进壳。这里这些词条
+         是给**解析出来的站点原文**用的（概要几行、动作按钮的 title、名单面板的占位符），
+         视图层自己那几句话走 10-core.js 的 UI 词典（mg.*）。 */
+      'Administration': '项目管理',
+      'Summary': '概要', 'Legend': '图例',
+      'Finished': '已完成', 'In progress': '进行中', 'Waiting': '等待中',
+      'Rendered': '已渲染', 'Processing': '渲染中', 'Failed': '失败', 'Expired': '已过期',
+      'Permissions': '权限', 'Renderers': '渲染者', 'Actions': '操作',
+      'Managers': '管理员', 'Users': '用户',
+      'Compute method': '计算方式',
+      'Add a user to manager list': '输入用户名，加入管理员名单',
+      'Add': '添加',
+      'See frames': '查看帧图像', 'Download frames': '下载帧图像', 'Remove': '删除项目',
+      'CPU enabled': 'CPU 已启用', 'CPU disabled': 'CPU 已禁用',
+      'GPU enabled': 'GPU 已启用', 'GPU disabled': 'GPU 已禁用',
+      /* 站点把这句话拆成 <strong>Caution!</strong> + 文本节点，整句当键永远匹配不上 */
+      'Caution!': '注意！',
+      'not all the rendering features are supported by GPUs': 'GPU 并不支持站点全部的渲染特性。',
+      'You might have different results depending on the rendering technology.': '换一种渲染技术，结果可能有差异。',
+
+      /* 项目管理页：调度器那一段（只在项目「等待中 / 渲染中」时渲染）。
+         注意 site 表是**短词条精确匹配**，值放在子 <b> 里的整句要用下面的 patterns。 */
+      'Scheduler': '调度器',
+      /* 站点在「从没活动过」的机器上印红色小字 never（账户页三行、旧版会话页）。 */
+      'never': '从未',
+      'How many machines can actually render the project?': '有多少台机器能真正渲染这个项目？',
+      'Connected machines:': '已连接机器：',
+      'Connected machines for CPU:': 'CPU 已连接机器：',
+      'Potential rendering machines:': '潜在渲染机器：',
+      'Pause': '暂停',
+      'Resume': '继续',
+
+      'Your project has finished rendering, the frames are being packed.The server hosting your project will soon create a zip with your frames.':
+        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
+      'Generating archive.': '正在打包存档。',
+      'More information about SheepIt network on the servers page': '关于 SheepIt 网络的更多信息见「服务器」页面。',
+
+      /* 项目管理页：其它状态（渲染中／暂停／私有／封禁／限速／服务器不可用）
+         注意 site 表是短词条精确匹配：被 <strong> 拆开的整句（如 "Your project is <strong>private</strong>, …"）
+         site 表盖不住（单词 "private" 又太泛、全站误伤面太大），所以那句走下面的 blockPatterns ——
+         patchBlocks 是按**整块 textContent** 匹配的，正则只吃英文前半句、替换值里带 <strong>，
+         后半句（另一句，已有 site 词条）原样留着给 patchTextNodes 翻（0.1.18）。 */
+      'Rendering': '渲染中',
+      'Paused': '已暂停',
+      'Current renderers:': '正在渲染的成员：',
+      'Resume is disabled because you have too many active projects': '继续已被禁用：你的进行中项目太多',
+      'Ask for a partial Archive Frame': '申请部分帧压缩包',
+      'Your project has finished rendering, the frames are being packed.': '项目已经渲染完成，正在打包帧文件。',
+      'Download video': '下载视频',
+      'Statistics about the render': '渲染统计',
+      'Note: this is not the final image. It is a thumbnail of the on going render.': '注意：这不是最终画面，而是渲染中的缩略图。',
+      'Note: this is not the final video. It is a reduced thumbnail.': '注意：这不是最终视频，而是降质缩略图。',
+      "To make it renderable by everyone, check 'Renderable by all members' on the renderers options.": '想让所有人都能渲染，请在渲染者选项里勾选「所有成员均可渲染」。',
+      'Your project has been blocked.': '你的项目已被封禁。',
+      'Members can not render your project BUT you still can.': '其他成员无法渲染你的项目，但你仍然可以。',
+      'Members (including you) can not render your project.': '包括你在内的成员都无法渲染你的项目。',
+      'You can remove this limitation by connecting your machine to the farm.': '把你的机器接入农场即可解除这个限制。',
+      'As long as you are rendering, your project will be unthrottled.': '只要你在参与渲染，你的项目就不会被限速。',
+      'The server hosting your project is currently not available.': '托管你项目的服务器当前不可用。',
+      'No download or rendering is possible.': '无法下载，也无法渲染。',
+      'Add a user to renderer list': '输入用户名，加入渲染者名单',
+      'Add a team to renderer list': '输入团队名，加入渲染者名单',
+      'If you are using Eevee, CPU rendering is not available.': '使用 Eevee 时无法使用 CPU 渲染。',
+      'MP4 generation disabled': 'MP4 生成已禁用',
+
+      /* 会话页（/session/<数字>）。**只在「原版界面」下才会走到这里** —— 新版界面把这一页整页
+         重制了，用的是 10-core.js 的 sess.f.* 词条。措辞与那边保持一致（处理器 / 显卡 /
+         物理内存 …），免得同一个字段在两个界面里叫两个名字。
+         2026-10-07 之前这一整块是空的：老版界面打开会话页，导航是中文、表格正文全英文。 */
+      'Session information': '会话信息', 'Owner': '属主', 'Hostname': '主机名', 'OS': '操作系统',
+      'RenderKey': '渲染密钥', 'RAM allowed': '渲染可用内存', 'RAM available': '物理内存',
+      'Max render time per frame': '单帧渲染时长上限', 'VRAM': '显存', 'Driver': '驱动',
+      'Compute device': '计算设备', 'Power CPU': 'CPU 性能', 'Power GPU': 'GPU 性能',
+      'Creation Time': '创建时间', 'Rendered Frames': '已渲染帧数', 'Points earned': '获得积分',
+      'Last request': '最后请求', 'Last request Job': '最后请求作业',
+      'Last Validated Job': '最后验证作业', 'User agent': '运行环境', 'Action': '可用动作',
+      'Version': '版本', 'Status': '状态',
+      /* 渲染密钥那个按钮的字写在 <input value> 里（DomI18n 会翻 input[type=button] 的 value） */
+      'Display renderkey': '显示渲染密钥',
+      /* 两种暂停不是一回事，站点那行的原文必须逐字对上 */
+      'Paused server side': '服务器端已暂停', 'Paused client side': '客户端已暂停',
+      'Enable': '启用',
+      /* 时间线：图例是站点的内部枚举，表头是三个词 */
+      'Timeline': '时间线', 'Type': '类型', 'Job': '作业', 'Start': '开始', 'End': '结束',
+      'login': '登录', 'request': '请求', 'rendering': '渲染', 'validate': '校验',
+      'senderror': '发送错误', 'frame_reset': '帧重置',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
        取键：把 translateSite 设为 false 打开页面，控制台跑 DomI18n.reportUnmatched(20)。 */
     blocks: {
+      /* 首页大标题：站点拆成 <strong>SheepIt</strong> + 后半句两个文本节点，短词条表（按整节点匹配）够不到 */
+      'SheepIt is a free distributed renderfarm for Blender. Try it now!':
+        '<strong>SheepIt</strong> 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
+
       "The render farm relies on you to live; the more computers that are connected to the system, the better the service will be. You don't need to have Blender installed, it will be downloaded for you. Your own project will be rendered first, then your computer will help other users. If you don't want to share your computer, but still help SheepIt, you should consider donating.":
         '渲染农场靠你而活：接入的机器越多，服务质量就越好。<br>你不需要安装 Blender，客户端会自动为你下载。<br>你自己的项目会优先渲染，之后你的电脑再帮助其他用户。<br>如果你不想共享电脑，但仍想支持 SheepIt，可以考虑<a href="/donation">捐赠</a>。',
 
@@ -1011,6 +1436,9 @@
 
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
+
+      [/^Your project is private, not every worker will be able to participate in your project\./,
+        '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
 
     /* 模式规则（带变量的文案） */
@@ -1023,12 +1451,7 @@
       [/^Total projects:\s*([\d,]+)$/, '项目总数：$1'],
       [/^Max:\s*([\d,]+) MB$/, '上限：$1 MB'],
       [/^(\d[\d,]*)\s+computed projects$/, '已完成 $1 个项目'],
-      [/^(\d[\d,]*)\s+computed frames per hour$/, '每小时 $1 帧'],
       [/^(\d+[mhd])\s+to complete all projects$/, '$1 可完成全部项目'],
-      [/^(\d[\d,]*)\s+frames? remaining$/i, '待渲染 $1 帧'],
-      [/^(\d[\d,]*)\s+connected clients?$/i, '在线客户端 $1'],
-      [/^(\d[\d,]*)\s+processing frames?$/i, '正在处理 $1 帧'],
-      [/^(\d[\d,]*)\s+active projects?$/i, '进行中项目 $1'],
       /* 序数：排行榜名次与排队位置（CPU: 1st）共用 */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
@@ -1036,6 +1459,81 @@
       [/^([\d,]+)\s+points$/, '$1 积分'],
       [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
         '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],
+      /* 上传页「排队情况」：站点看有没有团队加成会输出两个变体，上面 blockPatterns 只盖住长的那条 */
+      [/^The render order is based on points\. The more points you have, the higher priority you get\. You currently have ([\d,]+) points\.$/i,
+        '渲染顺序由积分决定：积分越高，优先级越高。你当前有 $1 积分。'],
+      /* 分析完成后第三步表单的排队位置 */
+      [/^Est\. queue position:\s*([\d,]+)(st|nd|rd|th)$/i, '预计排队：第 $1 位'],
+      /* 项目管理页 /project/<数字> 的概要行（数字每次不同，逐行规则） */
+      [/^The project will be done in\s*(.+)$/i, '预计完成：$1'],
+      [/^Storage used:\s*(.+)$/i, '已用存储：$1'],
+      [/^Real duration of render:\s*(.+)$/i, '实际渲染用时：$1'],
+      [/^On reference per frame rendertime:?$/i, '基准机单帧用时：'],
+      [/^RAM usage:\s*(.+)$/i, '内存占用：$1'],
+      [/^Project will be automatically deleted on\s*(.+)$/i,
+        (m, rest) => '项目将于 ' + farmDate(rest) + ' 自动删除'],
+      [/^Connected machines:\s*(.+)$/i, '已连接机器：$1'],
+      /* 项目管理页：调度器那一段（值常被站点放在子 <b> 里，纯标签的走 site 表） */
+      [/^Connected machines for CPU:\s*(.+)$/i, 'CPU 已连接机器：$1'],
+      [/^Potential rendering machines:\s*(.+)$/i, '潜在渲染机器：$1'],
+      /* 版本号会随站点升级变（Blender 4.5+），带值的写法必须排在纯标签那行之前 */
+      [/^Machines who can use ([^:]+):\s*(.+)$/i, '能用 $1 的机器：$2'],
+      [/^Machines who can use ([^:]+):\s*$/i, '能用 $1 的机器：'],
+      /* 项目管理页：项目「已渲染」时状态块里被 <br> 分行的几行 */
+      [/^Current position:\s*(\d+)(st|nd|rd|th)$/i, '当前排位：第 $1 位'],
+      [/^Tasks for this project:\s*([\d,]+)$/i, '本项目任务数：$1'],
+      [/^Total tasks on Shepherd:\s*([\d,]+)$/i, 'Shepherd 上的任务总数：$1'],
+      [/^Cumulated time of render:\s*(.+)$/i, '累计渲染用时：$1'],
+      [/^Points spent:\s*([\d,]+) points$/i, '已消耗积分：$1'],
+      [/^(\d+)\/([\d,]+) \(remaining (.+)\)$/, '$1/$2（剩余 $3）'],
+      /* 齿轮按钮的 title 属性：站点把整段状态 HTML 塞在里面（attr 只查 site + patterns） */
+      [/^<strong>Generating archive\.<\/strong>$/, '<strong>正在打包存档。</strong>'],
+      [/^<strong>Generating archive\.<\/strong><br>Current position: (\d+)(?:st|nd|rd|th)<br>Tasks for this project: ([\d,]+)<br>Total tasks on Shepherd: ([\d,]+)$/,
+        '<strong>正在打包存档。</strong><br>当前排位：第 $1 位<br>本项目任务数：$2<br>Shepherd 上的任务总数：$3'],
+      /* 封禁 / 限速（点位不够的账号） */
+      [/^Your project has been blocked because '(.+)'\.$/, '你的项目已被封禁，原因：「$1」。'],
+      [/^You are currently rated? limited to ([\d,]+) machines? because you have 0 points\.$/i, '你因为 0 积分被限速到 $1 台机器。'],
+      /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
+      [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
+        '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],
+      /* 第三步「设置」里站点给每个 .blend 的说明/拒绝理由（68-step3.js 直接把它们当文本渲染，
+         走 siteText：先查 site 精确匹配，再走这里）。 */
+      [/^No camera in scene, cannot render\.$/, '场景里没有相机，无法渲染。'],
+      [/^Since active "output file" nodes result in files being written to arbitrary locations on the renderer's system we do not allow it\.$/, '活动的「输出文件」节点会把文件写到渲染机上的任意位置，所以站点不允许。'],
+      [/^We will accept your \.blend if you mute the node\.$/, '把这个节点静音（mute）后就可以重新上传。'],
+      [/^EXR output detected$/, '检测到 EXR 输出'],
+      [/^Limitation on EXR {2}support:$/, 'EXR 的限制：'],
+      [/^Full frame renders only\. No split-layers or checkerboarding\.$/, '只能整帧渲染，不支持拆分图层或棋盘格切块。'],
+      [/^Only animations are supported, no single image projects\.$/, '只支持动画项目，不支持单张图片项目。'],
+      [/^Maximum image resolution (\d+)x(\d+)y px\.$/, '最大分辨率 $1x$2 像素。'],
+      [/^Maximum image file size (.+)B$/, '单张图片最大 $1B。'],
+      [/^Use of compression is required \(any of (.+)\)\.$/, '必须使用压缩（$1 之一）。'],
+      [/^Denoising detected: Splits \(multiple smaller frames with reduced samples\) are not supported\.$/, '检测到降噪：不支持拆分（把帧切成小块、降低采样再拼回去）。'],
+      [/^It does not make sense to denoise separate splits and recombine them together\.$/, '把拆分后的各块分别降噪、再拼回一起没有意义。'],
+      [/^Drivers will not work$/i, '驱动器（Driver）不会生效'],
+      [/^because scripts are disabled for security reasons\.$/, '出于安全考虑站点禁用了脚本。'],
+      [/^Warning, files not found:$/, '警告：这些文件找不到：'],
+      [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
+      [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
+      /* 上传页的前置闸门。两条来源，文案逐字抄自上游源码：
+         ① 页面 /getstarted 的 printError（HTML.php:2022-2045，命中即提前 return、不给表单）；
+         ② POST /project/internal/upload 的纯文本理由（ProjectController.php:1108-1125）。
+         两处的同一句话时态不同（"have been set" vs "has been set"），用正则一起吃。 */
+      [/^Server in maintenance, you can't add a project\.\s*(.*)$/, '站点正在维护，暂时不能添加项目。 $1'],
+      [/^You can't add a project, yet\.$/, '现在还加不了项目。'],
+      [/^Oh no!$/, '哦不！'],
+      /* POST 那条纯文本是"标题 + 正文"拼成一句（页面上是 h2 + p 两块），单独一条兜住。 */
+      [/^You can't add a project, yet\.\s*Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '现在还加不了项目。我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^You can not add a project because you have exceeded your limit of concurrent projects\..*Your current limit is (\d+) projects\.$/,
+        '你正在进行中的项目已经到上限，暂时加不了新项目。站点设这个上限是为了不让一个人的项目把农场压满；等其中一个项目渲染完，就能再加。你当前的上限是 $1 个项目。'],
+      [/^You can not add a project because an admin explicitly disabled it for your account\.\s*If you think it is a mistake, contact us on Discord\.$/,
+        '管理员明确关掉了你添加项目的权限。如果你认为这是误操作，请在 Discord 上联系我们。'],
+      [/^SheepIt is a renderfarm kept alive thanks to the community\.\s*You have rendered less than 10 frames\..*You must have rendered at least 10 frames to be able to add a project\.$/,
+        '羊场靠社区贡献活着。你还没渲染够 10 帧 —— 不要求每个人都渲染得和索取的一样多，但每一份贡献都算数。至少要渲染满 10 帧才能添加项目。'],
+      [/^Internal error, please retry to upload your file$/, '站点内部错误，请重试上传。'],
     ],
   });
 })();
@@ -1089,7 +1587,6 @@
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
   }
 
-  /* ------------------------------------------------------------ 内联数组 */
 
   function extractArray(html, anchors, keyed) {
     const list = Array.isArray(anchors) ? anchors : [anchors];
@@ -1208,7 +1705,9 @@
   const headingByText = (doc, re) => [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6')].find((h) => re.test(text(h)));
 
   /** 会话页 → 机器档案。Session information 按 <th> 标签逐行读、不认位置；站点的颜色无语义。
-   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事。 */
+   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事 —— 而且**两个可以同时有**
+   *  （站点是两条独立的 {% if %}，各写一行），所以这里把两行都收下来（见下面 info.note 的拼接），
+   *  由 40-ui.js 的 pauseKeys() 判成 0/1/2 个状态。 */
   function parseSession(html, id) {
     const doc = parse(html);
     const facts = [];
@@ -1217,18 +1716,34 @@
     const table = tableAfter(headingByText(doc, /^session\s*information$/i));
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
+        /* 只认这张表**自己的**行。站点把 `Current frames` 画成「td 里再嵌一张表」
+           （running.html.twig:381-400），那种内层 tr 没有 th，会被下面"没有 th = 状态行"的判据
+           误吃成 note —— 机器明明在渲染，界面上却把 `project: … frame: …` 当成一种状态
+           （会话页的状态 chip 与在线机器那一格都会显示这段作业文本）。 */
+        if (tr.closest('table') !== table) continue;
         const th = tr.querySelector('th');
-        const td = tr.querySelector('td');
-        if (!th || !td) continue;
-        const label = text(th);
+        const tds = [...tr.querySelectorAll('td')];
+        if (!tds.length) continue;
+        const label = th ? text(th) : '';
         if (!label) {
           /* **server side** 与 **client side** 是两种暂停。早先是 `if (!label) continue`，整行丢掉后
              两种暂停界面上长得一样，且 Status 那格都写 Enable，本地暂停被误报成「运行中」。它是状态
-             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。 */
-          const note = text(td);
-          if (note) info.note = { value: note, key: 'note', href: '' };
+             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。
+             ⚠ 这一行**没有 `<th>`**，而且是「空 td + 有字 td」两格（2026-10-07 真机原文：
+             `<tr><td style="…"></td><td><span style="color:red">Paused client side</span></td></tr>`）。
+             所以判据不能要求 th 存在、也不能只看第一个 td —— 这里取所有 td 里非空的那些。 */
+          const note = tds.map(text).filter(Boolean).join(' ');
+          if (note) {
+            /* 两种暂停在站点那边是**两行**（running.html.twig:296-314：session.paused() 客户端侧、
+               session.running()==false 服务端侧，两个条件独立 → 可以同时成立），所以这里会连着进两次。
+               早先是直接赋值，后一行把前一行顶掉 —— 两端都暂停时"客户端侧"那条就凭空消失了。
+               这张表里没有 `<th>` 的行**只有这两行暂停**（逐行核对过 twig），所以拼接是安全的。 */
+            const prev = info.note ? info.note.value : '';
+            info.note = { value: prev ? `${prev} · ${note}` : note, key: 'note', href: '' };
+          }
           continue;
         }
+        const td = tds[0];
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');
@@ -1252,12 +1767,6 @@
           fact.action = m ? Util.safePath(m[1]) : null;
           const st = fact.action && fact.action.match(/\/running\/(\d+)/);
           fact.target = st ? st[1] : null;
-        }
-        if (key === 'hostname') {
-          const img = td.querySelector('img');
-          const src = img ? String(img.getAttribute('data-src') || img.getAttribute('src') || '') : '';
-          const m = src.match(/flag\/([A-Za-z]{2})\./);
-          fact.flag = m ? m[1].toUpperCase() : '';
         }
         if (key === 'owner' && fact.href) {
           const m = fact.href.match(/\/user\/([^/]+)\//);
@@ -1309,6 +1818,212 @@
       .sort((a, b) => b.start - a.start);
   }
 
+  /* 「我的项目」= 个人主页上那张 <h2>Latest projects</h2> 表（**不是**页脚侧栏那个同名 <h4> 块，
+     后者是全站最新项目）。站点实况（2026-10-07 抓的真 HTML，`.tmp/recon/raw/profile-self.html`）：
+
+       <div class="w-box blog-post"><h2>Latest projects</h2><div class="padding-15">
+         <table class="table table-bordered table-striped table-comparision table-responsive">
+           <tr><td><a href="/project/1224469">sptest</a></td><td class="msg_finished">Rendered</td></tr>
+
+     三条站点行为决定了解析形状（都是上游源码 HTML.php:2551 printProjects 干的）：
+     ① 行里**没有项目 id**，id 只能从名字链上取；别人的主页不给链（canManageProject 为假），
+        所以那一侧解析出来 id 为空 —— 调用方据此判断"能不能进管理页"。
+     ② 状态是第二个 td 的 class `msg_<词>`（processing/finished/waiting/paused/unknown），
+        文案里另带百分比：「Rendering (88%)」。**用 class 判状态，不认英文文案**。
+     ③ 被封的项目整行 `class="danger"`；一个项目都没有时站点整块不渲染 → 返回空数组。 */
+  const MY_STATUS = { processing: 'rendering', waiting: 'waiting', paused: 'paused', finished: 'finished', unknown: 'other' };
+
+  function parseMyProjects(doc) {
+    // 页脚那个同名块是 <h4>，主页这块是 <h2>，且站的 h2 就是 w-box 的第一个孩子
+    const head = [...doc.querySelectorAll('h2')].find((h) => /latest projects/i.test(text(h)));
+    const table = head && head.parentElement ? head.parentElement.querySelector('table') : null;
+    if (!table) return [];
+
+    const out = [];
+    for (const tr of table.querySelectorAll('tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 2) continue;
+      const link = tds[0].querySelector('a[href*="/project/"]');
+      const id = link ? ((String(link.getAttribute('href')).match(/\/project\/(\d+)/) || [])[1] || '') : '';
+      const cell = tds[1];
+      const cls = (String(cell.getAttribute('class') || '').match(/\bmsg_([a-z]+)/i) || [])[1] || '';
+      const raw = text(cell);
+      const pct = Number((raw.match(/\((\d+)\s*%\)/) || [])[1]);
+      out.push({
+        id,
+        name: text(tds[0]),
+        statusKind: MY_STATUS[cls.toLowerCase()] || 'other',
+        status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
+        pct: Number.isFinite(pct) ? pct : null,
+        blocked: tr.classList.contains('danger'),
+      });
+    }
+    /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
+       id 是 IDENTITY 自增（上游 Project.php:63），按 id 倒序 ≈ 新建在前；没有 id 的行保持原序排在后面。 */
+    return out
+      .map((x, i) => ({ x, i }))
+      .sort((a, b) => ((Number(b.x.id) || 0) - (Number(a.x.id) || 0)) || (a.i - b.i))
+      .map((p) => p.x);
+  }
+
+  /* 项目管理页 /project/<id> 的**全量模型**：只读站点那一页（**传进来的是一份 HTML 副本**，
+     不是活文档 —— 和上传链路同一条路子），产出一份数据模型，视图层只吃模型、动作直发端点。
+     站点来源：templates/project/manage.html.twig:133-274 + src/UI/HTML.php 的 printBlend()，
+     2026-10-07 抓的真机 HTML 存在 `.tmp/recon/raw/manage-1224469-2.html`。
+
+     三处设置各有各的形态（坑写在下面），其余都是"照着站点自己的 id 读文本"：
+       ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+          （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+          所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+          GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+       ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（display_generate_mp4 为假时站点不渲染它）。
+       ③ 公开渲染**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+          + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+          可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 不看 id。 */
+  const MG_ACTION_TITLES = {
+    'see frames': 'frames', 'download frames': 'zip', 'download video': 'video',
+    'resume': 'resume', 'pause': 'pause', 'reset': 'reset', 'remove': 'delete',
+  };
+
+  function parseManage(doc, projectId) {
+    const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
+    const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+    const id = String(projectId || '');
+
+    const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
+    const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
+    const stCls = stEl ? ((String(stEl.getAttribute('class') || '').match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+
+    /* ---- 概要 Summary：一串 <li>，最后一条红字是"自动删除日期"（站点给的是整句）。
+       形状两种：`Storage used: 134.8 kB` 是纯文本，`On reference per frame rendertime: <span>0m00s</span>`
+       的是「标签 + span」。拆成 label/value 两段，视图那边才能分别套语言包（见 50-views 的 mgLine）。 ---- */
+    const sumHead = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(text(h).trim()));
+    const sumBox = sumHead ? sumHead.closest('.w-box') || sumHead.parentElement : null;
+    const summary = [];
+    let warn = { label: '', value: '' };
+    const pairOf = (li) => {
+      const span = li.querySelector('span');
+      if (span) {
+        const clone = li.cloneNode(true);
+        const dead = clone.querySelector('span');
+        if (dead) dead.remove();
+        return { label: text(clone).trim(), value: text(span).trim() };
+      }
+      const s = text(li);
+      const m = s.match(/^([^:]+):\s*(.+)$/);
+      return m ? { label: `${m[1]}:`, value: m[2].trim() } : { label: s, value: '' };
+    };
+    if (sumBox) {
+      for (const li of sumBox.querySelectorAll('li')) {
+        const p = pairOf(li);
+        if (!p.label && !p.value) continue;
+        if (li.querySelector('span[style*="red"]') || /automatically deleted/i.test(p.label + p.value)) warn = p;
+        else summary.push(p);
+      }
+    }
+
+    /* ---- 动作行：站点用 title 当唯一文字（图标按钮），按 title 归一成 kind ----
+       `resume` 在"活跃项目太多"时是 disabled 的 <a>（没有 onclick）→ 读出来但标记 disabled。 */
+    const box = id ? doc.getElementById(`project_job_${id}_div_actions`) : null;
+    const actions = [];
+    let canManage = false;
+    for (const a of box ? box.querySelectorAll('a') : []) {
+      const onclick = String(a.getAttribute('onclick') || '');
+      const href = String(a.getAttribute('href') || '');
+      const disabled = a.hasAttribute('disabled') || /\bdisabled\b/.test(String(a.getAttribute('class') || ''));
+      const title = String(a.getAttribute('title') || '').trim();
+      if (/remove_no_redirect/.test(onclick)) { canManage = true; continue; }
+      const partial = onclick.match(/doAskForProjectPartialArchiveFrame\('([^']+)'\)/);
+      if (partial) { actions.push({ kind: 'partial', url: partial[1], title, disabled }); continue; }
+      const act = onclick.match(/projectAction\('[^']*',\s*'([a-z_]+)'\)/);
+      if (act) {
+        const kind = MG_ACTION_TITLES[act[1]] || act[1];
+        actions.push({ kind, title, disabled });
+        continue;
+      }
+      if (!href || href === '#') {
+        /* 站点在"活跃项目太多"时渲染的是一只**没有 onclick、没有链接**的灰按钮，标题里写着原因：
+           `href="#"` + title="Resume is disabled because you have too many active projects"。
+           按 title 认回它并标 disabled —— 否则用户看到的是"这一栏什么都没有"，不知道为什么。 */
+        const low = title.toLowerCase();
+        const key = Object.keys(MG_ACTION_TITLES).find((k) => low.indexOf(k) === 0);
+        if (key) actions.push({ kind: MG_ACTION_TITLES[key], title, disabled: true });
+        continue;
+      }
+      const kind = MG_ACTION_TITLES[title.toLowerCase()] || (/\/frames\//.test(href) ? 'frames' : '');
+      if (kind === 'frames') { actions.push({ kind, url: href, title, disabled }); continue; }
+      /* 下载帧 / 下载视频是 shepherd 上的**绝对 URL**（主机名随项目变），原样留着 */
+      if (/\/zip$/.test(href) || /\/mp4\/final$/.test(href)) actions.push({ kind, url: href, title, disabled });
+    }
+
+    /* ---- 帧方块 + 视频预览：站点把 <img>/<video> 塞在 title 属性或 <source> 里 ---- */
+    const tiles = [];
+    for (const sq of doc.querySelectorAll('.tiles .square')) {
+      const raw = String(sq.getAttribute('title') || '');
+      const src = (/<img\s+src="([^"]+)"/i.exec(raw) || [])[1] || '';
+      if (!src) continue;
+      const cls = String(sq.getAttribute('class') || '');
+      const num = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
+      tiles.push({
+        src,
+        frame: num(/frame:\s*([^<]+)/i),
+        cost: num(/cost:\s*([^<]+)/i),
+        time: num(/rendertime:\s*([^<]+)/i),
+        state: /btn-warning/.test(cls) ? 'progress' : (/btn-neutral/.test(cls) ? 'done' : 'waiting'),
+      });
+    }
+    const videoEl = doc.querySelector('.tiles video source[src]');
+    const video = videoEl ? String(videoEl.getAttribute('src') || '') : '';
+
+    /* ---- 权限 / 渲染者：站点把名单渲染成 <ul><li><a>名字</a></li> ----
+       `#project_acl_team_current` 的链接是 /team/<数字 id>，名字在链接文字里（id 要从 href 抠，
+       加团队时站点发的就是那个数字 id）。公开渲染时站点**不渲染**这两份名单（只有那只 checkbox），
+       所以名单为空 ≠ 没人，视图要按 publicRender 说清。 */
+    const namesOf = (rootId) => {
+      const root = doc.getElementById(rootId);
+      if (!root) return [];
+      return [...root.querySelectorAll('li a')]
+        .map((a) => ({ name: text(a), url: Util.safePath(a.getAttribute('href')), id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '' }))
+        .filter((x) => x.name);
+    };
+    const acl = {
+      managers: namesOf('project_acl_manager_current'),
+      renderers: namesOf('project_acl_renderer_current'),
+      teams: namesOf('project_acl_team_current'),
+      hasManagerPanel: !!doc.getElementById('project_acl_manager_add_form_user'),
+      hasRendererPanel: !!doc.getElementById('project_acl_renderer_add_form_user'),
+      hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
+    };
+
+    let compute = '';
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!on(r)) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
+      if (m) compute = m[1];
+    }
+    const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
+    const pubA = doc.getElementById('project_public_render_checkbox_1');
+    const pubB = doc.getElementById('project_public_render_checkbox_value');
+    const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
+
+    return {
+      found: !!(nameEl || box || acl.hasManagerPanel),
+      id,
+      name: nameEl ? text(nameEl) : '',
+      statusText: stEl ? text(stEl) : '',
+      statusCls: stCls.toLowerCase(),
+      progression: progEl ? text(progEl) : '',
+      summary, warn, actions, tiles, video, acl, canManage,
+      compute,
+      mp4: mp4Box ? on(mp4Box) : null,
+      publicRender: pubEl ? on(pubEl) : null,
+      hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
+      hasMp4: !!mp4Box,
+      hasPublic: !!pubEl,
+    };
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -1354,7 +2069,10 @@
 
     const derived = computeDerived(activity);
 
-    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived };
+    // 主页那张表：自己的主页每行带 id 可进 /project/<id>，别人的主页只有名字（见 parseMyProjects）
+    const myProjects = parseMyProjects(doc);
+
+    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived, myProjects };
   }
 
   /** 派生：口径与原站 dl 的 "Consecutive render days" 对齐（不含今天） */
@@ -1370,10 +2088,8 @@
 
     return {
       streakExclToday: set.has(today) ? run(shift(today, -1)) : run(today),
-      streakInclToday: run(today),
       best,
       active30: [...Array(30)].filter((_, i) => set.has(shift(today, -i))).length,
-      totalDays: activity.length,
     };
   }
 
@@ -1483,7 +2199,6 @@
       };
       out.push({
         rank: text(tds[0]),
-        rankNum: numOf(tds[0]),
         user: link ? text(link) : text(tds[1]),
         // URL 里的用户名才是可靠身份（显示名可能与 URL 不同，只有 URL 那个能打开对的人）
         userId: link ? decodeURIComponent((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
@@ -1636,6 +2351,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
+    parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };
@@ -1650,9 +2366,6 @@
 
   SP.CSS = `
 ${Theme.css('#sp')}
-/* .sp-acmenu 单独生成一份：唯一长在 #sp 外面的家具（jQuery UI 的补全菜单挂在 <body> 上）。
-   不能合并成选择器列表 Theme.css('#sp, ul.sp-acmenu') —— 两处条件选择器只绑最后一项，实测暗色下整壳变白。 */
-${Theme.css('ul.sp-acmenu')}
 
 /* ==== 骨架 ==== */
 #sp{
@@ -1751,6 +2464,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .btn:hover{border-color:var(--border-strong);color:var(--text)}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
+/* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
+   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+#sp .btn:disabled{opacity:.5;cursor:not-allowed}
+#sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
@@ -1767,41 +2484,53 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .meta span:first-child{padding-left:0;border-left:none}
 #sp .meta b{font-weight:600;color:var(--text)}
 
-/* ==== 指标带 ==== */
+/* ==== 指标带 ====
+   格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n 由 UI.kpis 写死）。
+   布局用 flex + 一个变量 --kb（每格的基准宽度 = 容器宽 / 每排格数），两个好处：
+     ① --kb = 100% / 格数 时就是整齐的一行；窄到放不下才换档折行；
+     ② 每格都能伸（flex-grow:1），所以**折行后最后一排会自动铺满整行**，
+        不会像固定列数的栅格那样在右下角留一块空洞。
+   分隔线不用 border 而用 box-shadow：折行后"谁是每排第一个"由布局决定，CSS 选不出来；
+   每格各往左、往上画 1px，最左/最上那两条正好落在容器边框上被 overflow:hidden 吃掉，
+   于是任意排版下都只有一条线 —— 不缺线，也不双线。 */
 #sp .kpis{
-  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  display:flex;flex-wrap:wrap;
   background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
   overflow:hidden;box-shadow:var(--shadow);
 }
-#sp .kpi{padding:18px 20px;border-left:1px solid var(--border);min-width:0}
-#sp .kpi:first-child{border-left:none}
+#sp .kpi{
+  flex:1 1 var(--kb,25%);min-width:0;padding:18px 20px;
+  box-shadow:-1px 0 0 var(--border),0 -1px 0 var(--border);
+}
 #sp .kpi .k{font-size:11.5px;font-weight:500;color:var(--text-3);letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .v{margin-top:8px;font-size:27px;font-weight:600;letter-spacing:-.6px;line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sp .kpi .d{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
 #sp .kpi .d b{color:var(--text);font-weight:600}
-@media (max-width:860px){
-  #sp .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpi:nth-child(3){border-left:none}
-  #sp .kpi:nth-child(n+3){border-top:1px solid var(--border)}
+/* 一行装几格：基准 = 容器宽 / 格数。减 1px 是留给亚像素取整的余量 —— 6 个 16.667% 相加
+   可能超过 100%，不减速会让第 6 格被挤到第二排（曾经就是这么出问题的）。 */
+#sp .kpis[data-n="3"]{--kb:calc(100% / 3 - 1px)}
+#sp .kpis[data-n="4"]{--kb:calc(100% / 4 - 1px)}
+#sp .kpis[data-n="5"]{--kb:calc(100% / 5 - 1px)}
+#sp .kpis[data-n="6"]{--kb:calc(100% / 6 - 1px)}
+/* 第一档（≤1240）：先缩内边距与数值字号，把一行**尽量保住** —— 越窄格越小，整条一起缩，
+   缩完每个格还能容下最长那类数字（356,569,549 ≈ 140px），于是折行可以再往后推一档 */
+@media (max-width:1240px){
+  #sp .kpi{padding:16px 15px}
+  #sp .kpi .v{font-size:24px;letter-spacing:-.4px}
+}
+/* 第二档：真放不下了才折成「一排 3 格」。阈值按"每格至少留约 145px 内容"倒推，
+   最长的那类数字（356,569,549）在这个宽度下刚好不被省略号截断。 */
+@media (max-width:1090px){#sp .kpis[data-n="6"]{--kb:calc(100% / 3 - 1px)}}
+@media (max-width:920px){#sp .kpis[data-n="5"]{--kb:calc(100% / 3 - 1px)}}
+/* 第三档：一排 2 格（4/3 格先掉到这档，5/6 格窄到 3 格也放不下时才掉） */
+@media (max-width:745px){#sp .kpis[data-n="4"]{--kb:calc(50% - 1px)}}
+@media (max-width:620px){#sp .kpis[data-n="3"]{--kb:calc(50% - 1px)}}
+@media (max-width:480px){
+  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{--kb:calc(50% - 1px)}
 }
 @media (max-width:560px){
   #sp .kpi{padding:15px 14px}
   #sp .kpi .v{font-size:22px;letter-spacing:-.4px}
-}
-/* 格数不是常数：多数账号 4 格，建过项目的 5–6 格（data-n）。
-   每折一次都要重算该画哪条内边线，否则折行处多一条竖线、或少一条横线。 */
-#sp .kpis[data-n="5"]{grid-template-columns:repeat(5,minmax(0,1fr))}
-#sp .kpis[data-n="6"]{grid-template-columns:repeat(6,minmax(0,1fr))}
-@media (max-width:1200px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(3,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(3n+1),#sp .kpis[data-n="6"] .kpi:nth-child(3n+1){border-left:none}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n+4),#sp .kpis[data-n="6"] .kpi:nth-child(n+4){border-top:1px solid var(--border)}
-}
-/* ≤860 折 2 列：上一档 3n+1 会连第 4 格一起去掉，所以整块重算左边线。 */
-@media (max-width:860px){
-  #sp .kpis[data-n="5"],#sp .kpis[data-n="6"]{grid-template-columns:repeat(2,minmax(0,1fr))}
-  #sp .kpis[data-n="5"] .kpi:nth-child(n),#sp .kpis[data-n="6"] .kpi:nth-child(n){border-left:1px solid var(--border)}
-  #sp .kpis[data-n="5"] .kpi:nth-child(odd),#sp .kpis[data-n="6"] .kpi:nth-child(odd){border-left:none}
 }
 
 /* ==== 主区 ==== */
@@ -1896,8 +2625,11 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .farm .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3}
 #sp .farm .row{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin-top:7px}
 #sp .farm .v{font-size:18px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;line-height:1.1}
-/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。 */
-#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:none}
+/* 走势给一个上限宽度：flex:1 撑满整格，会把线拉成一道 12:1 的划痕。
+   但**必须能收缩**：窄窗口下格子只有 166px 宽，固定 160px 的线加数值会溢出格右边缘、
+   被邻格盖住（实测溢出 43–77px）。flex-shrink:1 + min-width:0 让它按剩余空间缩，
+   宽格子时仍由 max-width 顶在 160px。 */
+#sp .farm svg{display:block;height:24px;width:100%;max-width:160px;opacity:.85;flex:1 1 auto;min-width:0}
 @media (max-width:860px){
   #sp .farm{grid-template-columns:repeat(2,minmax(0,1fr))}
   #sp .farm div:nth-child(3){border-left:none}
@@ -1972,11 +2704,18 @@ ${Theme.css('ul.sp-acmenu')}
   #sp .ow .btn{opacity:0;transition:opacity .12s}
   #sp .tbl tbody tr:hover .ow .btn,#sp .tbl tbody tr:focus-within .ow .btn{opacity:1}
 }
-/* 分数放自己的列（td.frac）：挂在条子后面，轨道长度会随数字宽度变化、整列参差不齐。 */
-#sp .bar{min-width:180px}
+/* 进度：**条子与分数同一格**（用户 2026-10-07）。以前分数独占一列并右对齐，条子右端到数字
+   之间空出近 100px（等于"列宽-条宽"再加"数字列左半截"），而项目名反被挤到截断。
+   合成一格后条子 flex:1 吃满剩余宽度，和数字之间只隔一个 gap。
+   ⚠ 分数必须**定宽**（min-width + 右对齐）：它宽度随数字位数变（498 / 500 是 29px，
+   8,439 / 11,000 是 72px），不定宽时条子右端参差不齐 —— 实测项目页 51 行右端差 42px
+   （用户 2026-10-07：「进度条也不等长」）。min-width 兜住最长的 16 字符分数，超长时盒子自己涨、
+   条子让位，绝不裁掉数字。 */
+#sp .pwrap{display:flex;align-items:center;gap:10px;min-width:0}
+#sp .pwrap .bar{flex:1 1 auto;min-width:48px}
+#sp .pwrap .frac{flex:0 0 auto;min-width:6.6em;text-align:right;font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .bar .t{position:relative;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
 #sp .bar .f{position:absolute;inset:0 auto 0 0;background:var(--accent);border-radius:3px}
-#sp .tbl td.frac{width:1%;font-size:11.5px;color:var(--text-3)}
 #sp .dev{display:inline-flex;gap:4px}
 #sp .dev span{font-size:11px;padding:1px 6px;border-radius:4px;border:1px solid var(--border);color:var(--text-3)}
 #sp .dev span.on{border-color:transparent;background:var(--accent-weak);color:var(--accent);font-weight:600}
@@ -1985,6 +2724,17 @@ ${Theme.css('ul.sp-acmenu')}
    （实测差 129px）。给个上限 + 省略号，完整原因走 title。 */
 #sp .st{font-size:12.5px;color:var(--text-2);white-space:nowrap;display:inline-block;max-width:210px;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}
 #sp .rankcell{font-variant-numeric:tabular-nums;color:var(--text-3);white-space:nowrap}
+/* 会话页「状态」列装的是站点给的一整句原因（"可用内存不足：需要 20 GB，现有 16 GB"）。
+   只给省略号 + 悬浮，用户读不到结果本身（2026-10-07 实报），所以这一列**换行显示全文**：
+   句子在列宽处折行，行高只对"真的长"的那几行变高。
+   ⚠ 别退回 .st 的 inline-block 默认行为：.tbl.fit .st 的 max-width:none 去掉上限后它是
+   "宽度=内容宽"，会撑出单元格被 td 的 overflow:hidden **硬裁**（没有省略号、没有换行）——这正是
+   "很别扭"的来源。这里显式给 max-width:100% + 换行，两个毛病一起治。 */
+/* 项目名过长也**换行显示全文**（用户 2026-10-07）：「既然能换行，那项目名过长也给换行了吧」。
+   与「状态」列同一个理由 —— 省略号 + 悬浮读不到名字本身。名字常是下划线连成的一长串，
+   得靠 overflow-wrap:anywhere 才断得开（不然一整个 token 撑破列宽）。 */
+#sp .tbl .pn{white-space:normal;overflow-wrap:anywhere;max-width:100%;overflow:visible;text-overflow:clip}
+#sp .tbl.dense.fit .st{white-space:normal;max-width:100%;overflow-wrap:break-word;overflow:visible;text-overflow:clip}
 @media (max-width:760px){
   #sp .tbl{min-width:660px}
   #sp .tbl th,#sp .tbl td{padding-left:12px;padding-right:12px}
@@ -2034,19 +2784,62 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .empty .cta{margin-top:26px;display:inline-flex;gap:9px;flex-wrap:wrap;justify-content:center}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
-/* ==== 已连接的机器 ==== */
+/* ==== 已连接的机器 ====
+   **一行一台**（用户 2026-10-07）：身份（标签 + 规格）/ 运行状态与时间 / 产出 / 查看会话 全在同一条线上。
+   规格是唯一可伸缩的那段（窗口不够先省略号化），其余各段 nowrap；窄到 900px 以下才折行，
+   那时身份独占第一行。之前是"标题一行 + 明细一行"两层盒子，两台机器就吃掉四行。 */
 #sp .machines{display:flex;flex-direction:column}
-#sp .machine{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .machine{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
+  padding:12px 20px;border-bottom:1px solid var(--border);
+}
 #sp .machine:last-child{border-bottom:none}
+#sp .machine .mhead{display:flex;align-items:center;gap:10px;flex:1 1 200px;min-width:0}
 #sp .machine .tag{
   flex:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:4px;
   background:var(--accent-weak);color:var(--accent);
 }
-#sp .machine .spec{flex:1;min-width:0;font-size:13px;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .machine a.open{font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
+#sp .machine .spec{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .machine a.open{flex:none;font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
+/* 状态与时间那一段：现在是**一条不折的行**（用「 · 」连起来），跟着规格后面走 */
+#sp .machine .mline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);min-width:0}
+#sp .machine .mline > span{white-space:nowrap}
+/* 产出那排贴着右边：左边是身份与状态，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
+   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块。 */
+#sp .machine .mfoot{display:flex;align-items:center;gap:10px 18px;min-width:0}
+#sp .machine .mstats{display:flex;align-items:baseline;gap:18px}
+#sp .machine .mstats .ms{display:flex;align-items:baseline;gap:5px;min-width:0}
+#sp .machine .mstats .k{font-size:11.5px;color:var(--text-3);white-space:nowrap}
+#sp .machine .mstats .v{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap}
+/* 窄到 900px：一行真放不下了才折 —— 身份占满第一行，明细与链接落到第二行，链接靠右 */
+@media (max-width:900px){
+  #sp .machine .mhead{flex:1 1 100%}
+  #sp .machine .mfoot{flex:1 1 auto;flex-wrap:wrap}
+  #sp .machine a.open{margin-left:auto}
+}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
-@media (max-width:560px){#sp .machine{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
+@media (max-width:560px){#sp .machine{padding:12px 16px} #sp .machine .mstats{gap:22px}}
+
+/* ==== 我的项目（总览区块 + 项目页「我发布的」档） ==== */
+/* 行式样与「在线机器」同一套：左名字、右状态，行高与分隔线一致 */
+#sp .myproj{display:flex;flex-direction:column}
+#sp .myproj .mp{display:flex;align-items:center;gap:12px;padding:11px 20px;border-bottom:1px solid var(--border)}
+#sp .myproj .mp:last-child{border-bottom:none}
+#sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .myproj .nm a{color:var(--text);text-decoration:none}
+#sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
+/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
+#sp .st.bad{color:var(--accent)}
+#sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
+#sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+#sp .tbl-mine{min-width:0}
+#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
+/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
+   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
+@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+@media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
 /* ==== 顶栏模式开关 ==== */
 #sp .modebtn{
@@ -2082,6 +2875,23 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .sw .txt small{display:block;font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.55}
 #sp .sw:hover .track{border-color:var(--border-strong)}
 
+/* ==== 项目管理页自绘的「项目设置」区 ====
+   一行一件事：左边标签、右边控件、下面一句后果。开关行直接用 .sw，所以分隔线统一下在直接子元素上。 */
+#sp .mg-ops .pbody > *{border-bottom:1px solid var(--border)}
+#sp .mg-ops .pbody > *:last-child{border-bottom:none}
+#sp .mg-ops .mg-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+#sp .mg-ops .mg-row .k{flex:none;width:96px;font-size:13px;color:var(--text-2)}
+#sp .mg-ops .mg-row .seg{flex:none}
+#sp .mg-ops .mg-row small{font-size:12px;color:var(--text-3);line-height:1.5;min-width:0}
+#sp .mg-ops .mg-row.danger .k{color:var(--text);font-weight:550}
+/* 危险动作：只有这一处用强调色描边，不做实心红按钮（误点的代价不可逆，宁可它不显眼） */
+#sp .btn.danger{color:var(--accent);border-color:var(--accent)}
+#sp .btn.danger:hover{background:var(--accent-weak);border-color:var(--accent);color:var(--accent)}
+@media (max-width:560px){
+  #sp .mg-ops .mg-row{flex-wrap:wrap;gap:8px 12px}
+  #sp .mg-ops .mg-row .k{width:100%}
+}
+
 #sp .ulist{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 #sp .ulist .u{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border)}
 #sp .ulist .u:last-child{border-bottom:none}
@@ -2116,7 +2926,6 @@ ${Theme.css('ul.sp-acmenu')}
 /* file input 让 label 当按钮，但绝不能 display:none —— 那会把它从 Tab 顺序里摘掉；改成 1px 透明。 */
 #sp .filepick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 #sp .filepick:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
-#sp .toast.ok{border-color:var(--border-strong);color:var(--text)}
 
 #sp .state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:88px 20px;text-align:center}
 #sp .state .big{font-size:15px;color:var(--text-2);font-weight:600}
@@ -2166,11 +2975,17 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .tbl.dense th{padding:0 14px 8px}
 #sp .tbl.dense td{padding:7px 14px}
 #sp .tbl.dense .job{color:var(--text-2)}
+/* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
+   → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
+   被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
+#sp .tbl.fit{table-layout:fixed}
+#sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+/* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
+#sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:100%}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
-#sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 #sp .acts{padding:2px 0 0}
 #sp .acthead,#sp .actrow{display:flex;align-items:center;gap:12px;padding:0 20px}
@@ -2205,6 +3020,10 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .settings .row.block{display:block}
 #sp .settings .row.block .lbl{margin-bottom:10px}
 #sp .settings .row .hint{font-size:12px;color:var(--text-3);margin-top:9px;line-height:1.65;max-width:520px}
+/* 总览区块：每块一行（开关 + 上/下移）。行序就是页面上的顺序，所以别给这里的 .seg 加 flex:1。 */
+#sp .ovlist{display:flex;flex-direction:column;gap:6px}
+#sp .ovrow{display:flex;align-items:center;gap:8px}
+#sp .ovrow .lock{font-size:11.5px;color:var(--text-3)}
 #sp .foot{font-size:12px;color:var(--text-3);margin-top:26px;text-align:center}
 #sp .toast{
   position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
@@ -2212,8 +3031,9 @@ ${Theme.css('ul.sp-acmenu')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
-/* ==== 上传页 / 分析等待页（局部换装）====
-   站点渲染的表单 / 估算器 / 进度条原样搬过来：addproject.js 认 id 不认外观，不重实现上传逻辑。 */
+/* ==== 上传页 / 分析等待页：骨架与控件都是我们自绘的（64-step1.js / 68-step3.js）====
+   这一版没有兼容档了：站点那份 HTML 只当数据源，页面上没有搬过来的站点节点。
+   下面 .up-body 那几组规则是给它里面的槽位兜底的（自绘控件落在同一个槽位里）。 */
 
 /* 必须 align-items:start 而不是 stretch：估算结果撑高右卡时，stretch 会把左卡一起拉长（用户实报）。 */
 #sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
@@ -2225,43 +3045,20 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body{padding:14px 20px 18px}
 #sp .up-body > :last-child{margin-bottom:0}
 #sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
-#sp .expnote{
-  margin:0 0 16px;padding:11px 14px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);color:var(--text-2);font-size:12.5px;line-height:1.7;
-}
 
-#sp .up-rules .up-body h4{
-  font-size:12px;font-weight:600;color:var(--text-3);letter-spacing:.02em;
-  margin:22px 0 10px;padding-top:18px;border-top:1px solid var(--border);
-}
-#sp .up-rules .up-body h4:first-child{margin-top:0;padding-top:0;border-top:none}
-#sp .up-rules .up-body p{margin:0 0 14px;max-width:76ch;font-size:12.5px;color:var(--text-2);line-height:1.75}
-/* 试过把数字钉到卡片最右（空出 686px）、给说明分两栏（「积分」被劈开），都不行；
-   正解：说明限宽 44em、数字紧跟其后一行。 */
-#sp .up-rules .qband{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:6px}
-#sp .up-rules .qtext p{margin:0;max-width:44em}
-#sp .up-rules .qdata{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 30px;min-width:0;padding-top:1px}
-#sp .up-rules .qdata .qlead{margin:0;font-size:12px;color:var(--text-3);max-width:none}
-#sp .up-rules .qdata .qtotal{margin:0}
-
-#sp .up-rules .up-body .qpos{display:flex;flex-direction:row;flex-wrap:wrap;gap:6px 26px;margin:0}
-#sp .up-rules .up-body .qpos li{padding-left:0;font-size:12.5px;color:var(--text-3)}
-#sp .up-rules .up-body .qpos li::before{display:none}
-#sp .up-rules .up-body .qpos li strong{
-  margin-left:6px;font-size:15px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;
-}
-#sp .up-rules .up-body .qtotal{display:inline;margin:0;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
-
-/* 多栏只对块级容器生效：ul 在别处是 flex 列，这里要还原成 block（.qpos 是数据，排除）。 */
+/* 须知那一列：站点原文的 <li> 被原样克隆进我们的 ul.up1-rules（64-step1.js），这里只管排版。
+   多栏只对块级容器生效：ul 在别处是 flex 列（见下面 .up-body ul），这里要还原成 block。 */
 @media (min-width:820px){
-  #sp .up-rules .up-body ul:not(.qpos){display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul:not(.qpos) li{break-inside:avoid;margin-bottom:9px}
+  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
+  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:9px}
 }
 @media (min-width:1200px){
-  #sp .up-rules .up-body ul:not(.qpos){columns:3}
+  #sp .up-rules .up-body ul{columns:3}
 }
 
 /* ==== 抹掉原站外观 ==== */
+/* 兼容档（把站点节点搬进卡片）已删，所以下面这一组压制规则**当前没有匹配对象**（页面上只有我们自己造的节点）。
+   留着当级联底座：真要恢复搬节点的路线，它们是必需的；别再往下加同类规则。 */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
 #sp .up-body .sign-in-wr,#sp .up-body .blog-post{
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
@@ -2279,18 +3076,6 @@ ${Theme.css('ul.sp-acmenu')}
 #sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
 #sp .up-body strong{color:var(--text);font-weight:600}
 #sp .up-body a{color:var(--accent)}
-#sp .up-body #addproject_warning_zero_frame{font-size:13px}
-
-#sp .up-body form table,
-#sp .up-body form tbody,
-#sp .up-body form tr,
-#sp .up-body form td{display:block;width:auto;padding:0}
-#sp .up-body form td{text-align:left !important;vertical-align:baseline !important}
-#sp .up-body form td:first-child{font-size:12px;color:var(--text-3);margin-bottom:8px}
-#sp .up-body form td + td{margin-bottom:16px}
-#sp .up-body form td:last-child{margin-bottom:0}
-#sp .up-body form br + strong{color:var(--text-2)}
-
 
 #sp .up-body input[type=file]{
   display:block;width:100%;padding:11px 12px;margin:0 0 10px;
@@ -2303,108 +3088,15 @@ ${Theme.css('ul.sp-acmenu')}
   border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
 }
 #sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
-#sp .up-body .note{display:block;margin-top:1px;font-size:12px;color:var(--text-3);line-height:1.65}
 
-#sp .up-body input[type=submit],#sp .up-body button.btn,#sp .up-body input.btn{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-  transition:filter .12s;
-}
-#sp .up-body input[type=submit]:hover,#sp .up-body button.btn:hover,#sp .up-body input.btn:hover{filter:brightness(1.07)}
 
-/* 站点内联写死了 #EEB0A0 的底色，只能用 !important 压过去 —— 必要的例外。 */
-#sp .up-body #upload_progress_bar{
-  height:7px !important;margin:2px 0 8px !important;border-radius:4px;
-  background:var(--surface-2) !important;border:1px solid var(--border) !important;
-}
-#sp .up-body #upload_progress_bar .ui-progressbar-value{
-  background:var(--accent) !important;border:none !important;border-radius:3px;margin:0;height:100%;
-}
-#sp .up-body #upload_progress_label{
-  position:static !important;text-shadow:none !important;text-align:right;
-  display:block;font-size:11.5px;color:var(--text-3);padding:0 0 6px;
-}
 
-/* 这一行用的是 2013 版 Bootstrap 的 .input-group（table-cell + float），没管住时等效宽度
-   949px、OK 的右缘超出视口 5px；整行重声明成普通 flex 并给输入封顶。 */
 #sp .up-body input[type=text],#sp .up-body input.form-control{
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
-#sp .up-body table input[type=text]{width:92px}
-/* 估算器那两个数字是「标签 + 值」两列，站点用的是内容自适应 <table>，这里摊平成两列网格
-   （标签列必须 max-content）。只认 .numband：站点稍后返回的结果表格是另一个形状，被误伤过
-   一次 —— 单元格被摊成网格项，分块数和耗时对调了。 */
-#sp [data-up="est"] .numband{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:10px 14px;align-items:center;width:auto;margin:0 0 16px}
-#sp [data-up="est"] .numband tbody,#sp [data-up="est"] .numband tr{display:contents}
-#sp [data-up="est"] .numband td{display:block;padding:0;text-align:left !important;white-space:nowrap}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
-#sp .up-body .input-group{display:flex;flex-wrap:nowrap;align-items:stretch;gap:8px;width:100%}
-#sp .up-body .input-group .form-control{flex:1 1 auto;min-width:0;width:auto;max-width:320px}
-#sp .up-body .input-group-btn{display:flex;flex:0 0 auto;width:auto;white-space:nowrap}
-#sp .up-body .input-group-btn > *{flex:0 0 auto}
-#sp .up-body #addproject_estimator_result{
-  font-size:12.5px;color:var(--text-2);line-height:1.7;
-  padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2);
-}
-#sp .up-body #addproject_estimator_result:empty{display:none}
-/* 站点返回的结果表带 Bootstrap 的 .table，在深色卡片里白底白字（用户实报），整段按我们的表格重画。 */
-#sp .up-body #addproject_estimator_result table{
-  width:100%;border-collapse:collapse;background:none;color:var(--text-2);font-size:12.5px;margin:0;
-  border:none !important;   /* .table-bordered 表格本身也画了一圈边框 */
-}
-#sp .up-body #addproject_estimator_result thead th,
-#sp .up-body #addproject_estimator_result th{
-  background:none;color:var(--text-3);font-weight:600;font-size:11.5px;
-  text-align:left;padding:0 14px 8px 0;border-bottom:1px solid var(--border);white-space:nowrap;
-}
-#sp .up-body #addproject_estimator_result td{
-  background:none;padding:9px 14px 9px 0;border-bottom:1px solid var(--border);
-  color:var(--text-2);vertical-align:baseline;
-}
-#sp .up-body #addproject_estimator_result tr:last-child td{border-bottom:none}
-#sp .up-body #addproject_estimator_result td:last-child,
-#sp .up-body #addproject_estimator_result th:last-child{padding-right:0}
-#sp .up-body #addproject_estimator_result strong,#sp .up-body #addproject_estimator_result b{color:var(--text);font-weight:600}
-#sp .up-body #addproject_estimator_result .num,#sp .up-body #addproject_estimator_result td strong{
-  font-variant-numeric:tabular-nums;
-}
-#sp .up-body #addproject_estimator_result h4{margin:16px 0 8px;font-size:13px;font-weight:600;color:var(--text)}
-#sp .up-body #addproject_estimator_result h4:first-of-type{margin-top:2px}
-#sp .up-body #addproject_estimator_result > br:first-child{display:none}
-/* 站点给耗时套了 Bootstrap 绿色小标签。调色板里没有绿色，2026-10-04 用户确认保持中性、
-   不恢复红 / 绿语义，别再翻回去。 */
-#sp .up-body #addproject_estimator_result .label{
-  background:none !important;border:none !important;color:var(--text) !important;
-  font-size:12.5px !important;font-weight:600;padding:0 !important;
-  text-shadow:none;border-radius:0;
-}
-/* 只要一条下边发丝线；Bootstrap 的 .table-bordered 是四边框，整段拆掉 */
-#sp .up-body #addproject_estimator_result .table-bordered > thead > tr > th,
-#sp .up-body #addproject_estimator_result .table-bordered > tbody > tr > td{
-  border:none;border-bottom:1px solid var(--border);
-}
-/* 斑马纹画在 <tr> 上（奇数行 #f9f9f9），只清 td 的底色是盖不住的 */
-#sp .up-body #addproject_estimator_result tbody tr{background-color:transparent !important}
-/* 站点给这些单元格写了内联的 text-align:center，只能用 !important 压过去（同类例外） */
-#sp .up-body #addproject_estimator_result th,
-#sp .up-body #addproject_estimator_result td{text-align:left !important}
-
-/* 设备名补全菜单是 jQuery UI 的 widget，挂在 <body> 上 —— 唯一一件长在 #sp 外面的家具
-   （见 injectGuard：挂进 #sp 会被 CSS zoom 把定位算成 0）。选择器因此不带 #sp，用我们
-   自己的类名 .sp-acmenu 划边界，不碰站点可能有的其他 .ui-autocomplete。 */
-body > ul.sp-acmenu{
-  position:absolute;z-index:2147483001;margin:0;padding:4px;list-style:none;
-  max-height:280px;overflow:auto;
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);
-  box-shadow:0 14px 30px rgba(0,0,0,.30);
-  font:400 12.5px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;
-  color:var(--text-2);
-}
-body > ul.sp-acmenu li{margin:0;padding:7px 10px;border-radius:4px;list-style:none;cursor:pointer;color:var(--text-2)}
-body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:var(--surface-2);color:var(--text)}
-
 /* ==== 分析等待页 ==== */
 #sp .an-card{padding:0}
 #sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
@@ -2415,35 +3107,152 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 #sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
 #sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
 @keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-#sp .an-done{padding:20px 20px 0}
-#sp .an-done .an-sub{margin-bottom:14px}
-#sp .an-foot{padding:0 20px 20px}
+/* 分析完成那张卡片：结果直接接在状态行下面 —— 「新版」自绘进 #sp-an-result（即 .sp-up3，自带内边距）；
+   认不出来时那里放的是一句明说 + 一个「交回站点自己界面」的按钮（见 80-app.js 的 handBackToSite）。 */
 
-/* 分析完成后站点把它自己那套「新增项目」表单塞进 #sp-an-result，本版没重制，只做可读性兜底。 */
-#sp .sp-siteform{padding:18px 20px 20px;border-top:1px solid var(--border)}
-#sp .sp-siteform section,#sp .sp-siteform .slice,
-#sp .sp-siteform .container,#sp .sp-siteform .w-section,#sp .sp-siteform .w-box,
-#sp .sp-siteform .form-light,#sp .sp-siteform .padding-15{
-  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
+/* ---- 控件皮肤：全自绘（0.1.18 起；0.2.0 只有 .sp-up3 这一套）------------------------
+   勾选框、单选框、输入框、下拉箭头一律 appearance:none + 我们自己的画法，颜色走主题变量 ⇒
+   暗色、亮色自动跟随。作用域只剩 #sp .sp-up3：兼容档（把站点表单搬进卡片）已砍掉，
+   站点那些控件不再出现在我们的壳里。 */
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
+#sp .sp-up3 select{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+  appearance:none;-webkit-appearance:none;
 }
-#sp .sp-siteform .row{margin:0}
-#sp .sp-siteform [class*="col-md-"],#sp .sp-siteform [class*="col-sm-"]{float:none;width:auto;padding:0}
-#sp .sp-siteform h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
-#sp .sp-siteform hr{margin:18px 0;border:none;border-top:1px solid var(--border)}
-#sp .sp-siteform label{font-size:12.5px;color:var(--text-2)}
-#sp .sp-siteform .form-group{margin-bottom:14px}
-#sp .sp-siteform input[type=text],#sp .sp-siteform input[type=number],#sp .sp-siteform input.form-control,
-#sp .sp-siteform select,#sp .sp-siteform textarea{
-  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);max-width:100%;
+#sp .sp-up3 select{
+  padding-right:30px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
 }
-#sp .sp-siteform input[type=checkbox],#sp .sp-siteform input[type=radio]{accent-color:var(--accent);margin-right:7px}
-#sp .sp-siteform input[type=submit],#sp .sp-siteform button{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
+#sp .sp-up3 select:hover{border-color:var(--border-strong)}
+#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
+#sp .sp-up3 select:focus{border-color:var(--accent)}
+#sp .sp-up3 input:disabled,
+#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
+#sp .sp-up3 input::placeholder{color:var(--text-3)}
+
+#sp .sp-up3 input[type=checkbox]{
+  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
+  transition:background .12s,border-color .12s;
 }
-#sp .sp-siteform .checkbox,#sp .sp-siteform .persistent{display:block;margin:0 0 12px}
-#sp .sp-siteform .error,#sp .sp-siteform div[style*="color:red"]{color:var(--accent) !important;font-size:12.5px}
+#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=checkbox]:checked{
+  border-color:var(--accent);
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
+}
+#sp .sp-up3 input[type=radio]{
+  appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
+  border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
+  transition:border-color .12s,border-width .12s;
+}
+#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
+#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
+#sp .sp-up3 input[type=checkbox]:disabled,
+#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
+
+/* ==== 新版上传 · 第三步的容器（68-step3.js 自绘那一块）====
+   2026-10-07 用户拍板砍掉兼容档之后，这一版不再有"把站点表单搬进来重排"那条路：只服务它的
+   那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
+   清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
+#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
+
+/* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
+   拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
+#sp .up1-drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:20px 16px;text-align:center;
+  cursor:pointer;transition:border-color .12s,background .12s}
+#sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
+#sp .up1-droptitle{font-size:13px;color:var(--text)}
+#sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
+/* 上传页的文件框：槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（见上）。
+   我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
+#sp .up-body .up1-drop input[type=file]{
+  position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
+}
+/* 文件名现在长在虚线框里，是这一屏的主要反馈对象：用正文墨，别再压成三级墨 */
+#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text)}
+#sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+#sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
+#sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
+#sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
+/* 站点 printError 那块：标题一行 + 正文（"没头像就去账户页传一张"这类可操作指引在正文里） */
+#sp .up1-msg .up1-gate-title{display:block;font-weight:600}
+#sp .up1-msg .up1-gate-body{margin-top:5px}
+/* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
+#sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
+#sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
+#sp .up1-dev{position:relative}
+#sp .up1-devin{display:block;width:100%}
+#sp .up1-sug{position:absolute;z-index:6;left:0;right:0;top:100%;margin-top:4px;max-height:230px;overflow:auto;
+  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow)}
+#sp .up1-sugitem{padding:7px 10px;font-size:12.5px;color:var(--text-2);cursor:pointer}
+#sp .up1-sugitem:hover{background:var(--surface-2);color:var(--text)}
+#sp .up1-estfields{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
+#sp .up1-fld{flex:1 1 140px;min-width:0}
+#sp .up1-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .up1-fld > input{width:100%}
+#sp .up1-estout{margin-top:14px}
+#sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
+#sp .up1-cost b{color:var(--accent);font-weight:600}
+#sp .up1-tbl{margin-top:10px}
+/* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
+   "推荐这么切" 与普通行长得一模一样，等于白算。 */
+#sp .up1-tbl td.ok{color:var(--positive);font-weight:600}
+#sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
+#sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
+#sp .up1-rules li + li{margin-top:6px}
+/* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
+#sp .up1-devin,#sp .up1-fld > input{
+  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
+  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
+}
+#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
+#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
+#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
+
+/* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
+#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
+#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
+#sp .fp .hint{margin:0 0 6px}
+#sp .fp .hint:last-child{margin-bottom:0}
+#sp .hint.bad{color:var(--accent)}
+
+/* ==== 项目管理页 /project/<数字>（整页自绘）====
+   数据来自 Api.parseManage(那一页 HTML 的**副本**)，站点节点一个都不进我们的壳 —— 所以这里全是
+   我们自己的类；旧的那套 .sp-manage*（给搬进来的站点节点统一外观用）已随搬节点一起删干净。 */
+#sp .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
+#sp .mg-acts{margin:0 0 16px;gap:8px}
+#sp .mg-sum{margin:0;padding:0;list-style:none}
+#sp .mg-sum li{font-size:12.5px;color:var(--text-3);line-height:1.95}
+#sp .mg-sum li::before{content:'·';margin-right:8px;color:var(--border-strong)}
+/* 帧方块：状态色跟站点自己那三个按钮类一致（已完成/进行中/等待中），悬停给 frame/cost/rendertime */
+#sp .mg-tiles{display:flex;gap:8px;flex-wrap:wrap}
+#sp .mg-tiles .tile{width:80px;height:60px;border-radius:4px;overflow:hidden;border:2px solid var(--border);background:var(--surface-2)}
+#sp .mg-tiles .tile img{width:100%;height:100%;object-fit:cover}
+#sp .mg-tiles .tile.done{border-color:var(--text-3)}
+#sp .mg-tiles .tile.progress{border-color:#e0a13a}
+#sp .mg-tiles .tile.waiting{border-color:var(--border-strong)}
+#sp .lg{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
+#sp .lg i{width:11px;height:11px;border-radius:3px;flex:none}
+#sp .lg i.done{background:var(--text-3)}
+#sp .lg i.progress{background:#e0a13a}
+#sp .lg i.waiting{background:var(--surface-3);border:1px solid var(--border-strong)}
+#sp .phead .lg + .lg{margin-left:12px}
+#sp .mg-video{width:100%;max-width:520px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;display:block}
+/* 名单：一行一个人 + 行内移除；下面输入框 + 建议 + 添加 */
+#sp .alist{display:flex;flex-direction:column}
+#sp .alist .arow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
+#sp .alist .arow:last-child{border-bottom:none}
+#sp .alist .arow .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .alist .none{font-size:12.5px;color:var(--text-3);padding:6px 0}
+#sp .aadd{display:flex;align-items:flex-start;gap:10px;margin-top:12px;flex-wrap:wrap}
+#sp .aadd .up1-dev{flex:0 1 320px;min-width:0}
+#sp .aadd .input{width:100%}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
@@ -2454,6 +3263,87 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   #sp.sp-anim .grid{animation-delay:.06s}
   #sp.sp-anim .farm{animation-delay:.1s}
 }
+
+/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
+   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
+   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
+   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
+/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
+   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
+#sp .sp-up3 [hidden]{display:none !important}
+/* 硬件需求：一个块，三行，行间发丝线 */
+#sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
+#sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
+#sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-k{flex:0 0 68px;font-size:12.5px;color:var(--text-3);padding-top:1px}
+#sp .sp-up3 .up3-c{flex:1 1 auto;min-width:0}
+#sp .sp-up3 .up3-tip{font-size:12px;color:var(--text-3);line-height:1.65}
+#sp .sp-up3 .up3-tiprow{flex:1 1 100%;margin-top:2px}
+#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:8px 18px}
+#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
+#sp .sp-up3 .up3-opt input{margin:0}
+#sp .sp-up3 .up3-opt[title]{cursor:help}
+#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
+#sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
+#sp .sp-up3 .up3-cmp{font-weight:600}
+#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
+#sp .sp-up3 .up3-ramck{margin:0}
+#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
+#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
+#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
+#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .sp-up3 .up3-ram > input{width:130px}
+/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
+#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
+#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
+#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
+#sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
+#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
+#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
+#sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
+#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
+#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
+/* 切块：三种形态都摆成"名字: 值" */
+#sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
+#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
+#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
+#sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
+#sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
+#sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
+/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
+#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
+  font-size:12.5px;color:var(--accent);line-height:1.7}
+#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
+#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
+#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
+#sp .sp-up3 .up3-notes > div + div{margin-top:3px}
+#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
+#sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
+  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
+#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
+#sp .sp-up3 button.up3-submit{
+  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
+  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
+}
+#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
+/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
+#sp .sp-up3 input[type=range]{
+  appearance:none;-webkit-appearance:none;flex:1 1 200px;max-width:320px;height:18px;
+  background:transparent;cursor:pointer;padding:0;border:none;margin:0;
+}
+#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
+  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
+  background:var(--accent);border:2px solid var(--surface);
+}
+#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
+#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
+
 `;
 
   /* 原版界面模式下「切回现代化」小开关的样式：那种模式下整套 SP.CSS 故意不加载（它给 #sp 用）。 */
@@ -2509,13 +3399,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (document.getElementById('sp-guard')) return;
     const s = document.createElement('style');
     s.id = 'sp-guard';
-    /* 唯一的例外 .sp-acmenu：jQuery UI 的补全菜单由我们的控件创建，却被它挂在 <body> 上，
-       不放开的表现是「输入了没反应」。不 appendTo 进 #sp 的原因：实测在 #sp 的 CSS zoom 下
-       jQuery 的 offset() 会把差值算成 0，菜单落到左上角。 */
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp):not(.sp-acmenu){display:none !important}
+      body > *:not(#sp){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);
@@ -2546,8 +3433,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
+    /* 警示（三角 + 感叹号）：给"检测到降噪"这类"这一项为什么没得选"用 */
+    warn: '<path d="M12 2.4c.56 0 1.08.3 1.36.78l8.2 14.2A1.57 1.57 0 0 1 20.2 19.8H3.8a1.57 1.57 0 0 1-1.36-2.42l8.2-14.2A1.57 1.57 0 0 1 12 2.4zm0 2.4L5.06 17.4h13.88L12 4.8zm-1 3.1h2v4.9h-2zm0 6.1h2v2h-2z"/>',
     heart: '<path d="M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z"/>',
     ban: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2"/>',
+    /* 上传第三步的 CPU/GPU 图标：站点挂的是两张 PNG（UI__HTML.php:1109/1122），
+       换我们自己的矢量图标（同一条路径，两格外形一眼能分辨）。 */
+    cpu: '<path d="M9 2h2v2H9zm4 0h2v2h-2zM9 19h2v2H9zm4 0h2v2h-2zM2 9h2v2H2zm0 4h2v2H2zm18-4h2v2h-2zm0 4h2v2h-2z"/><path d="M5.5 5.5h13v13h-13zm2 2v9h9v-9z"/>',
+    gpu: '<path d="M3 5.5h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 17V7A1.5 1.5 0 0 1 3 5.5zm.5 2v9h17v-9z"/><path d="M12 8.6a3.4 3.4 0 1 1-3.4 3.4A3.4 3.4 0 0 1 12 8.6zm0 1.8a1.6 1.6 0 1 0 1.6 1.6A1.6 1.6 0 0 0 12 10.4z"/><path d="M4.5 8.8h3v1.4h-3z"/>',
   };
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -2701,13 +3594,12 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       buckets.set(k, (buckets.get(k) || 0) + x.v);
     }
     const keys = [...buckets.keys()].sort();
-    if (!keys.length) return { html: '', first: '', mid: '', last: '' };
+    if (!keys.length) return { html: '' };
 
     const vals = keys.map((k) => buckets.get(k));
     const mx = Math.max(...vals), mn = Math.min(...vals);
-    const label = (k) => k;
     const bars = vals.map((v, i) =>
-      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(label(keys[i]))} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
+      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(keys[i])} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
 
     return {
       html: `<div class="months">${bars}</div>
@@ -2739,12 +3631,113 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }).join('')}</div>`;
   }
 
+  /* 站点的时间字符串是 "06:40 Sep 29"（**不给年份**），认不出就返回 null —— 宁可不显示也不猜。 */
+  const MON3 = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  function whenOf(raw) {
+    const m = String(raw || '').trim().match(/^(\d{1,2}):(\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/);
+    const mo = m && MON3[m[3].toLowerCase()];
+    if (!mo) return null;
+    const now = new Date();
+    const mk = (y) => new Date(y, mo - 1, Number(m[4]), Number(m[1]), Number(m[2])).getTime();
+    const t = mk(now.getFullYear());
+    // 用它自己的年份算出来比现在晚一天以上 → 那是去年的（跨年那几天会踩到，所以留一天的余量）
+    return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
+  }
+
+  /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
+  function agoText(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return d ? `${d}d${h}h` : h ? `${h}h${m}m` : m ? `${m}m` : `${s}s`;
+  }
+
+  /** 站点把「客户端侧暂停」与「服务端侧暂停」写成**两个独立条件、两行**
+      （`running.html.twig:296-314`），所以**两个可以同时成立**。返回全部命中的词条键（按站点行序）：
+      会话页一档画一个 chip；在线机器那行拼成一句（那里是紧凑数据行，不套 chip）。
+      原文一并返回，调用方挂在 title 上 —— 站点那行写的什么，悬浮就能看到。 */
+  const PAUSE_RES = [['sess.pausedClient', /paused\s+client\s+side/i], ['sess.pausedServer', /paused\s+server\s+side/i]];
+  function pauseKeys(note) {
+    const s = String(note || '');
+    return PAUSE_RES.filter(([, re]) => re.test(s)).map(([k]) => k);
+  }
+
+  /** 一台连着的机器的详情。主页那块只给「客户端 + 规格」；其余都是**逐台取它自己的会话页**
+      解析出来的（见 80-app.js 的 machineDetails）。取不到就整截不画、照旧只显示规格 ——
+      不编数据。
+
+      渲染方式看站点的 **Compute device** 那一格，那才是"客户端这一路开着没有"的权威字段
+      （模型单元格不能用：客户端取消了 CPU，CPU 型号照样在页上）。没那一格就退回算力单元格
+      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。**只画开着的那几路**：
+      只勾 CPU 的机器就只有一个 CPU 徽章，不再摆一个灰的 GPU。
+
+      算力百分比直接写在 CPU / GPU 标签里（`CPU 22 %` / `GPU 260 %`），不再单列「算力 CPU」
+      那种格子 —— 同一件事说两遍正是"看着杂"的来源。
+      时间显示**算出来的相对值**（跑着的算到"现在"，停了的算到最后一次请求），站点原文挂在
+      title 上，鼠标悬浮才出来；算不出来就整条不显示。 */
+  function machineDetail(d) {
+    if (!d || !d.info) return '';
+    const val = (k) => { const x = d.info[k]; return x && x.value ? String(x.value) : ''; };
+    const now = Date.now();
+    const cRaw = val('createdAt');
+    const cT = whenOf(cRaw);
+    const cdRaw = val('computeDevice');          // 站点原文（挂在 title 上，别小写化）
+    const cd = cdRaw.toLowerCase();              // 判据用小写比较
+    const power = (k) => { const v = val(k).trim(); return v && !/^0\s*%?$/.test(v) ? v : ''; };
+    const pCpu = power('power'), pGpu = power('powerGpu');
+    const cpuOn = cd ? /cpu/.test(cd) : !!pCpu;
+    const gpuOn = cd ? /gpu/.test(cd) : !!pGpu;
+    const chip = (label, v) => `<span class="on">${esc(label)}${v ? ` ${esc(v)}` : ''}</span>`;
+    /* **只画勾选了的那一路**（用户 2026-10-07）：只勾了 CPU 就只写 CPU，不再摆一个灰的 GPU 徽章。
+       判据仍是站点的 **Compute device** —— 它只可能是 `CPU` / `GPU` / `CPU,GPU` / 空
+       （SessionController.php:121-130 一段一段拼出来的），所以"哪几路开着"是站点自己说的；
+       没有那一格时退回"有非零算力才算开着"。认不出的值（站点以后加了第三种）原样画出来
+       —— 不猜，也不吞数据。cd 有值时把原文挂 title。 */
+    const devChips = [];
+    if (cpuOn) devChips.push(chip(t('proj.cpu'), pCpu));
+    if (gpuOn) devChips.push(chip(t('proj.gpu'), pGpu));
+    if (!devChips.length && cdRaw) devChips.push(chip(cdRaw, ''));
+    const dev = devChips.length
+      ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
+    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
+       没有信息量）。三种状态，判据都在站点自己的页面上：
+         · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
+         · 渲染中：`Current frames` 那一行**只在 frames_processing 非空时才印**（running.html.twig:381），
+           所以"有这一行"就是正在干活；
+         · 等待任务：连着的、没暂停、也没有当前帧 —— 就是闲着等派活。 */
+    const note = (d.info.note && d.info.note.value) || '';
+    const pauseText = pauseKeys(note).map((k) => t(k)).join(' · ');
+    const working = !!val('currentFrames');
+    const statusHtml = pauseText
+      ? `<span title="${esc(t('sess.statusRaw', { raw: note }))}">${esc(pauseText)}</span>`
+      : note ? `<span title="${esc(note)}">${esc(note)}</span>`
+        : working ? `<span>${esc(t('machines.state.rendering'))}</span>`
+          : d.running === false ? `<span>${esc(t('sess.off'))}</span>`
+            : d.running === true ? `<span>${esc(t('machines.state.idle'))}</span>` : '';
+    const bits = [
+      statusHtml,
+      cRaw && cT && endT
+        ? `<span title="${esc(t('machines.created', { v: cRaw }))}">${esc(t('machines.uptime', { v: agoText(endT - cT) }))}</span>` : '',
+    ].filter(Boolean);
+    const stats = [['frames', 'stat.frames'], ['points', 'stat.points']]
+      .filter(([k]) => val(k))
+      .map(([k, key]) => `<div class="ms"><span class="k">${esc(t(key))}</span><span class="v num">${esc(val(k))}</span></div>`);
+    if (!dev && !bits.length && !stats.length) return '';
+    const line = (dev || bits.length) ? `<div class="mline">${dev}${bits.join(' · ')}</div>` : '';
+    return `<div class="mfoot">${line}${stats.length ? `<div class="mstats">${stats.join('')}</div>` : ''}</div>`;
+  }
+
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
+    /* 一行一台：身份（标签 + 规格）→ 运行状态与产出 → 「查看会话」。链接放在**最后**，
+       它才落在整行右端；跟着身份走会插在状态中间，看着像"规格的附属"。 */
     return `<div class="machines">${list.map((x) => `<div class="machine">
-        <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
-        <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+        <div class="mhead">
+          <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
+          <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+        </div>
+        ${machineDetail(x.detail)}
         ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
       </div>`).join('')}</div>`;
   }
@@ -2758,8 +3751,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       : `${p.toFixed(0)}%`;
   }
 
-  /** 6px 轨道 + 强调色填充。分数**不在这里**（见 50-views.js 的项目表）：挂在条子后面时
-   *  `flex:1` 的轨道会被每行不同的数字宽度挤成长短不一，独立成列才对得齐。 */
+  /** 6px 轨道 + 强调色填充。分数与条子**同一格**（见 50-views.js 的项目表 `pcell`，用户 2026-10-07）：
+   *  分数用 `.frac` 定宽（`min-width:6.6em`）才不会把每行的条子挤成长短不一；`label` 只挂在轨道上做悬停提示。 */
   function progress(pct, label) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
@@ -2774,17 +3767,19 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   }
 
   const state = {
-    loading: (msg) => `<div class="state"><div class="spin"></div><div class="small">${esc(msg || t('state.loading'))}</div></div>`,
     error: (msg, retryId) => `<div class="state">
         <div class="big">${esc(t('state.error'))}</div>
         <div class="small">${esc(msg || '')}</div>
         <button class="btn primary" id="${retryId || 'sp-retry'}">${icon('refresh')}${esc(t('state.retry'))}</button>
       </div>`,
     empty: (msg) => `<div class="state"><div class="small">${esc(msg || t('state.empty'))}</div></div>`,
+    /* 登录后跳回 /home。**重定向那段不能 URL 编码**：实测 /user/signin/%2Fhome 与
+       /user/signin%2Fhome 都是 404，站点路由认不出编码过的斜杠（2026-10-07 真机）。
+       /user/signin 与 /user/signin/home 都是 200，后者签完确实跳回 /home。 */
     loggedOut: () => `<div class="state">
         <div class="big">${esc(t('state.loggedOut'))}</div>
         <div class="small">${esc(t('state.loggedOutHint'))}</div>
-        <a class="btn primary" href="/user/signin/%2Fhome">${esc(t('state.loggedOutBtn'))}</a>
+        <a class="btn primary" href="/user/signin/home">${esc(t('state.loggedOutBtn'))}</a>
       </div>`,
   };
 
@@ -2912,7 +3907,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
   SP.Charts = { points: pointsChart };
 })();
 
@@ -2953,6 +3948,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return '';
   }
 
+  /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
+  const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
+
   const rankOf = (st) => {
     const raw = statOf(st, ['Rank']);
     const digits = String(raw).replace(/[^\d]/g, '');
@@ -2984,8 +3982,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return upper ? s.toUpperCase() : s;
   }
 
-  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
-     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用 WHY_RULES 规则匹配；
+     英文词典里没有 why.* 条目，所以没命中要回落原句。 */
   const WHY_RULES = [
     [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
       const key = 'why.notEnoughMemory';
@@ -3000,36 +3998,154 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return packLabel('why', s);
   }
 
-  const STATUS_RULES = [
-    [/^waiting to render/i, () => t('status.idle')],
-    [/^rendering for\s+(.+)$/i, (m) => t('status.renderingFor', { user: m[1] })],
-    [/^rendering\b/i, () => t('status.rendering')],
-    [/^(disconnected|not connected|offline)/i, () => t('status.disconnected')],
-  ];
-  function statusText(raw) {
-    const s = String(raw || '').trim();
-    if (!s) return '';
-    for (const [re, fn] of STATUS_RULES) {
-      const m = s.match(re);
-      if (m) return fn(m);
-    }
-    return s;
+  /* 站点主页那个「Connected as …」框里的客户端状态（Waiting to render / Rendering for X / …）
+     **不再画**（用户 2026-10-07）：说的是"你自己客户端"的状态，现在在线机器那块把每台机器的
+     真实状态（等待任务 / 渲染中 / 暂停）逐台说清了，身份条上这一格只会重复且容易误读。 */
+
+  /* ==== 我的项目（个人主页那张表，两处共用） ====
+     数据来自 Api.parseMyProjects（见 20-api.js 的那段注释）：自己的主页每行带 id，别人的主页没有。
+     站点**没给**最后更新时间、也不给设备/内存，所以这两处只画名字、状态、（渲染中的）百分比。 */
+
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+
+  /** 百分比站点只对"渲染中/等待中"给（HTML.php 的 printProjects），没有就只说状态 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    const base = key ? t(key) : (x.status || '—');
+    return x.pct === null || x.pct === undefined ? base : `${base} ${x.pct}%`;
+  }
+
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  const MY_SHOW = 5;
+
+  /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
+   *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
+   *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
+  function myPanel(state, p) {
+    if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
+    const rows = (p && p.myProjects) || [];
+    if (!rows.length) return '';
+
+    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+        <span class="nm">${myName(x)}</span>
+        ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
+        <span class="st">${esc(myStatus(x))}</span>
+      </div>`).join('');
+
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        <span class="spacer"></span>
+        <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
+      </div>
+      <div class="myproj">${list}</div>
+    </div>`;
   }
 
   /* ==== 总览 ==== */
+
+  /* 总览页的区块注册表与显隐。块名 → 文案；`identity` 与页脚**不做成可关的块**：
+     一个是这一页的身份，一个是数据来源那行，关掉只会让页面看着像出错了。
+     块标签优先复用区块自己的标题词条（我的项目 / 渲染产出 / 在线机器），只有没有现成
+     标题的两块才新增文案。 */
+  const OV_BLOCKS = {
+    kpi: { label: 'ovb.kpi' },
+    mine: { label: 'my.title' },
+    charts: { label: 'ovb.charts' },
+    heat: { label: 'heat.title' },
+    machines: { label: 'machines.title' },
+  };
+  /* 位置固定的块：不进可调序的那条列表（顶上那条数据看板钉死在那儿，用户 2026-10-07 拍板），
+     但**仍然可以关掉** —— "不挪位置"和"不许隐藏"是两件事。 */
+  const OV_PINNED = ['kpi'];
+  const OV_MOVABLE = Object.keys(OV_BLOCKS).filter((k) => !OV_PINNED.includes(k));
+  const OV_PREF = 'ovHidden';
+  const OV_PREF_ORDER = 'ovOrder';
+
+  /* 存的是**被关掉的那些键**，不是"开着的那些"。这样以后新加一个块，老用户的偏好里没有它
+     → 默认就是开着的；反过来存（存开着的集合）就会出现"加了新块但谁都不显示"。
+     认不出的键直接忽略，不留在集合里。 */
+  const ovHidden = new Set();
+  (function restoreOv() {
+    const s = Util.store.get(OV_PREF, null);
+    if (!Array.isArray(s)) return;
+    for (const k of s) if (OV_BLOCKS[k]) ovHidden.add(k);
+  })();
+
+  const ovOn = (k) => !ovHidden.has(k);
+
+  /** 单块开关（设置页那排按钮调它）。全部关掉也允许 —— 那是用户自己的选择。 */
+  function setOvHidden(key) {
+    if (!OV_BLOCKS[key]) return false;
+    if (ovHidden.has(key)) ovHidden.delete(key); else ovHidden.add(key);
+    Util.store.set(OV_PREF, [...ovHidden]);
+    return true;
+  }
+
+  /* 可调序的那条顺序。存法同样是"从宽"：认不出的键丢掉、重复的去掉、固定块不许进来，
+     而**偏好里没提到的块按注册表顺序补到末尾** —— 以后新加一块，老用户直接就能看见它，
+     不会被一份旧名单挡在外面（和 ovHidden 存"关掉的"是同一个思路）。 */
+  let ovSeq = OV_MOVABLE.slice();
+  (function restoreOvOrder() {
+    const s = Util.store.get(OV_PREF_ORDER, null);
+    if (!Array.isArray(s)) return;
+    const seen = new Set();
+    const out = [];
+    for (const k of s) {
+      if (!OV_BLOCKS[k] || OV_PINNED.includes(k) || seen.has(k)) continue;
+      seen.add(k); out.push(k);
+    }
+    for (const k of OV_MOVABLE) if (!seen.has(k)) out.push(k);
+    ovSeq = out;
+  })();
+
+  /** 页面上的渲染顺序：固定块在前（按注册表顺序），其余按用户排的 */
+  const ovDisplayOrder = () => OV_PINNED.concat(ovSeq);
+
+  /** 上/下移一格（设置页那对箭头调它）。到头了就返回 false，不落盘也不重画。 */
+  function moveOv(key, dir) {
+    const i = ovSeq.indexOf(key);
+    if (i < 0 || !dir) return false;
+    const j = i + (dir < 0 ? -1 : 1);
+    if (j < 0 || j >= ovSeq.length) return false;
+    ovSeq.splice(i, 1);
+    ovSeq.splice(j, 0, key);
+    Util.store.set(OV_PREF_ORDER, ovSeq);
+    return true;
+  }
+
+  /** 设置页里的一块：开关 + 上/下移。固定块只画开关，旁边标一句"固定在顶部"。 */
+  function ovRow(k) {
+    const i = OV_PINNED.includes(k) ? -1 : ovSeq.indexOf(k);
+    const last = ovSeq.length - 1;
+    const arrow = (dir, off, icon, key) => `<button class="btn sm" data-ov-move="${k}" data-ov-dir="${dir}"`
+      + `${off ? ' disabled' : ''} title="${esc(t(key))}" aria-label="${esc(t(key))}">${UI.icon(icon)}</button>`;
+    return `<div class="ovrow">
+      <div class="seg"><button data-ov-toggle="${k}" aria-pressed="${ovOn(k)}">${esc(t(OV_BLOCKS[k].label))}</button></div>
+      ${i < 0 ? `<span class="lock">${esc(t('ovb.pinned'))}</span>`
+    : arrow(-1, i === 0, 'caretUp', 'ovb.up') + arrow(1, i === last, 'caretDown', 'ovb.down')}
+    </div>`;
+  }
 
   function identity(p, st) {
     const rank = rankOf(st);
     const badge = packLabel('badge', p.badge, true);
     const team = statOf(st, ['Team']).trim().toUpperCase();
     const joined = isoDate(statOf(st, ['Registration']));
-    const status = statusText(p.status);
+    /* 站点那个「Connected as …」的客户端状态**不画**（用户 2026-10-07，见上面那段注释）：
+       在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (team) bits.push(`<span><b>${esc(team)}</b> ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
-    if (status) bits.push(`<span title="${esc(t('hero.statusRaw', { raw: p.status }))}">${esc(status)}</span>`);
 
     return `<div class="identity">
       ${UI.avatar(p.avatar, p.name, 'av')}
@@ -3040,18 +4156,27 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   function overview(state) {
     const p = state.profile;
-    const home = state.home;
     if (!p) return UI.state.error('profile parse failed');
 
     const st = p.stats || {};
     const d = p.derived || {};
     const daily = dailySeries(p.frames);
-    const hasData = (p.points && p.points.length > 1) || daily.length > 0 || (p.activity && p.activity.length > 0);
+    const hasCalendar = daily.length > 0 || !!(p.activity && p.activity.length > 0);
+    /* 新账号站点常常"只给统计表、不给图表数组"（line_*_timeline 与热力图整段不渲染）。
+       数字是真的（Frames rendered 148 / Points 20,062），所以判据不能只看图表：
+       统计表里任何一个数 > 0、或者有在线机器/历史会话，都算"有记录"（用户实报：总览说"还没有渲染记录"）。 */
+    const hasStat = asCount(statOf(st, ['Frames rendered'])) > 0
+      || asCount(statOf(st, ['Points'])) > 0
+      || asCount(statOf(st, ['Time rendered'])) > 0;
+    const hasData = (p.points && p.points.length > 1) || hasCalendar || hasStat
+      || (p.machines && p.machines.count > 0) || (p.sessions && p.sessions.length > 0);
 
     if (!hasData) {
-      // 统计读到了但没有任何渲染记录 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
+      // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty())
+        + (ovOn('mine') ? myPanel(state, p) : '') + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -3065,7 +4190,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const points = statOf(st, ['Points']);
     const created = statOf(st, ['Projects created']);
     const ordered = statOf(st, ['Frames ordered']);
-    const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, ''));
 
     const kpiItems = [
       {
@@ -3081,19 +4205,20 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
-      {
+      /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */
+      ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
         d: d.best !== undefined
           ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
           : '',
-      },
+      }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
       ...(asCount(ordered) > 0
         ? [{ k: t('stat.ordered'), v: Util.statNum(ordered), d: t('stat.orderedHint') }] : []),
     ];
-    // 格数变了，栅格与分隔线要跟着重排（见 30-style.js 的 .kpis[data-n]）
+    // 格数变了，每排几格与分隔线由 CSS 按 data-n 自己算（见 30-style.js 的 .kpis[data-n]）
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
@@ -3143,17 +4268,78 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       ${UI.machines(mc)}
     </div>`;
 
-    return identity(p, st)
-      + kpiBand
-      + main
-      + heat
-      + machinesPanel
-      + foot();
+    /* ---- 按 OV_ORDER 拼块，用户关掉的整块跳过。顺序是固定的（拖拽排序还没做）；
+           myPanel 自己在"没项目 / 不是自己的主页"时返回空串，所以"被关掉"和"本来就没有"
+           在页面上是同一种结果，不需要分开处理。 ---- */
+    const blocks = { kpi: kpiBand, mine: myPanel(state, p), charts: main, heat, machines: machinesPanel };
+    let body = identity(p, st);
+    for (const k of ovDisplayOrder()) if (ovOn(k)) body += blocks[k];
+    return body + foot();
   }
 
   /* ==== 项目 ==== */
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null };
+  /* 可排序列的注册表：字段 → { 表头词条, 取值 }。
+     表头词条复用既有的 `proj.col.*`，所以加一列排序**不需要新文案**；取值一律用站点给的
+     原始数值（memKb / pct），不用 "1.3 G" 这种显示文本 —— 否则按字面量排。
+     「我发布的」那张表站点只给得出名字与百分比，所以它有一份自己的注册表。 */
+  const P_SORTS = {
+    name: { label: 'proj.col.project', get: (p) => p.name, text: true },
+    owner: { label: 'proj.col.owner', get: (p) => p.owner, text: true },
+    progress: { label: 'proj.col.progress', get: (p) => p.pct || 0 },
+    memory: { label: 'proj.col.memory', get: (p) => p.memKb || 0 },
+  };
+  const M_SORTS = {
+    name: { label: 'proj.col.project', get: (x) => x.name, text: true },
+    /* 站点对"没给百分比"的行就是不排进度，摆到最小那一头，别当成 0% 混进去 */
+    progress: { label: 'proj.col.progress', get: (x) => (x.pct === null || x.pct === undefined ? -1 : x.pct) },
+  };
+  const SORT_PREF = 'projSort';
+
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+
+  /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
+     存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
+     不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
+  (function restoreSort() {
+    const s = Util.store.get(SORT_PREF, null);
+    if (!s || typeof s !== 'object') return;
+    if (P_SORTS[s.sort]) projState.sort = s.sort;
+    if (M_SORTS[s.msort]) projState.msort = s.msort;
+    if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
+  })();
+
+  function saveSort() {
+    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+  }
+
+  /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
+      选到它排不了的列（发布者 / 内存）就**不动它自己那份偏好**，不硬塞一个无效字段。 */
+  function setSortPref(key) {
+    if (!P_SORTS[key] || projState.sort === key) return false;
+    projState.sort = key;
+    if (M_SORTS[key]) projState.msort = key;
+    saveSort();
+    return true;
+  }
+
+  function setDirPref(dir) {
+    if (dir !== 'asc' && dir !== 'desc') return false;
+    if (projState.dir === dir) return false;
+    projState.dir = dir;
+    saveSort();
+    return true;
+  }
+
+  /** 比较器：文本 localeCompare、数值相减；升降方向由调用处统一翻，注册表里不写两遍 */
+  function sortCmp(spec, key) {
+    const s = spec[key];
+    if (!s) return null;
+    return s.text
+      ? (a, b) => String(s.get(a) || '').localeCompare(String(s.get(b) || ''))
+      : (a, b) => s.get(a) - s.get(b);
+  }
+
   const rankState = { limit: 100 };
   const acctState = { tab: 'sched' };
 
@@ -3171,6 +4357,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
     if (p.statusKind === 'waiting') return t('proj.status.waiting');
     if (p.statusKind === 'paused') return t('proj.status.paused');
+    if (p.statusKind === 'finished') return t('proj.status.finished');
     return p.status || '—';
   }
 
@@ -3244,20 +4431,91 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       : null;
   }
 
+  /** 进度：条子与分数**同一格**（用户 2026-10-07）。
+      合成一格后条子 `flex:1` 吃满剩余宽度，和数字之间只隔一个 10px 的 gap。 */
+  const pcell = (pct, frac, title) => `<td><div class="pwrap">${UI.progress(pct, frac)}`
+    + `<span class="frac num"${title ? ` title="${esc(title)}"` : ''}>${esc(frac)}</span></div></td>`;
+
   function projectRow(p, me, maps) {
     const frac = UI.progressText(p.pct, p.done, p.total);
     return `<tr data-project="${esc(p.id)}">
       <td><div class="pn" title="${esc(p.name)}">${esc(p.name)}</div></td>
       <td>${ownerCell(p, me, maps)}</td>
-      <td><span class="st ${p.statusKind}">${esc(statusLabel(p))}</span></td>
-      <td>${UI.progress(p.pct, frac)}</td>
-      <td class="r num frac">${esc(frac)}</td>
+      <td><span class="st ${p.statusKind}" title="${esc(statusLabel(p))}">${esc(statusLabel(p))}</span></td>
+      ${pcell(p.pct, frac, frac)}
       <td>${UI.devices(p.cpu, p.gpu)}</td>
-      <td class="r num">${esc(p.memory || '—')}</td>
+      <td class="r num" title="${esc(p.memory || '—')}">${esc(p.memory || '—')}</td>
     </tr>`;
   }
 
+  /** 范围切换（全部 / 我发布的）：两档共用同一只控件，位置也一样。 */
+  const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
+    .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
+  function mineProjects(state) {
+    const all = state.myProjects || [];
+    const q = projState.q.trim().toLowerCase();
+    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
+    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+      rows = rows.filter((x) => x.statusKind === projState.filter);
+    }
+
+    /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
+    const cmp = sortCmp(M_SORTS, projState.msort);
+    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+
+    const th = (key, label, span) => {
+      const on = projState.msort === key;
+      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+    };
+
+    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
+        <td><div class="pn">${myName(x)}</div></td>
+        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
+        <td class="r">${x.id
+    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`).join('')
+      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('my.empty'))}</div>
+            ${state.uploadMode === 'off' ? ''
+    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
+          </div></td></tr>`;
+
+    return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
+        <span class="spacer"></span>
+        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+      <div class="toolbar">
+        ${scopeSeg()}
+        <label class="input">${UI.icon('search')}
+          <input id="sp-q" type="search" placeholder="${esc(t('proj.searchMine'))}" value="${esc(projState.q)}">
+        </label>
+        <div class="seg" id="sp-filter">${opts.map(([k, label]) =>
+    `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
+      </div>
+      <div class="panel" style="padding:14px 6px 6px">
+        <div class="tablewrap"><table class="tbl tbl-mine">
+          <thead><tr>
+            ${th('name', t('proj.col.project'))}
+            <th>${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'))}
+            <th class="r">${esc(t('proj.col.manage'))}</th>
+          </tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
+      </div>`;
+  }
+
   function projects(state) {
+    if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
 
@@ -3270,12 +4528,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return p.statusKind === projState.filter;
     });
 
-    const cmp = {
-      name: (a, b) => a.name.localeCompare(b.name),
-      owner: (a, b) => a.owner.localeCompare(b.owner),
-      progress: (a, b) => (a.pct || 0) - (b.pct || 0),
-      memory: (a, b) => (a.memKb || 0) - (b.memKb || 0),
-    }[projState.sort] || ((a, b) => (a.pct || 0) - (b.pct || 0));
+    /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
+    const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
     rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
@@ -3304,6 +4558,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <span class="spacer"></span>
         <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
+        ${scopeSeg()}
         <label class="input">${UI.icon('search')}
           <input id="sp-q" type="search" placeholder="${esc(t('proj.search'))}" value="${esc(projState.q)}">
         </label>
@@ -3311,17 +4566,21 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap"><table class="tbl fit">
+          <colgroup>
+            <col style="width:28%"><col style="width:19%"><col style="width:13%">
+            <col style="width:19%"><col style="width:11%"><col style="width:10%">
+          </colgroup>
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
             <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'), 2)}
+            ${th('progress', t('proj.col.progress'))}
             <th>${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="7"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>
@@ -3399,10 +4658,26 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         </div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.psort'))}</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+            ${seg('sp-psort', projState.sort, Object.keys(P_SORTS).map((k) => [k, t(P_SORTS[k].label)]))}
+            ${seg('sp-pdir', projState.dir, [['asc', t('set.pdir.asc')], ['desc', t('set.pdir.desc')]])}
+          </div>
+          <div class="hint">${esc(t('set.psortHint'))}</div>
+        </div>
+
+        <div class="row block">
+          <div class="lbl">${esc(t('set.ovblocks'))}</div>
+          <div class="ovlist">${ovDisplayOrder().map(ovRow).join('')}</div>
+          <div class="hint">${esc(t('set.ovblocksHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.exp'))}</div>
-          ${seg('sp-exp', state.expUpload ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
-          <div class="hint" style="margin-top:9px"><b>${esc(t('set.expUpload'))}</b></div>
-          <div class="hint">${esc(t('set.expUploadHint'))}</div>
+          <div class="hint" style="margin-top:0"><b>${esc(t('set.upmode'))}</b></div>
+          ${seg('sp-upmode', state.uploadMode, [['off', t('set.upmode.off')], ['raw', t('set.upmode.raw')], ['new', t('set.upmode.new')]])}
+          <div class="hint">${esc(t('set.upmodeHint'))}</div>
+          ${SP.Step3x ? SP.Step3x.fpRows() : ''}
         </div>
 
         <div class="row block">
@@ -3555,6 +4830,46 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     return hit === k ? f.label : hit;
   }
 
+  /* 站点在「机器信息」里塞的有些值是**内部枚举**，不是给人看的字：OS 那格印 `linux`，
+     Scheduler 那格印 `very_slow_computer`（它说的是这台机器跑多快，跟"调度模式"没关系），
+     从没活动过的机器几格印 `Never`。这些翻成人话、原文进悬停提示；
+     **认不出的值一律原样显示** —— 站点哪天加新档，界面上照样看得见。 */
+  const OS_NAME = {
+    linux: 'Linux', windows: 'Windows', win32: 'Windows',
+    'mac os x': 'macOS', macos: 'macOS', darwin: 'macOS', freebsd: 'FreeBSD',
+  };
+  const MACHINE_CLASS = [
+    [/^very[_\s-]*slow[_\s-]*computer$/i, 'verySlow'],
+    [/^(slow|low)[_\s-]*computer$/i, 'slow'],
+    [/^(medium|average|normal)[_\s-]*computer$/i, 'medium'],
+    [/^(fast|high)[_\s-]*computer$/i, 'fast'],
+    [/^very[_\s-]*fast[_\s-]*computer$/i, 'veryFast'],
+  ];
+  /* Action 那格站点放的是 `<input type="button" value="Pause">`（值是英文按钮字，
+     实测只有 Pause / Resume 两种），只在没显示我们自己的控制面板时才走到这里。 */
+  const ACTION_NAME = { pause: 'sess.act.pause', resume: 'sess.act.resume' };
+  function valueHuman(key, raw) {
+    const s = String(raw == null ? '' : raw).trim();
+    if (!s) return null;
+    if (/^never$/i.test(s)) return { text: t('sess.never'), title: t('sess.rawTip', { raw: s }) };
+    if (key === 'os') {
+      const n = OS_NAME[s.toLowerCase()];
+      if (n) return { text: n, title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'scheduler') {
+      const hit = MACHINE_CLASS.find(([re]) => re.test(s));
+      if (hit) return { text: t(`sess.class.${hit[1]}`), title: t('sess.rawTip', { raw: s }) };
+    }
+    if (key === 'action' && ACTION_NAME[s.toLowerCase()]) {
+      return { text: t(ACTION_NAME[s.toLowerCase()]), title: t('sess.rawTip', { raw: s }) };
+    }
+    /* 值里带站点日期形状（`20th Oct 06:10` / `06:40 Sep 29`）就按语言包本地化；
+       转换没变化说明不是日期，交给后面原样显示。 */
+    const loc = I18n.date(s);
+    if (loc !== s) return { text: loc, title: '' };
+    return null;
+  }
+
   function typeLabel(raw) {
     const s = String(raw || '').trim();
     if (!s) return '—';
@@ -3629,18 +4944,20 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const val = (k) => (s.info[k] ? s.info[k].value : '');
     const owner = s.info.owner || null;
 
-    /* **两种暂停是两件事**："Paused server side" 与客户端自己的 "Paused client side" 以站点那行为准；
-       Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），只看 Action 会报成「运行中」。 */
+    /* **两种暂停是两件事，而且可以同时成立**："Paused server side" 与 "Paused client side" 以站点那行为准
+       （站点是两条独立条件、各写一行）；Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），
+       只看 Action 会报成「运行中」。两个都在就画两个 chip —— 合成一个词会丢掉"哪一端停的"。
+       词条与 40-ui.js 的 pauseKeys() 共用一份判据。 */
     const status = val('status');
     const note = s.info.note ? s.info.note.value : '';
-    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
-      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
     const noteTitle = note ? ` title="${esc(t('sess.statusRaw', { raw: note }))}"` : '';
-    const chip = note
-      ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
-      : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
-          : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
+    const pauseChip = UI.pauseKeys(note).map((k) => `<span class="chip off"${noteTitle}>${esc(t(k))}</span>`).join('');
+    const chip = pauseChip
+      ? pauseChip
+      : note ? `<span class="chip off"${noteTitle}>${esc(note)}</span>`
+        : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
+          : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
+            : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
     /* "Current frames"：这台机器此刻在跑什么（空闲不印）。它是**活的**，留身份条、不进「机器信息」表；
@@ -3655,7 +4972,10 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     } else if (cur) {
       bits.push(`<span>${esc(s.running === false ? t('sess.currentJob') : t('sess.rendering'))} <b>${esc(cur)}</b></span>`);
     }
-    if (val('os')) bits.push(`<span>${esc(val('os'))}</span>`);
+    if (val('os')) {
+      const os = valueHuman('os', val('os'));
+      bits.push(`<span${os ? ` title="${esc(os.title)}"` : ''}>${esc(os ? os.text : val('os'))}</span>`);
+    }
     if (owner) {
       const href = owner.href || (owner.user ? `/user/${encodeURIComponent(owner.user)}/profile` : '');
       bits.push(`<span>${esc(t('sess.owner'))} ${href
@@ -3679,7 +4999,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const framesN = numOf(val('frames'));
     const pointsN = numOf(val('points'));
     const perFrame = framesN && pointsN ? Math.round(pointsN / framesN) : null;
-    const since = tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt');
+    const since = I18n.date(tl.length ? stamp(tl[tl.length - 1].start) : val('createdAt'));
 
     /* 算力那格跟着站点印了哪一行走（"Power CPU" / "Power GPU" 都开就两行都在）；**不写死** —— 早先写死读
        Power CPU，纯 GPU 机器上那格永远是"—"，被读成"CPU 有问题"。 */
@@ -3732,8 +5052,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
             `<button class="btn sm" data-act="reveal-key" aria-pressed="false">${esc(t('sess.reveal'))}</button>`;
         } else {
           const raw = f.value || '—';
-          const txt = f.href ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>` : esc(raw);
-          v = `<span class="num">${txt}</span>`;
+          const human = f.href ? null : valueHuman(f.key, f.value);
+          const txt = f.href
+            ? `<a href="${esc(f.href)}" target="_self">${esc(raw)}</a>`
+            : esc(human ? human.text : raw);
+          v = `<span class="num"${human ? ` title="${esc(human.title)}"` : ''}>${txt}</span>`;
         }
         return `<div class="fact"><span class="k">${esc(sessLabel(f))}</span><span class="v">${v}</span></div>`;
       }).join('')}</div>
@@ -3848,12 +5171,16 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense">
+      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+        <colgroup>
+          <col style="width:29%"><col style="width:19%"><col style="width:17%">
+          <col style="width:19%"><col style="width:9%"><col style="width:7%">
+        </colgroup>
         <thead><tr>
           <th>${esc(t('proj.col.project'))}</th>
           <th>${esc(t('proj.col.owner'))}</th>
           <th>${esc(t('proj.col.status'))}</th>
-          <th colspan="2">${esc(t('proj.col.progress'))}</th>
+          <th>${esc(t('proj.col.progress'))}</th>
           <th>${esc(t('proj.col.device'))}</th>
           <th class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
@@ -3866,10 +5193,9 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
               isCur ? `<span class="now">${esc(t('sess.rendering'))}</span>` : ''}</div></td>
             <td>${who}</td>
             <td><span class="st" title="${esc(label)}">${esc(label)}</span></td>
-            <td>${p ? UI.progress(p.pct, frac) : '<span class="dash">—</span>'}</td>
-            <td class="r num frac">${p ? esc(frac) : '<span class="dash">—</span>'}</td>
+            ${p ? pcell(p.pct, frac, frac) : '<td class="r"><span class="dash">—</span></td>'}
             <td>${p ? UI.devices(p.cpu, p.gpu) : '<span class="dash">—</span>'}</td>
-            <td class="r num">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
+            <td class="r num" title="${p ? esc(p.memory || '—') : ''}">${p ? esc(p.memory || '—') : '<span class="dash">—</span>'}</td>
           </tr>`;
         }).join('')}</tbody>
       </table></div>` : `<div class="pbody"><div class="none">${esc(t('sess.prjNone'))}</div></div>`}
@@ -3879,8 +5205,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   }
 
   /* ==== 挂载后补丁：只有总览的积分曲线需要真实像素宽度 ==== */
-  /* ==== 项目上传页 / 分析等待页：等待页整页重建；上传页是**换装** —— 骨架我们画，能干活的节点
-     从抓回来的 /getstarted 里搬进来，不接管那一页（Borrowed Controls Rule 见 docs/DESIGN.md）。 */
+  /* ==== 项目上传页 / 分析等待页：骨架与内容都我们画。上传页把抓回来的 /getstarted 只当**数据源**
+     （64-step1.js 解析后自绘三个槽位），等待页同理由 62-chain/68-step3 接手。 */
 
   function upload(state) {
     return `<div class="wrap up">
@@ -3888,7 +5214,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <h2>${esc(t('up.title'))}</h2>
         <span class="sub">${esc(t('up.sub'))}</span>
       </div>
-      <div class="expnote">${esc(t('up.expNote'))}</div>
       <div class="up-grid">
         <div class="up-col">
           <div class="panel">
@@ -3909,188 +5234,18 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     </div>`;
   }
 
-  /** 站点那句「Max: 2,048 MB …」和 `<input type="file">` 挤在同一 `<td>`：**整块替换会把文件框删掉**
-      （见 70-i18n-dom.js），逐节点拼不回中文 —— 故由卡片自己说 `up.maxNote`，大小从站点原文里读。 */
-  function rewordFileLimit(scope) {
-    const file = scope.querySelector('input[type=file]');
-    if (!file) return;
-    const cell = file.closest('td') || file.parentElement;
-    if (!cell) return;
-    const txt = cell.textContent || '';
-    const m = txt.match(/Max:\s*([\d.,]+\s*[KMGT]?B)/i) || txt.match(/上限：\s*([\d.,]+\s*[KMGT]?B)/);
-    if (!m) return;
-    [...cell.childNodes].forEach((n) => { if (n !== file) n.remove(); });
-    const note = document.createElement('span');
-    note.className = 'note';
-    note.textContent = t('up.maxNote', { size: m[1] });
-    file.after(note);
-  }
-
-  /** 须知块**只贴标签、只去掉多余字符**：站点把「项目总数: 29」写成裸文本节点（包 span 才能排版）；
-      `…3.0 or higher</strong>.` 的句号在 <strong> 外 → 中文译文双句号，只在前面已有句末标点时删 "."。 */
-  function tidyRules(scope) {
-    const col = scope.firstElementChild;
-    if (!col) return;
-    for (const n of [...col.childNodes]) {
-      if (n.nodeType !== 3 || !n.nodeValue.trim()) continue;
-      const span = document.createElement('span');
-      span.className = 'qtotal';
-      span.textContent = n.nodeValue.trim();
-      n.replaceWith(span);
-    }
-    const firstUl = col.querySelector('ul');
-    if (firstUl) firstUl.classList.add('qpos');
-    for (const li of scope.querySelectorAll('li')) {
-      const last = li.lastChild;
-      if (!last || last.nodeType !== 3) continue;
-      const tail = last.nodeValue.trim();
-      if (!/^[.．。]+$/.test(tail)) continue;
-      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
-      if (/[。．.！!？?]$/.test(before)) last.remove();
-    }
-
-    const h4s = [...col.querySelectorAll(':scope > h4')];
-    const head = h4s[0];
-    if (head) {
-      const stop = h4s[1] || null;
-      const group = [];
-      for (let n = head.nextSibling; n && n !== stop; n = n.nextSibling) group.push(n);
-      if (group.length) {
-        const band = document.createElement('div');
-        band.className = 'qband';
-        const text = document.createElement('div');
-        text.className = 'qtext';
-        const data = document.createElement('div');
-        data.className = 'qdata';
-        band.appendChild(text);
-        band.appendChild(data);
-
-        let lead = null;
-        const para = group.find((n) => n.nodeType === 1 && n.tagName === 'P');
-        const br = para ? [...para.childNodes].find((n) => n.nodeType === 1 && n.tagName === 'BR') : null;
-        if (para && br) {
-          const tail = [];
-          for (let n = br.nextSibling; n; n = n.nextSibling) tail.push(n);
-          if (tail.some((n) => n.nodeValue && n.nodeValue.trim())) {
-            lead = document.createElement('p');
-            lead.className = 'qlead';
-            for (const n of tail) lead.appendChild(n);
-          }
-          br.remove();
-        }
-        if (lead) data.appendChild(lead);
-
-        for (const n of group) {
-          const isData = n.nodeType === 1 && (n.classList.contains('qpos') || n.classList.contains('qtotal'));
-          (isData ? data : text).appendChild(n);
-        }
-        head.after(band);
-      }
-    }
-  }
-
-  /** 估算器结果是站点 AJAX 回来的一段英文 HTML：`DomI18n.translateSubtree()` 允许翻译器走进 #sp
-      （DOM 在容器里、文字却是站点的）；另去掉中文译文后吊着的英文句号。 */
-  function watchEstimatorResult(box) {
-    if (!box) return;
-    const fix = () => {
-      if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(box);
-      for (const n of [...box.childNodes]) {
-        if (n.nodeType !== 3 || n.nodeValue.trim() !== '.') continue;
-        const before = n.previousSibling ? (n.previousSibling.textContent || '') : '';
-        if (/[\u4e00-\u9fff]$/.test(before.replace(/\s+$/, ''))) n.remove();
-      }
-    };
-    new MutationObserver(fix).observe(box, { childList: true });
-    if (box.innerHTML.trim()) fix();
-  }
-
-  /** 上传卡片唯一的填充方式：抓 `/getstarted` 回来，从解析出的文档里取三块装进卡片，不"接管那一页"
-      （它同时是下载客户端指南页，见 docs/DESIGN.md）；`<script>` 不执行，故补全要重绑、表单靠全局 `onsubmit`。 */
-  function wireUploadDoc(root, html) {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    const main = doc.querySelector('#addproject_main_div');
-    const blocked = doc.querySelector('#addproject_warning_zero_frame');
-    if (!main && !blocked) return false;
-    const slotForm = root.querySelector('[data-up="form"]');
-    const slotEst = root.querySelector('[data-up="est"]');
-    const slotRules = root.querySelector('[data-up="rules"]');
-    const estPanel = root.querySelector('[data-up="estPanel"]');
-    const grab = (el) => (el ? el : null);
-
-    if (main) {
-      const left = main.querySelector(':scope > .row > .col-md-5');
-      const right = main.querySelector(':scope > .row > .col-md-6');
-      const blocks = left ? [...left.children] : [];
-      const formBlock = blocks.find((b) => b.querySelector('form[action*="/project/internal/upload"]')) || blocks[0];
-      const estBlock = blocks.find((b) => b !== formBlock) || null;
-      if (formBlock && slotForm) slotForm.appendChild(grab(formBlock));
-      if (estBlock && slotEst) {
-        slotEst.appendChild(grab(estBlock));
-        const numTable = estBlock.querySelector('table');
-        if (numTable) numTable.classList.add('numband');
-        watchEstimatorResult(estBlock.querySelector('#addproject_estimator_result'));
-        rebindDeviceSearch(estBlock, html);
-      } else if (estPanel) estPanel.remove();
-      if (right && slotRules) slotRules.appendChild(grab(right));
-    } else if (slotForm) {
-      slotForm.appendChild(grab(blocked));
-      if (estPanel) estPanel.remove();
-    }
-
-    /* **先翻译、再整理**，顺序不能反：整块翻译的规则按站点原句写，而 tidyRules 会把「排队情况」在 <br>
-       处切开，切完不再以 "Predicted position in queue:" 结尾 → 规则失配，那一段永远是英文。 */
-    for (const slot of [slotForm, slotEst, slotRules]) if (slot) SP.DomI18n.translateSubtree(slot);
-    if (slotForm) rewordFileLimit(slotForm);
-    if (slotRules) tidyRules(slotRules);
-    return true;
-  }
-
-  /** 设备名自动补全要自己重绑（内联脚本不执行），source 从站点脚本里读、不写死。**坑在菜单**：
-      jQuery UI 把菜单挂 `<body>`，被守卫 `body > *:not(#sp){display:none}` 挡成"输入了没反应"
-      （2026-10-04 实报）—— 所以贴类名 `ul.sp-acmenu` 放行并同步主题。 */
-  function rebindDeviceSearch(estBlock, html) {
-    const src = (html.match(/#addproject_estimator_device_form_search_text_label"\)\s*\.autocomplete\(\{[\s\S]{0,600}?source:\s*"([^"]+)"/) || [])[1];
-    const $ = window.jQuery;
-    if (!src || !$ || !$.fn || !$.fn.autocomplete) return;
-    const label = estBlock.querySelector('#addproject_estimator_device_form_search_text_label');
-    const value = estBlock.querySelector('#addproject_estimator_device_form_search_text_value');
-    if (!label) return;
-
-    /* 每次重画卡片都绑一个新 widget，而菜单挂 <body> 上不跟旧卡片消失 —— 绑之前先清上一批。 */
-    document.querySelectorAll('body > ul.sp-acmenu').forEach((m) => m.remove());
-
-    const paintMenu = () => {
-      const inst = $(label).data('uiAutocomplete') || $(label).data('ui-autocomplete');
-      const menu = inst && inst.menu && inst.menu.element;
-      if (!menu || !menu.length) return;
-      menu.addClass('sp-acmenu');
-      const host = document.getElementById('sp');
-      const th = host && host.getAttribute('data-theme');
-      if (th) menu.attr('data-theme', th);
-    };
-
-    $(label).autocomplete({
-      minLength: 3,
-      source: src,
-      select(event, ui) {
-        $(label).val(ui.item.label);
-        if (value) $(value).val(ui.item.value);
-        return false;
-      },
-      open: paintMenu,   // 每次弹出都同步一次：主题可能在卡片开着时被换掉
-    });
-    paintMenu();
-
-    /* 关闭时机得自己管：这个 jQuery UI（1.10.2）实测**既不 blur 关、也不"点外面"关**
-       —— 打「2060」弹出菜单后点导航切走，那块菜单会留在屏幕上（display 还是 block）。
-       菜单又挂在 <body> 上、不跟卡片一起消失，所以失焦与点外面各补一次关闭。
-       点菜单项不会误关：jQuery UI 在菜单项 mousedown 里 preventDefault，输入框不失焦。 */
-    const closeMenu = () => { try { $(label).autocomplete('close'); } catch (e) { /* 没初始化就无所谓 */ } };
-    $(label).on('blur', () => setTimeout(closeMenu, 160));
-    $(document).off('mousedown.spacmenu').on('mousedown.spacmenu', (ev) => {
-      if (!$(ev.target).closest('ul.sp-acmenu, #addproject_estimator_device_form_search_text_label').length) closeMenu();
-    });
+  /** 上传卡片接线失败（站点这一版认不出要用的那几块）时，别给用户一张空白卡片：
+      说清楚 + 给出切档办法。 */
+  function shapeNotice(root) {
+    const box = document.createElement('div');
+    box.className = 'wrap';
+    box.innerHTML = `<div class="sechead"><h2>${esc(t('up.title'))}</h2></div>
+      <div class="panel" style="padding:16px 20px">
+        <div class="hint bad">${esc(t('up.shapeNew'))}</div>
+        <div class="hint" style="margin-top:8px">${esc(t('up.shapeHow'))}</div>
+      </div>`;
+    root.textContent = '';
+    root.appendChild(box);
   }
 
   /* ---- 分析等待页 ---- */
@@ -4099,8 +5254,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   function analyse() {
     return `<div class="wrap">
       <div class="sechead">
-        <h2>${esc(t('an.title'))}</h2>
-        <span class="sub">${esc(t('an.sub'))}</span>
+        <h2 data-an="title">${esc(t('an.title'))}</h2>
+        <span class="sub" data-an="titleSub">${esc(t('an.sub'))}</span>
       </div>
       <div class="panel an-card">
         <div class="an-head">
@@ -4111,15 +5266,204 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           </div>
         </div>
         <div class="an-track" data-an="track"><i data-an="bar"></i></div>
-        <div class="an-done" data-an="done" hidden>
-          <div class="an-sub">${esc(t('an.doneNote'))}</div>
-          <button class="btn" data-act="mode-classic">${esc(t('mode.toClassic'))}</button>
-        </div>
-        <div id="sp-an-result" class="sp-siteform" hidden></div>
+        <div id="sp-an-result" class="sp-up3" hidden></div>
       </div>
       <div class="foot">${esc(t('footer.source'))}</div>
     </div>`;
   }
+
+  /* ==== 项目管理页 /project/<id>：整页自绘 ====
+     数据来自 Api.parseManage(那份 HTML **副本**)——站点 DOM 一个节点都不进我们的壳，
+     动作直发站点端点（见 80-app.js 的 mgSet / mgAct / mgAcl）。站点没渲染的那几项不画，
+     不猜默认值：少一行比编一个错的强。 */
+
+  const MG_ACTION_KEY = {
+    frames: 'mg.act.frames', zip: 'mg.act.zip', video: 'mg.act.video',
+    pause: 'mg.act.pause', resume: 'mg.act.resume', reset: 'mg.act.reset', partial: 'mg.act.partial',
+  };
+
+  const mgActLabel = (a) => t(MG_ACTION_KEY[a.kind]);
+
+  function manageActions(m) {
+    const acts = (m.actions || []).filter((a) => MG_ACTION_KEY[a.kind]);
+    if (!acts.length) return '';
+    const one = (a) => {
+      const label = esc(mgActLabel(a));
+      const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
+      if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
+      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
+    };
+    return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
+  }
+
+  /** 站点那种「标签：值」两段式（`<li><span>值</span></li>` 与纯文本都在用）：
+   *  整句先按语言包翻（带捕获组的 patterns 走这条），翻不动再退回只翻标签。
+   *  红字那条 li 整句都在 span 里（label 为空），所以两段都要 trim、不能拼出前导空格。 */
+  function mgLine(label, value) {
+    const L = String(label || '').trim();
+    const V = String(value || '').trim();
+    const whole = [L, V].filter(Boolean).join(' ');
+    if (!whole) return '';
+    const one = I18n.siteText(whole);
+    if (one) return one;
+    const two = L ? I18n.siteText(L) : null;
+    return two ? [two.trim(), V].filter(Boolean).join(' ') : whole;
+  }
+
+  function manageSummary(m) {
+    if (!m.summary.length && !(m.warn && (m.warn.label || m.warn.value))) return '';
+    const rows = m.summary.map((s) => `<li>${esc(mgLine(s.label, s.value))}</li>`).join('');
+    const warn = m.warn ? mgLine(m.warn.label, m.warn.value) : '';
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.summary'))}</h2></div>
+      <div class="pbody">
+        ${rows ? `<ul class="mg-sum">${rows}</ul>` : ''}
+        ${warn ? `<div class="hint bad" style="margin:${rows ? '10px' : '0'} 0 0">${esc(warn)}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 帧方块：站点的方块没有背景（缩略图塞在 title 属性里，由解析器抠出来），状态色取它自己的
+   *  btn-neutral / btn-warning / btn-default。悬停给 frame / cost / rendertime 那三行。 */
+  function manageTiles(m) {
+    if (!m.tiles.length && !m.video) return '';
+    const tiles = m.tiles.map((x) => `<span class="tile ${esc(x.state)}" title="${esc([
+      x.frame ? `frame: ${x.frame}` : '', x.cost ? `cost: ${x.cost}` : '', x.time ? `rendertime: ${x.time}` : '',
+    ].filter(Boolean).join(' · '))}">
+        <img src="${esc(x.src)}" alt="" loading="lazy">
+      </span>`).join('');
+    const legend = [['done', t('mg.legend.done')], ['progress', t('mg.legend.progress')], ['waiting', t('mg.legend.waiting')]]
+      .map(([k, label]) => `<span class="lg"><i class="${esc(k)}"></i>${esc(label)}</span>`).join('');
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead"><h2>${esc(t('mg.frames'))}</h2>
+        <span class="sub num">${esc(t('mg.framesN', { n: m.tiles.length }))}</span>
+        <span class="spacer"></span>${legend}</div>
+      <div class="pbody">
+        ${tiles ? `<div class="mg-tiles">${tiles}</div>` : ''}
+        ${m.video ? `<video class="mg-video" controls preload="none" src="${esc(m.video)}"></video>
+          <div class="hint" style="margin:8px 0 0">${esc(t('mg.videoNote'))}</div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  /** 名单面板（管理员 / 渲染者 / 团队共用）：一行一个人 + 行内移除；下面一个输入框 + 建议 + 添加。
+   *  团队那边站点要的是**数字 id**，所以必须从建议里选（选了才把 id 记在 input 的 data-pick 上）。 */
+  function aclPanel(title, hint, rows, o) {
+    const list = rows.length
+      ? rows.map((x) => `<div class="arow">
+          <span class="nm">${x.url ? `<a href="${esc(x.url)}" target="_self">${esc(x.name)}</a>` : esc(x.name)}</span>
+          <button class="btn sm" data-acl-del="${esc(o.kind)}" data-name="${esc(x.name)}" data-id="${esc(x.id || '')}">${esc(t('mg.acl.remove'))}</button>
+        </div>`).join('')
+      : `<div class="none">${esc(t('mg.acl.none'))}</div>`;
+    return `<div class="panel" style="margin-top:16px">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(title)}</h2><span class="sub">${esc(hint)}</span></div>
+      <div class="pbody">
+        <div class="alist">${list}</div>
+        <div class="aadd">
+          <div class="up1-dev">
+            <label class="input"><input id="${esc(o.input)}" type="text" autocomplete="off" spellcheck="false"
+              placeholder="${esc(o.placeholder)}" data-acl-input="${esc(o.kind)}"></label>
+            <div class="up1-sug" hidden></div>
+          </div>
+          <button class="btn primary" data-acl-add="${esc(o.kind)}" data-input="${esc(o.input)}">${esc(t('mg.acl.add'))}</button>
+        </div>
+        <div class="hint" data-acl-msg="${esc(o.kind)}" hidden></div>
+      </div>
+    </div>`;
+  }
+
+  function manageAcl(m) {
+    const out = [];
+    if (m.acl.hasManagerPanel) {
+      out.push(aclPanel(t('mg.acl.managers'), t('mg.acl.managersHint'), m.acl.managers, {
+        kind: 'manager', input: 'sp-acl-manager',
+        placeholder: I18n.siteText('Add a user to manager list') || 'Add a user to manager list',
+      }));
+    }
+    if (m.acl.hasRendererPanel || m.acl.hasTeamPanel) {
+      const hint = m.publicRender === true ? t('mg.acl.publicOn') : t('mg.acl.publicOff');
+      const body = [];
+      if (m.acl.hasRendererPanel) {
+        body.push(aclPanel(t('mg.acl.renderers'), hint, m.acl.renderers, {
+          kind: 'renderer', input: 'sp-acl-renderer',
+          placeholder: I18n.siteText('Add a user to renderer list') || 'Add a user to renderer list',
+        }));
+      }
+      if (m.acl.hasTeamPanel) {
+        body.push(aclPanel(t('mg.acl.teams'), t('mg.acl.teamsHint'), m.acl.teams, {
+          kind: 'team', input: 'sp-acl-team', pick: true,
+          placeholder: I18n.siteText('Add a team to renderer list') || 'Add a team to renderer list',
+        }));
+      }
+      out.push(body.join(''));
+    } else if (m.publicRender === true) {
+      /* 站点自己的规矩：公开渲染开着时，那一页**根本不渲染**渲染者名单（只有一只 checkbox），
+         所以这里不是"没人"，而是"站点不给名单"。关掉公开渲染名单才会出现 —— 说清楚，别让人以为丢了。 */
+      out.push(`<div class="panel" style="margin-top:16px">
+        <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.acl.renderers'))}</h2></div>
+        <div class="pbody"><p class="hint" style="margin:0">${esc(t('mg.acl.publicOnly'))}</p></div>
+      </div>`);
+    }
+    return out.join('');
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假）。 */
+  function manageOps(m, id) {
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic && !m.canManage)) return '';
+    const sw = (kind, on, onState, title, hint) => `<label class="sw">
+      <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
+        data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
+      <span class="track"><span class="knob"></span></span>
+      <span class="txt"><b>${esc(title)}</b><small>${esc(hint)}</small></span>
+    </label>`;
+    return `<div class="panel mg-ops">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.ops'))}</h2><span class="sub">${esc(t('mg.opsSub'))}</span></div>
+      <div class="pbody">
+        ${!m.hasCompute ? '' : `<div class="mg-row">
+          <div class="k">${esc(t('mg.compute'))}</div>
+          <div class="seg" id="sp-mg-compute">
+            <button data-v="cpu" aria-pressed="${m.compute === 'cpu'}">${esc(t('proj.cpu'))}</button>
+            <button data-v="gpu" aria-pressed="${m.compute === 'gpu'}">${esc(t('proj.gpu'))}</button>
+          </div>
+          <small>${esc(t('mg.computeHint'))}</small>
+        </div>`}
+        ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
+        ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
+        ${!id || !m.canManage ? '' : `<div class="mg-row danger">
+          <div class="k">${esc(t('mg.del'))}</div>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.delBtn'))}</button>
+          <small>${esc(t('mg.delHint'))}</small>
+        </div>`}
+      </div>
+    </div>`;
+  }
+
+  function project(state) {
+    const m = state.mg;
+    if (!m || !m.found) return UI.state.empty(t('mg.noData'));
+    const id = state.projectId || m.id || '';
+    const stText = m.statusText ? (I18n.siteText(m.statusText) || m.statusText) : '';
+    const meta = [
+      m.name ? `<b>${esc(m.name)}</b>` : '',
+      m.progression ? `${esc(t('proj.col.progress'))} ${esc(m.progression)}` : '',
+      stText ? `<span class="sp-mg-badge s-${esc(m.statusCls || 'x')}">${esc(stText)}</span>` : '',
+    ].filter(Boolean).join(' · ');
+    return `<div class="wrap">
+      <div class="sechead">
+        <h2>${esc(t('mg.title'))}</h2>
+        <span class="sub">${meta || esc(t('mg.unknown'))}</span>
+      </div>
+      ${manageActions(m)}
+      ${manageOps(m, id)}
+      ${manageAcl(m)}
+      ${manageSummary(m)}
+      ${manageTiles(m)}
+      <div class="hint">${esc(t('mg.note'))}</div>
+      <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
 
   function mount(root, state) {
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
@@ -4129,7 +5473,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         && root.querySelector('.up-grid') && state.uploadHtml) {
       root.dataset.spWired = '1';
       SP.DomI18n.enabled = !!state.translateSite;
-      if (wireUploadDoc(root, state.uploadHtml) === false) return false;
+      /* 三个槽位全自绘（64-step1.js），站点那份 HTML 只当数据源；认不出站点结构才走 shapeNotice */
+      if (!SP.Step1 || SP.Step1.mount(root, state.uploadHtml) === false) { shapeNotice(root); return false; }
     }
     const box = root && root.querySelector('#sp-chart');
     const pts = state && state.profile && state.profile.points;
@@ -4155,7 +5500,1537 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
   }
 
-  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, projState, rankState, acctState, sessState, dailySeries, mount };
+  SP.Views = { overview, projects, ranking, settings, account, session, upload, analyse, project, projState, saveSort, setSortPref, setDirPref, ovDisplayOrder, setOvHidden, moveOv, rankState, acctState, sessState, dailySeries, mount };
+})();
+
+/* ===== src/62-chain.js ===== */
+/* ==== 62-chain.js：上传链路的**数据层**（0.2.0）====================================
+
+   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 9b13032c
+   （= 线上资源路径 /media/9b13032c/，就是 getShortVersion()）。行号对着那一版看。
+
+   契约 A 上传（第一步）  HTML.php:2127-2152 → POST /project/internal/upload（multipart）
+                          字段：addproject_archive（文件）+ UPLOAD_IDENTIFIER（32 位 hex）
+                          成功 = 302 → /project/add/<token>；失败 = 200 纯文本原因 或 error 页
+   契约 B 等待（第二步）  ProjectController.php:194-221 → GET /project/add_analyse/<token>
+                          JSON {"status":"RETRY"|"PROCESSING",analysed,total} 或整段 HTML 碎片
+   契约 C 提交（第三步）  addproject.js:1-101 / ProjectController.php:226-448 → POST /project/add_internal
+                          27 键；响应以 "http" 开头 = 成功地址，否则整段是错误说明
+
+   这一层的纪律：**服务端返回的 HTML 只经 DOMParser 走一遭，永不进活文档**。
+   界面用我们自己的 id、我们自己的提交 —— 于是"两份同名控件""站点 JS 抢 DOM"那一整类缺陷
+   （0.1.14–0.1.17 反复踩的）从根上不存在。 */
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Chain) return;
+  const t = SP.t;
+
+  /** 核对过的上游版本；站点升级后要重新核对并同时改这里与 docs/REWRITE-0.2.0.md。 */
+  const UPSTREAM = '9b13032c';
+
+  const URL_UPLOAD = '/project/internal/upload';
+  const URL_SUBMIT = '/project/add_internal';
+  const analyseUrl = (token) => '/project/add_analyse/' + encodeURIComponent(token);
+  const step2Url = (token) => '/project/add/' + encodeURIComponent(token);
+
+  /** 站点资源路径里的版本号：/media/<8 位十六进制>/…（脚本、样式、图片都带）。 */
+  function upstreamVersion() {
+    const nodes = document.querySelectorAll('script[src*="/media/"],link[href*="/media/"]');
+    for (let i = 0; i < nodes.length; i++) {
+      const m = /\/media\/([0-9a-f]{8})\//.exec(nodes[i].src || nodes[i].href || '');
+      if (m) return m[1];
+    }
+    return '';
+  }
+
+
+  const str = (v) => (v == null ? '' : String(v));
+  const parseDoc = (html) => new DOMParser().parseFromString(str(html), 'text/html');
+  /* 同一套查找要能在 Document 和 Element 上都用（blend 的隐藏值是在卡片元素里找的） */
+  const $id = (root, id) => (root.getElementById ? root.getElementById(id) : root.querySelector('[id="' + id + '"]'));
+  const valOf = (root, id) => { const el = $id(root, id); return el ? str(el.value) : null; };
+
+  /** 站点的取值方式：$('#id').is(':checked')。
+      hidden 的 input 永远不是 :checked —— HTML.php:1042 的 generate_mp4 与 1057 的
+      public_thumbnail 就是这么发的（服务端 ProjectController.php:360 自己再兜一层）。 */
+  const siteChecked = (el) => !!(el && String(el.type).toLowerCase() !== 'hidden' && el.checked);
+
+  /** 三种开关形态：checkbox（用户可改）/ hidden（站点替用户定了）/ none（这一版没给）。 */
+  function toggleOf(el) {
+    if (!el) return { kind: 'none', on: false };
+    if (String(el.type).toLowerCase() === 'hidden') return { kind: 'hidden', on: false, force: str(el.value) === '1' };
+    return { kind: 'check', on: !!el.checked };
+  }
+
+  /** 计算方式那一列：CPU / GPU 各带自己的"排队位次 / 项目总数"两行**裸文本**（HTML.php:1112）。 */
+  function computeOf(root) {
+    const cpu = $id(root, 'compute_method_cpu');
+    const gpu = $id(root, 'compute_method_gpu');
+    const hintOf = (el) => {
+      const out = { queue: '', total: '' };
+      if (!el) return out;
+      const box = el.closest('div');
+      if (!box) return out;
+      const s = box.textContent.replace(/\s+/g, ' ');
+      const q = /Est\.\s*queue position:\s*([^ ]+)/i.exec(s);
+      const n = /Total projects:\s*([\d,]+)/i.exec(s);
+      /* 站点给的是英文序数（"9th"）。中文模板里写「预计排队第 8th 位」是机器味，
+         这里剥掉后缀，中文拿去拼「第 n 位」，英文那边退化成 "Est. queue position 9"。 */
+      if (q) out.queue = q[1].replace(/(\d+)(st|nd|rd|th)\b/i, '$1');
+      if (n) out.total = n[1];
+      return out;
+    };
+    return {
+      canCpu: !!cpu, canGpu: !!gpu,
+      cpuOn: !!(cpu && cpu.checked), gpuOn: !!(gpu && gpu.checked),
+      cpuHint: hintOf(cpu), gpuHint: hintOf(gpu),
+    };
+  }
+
+  /* 我们自己渲染的控件（这些 id 的内容不进"说明文字"）：帧、切块、内存、提交、错误框、隐藏项 */
+  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
+
+  /** 把服务端写的**说明文字**（EXR 限制、降噪提示、切块解释、缺文件、驱动警告…）抽出来。
+      不抽控件、不抽 label 的 for 目标 —— 那些我们自己画。 */
+  function notesOf(scope) {
+    const out = [];
+    const walk = (node) => {
+      for (let n = node.firstChild; n; n = n.nextSibling) {
+        if (n.nodeType === 3) {
+          const s = n.nodeValue.replace(/\s+/g, ' ').trim();
+          if (s) out.push(s);
+          continue;
+        }
+        if (n.nodeType !== 1) continue;
+        const tag = n.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'select' || tag === 'option' || tag === 'script' || tag === 'style' || tag === 'br') continue;
+        if (n.id && OWN_IDS.test(n.id)) continue;
+        if (n.querySelector && n.querySelector('input,select') && !n.querySelector('ul,li,p,br')) continue;
+        walk(n);
+      }
+    };
+    walk(scope);
+    /* 相邻碎片合成一行：站点的说明由 <br>/<li> 切得很碎。
+       但**词典里有整句译文的句子不许并**：并完就成了 "EXR output detected Limitation on EXR support:"，
+       两边各自的 pattern 都匹配不上，于是整段留在英文（EXR 清单实测踩到）。 */
+    const known = (x) => !!(SP.I18n && SP.I18n.siteText && SP.I18n.siteText(x));
+    const merged = [];
+    out.forEach((s) => {
+      const last = merged[merged.length - 1];
+      if (last && last.length < 40 && !/[.。:：]$/.test(last) && !known(last) && !known(s)) {
+        merged[merged.length - 1] = last + ' ' + s;
+      } else merged.push(s);
+    });
+    return merged;
+  }
+
+  /* 脚本认得（会渲染或会读）的 id 清单。站点这一版多出来的元素 = 新控件：
+     我们没画它、就会按站点给的默认值提交 —— 这种事必须说出来，不能沉默（用户 2026-10-07 定）。 */
+  const KNOWN_IDS = [
+    /^token$/, /^public_render$/, /^public_thumbnail$/, /^generate_mp4$/,
+    /^compute_method_(cpu|gpu)$/,
+    /^addproject_\d+$/, /^addproject_content_\d+$/,
+    /^addproject_(exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
+    /^addproject_(animation_start_frame|animation_end_frame|animation_step_frame|singleframe_start_frame|max_ram_optional)_\d+$/,
+    /^addproject_(split_tiles_number|split_animation_sample_range_value|animation_split_sample_value|split_sample_range_value|split_sample_value)_\d+$/,
+    /^addproject_(submit|submit_div|error_box)_\d+$/,
+    /^addproject_(animation_div10|animation_div11|singleframe_div20|singleframe_div21)_\d+$/,
+    /^checkbox_(ad|advanced_option)_\d+$/,
+  ];
+  /** 站点/第三方自己塞进来的 id（与我们无关，别再报给用户） */
+  const IGNORE_ID = /^(ui-|ui\.|sp-|google|g-recaptcha|__)/;
+
+  function unknownIds(root) {
+    const out = [];
+    [].slice.call(root.querySelectorAll('[id]')).forEach((el) => {
+      const id = el.id;
+      if (!id || IGNORE_ID.test(id)) return;
+      if (KNOWN_IDS.some((re) => re.test(id))) return;
+      if (out.indexOf(id) < 0) out.push(id);
+    });
+    return out;
+  }
+
+  /** 解析第三步碎片（契约 B 的 HTML 响应）。返回 null = 结构不认识 → 调用方降级。 */
+  function parseStep3(html) {
+    const d = parseDoc(html);
+    const token = valOf(d, 'token');
+    const pub = $id(d, 'public_render');
+    const conts = [].slice.call(d.querySelectorAll('[id^="addproject_content_"]'));
+    if (!token || !pub || !conts.length) return null;
+
+    const blends = conts.map((c) => blendOf(c)).filter(Boolean);
+    if (!blends.length) return null;
+
+    return {
+      token,
+      /* 这一版多出来的元素（不在上面清单里）= 站点新加的控件，界面上要提示 */
+      unknown: unknownIds(d),
+      vis: {
+        render: toggleOf(pub),
+        mp4: toggleOf($id(d, 'generate_mp4')),
+        thumb: toggleOf($id(d, 'public_thumbnail')),
+      },
+      compute: computeOf(d),
+      blends,
+    };
+  }
+
+  const ANIM = /^addproject_animation_(start|end|step)_frame_(\d+)$/;
+  const SINGLE = /^addproject_singleframe_start_frame_(\d+)$/;
+  const RANGE_ANIM = /^addproject_split_animation_sample_range_value_(\d+)$/;
+  const RANGE_SINGLE = /^addproject_split_sample_range_value_(\d+)$/;
+
+  function blendOf(cont) {
+    const m = /^addproject_content_(\d+)$/.exec(cont.id || '');
+    if (!m) return null;
+    const i = m[1];
+    const form = cont.querySelector('form[id="addproject_' + i + '"]');
+    const h4 = cont.querySelector('h4');
+    const err = cont.querySelector('[id="addproject_error_box_' + i + '"]');
+    const rej = cont.querySelector('div.error');
+    const hidden = {};
+    const readHidden = (key) => str(valOf(cont, 'addproject_' + key + '_' + i));
+    ['exe', 'path', 'archive', 'engine', 'denoising', 'color_management', 'render_on_gpu_headless',
+      'use_adaptive_sampling', 'framerate', 'output_path', 'width', 'height', 'cycles_samples',
+      'samples_pixel', 'image_extension'].forEach((k) => { hidden[k] = readHidden(k); });
+
+    const base = {
+      i,
+      name: h4 ? h4.textContent.trim() : (hidden.path || ('#' + i)),
+      hidden,
+      rejected: !form,
+      reason: rej ? rej.textContent.replace(/\s+/g, ' ').trim() : '',
+    };
+    if (!form) return base;
+
+    /* 类型：三形态 —— ①强制动画（EXR/降噪分支只有个 visibility:hidden 的 radio）
+       ②可选（非 EXR 非降噪时给 Single frame / Animation 两个可见 radio） */
+    const typeRadios = [].slice.call(form.querySelectorAll('input[name="addproject_change_type_' + i + '"]'));
+    const forced = typeRadios.length === 1;
+    const checkedType = (typeRadios.filter((r) => r.checked)[0] || typeRadios[0] || {}).value || 'animation';
+
+    const anim = {};
+    const single = {};
+    [].slice.call(form.querySelectorAll('[id]')).forEach((el) => {
+      let mm;
+      if ((mm = ANIM.exec(el.id))) anim[mm[1]] = el.value;
+      else if ((mm = SINGLE.exec(el.id))) single.frame = el.value;
+    });
+
+    /* 切块三形态：①samples 滑条（engine=CYCLES 且不允许 tile）②tiles 下拉 ③站点定死（EXR/降噪） */
+    const rangeAnim = form.querySelector('input[id^="addproject_split_animation_sample_range_value_"]');
+    const rangeSingle = form.querySelector('input[id^="addproject_split_sample_range_value_"]');
+    const tilesEl = form.querySelector('[id="addproject_split_tiles_number_' + i + '"]');
+    let split;
+    if (rangeAnim) {
+      split = {
+        kind: 'samples', min: Number(rangeAnim.min || 1), max: Number(rangeAnim.max || 64),
+        value: Number(rangeAnim.value) || Number(rangeAnim.min || 1), tiles: -1,
+      };
+    } else if (tilesEl && tilesEl.tagName.toLowerCase() === 'select') {
+      split = {
+        kind: 'tiles', tiles: str(tilesEl.value),
+        options: [].slice.call(tilesEl.options).map((o) => ({ v: str(o.value), label: o.textContent.trim() })),
+      };
+    } else if (rangeSingle) {
+      split = {
+        kind: 'samples-single', min: Number(rangeSingle.min || 4), max: Number(rangeSingle.max || 32),
+        value: Number(rangeSingle.value) || Number(rangeSingle.min || 4), tiles: '',
+      };
+    } else {
+      /* 没有可见控件：站点把 tiles 定死了（EXR/降噪分支是 1 = 整帧；单帧+降噪同理） */
+      split = { kind: 'fixed', tiles: tilesEl ? str(tilesEl.value) : '' };
+    }
+
+    const ram = form.querySelector('[id="addproject_max_ram_optional_' + i + '"]');
+
+    return Object.assign(base, {
+      type: forced ? 'animation' : (checkedType === 'singleframe' ? 'singleframe' : 'animation'),
+      typeForced: forced,
+      anim: { start: str(anim.start), end: str(anim.end), step: str(anim.step) },
+      single: { frame: str(single.frame) },
+      split,
+      ram: ram ? str(ram.value) : '',
+      notes: notesOf(form),
+    });
+  }
+
+  /* ------------------------------------------------------------- 组提交体 */
+
+  /** 27 键，顺序与站点 addproject.js:57-85 一致（顺序不影响服务端，但方便逐键比对）。 */
+  const SUBMIT_KEYS = [
+    'type', 'compute_method', 'executable', 'engine', 'denoising', 'color_management',
+    'render_on_gpu_headless', 'token', 'public_render', 'public_thumbnail', 'generate_mp4',
+    'start_frame', 'end_frame', 'step_frame', 'archive', 'max_ram_optional', 'path', 'framerate',
+    'output_path', 'width', 'height', 'split_tiles', 'split_samples', 'use_adaptive_sampling',
+    'cycles_samples', 'samples_pixel', 'image_extension',
+  ];
+
+  const numStr = (v) => {
+    const n = parseInt(str(v).trim(), 10);
+    return Number.isFinite(n) ? String(n) : '';
+  };
+
+  /**
+   * model（服务端给的事实）+ ui（用户改的）→ 27 键。
+   * 与站点 doAddProject 的逐键对应写在括号里；**不做任何"顺手修正"**，只做站点做的事：
+   *   · 单帧项目：end_frame 恒为 0、step_frame 恒为 1（addproject.js:3-4,20-21）
+   *   · 没滑条时 split_samples 发空串（站点那边是 undefined，jQuery 也发 `split_samples=`）
+   *   · compute_method 是位掩码：CPU=1 GPU=8（addproject.js:24-30）
+   */
+  function buildPayload(model, ui) {
+    const vis = ui.vis || {};
+    const on = (k) => (vis[k] ? '1' : '0');
+    const compute = ui.compute | 0;
+    const out = [];
+    model.blends.forEach((b) => {
+      if (b.rejected) return;
+      const u = (ui.blends || {})[b.i] || {};
+      const anim = u.type !== 'singleframe';
+      const key = (k) => str(b.hidden[k]);
+      out.push({
+        i: b.i,
+        data: {
+          type: anim ? 'animation' : 'singleframe',
+          compute_method: String(compute),
+          executable: key('exe'),
+          engine: key('engine'),
+          denoising: key('denoising'),
+          color_management: key('color_management'),
+          render_on_gpu_headless: key('render_on_gpu_headless'),
+          token: model.token,
+          public_render: on('render'),
+          public_thumbnail: on('thumb'),
+          generate_mp4: on('mp4'),
+          start_frame: anim ? numStr(u.start) : numStr(u.frame),
+          end_frame: anim ? numStr(u.end) : '0',
+          step_frame: anim ? numStr(u.step) : '1',
+          archive: key('archive'),
+          max_ram_optional: str(u.ram == null ? b.ram : u.ram),
+          path: key('path'),
+          framerate: key('framerate'),
+          output_path: key('output_path'),
+          width: key('width'),
+          height: key('height'),
+          split_tiles: anim ? str(u.splitTiles == null ? b.split.tiles : u.splitTiles)
+            : str(u.splitTiles == null ? '' : u.splitTiles),
+          split_samples: u.splitSamples == null ? '' : str(u.splitSamples),
+          use_adaptive_sampling: key('use_adaptive_sampling'),
+          cycles_samples: key('cycles_samples'),
+          samples_pixel: key('samples_pixel'),
+          image_extension: key('image_extension'),
+        },
+      });
+    });
+    return out;
+  }
+
+  /** 提交前的本地校验：只挡"站点会崩/会静默建错项目"的输入，其余一律等服务端回话。 */
+  function validate(model, ui) {
+    const errs = [];
+    if (!((ui.compute | 0) & 9)) errs.push(t('up3x.needCompute'));
+    model.blends.forEach((b) => {
+      if (b.rejected) return;
+      const u = (ui.blends || {})[b.i] || {};
+      const nm = b.name || ('#' + b.i);
+      const isNum = (v) => /^\d+$/.test(str(v).trim());
+      if (u.type === 'singleframe') {
+        if (!isNum(u.frame)) errs.push(t('up3x.badFrame', { name: nm }));
+        return;
+      }
+      if (!isNum(u.start) || !isNum(u.end) || !isNum(u.step)) { errs.push(t('up3x.badFrame', { name: nm })); return; }
+      if (Number(u.end) < Number(u.start)) errs.push(t('up3x.badRange', { name: nm }));
+      if (Number(u.step) < 1) errs.push(t('up3x.badStep', { name: nm }));
+      if (u.ram && !isNum(u.ram)) errs.push(t('up3x.badRam', { name: nm }));
+    });
+    return errs;
+  }
+
+  /* ---------------------------------------------------------------- 请求 */
+
+  /** 契约 C：提交。成功体是 `{scheme}://{host}/project/<id>`（ProjectController.php:430）。 */
+  async function submit(payload) {
+    const res = await fetch(URL_SUBMIT, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams(payload).toString(),
+    });
+    const text = await res.text();
+    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }) };
+    const body = text.trim();
+    if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
+    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400) };
+  }
+
+  /** 站点原文（错误体 / 纯文本理由）上屏前先过一遍中文字典；未命中就保持原文，
+      所以英文界面与站点新写的句子都不会被吃掉。 */
+  const zh = (s) => (SP.I18n && SP.I18n.siteText ? (SP.I18n.siteText(s) || s) : s);
+
+  /** 服务端的错误体：`<p class="error">…` / `<p><span style="color:red">…` / 纯文本。
+      站点那几句纯文本理由里带 `<br>`（"…projects.<br>The limit have been set…"），
+      直接扔给 DOMParser 会把两段粘成 "projects.The limit" —— 换行处要先补空格。 */
+  function messageFrom(html) {
+    const s = str(html);
+    if (!s.trim()) return '';
+    if (/^(missing parameter|Failed to add project)$/i.test(s.trim())) return s.trim();
+    const d = parseDoc(s.replace(/<br\s*\/?>/gi, ' '));
+    const box = d.querySelector('p.error, .error, .alert');
+    const src = box || d.body;
+    if (!src) return '';
+    const txt = (src.textContent || '').replace(/\s+/g, ' ').trim();
+    return txt.length > 600 ? txt.slice(0, 600) + '…' : txt;
+  }
+
+  const JSONish = /^\s*[{[]/;
+
+  /** 契约 B：轮询分析状态。 */
+  async function analyse(token) {
+    const res = await fetch(analyseUrl(token), {
+      credentials: 'include', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' },
+    });
+    if (!res.ok) return { kind: 'error', message: t('up3x.httpFail', { code: res.status }) };
+    const text = await res.text();
+    if (JSONish.test(text)) {
+      let o = null;
+      try { o = JSON.parse(text); } catch (e) { o = null; }
+      if (!o) return { kind: 'error', message: t('up3x.analyseOdd') };
+      if (o.status === 'RETRY') return { kind: 'retry' };
+      if (o.status === 'PROCESSING') return { kind: 'processing', done: Number(o.analysed) || 0, total: Number(o.total) || 0 };
+      return { kind: 'done', html: text };
+    }
+    /* 不是 JSON：可能是 FINISHED 的碎片，也可能是整页错误（"找不到编号"/其他）或那句
+       'Internal error, please retry to upload your file' */
+    if (/^\s*<(!doctype|html)/i.test(text)) {
+      if (/Failed to find uploaded file/i.test(text)) return { kind: 'gone' };
+      return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
+    }
+    if (/addproject_content_|id="token"/.test(text)) return { kind: 'done', html: text };
+    return { kind: 'error', message: zh(messageFrom(text)) || t('up3x.analyseOdd') };
+  }
+
+  /** 契约 A：上传。用 XHR 是为了拿到真正的上传进度（站点靠轮询 /project/internal/progress，
+      我们不需要那一趟：XMLHttpRequest.upload.onprogress 就是浏览器自己报的字节数）。 */
+  function upload(file, onProgress) {
+    return new Promise((resolve) => {
+      const uid = (function () {
+        const a = new Uint8Array(16);
+        (window.crypto || window.msCrypto).getRandomValues(a);
+        return [].map.call(a, (b) => ('0' + b.toString(16)).slice(-2)).join('');
+      })();
+      const fd = new FormData();
+      fd.append('UPLOAD_IDENTIFIER', uid);
+      fd.append('addproject_archive', file, file.name);
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', URL_UPLOAD, true);
+      xhr.withCredentials = true;
+      if (xhr.upload && onProgress) {
+        xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded, e.total); };
+      }
+      xhr.onload = () => resolve(classifyUpload(xhr));
+      xhr.onerror = () => resolve({ ok: false, message: t('up3x.netFail') });
+      /* onabort 只应对浏览器自己的中断（导航、连接被断）：界面上没有中止入口。 */
+      xhr.onabort = () => resolve({ ok: false, message: t('up3x.netFail') });
+      xhr.send(fd);
+    });
+  }
+
+  /** 上传的三种结局：跳到第二步（成功）/ 纯文本原因（addProjectCheck）/ error 页（后缀、大小…） */
+  function classifyUpload(xhr) {
+    const url = xhr.responseURL || '';
+    const m = /\/project\/add\/([^/?#]+)/.exec(url);
+    if (m) return { ok: true, token: decodeURIComponent(m[1]) };
+    if (xhr.status === 401 || xhr.status === 403) return { ok: false, message: t('state.loggedOut') };
+    const text = str(xhr.responseText);
+    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }) };
+    if (/Upload new project|add_step2/i.test(text)) {
+      /* 兜底：有些路径回的是第二步整页但地址没变（理论上不会），那就当成功，让用户自己走第二步 */
+      const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
+      if (tk) return { ok: true, token: tk[1] };
+    }
+    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd') };
+  }
+
+  /* ------------------------------------------------------------- 「原版」用 */
+
+  /** 站点用 <br> 断句：直接取 textContent 会把两段粘成 "projects.The limit"。
+      先把 <br> 换成空格再取，顺带折掉多余空白。 */
+  function brText(el) {
+    if (!el) return '';
+    const c = el.cloneNode(true);
+    [].slice.call(c.querySelectorAll('br')).forEach((b) => b.replaceWith(' '));
+    return c.textContent.replace(/\s+/g, ' ').trim();
+  }
+
+  /** /getstarted 那一页：上传表单在不在、站点是不是拦住了（HTML.php:2091-2108）。 */
+  function uploadPage(html) {
+    const d = parseDoc(html);
+    const form = d.querySelector('form[action*="/project/internal/upload"]');
+    const warn = d.getElementById('addproject_warning_zero_frame');
+    /* 站点在 printError()（HTML.php:1637）里写的是"为什么没有表单"：维护中 / 没头像 /
+       并发上限 / ACL 被禁，四条都走它，而 printError 是提前 return 的 —— 页面上就只剩这一块。
+       形状：section.slice.color-one → .text-center → h2（带 fa-warning 图标标题）+ p（正文）。 */
+    const gate = (function () {
+      const h2 = d.querySelector('section.slice.color-one .text-center h2');
+      if (!h2) return null;
+      const p = h2.parentElement && h2.parentElement.querySelector('p');
+      const title = brText(h2).replace(/^\s*/, '');
+      const body = brText(p);
+      return (title || body) ? { title, body } : null;
+    })();
+    const note = (function () {
+      const cell = form && form.querySelector('input[name="addproject_archive"]');
+      const td = cell && cell.closest('td');
+      return td ? td.textContent.replace(/\s+/g, ' ').trim() : '';
+    })();
+    const lim = limitOf(note);
+    return {
+      hasForm: !!form,
+      warning: warn ? brText(warn) : '',
+      gate,
+      note,
+      /* 上限文案（"Max: 2,048 MB"）在本地就能拦住选错的文件 —— 拿在手里只用来拼提示等于白解析。
+         站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+      limitBytes: lim.bytes,
+      limitText: lim.text,
+    };
+  }
+
+  /** "Max: 2,048 MB before ZIP compression" → { text: '2,048 MB', bytes: 2147483648 }。解析不出来返回 0/''。 */
+  function limitOf(note) {
+    const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(str(note));
+    if (!m) return { bytes: 0, text: '' };
+    const text = m[1].replace(/\s+/g, ' ');
+    const n = Number((/([\d.,]+)/.exec(text) || [])[1].replace(/,/g, ''));
+    const unit = ((/[KMGT]?B/i.exec(text) || [''])[0] || '').toUpperCase();
+    const mult = { B: 1, KB: 1024, MB: Math.pow(1024, 2), GB: Math.pow(1024, 3), TB: Math.pow(1024, 4) }[unit];
+    return { bytes: Number.isFinite(n) && mult ? Math.round(n * mult) : 0, text };
+  }
+
+  /* ------------------------------------------------------------- 估算器 */
+
+  /** 契约 D：估算器。POST /project/estimator（ProjectController.php:925-997）——
+      time = 每帧分钟数，count = 帧数，device = `cpu_<id>` 或 `gpu_<id>`（下面那个接口给的 value）。 */
+  async function estimator(fields) {
+    const res = await fetch('/project/estimator', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams({
+        time: String(fields.time), count: String(fields.count), device: String(fields.device),
+      }).toString(),
+    });
+    const text = await res.text();
+    if (!res.ok) return { ok: false, reason: 'http', message: t('up3x.httpFail', { code: res.status }) };
+    const plain = text.trim();
+    /* 服务端认不出设备时回的就是这两句纯文本（:990 / :995） */
+    if (/^failed/i.test(plain)) return { ok: false, reason: plain, message: '' };
+    const d = parseDoc(text);
+    const body = d.body ? d.body.textContent : text;
+    const cost = (function () { const m = /([\d,.]+)\s*points/i.exec(body); return m ? m[1] : ''; })();
+    const rows = [].slice.call(d.querySelectorAll('table tbody tr')).map((tr) => {
+      const tds = [].slice.call(tr.children);
+      return tds.map((td) => ({
+        text: (td.textContent || '').replace(/\s+/g, ' ').trim(),
+        good: !!td.querySelector('.label-success'),
+      }));
+    });
+    return { ok: true, cost, rows };
+  }
+
+  /** 设备自动补全：GET /device/search?term=（DeviceController.php:45-）→ [{value:'cpu_12',label:'…'}]。
+      站点遇到非法字符会回一条 value='#' 的提示，那条不是设备，过滤掉。 */
+  async function deviceSearch(term) {
+    const res = await fetch('/device/search?term=' + encodeURIComponent(String(term)), {
+      credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let list = null;
+    try { list = await res.json(); } catch (e) { return []; }
+    if (!Array.isArray(list)) return [];
+    return list.filter((o) => o && o.value && o.value !== '#')
+      .map((o) => ({ value: String(o.value), label: String(o.label == null ? '' : o.label) }));
+  }
+
+  SP.Chain = {
+    UPSTREAM, upstreamVersion,
+    SUBMIT_KEYS, buildPayload, validate,
+    parseStep3, uploadPage,
+    submit, analyse, upload,
+    estimator, deviceSearch,
+    analyseUrl, step2Url, messageFrom,
+  };
+})();
+
+/* ===== src/64-step1.js ===== */
+/* ==== 64-step1.js：新版上传 · 第一步「上传」（自绘，0.2.0）========================
+
+   契约（站点源码）：
+     页面    /getstarted 最后一段（HTML.php:2021 printCreateProject）。站点在这里给的是
+             **纯 PHP 拼的 HTML**，我们只当数据源读两件事：表单在不在（没给就是前置拦截：
+             renderedFrames<10 且公共剩余帧>5000，HTML.php:2091-2108）、文件上限文案。
+     上传    POST /project/internal/upload（multipart：addproject_archive + UPLOAD_IDENTIFIER）
+             成功 → 302 /project/add/<token>；失败 → 200 纯文本原因（维护中/没头像/并发上限…）
+             或 error 页（后缀不对/太大）
+     估算器  POST /project/estimator + GET /device/search?term=（ProjectController.php:925-997）
+
+   站点的进度条靠轮询 POST /project/internal/progress；我们用 XHR 自己的 upload 进度事件，
+   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（第二步整页由 80-app.js 的 analyse 线接管）。 */
+
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Step1) return;
+  const { Util, I18n } = SP;
+  const t = SP.t;
+
+  const mk = (tag, cls, txt) => {
+    const el = document.createElement(tag);
+    if (cls) el.className = cls;
+    if (txt != null) el.textContent = txt;
+    return el;
+  };
+  const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
+
+  let picked = null;        // 选中的 File（input 与拖放共用）
+  let busy = false;         // 上传中：不许再点
+
+  /* ---------------------------------------------------------------- 数据 */
+
+  function limitFrom(note) {
+    const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(note || '');
+    return m ? m[1] : '';
+  }
+
+
+  function buildForm(slot, page, html) {
+    slot.textContent = '';
+    if (!page.hasForm) {
+      /* 站点根本没给表单 = 前置拦截（欠帧/维护/没头像/并发上限/ACL…），**原文照译**：
+         站点在 printError 里写清了是哪一条、要用户做什么，别用我们那句"通常是因为…"去盖掉它。
+         `warning` 是欠帧那条（站点自己的 #addproject_warning_zero_frame），`gate` 是 printError 块。 */
+      const box = mk('div', 'up1-msg bad');
+      if (page.warning) {
+        box.textContent = zh(page.warning);
+      } else if (page.gate && (page.gate.title || page.gate.body)) {
+        box.appendChild(mk('b', 'up1-gate-title', zh(page.gate.title) || ''));
+        if (page.gate.body) box.appendChild(mk('div', 'up1-gate-body', zh(page.gate.body)));
+      } else {
+        box.textContent = t('up1.gate');
+      }
+      slot.appendChild(box);
+      return;
+    }
+
+    /* 站点这次给的上限，在本地就拦住选错的文件（拿在手里只用来拼提示等于白解析）。
+       提示里用站点自己的单位（"2,048 MB"），别换算成 "2.0 GB"。 */
+    const maxBytes = page.limitBytes || 0;
+    const maxText = page.limitText || (maxBytes ? fmtSize(maxBytes) : '');
+    const drop = mk('div', 'up1-drop');
+    const title = mk('div', 'up1-droptitle');
+    title.appendChild(document.createTextNode(t('up1.pick') + ' '));
+    /* 复用站内已有的 label.filepick（头像那个也是它）：原生 file input 塞在 label 里、
+       1px 透明，Tab 顺序保得住，外观由 label 承担。 */
+    const pick = mk('label', 'filepick');
+    pick.appendChild(document.createTextNode(t('up1.pickBtn')));
+    const inp = mk('input');
+    inp.type = 'file';
+    inp.accept = '.blend,.zip';
+    inp.className = 'up1-input';
+    pick.appendChild(inp);
+    title.appendChild(pick);
+    drop.appendChild(title);
+    drop.appendChild(mk('div', 'up1-dropsub', t('up1.pickSub', { size: limitFrom(page.note) || t('up1.anySize') })));
+    /* 选中的文件显示在**这个框里**（用户 2026-10-07）：框本身就是"放文件的地方"，
+       把结果摆到框外另起一行，看起来像两件事。 */
+    const nameEl = mk('div', 'up1-name');
+    nameEl.hidden = true;
+    drop.appendChild(nameEl);
+    const bar = mk('div', 'up1-bar');
+    /* 读屏用户拿不到进度与结果：进度条与消息行都要能被播报（全 src 里 role=progressbar/aria-live 本来是 0） */
+    bar.setAttribute('role', 'progressbar');
+    bar.setAttribute('aria-valuemin', '0');
+    bar.setAttribute('aria-valuemax', '100');
+    bar.hidden = true;
+    const fill = mk('i');
+    bar.appendChild(fill);
+    const pct = mk('div', 'up1-pct');
+    pct.hidden = true;
+    const msg = mk('div', 'up1-msg');
+    msg.setAttribute('aria-live', 'polite');
+    msg.hidden = true;
+    const foot = mk('div', 'up1-foot');
+    const btn = mk('button', 'btn primary');
+    btn.type = 'button';
+    btn.textContent = t('up1.go');
+    btn.disabled = true;   // 未选文件时它不是"已就绪"——以前那是一颗满血主色按钮
+    foot.appendChild(btn);
+
+    slot.appendChild(drop);
+    /* 投递之前就说清"传完会发生什么"：这句话以前只存在于下一个页面，也就是用户已经无法反悔之后 */
+    slot.appendChild(mk('div', 'up1-after', t('up1.after')));
+    slot.appendChild(bar);
+    slot.appendChild(pct);
+    slot.appendChild(msg);
+    slot.appendChild(foot);
+
+    const say = (text, bad) => {
+      msg.textContent = text || '';
+      msg.hidden = !text;
+      msg.classList.toggle('bad', !!bad);
+    };
+    /* 剩余时间：onProgress 已经把 loaded/total 给了我们，速率取滑动平均，别只报百分比 */
+    const rate = { t: 0, loaded: 0, speed: 0 };
+    const fmtEta = (sec) => {
+      if (!Number.isFinite(sec) || sec <= 0) return '';
+      const m = Math.floor(sec / 60);
+      const s = Math.round(sec % 60);
+      return m + ':' + ('0' + s).slice(-2);
+    };
+    const etaOf = (loaded, total) => {
+      const now = Date.now();
+      if (!rate.t) { rate.t = now; rate.loaded = loaded; return ''; }
+      const dt = (now - rate.t) / 1000;
+      const dl = loaded - rate.loaded;
+      if (dt >= 0.6 && dl > 0) {
+        const inst = dl / dt;
+        rate.speed = rate.speed ? rate.speed * 0.7 + inst * 0.3 : inst;
+        rate.t = now;
+        rate.loaded = loaded;
+      }
+      return rate.speed ? fmtEta((total - loaded) / rate.speed) : '';
+    };
+    const show = (f) => {
+      picked = null;
+      nameEl.hidden = true;
+      if (!f) { nameEl.textContent = ''; btn.disabled = true; return; }
+      if (!/\.(blend|zip)$/i.test(f.name)) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.badType', { name: f.name }), true);
+        return;
+      }
+      if (maxBytes && f.size > maxBytes) {
+        nameEl.textContent = '';
+        btn.disabled = true;
+        say(t('up1.tooBig', { name: f.name, size: fmtSize(f.size), max: maxText }), true);
+        return;
+      }
+      say('');
+      picked = f;
+      nameEl.textContent = t('up1.picked', { name: f.name, size: fmtSize(f.size) });
+      nameEl.hidden = false;
+      btn.disabled = busy;
+    };
+
+    drop.addEventListener('click', (e) => {
+      /* 点在 label.filepick 上由标签自己开文件框；点别处我们代开 */
+      if (e.target && e.target.closest && e.target.closest('.filepick')) return;
+      inp.click();
+    });
+    inp.addEventListener('change', () => show(inp.files && inp.files[0]));
+    ['dragenter', 'dragover'].forEach((ev) => drop.addEventListener(ev, (e) => {
+      e.preventDefault(); drop.classList.add('over');
+    }));
+    ['dragleave', 'dragend'].forEach((ev) => drop.addEventListener(ev, () => drop.classList.remove('over')));
+    drop.addEventListener('drop', (e) => {
+      e.preventDefault();
+      drop.classList.remove('over');
+      const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if (f) show(f);
+    });
+
+    btn.addEventListener('click', async () => {
+      if (busy) return;
+      if (!picked) { say(t('up1.noFile'), true); return; }
+      busy = true;
+      btn.disabled = true;
+      btn.textContent = t('up1.goBusy');
+      say('');
+      bar.hidden = false;
+      pct.hidden = false;
+      fill.style.width = '0%';
+      pct.textContent = t('up1.uploading', { pct: 0 });
+      rate.t = 0; rate.loaded = 0; rate.speed = 0;
+
+      const r = await SP.Chain.upload(picked, (loaded, total) => {
+        const p = total ? Math.min(100, Math.round((loaded / total) * 100)) : 0;
+        fill.style.width = p + '%';
+        bar.setAttribute('aria-valuenow', String(p));
+        if (p >= 100) { pct.textContent = t('up1.sending'); return; }
+        if (!total) { pct.textContent = t('up1.uploading', { pct: p }); return; }
+        const eta = etaOf(loaded, total);
+        pct.textContent = eta
+          ? t('up1.progress', { done: fmtSize(loaded), total: fmtSize(total), eta })
+          : t('up1.progressNoEta', { done: fmtSize(loaded), total: fmtSize(total) });
+      });
+
+      busy = false;
+      btn.textContent = t('up1.go');
+      if (r.ok) {
+        pct.textContent = t('up1.jumping');
+        location.href = SP.Chain.step2Url(r.token);
+        return;
+      }
+      bar.hidden = true;
+      pct.hidden = true;
+      btn.disabled = !picked;
+      say(r.message || t('up1.fail'), true);
+    });
+  }
+
+  function fmtSize(n) {
+    if (!Number.isFinite(n)) return '';
+    const u = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let v = n;
+    while (v >= 1024 && i < u.length - 1) { v /= 1024; i++; }
+    return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
+  }
+
+
+  function buildEst(slot) {
+    slot.textContent = '';
+    let devValue = '';
+
+    const dev = mk('div', 'up1-dev');
+    const devInp = mk('input');
+    devInp.type = 'text';
+    devInp.className = 'up1-devin';
+    devInp.placeholder = t('up1.devPh');
+    devInp.autocomplete = 'off';
+    const sug = mk('div', 'up1-sug');
+    sug.hidden = true;
+    dev.appendChild(devInp);
+    dev.appendChild(sug);
+
+    const fields = mk('div', 'up1-estfields');
+    const timeF = mk('div', 'up1-fld');
+    timeF.appendChild(mk('label', null, t('up1.time')));
+    const timeInp = mk('input');
+    timeInp.type = 'text';
+    timeInp.inputMode = 'decimal';
+    timeF.appendChild(timeInp);
+    const cntF = mk('div', 'up1-fld');
+    cntF.appendChild(mk('label', null, t('up1.count')));
+    const cntInp = mk('input');
+    cntInp.type = 'text';
+    cntInp.inputMode = 'numeric';
+    cntF.appendChild(cntInp);
+    fields.appendChild(timeF);
+    fields.appendChild(cntF);
+
+    const foot = mk('div', 'up1-foot');
+    /* 次级样式：估算不改变服务器上的任何东西，按 DESIGN.md 的 One Commit Rule 它不配穿主色
+       （以前它和「开始上传」同为满主色，同屏两个等权按钮） */
+    const btn = mk('button', 'btn');
+    btn.type = 'button';
+    btn.textContent = t('up1.estGo');
+    foot.appendChild(btn);
+
+    const out = mk('div', 'up1-estout');
+    const msg = mk('div', 'up1-msg');
+    msg.hidden = true;
+    const say = (text, bad) => {
+      msg.textContent = text || '';
+      msg.hidden = !text;
+      msg.classList.toggle('bad', !!bad);
+    };
+
+    slot.appendChild(mk('div', 'up1-tip', t('up1.estTip')));
+    slot.appendChild(dev);
+    slot.appendChild(fields);
+    slot.appendChild(foot);
+    slot.appendChild(msg);
+    slot.appendChild(out);
+
+    /* 设备名：站点那个 jQuery UI autocomplete 的替代品，走同一个 GET /device/search */
+    let timer = null;
+    let seq = 0;
+    const closeSug = () => { sug.hidden = true; sug.textContent = ''; };
+    devInp.addEventListener('input', () => {
+      devValue = '';
+      closeSug();
+      const term = devInp.value.trim();
+      if (term.length < 3) return;
+      clearTimeout(timer);
+      timer = setTimeout(async () => {
+        const my = ++seq;
+        const list = await SP.Chain.deviceSearch(term);
+        if (my !== seq) return;
+        sug.textContent = '';
+        if (!list.length) { closeSug(); return; }
+        list.slice(0, 12).forEach((o) => {
+          const li = mk('div', 'up1-sugitem', o.label);
+          /* 键盘也够得着：这条路径强制"必须从建议里选"，纯 click 的 div 等于把键盘用户挡死 */
+          li.tabIndex = 0;
+          li.setAttribute('role', 'option');
+          const pickIt = () => { devValue = o.value; devInp.value = o.label; closeSug(); };
+          li.addEventListener('click', pickIt);
+          li.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
+          });
+          sug.appendChild(li);
+        });
+        sug.hidden = false;
+      }, 250);
+    });
+    devInp.addEventListener('blur', () => setTimeout(closeSug, 180));
+
+    btn.addEventListener('click', async () => {
+      const time = Number(String(timeInp.value).replace(',', '.'));
+      const count = Number(cntInp.value);
+      say('');
+      out.textContent = '';
+      if (!devValue) { say(t('up1.devPick'), true); return; }
+      if (!(time > 0) || !(count > 0)) { say(t('up1.estNeed'), true); return; }
+      btn.disabled = true;
+      btn.textContent = t('up1.estimating');
+      const r = await SP.Chain.estimator({ time, count, device: devValue });
+      btn.disabled = false;
+      btn.textContent = t('up1.estGo');
+      if (!r.ok) {
+        say(r.reason === 'failed to import device' ? t('up1.devPick') : (r.message || t('up1.estFail')), true);
+        return;
+      }
+      if (r.cost) {
+        const c = mk('div', 'up1-cost');
+        c.innerHTML = t('up1.cost', { pts: '<b>' + Util.esc(r.cost) + '</b>' });
+        out.appendChild(c);
+      }
+      if (r.rows.length) {
+        const tbl = mk('table', 'tbl up1-tbl');
+        const thead = mk('thead');
+        const tr = mk('tr');
+        tr.appendChild(mk('th', null, t('up1.tiles')));
+        tr.appendChild(mk('th', null, t('up1.perTile')));
+        thead.appendChild(tr);
+        tbl.appendChild(thead);
+        const tb = mk('tbody');
+        r.rows.forEach((cells) => {
+          const row = mk('tr');
+          cells.forEach((c, idx) => {
+            const td = mk('td');
+            if (idx === 1 && c.good) td.className = 'ok';
+            td.textContent = /^no split$/i.test(c.text) ? t('up1.noSplit') : c.text;
+            row.appendChild(td);
+          });
+          tb.appendChild(row);
+        });
+        tbl.appendChild(tb);
+        out.appendChild(tbl);
+      }
+      if (!out.childNodes.length) say(t('up1.estFail'), true);
+    });
+  }
+
+  /* ---------------------------------------------------------------- 须知 */
+
+  /** 须知：站点那几条 `<li>` 里带 `<strong>`，按 textContent 拼成一整句反而匹配不上词典
+      （词典是按文本节点/整块两种粒度写的）。所以**原样克隆节点**，再走 DOM 翻译器那一趟。 */
+  function buildRules(slot, html) {
+    slot.textContent = '';
+    const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    const head = [].slice.call(d.querySelectorAll('h4')).filter((x) => /Before adding a file/i.test(x.textContent))[0];
+    let src = null;
+    if (head) {
+      src = head.nextElementSibling;
+      while (src && src.tagName !== 'UL') src = src.nextElementSibling;
+      if (!src && head.parentNode) src = head.parentNode.querySelector('ul');
+    }
+    const ul = mk('ul', 'up1-rules');
+    if (src) [].slice.call(src.children).forEach((li) => ul.appendChild(document.importNode(li, true)));
+    if (!ul.children.length) { slot.appendChild(mk('div', 'up1-tip', t('up1.noRules'))); return; }
+    slot.appendChild(ul);
+    /* 这是我们自己的卡片，里面的站点原文也该是中文：临时打开翻译器那一趟（用户的总开关不参与）。 */
+    const di = SP.DomI18n;
+    if (di && di.translateSubtree) {
+      const keep = di.enabled;
+      di.enabled = true;
+      try { di.translateSubtree(ul); } finally { di.enabled = keep; }
+    }
+    /* 站点把句号写在 <strong> 外面（`…3.0 or higher</strong>.`）：中文译文自己带句号，
+       后面那个 "." 就成了「。.」——译文已经以句末标点收尾时，把那个孤零零的 "." 去掉。 */
+    [].slice.call(ul.querySelectorAll('li')).forEach((li) => {
+      const last = li.lastChild;
+      if (!last || last.nodeType !== 3) return;
+      const tail = last.nodeValue.trim();
+      if (!/^[.．。]+$/.test(tail)) return;
+      const before = li.textContent.slice(0, li.textContent.length - tail.length).trimEnd();
+      /* 站点把句号写在 <strong> 外面（`…relative paths</strong>.`）：中文译文已经以句末标点收尾时
+         直接去掉，否则把那个半角 "." 换成中文句号 —— 以前只做前半段，于是留下「相对路径.」 */
+      if (/[。．.！!？?]$/.test(before)) last.nodeValue = '';
+      else last.nodeValue = '。';
+    });
+    /* 2026-10-07 用户拍板：须知**不折叠**，12 条原样平铺。折叠省的那点版面，换来的是
+       "还有几条被藏起来了"的猜疑，不划算。 */
+  }
+
+  /* ---------------------------------------------------------------- 入口 */
+
+  /** 把站点的 /getstarted 当数据源，三个槽位全部自绘。返回 false = 页面结构不认识。 */
+  function mount(root, html) {
+    if (!root || !html) return false;
+    const page = SP.Chain.uploadPage(html);
+    const form = root.querySelector('[data-up="form"]');
+    const est = root.querySelector('[data-up="est"]');
+    const rules = root.querySelector('[data-up="rules"]');
+    if (!form || !est || !rules) return false;
+    /* 站点连表单都没给时，估算器与须知也没有意义 */
+    buildForm(form, page, html);
+    if (page.hasForm) {
+      buildEst(est);
+      buildRules(rules, html);
+    } else {
+      /* 闸门命中（维护/没头像/并发/欠帧）：估算器与须知都无从谈起。**连面板标题一起收掉** ——
+         只清内容会留下两个空壳标题，看着像页面坏了（2026-10-07 桩验截图抓到的）。 */
+      est.textContent = '';
+      rules.textContent = '';
+      [est, rules].forEach((el) => {
+        const panel = el.closest ? el.closest('.panel') : null;
+        if (panel) panel.hidden = true;
+      });
+      const src = root.querySelector('.up-src');
+      if (src) src.hidden = true;
+    }
+    return true;
+  }
+
+  SP.Step1 = { mount, limitFrom, fmtSize };
+})();
+
+/* ===== src/68-step3.js ===== */
+/* ==== 68-step3.js：新版上传 · 第三步「设置」（自绘，0.2.0）========================
+
+   与已砍掉的兼容档那一套的根本区别：**不再搬站点的活节点**。
+   服务端那份 HTML 只在 62-chain.js 里被 DOMParser 解析成数据，页面上从头到尾只有我们
+   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，27 键）。
+   于是 0.1.14–0.1.17 反复踩的那一类缺陷（两份同名控件、站点 JS 抢 DOM、$('#id') 取到
+   隐藏原件）在结构上不可能出现。
+
+   边界没变：**服务端只认 POST 键，不认 DOM**。所以自绘控件不违反任何契约；
+   所有隐藏值（引擎、分辨率、采样、路径…）原样来自解析结果，一个字节都不改。
+
+   版式（用户 2026-10-07 两轮意见的落点）：
+     · 概览 = 站点算出来的事实：一行 chips（存档 / 文件数 / 上游版本）+ 每个文件一行（引擎、
+       分辨率、帧率、采样、格式…）——只显示，不改，提交时原样发回
+     · 上半 = 硬件需求（项目级，一个块三行）：可见性 / 计算方式 / 内存占用
+       （内存是每个文件一个值，服务端契约如此；站点原来用「高级选项」勾选框只控制显隐，
+        不影响提交内容，所以这里不设勾选框，留空即自动探测）
+     · 下半 = 画面设置（每个 .blend 一块）：类型 / 帧范围 / 切块 / 提交；块之间只隔一条发丝线
+     · 站点写的说明（降噪、EXR 限制、缺文件…）带强调线，不再是一行灰字
+     · 字号一律走站内那套：标题 13.5 / 正文 13 / 次要 12.5 / 提示 12 */
+
+(function () {
+  'use strict';
+
+  const SP = window.__SHEEPIT_PLUS__;
+  if (!SP || SP.Step3x) return;
+  const { Util, UI, I18n } = SP;
+  const t = SP.t;
+  const esc = Util.esc;
+
+  const REPORT_KEY = 'up3Report';
+  const mk = (tag, cls) => { const el = document.createElement(tag); if (cls) el.className = cls; return el; };
+  /* 这一版的 mk 不收文本（只有 tag+class），别再把第三参当文本传 —— 会被静默丢掉 */
+  const tipRow = (txt) => { const el = mk('div', 'up3-tiprow up3-tip'); el.textContent = txt; return el; };
+
+  /* 同名 radio 在同一个文档里算**一组**，会互相取消勾选：每次 render 用自己的后缀。 */
+  let seq = 0;
+
+  /** 站点说明里属于"为什么不能切块"的那几句（降噪那两行）；其余（EXR 清单、缺文件、驱动）另摆。 */
+  const SPLIT_REASON = /denois|splits?\b|tile/i;
+
+  /** 站点原文 → 中文（没命中就原样）。说明文字是站点写的，翻译表在 12-lang-zh.js。 */
+  const zh = (s) => (I18n && I18n.siteText ? (I18n.siteText(s) || s) : s);
+
+  function saveReport(rep) { try { Util.store.set(REPORT_KEY, rep); } catch (e) { /* 隐私模式 */ } }
+  function report() {
+    const r = Util.store.get(REPORT_KEY, null);
+    return r && typeof r === 'object' ? r : null;
+  }
+
+  /** 数字好看一点：服务端 width 是 resolution_x * percentage / 100，可能是 160.0000001 */
+  const num = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n) || String(v).trim() === '') return String(v);
+    return String(Math.round(n * 100) / 100);
+  };
+
+
+  function line(k, content) {
+    const l = mk('div', 'up3-line');
+    const a = mk('div', 'up3-k');
+    a.textContent = k;
+    const b = mk('div', 'up3-c');
+    if (typeof content === 'string') b.innerHTML = content; else b.appendChild(content);
+    l.appendChild(a);
+    l.appendChild(b);
+    return l;
+  }
+
+  /** 选项行：<label class="up3-opt" title="…"><input …><span>文字</span></label> */
+  function opt(kind, name, value, label, opts) {
+    const o = opts || {};
+    const lb = mk('label', 'up3-opt' + (o.cls ? ' ' + o.cls : ''));
+    const inp = mk('input');
+    inp.type = kind;
+    if (name) inp.name = name;
+    if (value != null) inp.value = value;
+    inp.checked = !!o.checked;
+    if (o.disabled) inp.disabled = true;
+    /* 说明一律进悬停提示（用户 2026-10-07：别在界面上铺一句话） */
+    if (o.title) lb.title = o.title;
+    lb.appendChild(inp);
+    const sp = mk('span');
+    sp.textContent = label;
+    lb.appendChild(sp);
+    return lb;
+  }
+
+  function fld(label, opts) {
+    const o = opts || {};
+    const box = mk('div', 'up3-fld');
+    const lb = mk('label');
+    lb.textContent = label;
+    if (o.title) lb.title = o.title;
+    const inp = mk('input');
+    inp.type = 'text';
+    inp.value = o.value == null ? '' : String(o.value);
+    inp.inputMode = 'numeric';
+    inp.autocomplete = 'off';
+    if (o.size) inp.size = o.size;
+    if (o.placeholder) inp.placeholder = o.placeholder;
+    if (o.title) inp.title = o.title;
+    box.appendChild(lb);
+    box.appendChild(inp);
+    box._input = inp;
+    return box;
+  }
+
+  /** 滑条 + 读数：站点那两个 range 的 value="0" 会被浏览器夹到 min，这里直接给 min。 */
+  function slider(label, min, max, value) {
+    const box = mk('div', 'up3-slider');
+    const lb = mk('label');
+    lb.textContent = label;
+    const inp = mk('input');
+    inp.type = 'range';
+    inp.min = String(min);
+    inp.max = String(max);
+    inp.value = String(value);
+    const out = mk('span', 'up3-read');
+    const paint = () => { out.textContent = t('up3x.nTiles', { n: inp.value }); };
+    inp.addEventListener('input', paint);
+    paint();
+    box.appendChild(lb);
+    box.appendChild(inp);
+    box.appendChild(out);
+    box._input = inp;
+    return box;
+  }
+
+  /** 站点给这个文件算出来的事实（只显示，不改；提交时也原样发回去） */
+  function blendFacts(b) {    const h = b.hidden || {};
+    const out = [];
+    if (h.engine) out.push(t('up3x.mEngine', { v: h.engine }));
+    if (h.exe) out.push(t('up3x.mBlender', { v: h.exe }));
+    if (h.width && h.height) out.push(t('up3x.mRes', { w: num(h.width), h: num(h.height) }));
+    if (h.framerate) out.push(t('up3x.mFps', { v: num(h.framerate) }));
+    if (h.cycles_samples) out.push(t('up3x.mSamples', { v: num(h.cycles_samples) }));
+    if (h.samples_pixel) out.push(t('up3x.mPerPixel', { v: h.samples_pixel }));
+    if (h.image_extension) out.push(h.image_extension);
+    if (h.denoising === '1') out.push(t('up3x.mDenoise'));
+    if (h.use_adaptive_sampling === '1') out.push(t('up3x.mAdaptive'));
+    if (h.render_on_gpu_headless === '1') out.push(t('up3x.mHeadless'));
+    if (h.color_management === '1') out.push(t('up3x.mColorMgmt'));
+    if (h.output_path) out.push(t('up3x.mOutput', { v: h.output_path }));
+    return out;
+  }
+
+  /* ------------------------------------------------------------------ 渲染 */
+
+  /**
+   * @param box   #sp-an-result（我们自己的容器）
+   * @param model 62-chain.js parseStep3() 的结果
+   * @returns {{ok:boolean, reason?:string}}
+   */
+  function render(box, model) {
+    if (!box || !model) return { ok: false, reason: 'args' };
+    box.textContent = '';
+    box.hidden = false;
+    box.classList.add('sp-up3');
+
+    const uid = 'sp3-' + (++seq);
+    const root = mk('div', 'up3');
+    const state = { vis: {}, compute: 0, blends: {} };
+
+    /* 状态先摆好：内存那一行在上半部分，但它写的是每个文件的值（服务端契约如此） */
+    model.blends.forEach((b) => {
+      state.blends[b.i] = b.rejected ? { rejected: true } : {
+        type: b.type, start: b.anim.start, end: b.anim.end, step: b.anim.step || '1',
+        frame: b.single.frame, ram: b.ram,
+        splitTiles: b.split.tiles,
+        splitSamples: (b.split.kind === 'samples' || b.split.kind === 'samples-single') ? String(b.split.value) : '',
+      };
+    });
+
+    /* ① 不再有"抬头行"与"存档/文件"那行概览。
+       2026-10-07 用户两条意见：一、「存档 sptest」这种说法看不懂，而且和下面每个 .blend 的名字
+       重复；二、页头已经说了这是什么页（h2「项目设置」），卡片里再来一次就是复读。
+       直接进内容：上半是硬件需求，下半是每个 .blend 一块。 */
+
+    /* ② 上半：硬件需求（一个块三行） */
+    const group = mk('div', 'up3-group');
+
+    const visBox = mk('div', 'up3-opts');
+    let visAny = false;
+    [['render', model.vis.render, 'up3x.render', 'up3x.renderTip'],
+      ['mp4', model.vis.mp4, 'up3x.mp4', 'up3x.mp4Tip'],
+      ['thumb', model.vis.thumb, 'up3x.thumb', 'up3x.thumbTip']].forEach(([key, def, lbl, tipKey]) => {
+      if (def.kind === 'none') return;
+      visAny = true;
+      const hidden = def.kind === 'hidden';
+      /* 站点锁死的开关：为什么锁 + 最终结果，全塞进悬停提示，界面上不铺文字 */
+      const title = hidden
+        ? t(tipKey) + '\n' + t('up3x.forcedTip', { state: def.force ? t('up3x.yes') : t('up3x.no') })
+        : t(tipKey);
+      const o = opt('checkbox', null, null, t(lbl), {
+        checked: hidden ? !!def.force : !!def.on, disabled: hidden, title,
+      });
+      state.vis[key] = hidden ? false : !!def.on;   // 站点对 hidden 一律发 "0"（.is(':checked') 为假）
+      const inp = o.querySelector('input');
+      inp.addEventListener('change', () => { state.vis[key] = inp.checked; });
+      visBox.appendChild(o);
+    });
+    if (visAny) group.appendChild(line(t('up3.vis'), visBox));
+
+    const compute = model.compute;
+    if (compute.cpuOn) state.compute |= 1;
+    if (compute.gpuOn) state.compute |= 8;
+    if (!state.compute) state.compute = compute.canCpu ? 1 : (compute.canGpu ? 8 : 0);
+    const cpuBox = mk('div', 'up3-cmps');
+    const addCompute = (bit, can, lbl, hint) => {
+      if (!can) return;
+      const o = opt('radio', uid + '-compute', String(bit), t(lbl), { checked: !!(state.compute & bit), cls: 'up3-cmp' });
+      const el = o.querySelector('input');
+      el.addEventListener('change', () => { if (el.checked) state.compute = bit; });
+      const wrap = mk('div', 'up3-cmpbox');
+      wrap.appendChild(o);
+      const parts = [];
+      if (hint && hint.queue) parts.push(t('up3x.queue', { v: hint.queue }));
+      if (hint && hint.total) parts.push(t('up3x.total', { n: hint.total }));
+      if (parts.length) {
+        const h = mk('div', 'up3-tip');
+        h.textContent = parts.join(' · ');
+        wrap.appendChild(h);
+      }
+      cpuBox.appendChild(wrap);
+    };
+    addCompute(1, compute.canCpu, 'up3x.cpu', compute.cpuHint);
+    addCompute(8, compute.canGpu, 'up3x.gpu', compute.gpuHint);
+    if (cpuBox.childNodes.length) group.appendChild(line(t('up3.cpu'), cpuBox));
+
+    /* 内存占用：属于硬件需求，跟着计算方式放。默认**折叠**（不指定 = 站点在渲染第一帧时自动探测）；
+       勾上「手动指定」才展开输入框。值本身是每个文件一个（服务端契约），多文件时一行一个。 */
+    const ramBox = mk('div', 'up3-rams');
+    const liveBlends = model.blends.filter((b) => !b.rejected);
+    if (liveBlends.length) {
+      const preRam = liveBlends.some((b) => b.ram);
+      const ck = opt('checkbox', null, null, t('up3x.ramManual'), { cls: 'up3-ramck', checked: preRam, title: t('up3x.ramAuto') });
+      ramBox.appendChild(ck);
+      const fields = mk('div', 'up3-ramfields');
+      fields.hidden = !preRam;
+      liveBlends.forEach((b) => {
+        const w = mk('div', 'up3-ram');
+        if (liveBlends.length > 1) {
+          const l = mk('label');
+          l.textContent = b.name;
+          w.appendChild(l);
+        }
+        const inp = mk('input');
+        inp.type = 'text';
+        inp.inputMode = 'numeric';
+        inp.placeholder = t('up3x.ramPh');
+        inp.value = b.ram || '';
+        inp.title = t('up3x.ramTip');
+        inp.addEventListener('input', (e) => { state.blends[b.i].ram = e.target.value; });
+        w.appendChild(inp);
+        fields.appendChild(w);
+      });
+      ramBox.appendChild(fields);
+      /* 折叠 = 不指定：把界面上和提交里的值一起清空，免得"看得见却没发出去" */
+      ck.querySelector('input').addEventListener('change', (e) => {
+        fields.hidden = !e.target.checked;
+        if (!e.target.checked) {
+          liveBlends.forEach((b) => { state.blends[b.i].ram = ''; });
+          [].forEach.call(fields.querySelectorAll('input'), (i2) => { i2.value = ''; });
+        }
+      });
+      group.appendChild(line(t('up3x.ram'), ramBox));
+    }
+
+    root.appendChild(group);
+
+    /* ③ 下半：画面设置（每个 .blend 一块）。页头 h2「项目设置」→ 这里 h3 → 每个文件 h4，
+       大纲不跳级；这一行是真正的分区标题，不再是"区域标签"。 */
+    const live = model.blends.filter((b) => !b.rejected);
+    if (live.length) {
+      const sub = mk('h3', 'up3-subhead');
+      sub.textContent = t('up3x.picture');
+      root.appendChild(sub);
+    }
+
+    let parsedKeys = 0;
+    let cardCount = 0;
+    model.blends.forEach((b) => {
+      parsedKeys += Object.keys(b.hidden).length + (b.rejected ? 0 : 3);
+      const bl = mk('div', 'up3-blend');
+      bl.dataset.i = b.i;
+      const bh = mk('div', 'up3-bhead');
+      const name = mk('h4');
+      name.textContent = b.name || ('#' + b.i);
+      bh.appendChild(name);
+      const facts = b.rejected ? [] : blendFacts(b);
+      if (facts.length) {
+        const fm = mk('div', 'up3-bmeta');
+        fm.textContent = facts.join(' · ');
+        bh.appendChild(fm);
+      }
+      bl.appendChild(bh);
+
+      if (b.rejected) {
+        /* 站点对"缺相机 / 有活动输出节点 / 分析报错"的文件只给理由、不给表单（HTML.php:1162-1182） */
+        const bad = mk('div', 'up3-notes up3-bad');
+        bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
+        bl.appendChild(bad);
+        root.appendChild(bl);
+        cardCount++;
+        return;
+      }
+
+      /* 类型：站点只在"非 EXR 且无降噪"时给可见的两个 radio（HTML.php:1259-1267）；
+         EXR/降噪分支连 radio 都是 hidden 的（:1205），那就没有可选项。 */
+      if (!b.typeForced) {
+        const opts = mk('div', 'up3-opts');
+        const anim = opt('radio', uid + '-type-' + b.i, 'animation', t('up3x.anim'), { checked: b.type !== 'singleframe' });
+        const sing = opt('radio', uid + '-type-' + b.i, 'singleframe', t('up3x.single'), { checked: b.type === 'singleframe' });
+        opts.appendChild(anim);
+        opts.appendChild(sing);
+        bl.appendChild(line(t('up3x.type'), opts));
+
+        const animRow = mk('div', 'up3-fields');
+        const singRow = mk('div', 'up3-fields');
+        [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
+          const f = fld(t(lbl), { value: state.blends[b.i][k], size });
+          f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          animRow.appendChild(f);
+        });
+        const sf = fld(t('up3x.frame'), { value: state.blends[b.i].frame, size: 6 });
+        sf._input.addEventListener('input', (e) => { state.blends[b.i].frame = e.target.value; });
+        singRow.appendChild(sf);
+        animRow.hidden = b.type === 'singleframe';
+        singRow.hidden = b.type !== 'singleframe';
+        const framesBox = mk('div', 'up3-frames');
+        framesBox.appendChild(animRow);
+        framesBox.appendChild(singRow);
+        const sync = () => {
+          const v = anim.querySelector('input').checked ? 'animation' : 'singleframe';
+          state.blends[b.i].type = v;
+          animRow.hidden = v !== 'animation';
+          singRow.hidden = v !== 'singleframe';
+        };
+        anim.querySelector('input').addEventListener('change', sync);
+        sing.querySelector('input').addEventListener('change', sync);
+        framesBox.appendChild(tipRow(t('up3x.rule20')));
+        bl.appendChild(line(t('up3x.frames'), framesBox));
+      } else {
+        const animRow = mk('div', 'up3-fields');
+        [['start', 'up3x.start', 6], ['end', 'up3x.end', 6], ['step', 'up3x.step', 3]].forEach(([k, lbl, size]) => {
+          const f = fld(t(lbl), { value: state.blends[b.i][k], size });
+          f._input.addEventListener('input', (e) => { state.blends[b.i][k] = e.target.value; });
+          animRow.appendChild(f);
+        });
+        animRow.appendChild(tipRow(t('up3x.rule20')));
+        bl.appendChild(line(t('up3x.frames'), animRow));
+      }
+
+      /* 切块：三种形态都摆成"名字: 值"。站点认定不能切块时（EXR / 降噪），
+         理由就长在**这一行**上 —— 它本来就是"为什么这里没得选"，单独摆一块反而突兀。 */
+      const splitBox = mk('div', 'up3-split');
+      const splitWhy = [];
+      const rest = [];
+      b.notes.forEach((s) => {
+        if (b.split.kind === 'fixed' && SPLIT_REASON.test(s)) splitWhy.push(s);
+        else rest.push(s);
+      });
+      if (b.split.kind === 'samples' || b.split.kind === 'samples-single') {
+        const s = slider(t('up3x.splitEach'), b.split.min, b.split.max, b.split.value);
+        s._input.addEventListener('input', (e) => { state.blends[b.i].splitSamples = e.target.value; });
+        splitBox.appendChild(s);
+      } else if (b.split.kind === 'tiles') {
+        const sel = mk('select');
+        b.split.options.forEach((o) => {
+          const op = mk('option');
+          op.value = o.v;
+          op.textContent = o.v === '1' ? t('up3x.fullFrame') : o.label;
+          if (o.v === String(b.split.tiles)) op.selected = true;
+          sel.appendChild(op);
+        });
+        sel.addEventListener('change', () => { state.blends[b.i].splitTiles = sel.value; });
+        splitBox.appendChild(sel);
+      } else {
+        const chip = mk('span', 'up3-static');
+        chip.textContent = t('up3x.fullFrame');
+        chip.title = t('up3x.splitFixedTip');
+        splitBox.appendChild(chip);
+      }
+      if (splitWhy.length) {
+        /* 「检测到降噪」这类理由要看得见：主题色 + 警示图标，单独一行 */
+        const why = mk('span', 'up3-why');
+        const ico = mk('span', 'up3-whyico');
+        ico.innerHTML = UI.icon('warn');
+        why.appendChild(ico);
+        const txt = mk('span');
+        txt.textContent = splitWhy.map(zh).join(' ');
+        why.appendChild(txt);
+        splitBox.appendChild(why);
+      }
+      /* 上限也长在这一行：拨滑条的时候才需要知道"到顶是多少" */
+      splitBox.appendChild(tipRow(t('up3x.ruleTiles')));
+      bl.appendChild(line(t('up3x.split'), splitBox));
+
+      /* 剩下的说明（EXR 限制、缺文件、驱动警告…）才摆成消息块 */
+      if (rest.length) {
+        const notes = mk('div', 'up3-notes');
+        rest.forEach((s) => {
+          const d = mk('div');
+          d.textContent = zh(s);
+          notes.appendChild(d);
+        });
+        bl.appendChild(notes);
+      }
+
+      const foot = mk('div', 'up3-bfoot');
+      const btn = mk('button', 'btn up3-submit');
+      btn.type = 'button';
+      btn.textContent = t('up3x.submit');
+      foot.appendChild(btn);
+      bl.appendChild(foot);
+
+      const slot = mk('div', 'up3-slot');
+      slot.setAttribute('aria-live', 'polite');   // 校验错误与提交结果要能被读屏播报
+      slot.hidden = true;
+      bl.appendChild(slot);
+
+      btn.addEventListener('click', () => doSubmit(b, slot, btn, state, model));
+      root.appendChild(bl);
+      cardCount++;
+    });
+
+    /* 站点这一版多了我们没画过的控件：它们会按站点给的默认值提交 —— 明说，别沉默 */
+    if (model.unknown && model.unknown.length) {
+      const warn = mk('div', 'up3-notes up3-warn');
+      warn.textContent = t('up3x.unknown', { n: model.unknown.length, list: model.unknown.slice(0, 8).join('、') });
+      root.appendChild(warn);
+    }
+
+    /* 多文件：站点的分析编号是**一次性**的（ProjectController.php:427 成功后删除），
+       所以第二份提交必然拿到 "failed to found data"。这是我们唯一能提前告诉用户的事。 */
+    if (live.length > 1) {
+      const warn = mk('div', 'up3-notes up3-warn');
+      warn.textContent = t('up3x.multi');
+      root.appendChild(warn);
+    }
+
+    box.appendChild(root);
+
+    saveReport({
+      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys,
+      unknown: (model.unknown || []).slice(0, 12),
+    });
+    /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
+    return { ok: true, cards: cardCount, state, model };
+  }
+
+
+  async function doSubmit(b, slot, btn, state, model) {
+    slot.hidden = true;
+    slot.textContent = '';
+    slot.classList.remove('up3-bad');
+
+    const ui = { vis: state.vis, compute: state.compute, blends: state.blends };
+    const errs = SP.Chain.validate(model, ui);
+    if (errs.length) {
+      slot.hidden = false;
+      slot.classList.add('up3-bad');
+      slot.textContent = errs.join('；');
+      return;
+    }
+    const list = SP.Chain.buildPayload(model, ui).filter((p) => p.i === b.i);
+    if (!list.length) { slot.hidden = false; slot.textContent = t('up3x.rejectedBlend'); return; }
+
+    btn.disabled = true;
+    const old = btn.textContent;
+    btn.textContent = t('up3x.sending');
+    try {
+      const r = await SP.Chain.submit(list[0].data);
+      if (r.ok) {
+        saveReport({
+          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length,
+        });
+        btn.textContent = t('up3x.done');
+        location.href = r.url;
+        return;
+      }
+      saveReport({
+        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length,
+      });
+      slot.hidden = false;
+      slot.classList.add('up3-bad');
+      /* 服务端的错误体是 HTML 片段（含 <strong>/<ul>），我们只取文字、不注入它 */
+      slot.textContent = r.message || t('up3x.rejected');
+    } catch (e) {
+      slot.hidden = false;
+      slot.classList.add('up3-bad');
+      slot.textContent = t('up3x.netFail') + ' ' + ((e && e.message) || e);
+    }
+    btn.disabled = false;
+    btn.textContent = old;
+  }
+
+  /** 设置面板里的上游指纹行（格式沿用 0.1.x 那一版；0.2.0 起报告来自解析层）。 */
+  function fpRows() {
+    const now = SP.Chain.upstreamVersion();
+    const known = SP.Chain.UPSTREAM;
+    const rep = report();
+    const when = rep && rep.at ? new Date(rep.at).toLocaleString() : '';
+    const tipLines = [];
+    if (now) tipLines.push(t('set.fp.now', { v: now }), t('set.fp.same', { v: now }));
+    if (rep && rep.at) {
+      tipLines.push(rep.stage === 'submit' ? t('set.fp.ok', { time: when, n: rep.n }) : t('set.fp.enter', { time: when, n: rep.n }));
+    } else tipLines.push(t('set.fp.never'));
+    const tipAttr = esc(tipLines.join('\n'));
+
+    let line;
+    if (!now) line = `<div class="hint bad">${esc(t('set.fp.unknown'))}</div>`;
+    else if (now !== known) line = `<div class="hint bad">${esc(t('set.fp.diff', { now, known }))}</div>`;
+    else if (rep && rep.unknown && rep.unknown.length) {
+      line = `<div class="hint bad">${esc(t('set.fp.unknownEls', { n: rep.unknown.length, list: rep.unknown.slice(0, 6).join('、') }))}</div>`;
+    }
+    else if (rep && rep.at) line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.one', { v: now, n: rep.n }))}</div>`;
+    else line = `<div class="hint" title="${tipAttr}">${esc(t('set.fp.oneNew', { v: now }))}</div>`;
+
+    return `<div class="fp">
+        <div class="lbl2">${esc(t('set.fp.title'))}</div>
+        ${line}
+      </div>`;
+  }
+
+  SP.Step3x = { render, report, fpRows, version: '0.2.0-rewrite' };
 })();
 
 /* ===== src/70-i18n-dom.js ===== */
@@ -4185,9 +7060,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     timer: null,
     _blockIndex: null,
     _blockIndexFor: null,
-    stats: { text: 0, attr: 0, block: 0 },
-
-    /* ---------------------------------------------------------- 索引 */
 
     blockIndex() {
       const pack = I18n.SITE[I18n.lang];
@@ -4199,8 +7071,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       this._blockIndexFor = pack;
       return m;
     },
-
-    /* ---------------------------------------------------------- 翻译单点 */
 
     /** 短词条：保留首尾空白 */
     textNodeValue(node) {
@@ -4220,8 +7090,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return I18n.siteText(normalizeBlock(v));
     },
 
-    /* ---------------------------------------------------------- 批量处理 */
-
     patchTextNodes(root) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode: (n) => {
@@ -4235,7 +7103,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       let n;
       while ((n = walker.nextNode())) {
         const out = this.textNodeValue(n);
-        if (out !== null) { n.nodeValue = out; this.stats.text++; }
+        if (out !== null) n.nodeValue = out;
       }
     },
 
@@ -4247,14 +7115,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
           const v = el.getAttribute(a);
           if (!v) continue;
           const out = this.attrValue(v);
-          if (out !== null) { el.setAttribute(a, out); this.stats.attr++; }
+          if (out !== null) el.setAttribute(a, out);
         }
       }
       // 提交按钮的文案写在 value 里，不翻会留英文
       for (const el of (root.querySelectorAll ? root.querySelectorAll('input[type="submit"],input[type="button"]') : [])) {
         const v = el.getAttribute('value');
         const out = this.attrValue(v);
-        if (out !== null) { el.setAttribute('value', out); this.stats.attr++; }
+        if (out !== null) el.setAttribute('value', out);
       }
     },
 
@@ -4289,11 +7157,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         if (!el.isConnected || el.closest('[data-sp-block]')) continue;
         el.innerHTML = html;
         el.setAttribute('data-sp-block', '1');
-        this.stats.block++;
       }
     },
-
-    /* ---------------------------------------------------------- 入口 */
 
     /** translateSubtree：只翻一棵子树且**不跳过 #sp** —— 站点把估算结果 HTML（英文 + 表格）
      *  塞进我们卡片里，按「不进 #sp」会被整段挡掉，于是它一直是英文。词典仍是同一份。 */
@@ -4337,7 +7202,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       });
       this.observer.observe(document.body, {
         childList: true, subtree: true, attributes: true,
-        attributeFilter: ATTRS.concat(['value']),
+        attributeFilter: ATTRS,   // value 的变化回调里本来就不处理，别再让它触发 observer
       });
     },
 
@@ -4346,13 +7211,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     },
 
     /* ---------------------------------------------------------- 开关 */
-
-    setEnabled(on) {
-      this.enabled = !!on;
-      Util.store.set('translateSite', this.enabled);
-      if (on) { this.run(); document.documentElement.lang = htmlLang(); }
-      else { location.reload(); }   // 关掉最干净的方式是重载，避免半译状态
-    },
 
     mountPill() {
       if (document.getElementById('sp-lang-pill') || document.querySelector('#sp')) return;
@@ -4406,10 +7264,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     },
   };
 
-  function htmlLang() {
-    return ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
-  }
-
   SP.DomI18n = DomI18n;
 })();
 
@@ -4425,6 +7279,18 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
   /* ---- 1. 接管判定 ---- */
 
+  /** 上传链路三态（用户 2026-10-07 拍板砍掉兼容档后只剩这三档）：
+      off = 关：整条链路不接管，顶栏也不出入口
+      raw = 原版：顶栏入口在，点一下**新标签页**打开站点自己的 /getstarted（我们完全不接管那一页）
+      new = 新版：站点给的三个契约由 62-chain.js 解析、界面自绘、提交自己发 —— 唯一被重制的上传界面
+      历史值（'site' 是 0.2.0 中途用过的名字，'compat' 是已砍掉的兼容档）与空值都归到新版：
+      它们不该把用户留在一条已经不存在的路径上。 */
+  function uploadMode() {
+    const v = Util.store.get('uploadMode', 'new');
+    if (v === 'off' || v === 'raw' || v === 'new') return v;
+    return 'new';
+  }
+
   /** 路径 → 视图；null = **不接管**，原站界面照常显示。 */
   function viewForPath(pathname) {
     const p = pathname.replace(/\/+$/, '') || '/home';
@@ -4437,11 +7303,16 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (/^\/user\/[^/]+\/edit$/.test(p)) return 'account';
     // 会话页：别人的编号 404（站点只让自己的机器可见）→ 能读到就接管
     if (/^\/session\/\d+$/.test(p)) return 'session';
-    /* /getstarted **不接管**（用户拍板）：上传表单只是那页最后一段，局部接手会让"上传项目"有两种
-       界面。上传只走应用内 `#/upload`。 */
+    /* 上传链路：上传表单只是 /getstarted 的最后一段（HTML.php:2085），整页接手会让"上传项目"
+       有两种界面 —— 所以重制只发生在应用内 #/upload（「新版」档）；「原版」档点一下是**新标签页**
+       打开站点自己那一页（见 onClick），这里返回 null，那一页照常由站点自己渲染。 */
+    const um = uploadMode();
+    const takeover = um === 'new';
+    if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
-    if (/^\/project\/add\/[^/]+$/.test(p)) return 'analyse';
-    // 还没接管：新增项目表单、/project/<数字>（见 docs/PUBLISHING.md「五」）
+    if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
+    if (/^\/project\/\d+$/.test(p)) return 'project';
+    // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
   }
 
@@ -4475,7 +7346,6 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
@@ -4504,6 +7374,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /** 守卫已注入、后来发现不该接管：把页面原样还给用户 */
   function release() {
     released = true;
+    parkAnalyse();   // 壳下面那份站点结果容器还挂着：先送回页面，再拆 #sp
     const g = document.getElementById('sp-guard');
     if (g) g.remove();
     const s = document.getElementById('sp-style');
@@ -4528,13 +7399,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     session: null,
     sessionId: null,       // /session/<数字>
     analyseToken: null,    // /project/add/<token>
+    projectId: null,       // /project/<数字>
     myAvatar: '',          // 顶栏那张：**自己**的头像（不是正在看的档案）
     loading: false,
     error: null,
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    expUpload: false,      // 实验性：顶栏的上传入口（设置里开，默认关）
+    uploadMode: 'new',
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -4544,7 +7416,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     state.themePref = Theme.init();
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
-    state.expUpload = Util.store.get('expUpload', false) === true;
+    state.uploadMode = uploadMode();
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
@@ -4576,13 +7448,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 实验性入口走**应用内** #/upload，不跳原站那页 */
-    if (state.expUpload) nav.push(['upload', t('nav.upload'), t('nav.upload')]);
+    if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
+    /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
+    const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
-      `<button data-nav="${k}" ${state.view === k ? 'aria-current="page"' : ''}>`
+      `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
     return `<div class="wrap">
       <div class="top">
@@ -4592,7 +7465,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         <span class="metaline num" id="sp-updated"></span>
         <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
         <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname">${Util.esc(u)}</b></span>` : ''}
+        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -4649,6 +7522,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
+    else if (state.view === 'project') html = Views.project(state);
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -4658,12 +7532,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
 
     /* 重画前必须清掉"已接线"标记：#sp-body 常驻，标记活过整个会话 → 守卫误判早退（实测） */
     delete body.dataset.spWired;
+    parkAnalyse();  // 分析页站点那份结果容器（我们把它摘下来了）要先送回原位
     body.innerHTML = html;
     // 错误态不锁，重试要能重画
     if (state.view === 'analyse' && !state.error) host.dataset.spWired = '1';
     host.classList.toggle('sp-anim', animOnce);
     animOnce = false;
     Views.mount(body, state);      // 面积图要按实测像素渲染
+    if (state.view === 'project') wireManage(body);   // 名单输入框的自动补全
     host.scrollTop = scrollY;
     paintMeta();
   }
@@ -4696,30 +7572,69 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   async function analyseTick() {
     const token = state.analyseToken;
     if (!token) return;
-    let raw;
+    /* 轮询与判形都在 62-chain.js 里（契约 B）：RETRY / PROCESSING / 完成的碎片 / 编号已失效 */
+    let r;
     try {
-      // ttl 0：轮的就是"现在"，缓存会停在第一次的结果
-      raw = await Api.fetchPage(`/project/add_analyse/${encodeURIComponent(token)}`, { ttl: 0 });
+      r = await SP.Chain.analyse(token);
     } catch (e) {
       // 不自己重试：卡片上的文案已说"重新载入这一页"
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    let json = null;
-    try { json = JSON.parse(raw); } catch (e) { /* 不是 JSON，那就看形状 */ }
-    if (json === null) {
-      /* 完成吐的是**没有布局的片段**，"找不到编号"吐的是整页 error.html.twig → 按形状分开
-         （否则整页错误会被当成表单）。 */
-      if (/^\s*<(!doctype|html)/i.test(raw)) { paintAnalyse({ gone: true }); return; }
-      paintAnalyse({ html: raw });
-      return;
-    }
-    if (json && json.status === 'PROCESSING') {
-      paintAnalyse({ done: Number(json.analysed) || 0, total: Number(json.total) || 0 });
-    } else {
-      paintAnalyse({ waiting: true });
-    }
+    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
+    if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
+    if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
+    else paintAnalyse({ waiting: true });
     analyseTimer = setTimeout(analyseTick, 5000);
+  }
+
+  /* ---- 3.4b 分析完成页那份站点结果容器 ----------------------------------------
+     站点渲染 /project/add/<token> 时，它自己的轮询（doAnalyseUploadedProject）会把
+     GET /project/add_analyse/<token> 的 HTML 整块塞进页面里的 #project_add_analyse_result。
+     我们自己拉的也是同一个地址：如果两边各留一份，全站就有两套同名 id，而 $('#id') 命中的是
+     站点那份（在壳后面）—— doAddProject 读它、用户在壳里改的控件白改（0.1.18 修的真缺陷）。
+     做法跟管理页的 park 一个套路：把站点那份**摘下来留着**，离开这一页再原样还回去。 */
+  let anStale = null;    // 站点那份容器（摘下来后挂在这儿，不删除）
+  let anAnchor = null;   // 它在原页里的锚（注释节点）
+
+  /** 把站点那份摘出文档（只摘一次；它空着也摘，反正内容我们自己渲染） */
+  function hideStaleAnalyse() {
+    if (anStale) return;
+    const live = document.getElementById('project_add_analyse_result');
+    if (!live || live.closest('#sp')) return;          // 站点没这块 / 已经在我们壳里
+    if (!anAnchor || !anAnchor.parentNode || anAnchor.closest('#sp')) {
+      anAnchor = document.createComment('sp-analyse');
+      live.parentNode.insertBefore(anAnchor, live);
+    }
+    live.remove();
+    anStale = live;
+  }
+
+  /** 离开这一页（或整个交还页面）时把它放回去，站点页面保持原样 */
+  function parkAnalyse() {
+    if (anStale && anAnchor && anAnchor.parentNode) {
+      anAnchor.parentNode.insertBefore(anStale, anAnchor.nextSibling);
+    }
+    anStale = null;
+  }
+
+  /** 第三步认不出来时的**交还页面**（砍掉兼容档后这是唯一的降级动作）。
+      原则：认不出来就不半新半旧地渲染 —— 老路（把站点碎片塞进我们的卡片、再按站点 id 点名提交）
+      随兼容档一起删了。做法是 release() 把页面还给站点，再把站点自己那份碎片放回站点自己的容器：
+      站点自己的轮询就是这么写的（addproject.js:204 的 $('#project_add_analyse_result').html(data)），
+      而它被我们用空函数顶掉了（见 startAnalysePoll），这一份因此得由我们送回去。
+      容器、表单 id、内联 onsubmit 全是站点的原件，提交照旧走站点的 doAddProject。
+      为什么不是 release() + location.reload()：重载后脚本照样接管这一页、照样认不出来 ——
+      用户会原地转圈；而只 release() 不送碎片的话，站点那一页会停在他自己的「正在分析」上
+      （它的轮询已被顶掉，不会再有人往里写）。 */
+  function handBackToSite(html) {
+    release();   // 拆掉 #sp 与守卫，并把站点那份结果容器放回页面原位
+    const host = document.getElementById('project_add_analyse_result');
+    if (!host) return;   // 站点连这块都没有（改版了）→ 页面已经在站点自己手里，到此为止
+    host.innerHTML = html || '';
+    SP.DomI18n.enabled = state.translateSite !== false;
+    if (SP.DomI18n && SP.DomI18n.translateSubtree) SP.DomI18n.translateSubtree(host);
   }
 
   /** 定点改卡片节点，不整页重画（会抹掉站点注入的表单） */
@@ -4752,15 +7667,54 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return;
     }
     if (s.html !== undefined) {
-      // 站点表单进来：本版没重制它，只做可读性兜底
+      // 站点把第三步（服务端渲染的那块表单）当 HTML 吐回来：它是唯一的数据源，界面我们自己画
       stopAnalysePoll();
       const spin = q('spin'); if (spin) spin.remove();
       say('state', t('an.doneTitle'));
       say('sub', '');
       const track = q('track'); if (track) track.hidden = true;
-      const done = q('done'); if (done) done.hidden = false;
+      /* 页头接过"这是什么页"和"接下来做什么"：标题用步骤名（顶栏那一项也是它），副标题说明
+         分析已结束。卡片里那句重复的状态行**必须真的隐藏** —— .an-head 有 display:flex，
+         UA 的 [hidden]{display:none} 会被它压掉（这个坑代码里已经记过一次，别再踩）。 */
+      const ttl = q('title');
+      const tsub = q('titleSub');
+      if (ttl) ttl.textContent = t('up3x.title');
+      if (tsub) { tsub.textContent = t('an.doneSechead'); tsub.hidden = false; }
+      const anHead = host.querySelector('.an-head');
+      if (anHead) { anHead.hidden = true; anHead.style.display = 'none'; }
       const box = document.getElementById('sp-an-result');
-      if (box) { box.innerHTML = s.html; box.hidden = false; }
+      if (box) {
+        /* 站点自己也会把同一份 HTML 写进 #project_add_analyse_result（doAnalyseUploadedProject）。
+           两套同名 id 并存时，站点按 $('#id') 取值命中的是藏在壳后面那份原件 —— 用户在界面上改的
+           东西会被整份丢掉（0.1.18 修的真缺陷）：0.1.14 起"值全留默认"的验收看不出来，因为它验的
+           就是那份原件。先把站点那份请出文档（留着，离开这一页或交还页面时还回去）。 */
+        hideStaleAnalyse();
+        /* 站点那份碎片只当**数据源**（DOMParser 解析），界面我们自己画 —— 它永远不进活文档，
+           也就不存在"两份同名控件"这一整类问题。 */
+        const model = (SP.Chain && SP.Chain.parseStep3) ? SP.Chain.parseStep3(s.html) : null;
+        const drawn = (model && SP.Step3x) ? SP.Step3x.render(box, model) : null;
+        /* 解析不认识 / 画不出来：不半新半旧地渲染。明说这一版认不出来，并给一个出口 ——
+           点一下就把整页还给站点自己（见 handBackToSite）。 */
+        if (!(drawn && drawn.ok)) {
+          box.textContent = '';
+          box.hidden = false;
+          const note = document.createElement('div');
+          note.className = 'up3-notes up3-bad';
+          note.textContent = t('up3x.degrade');
+          const foot = document.createElement('div');
+          foot.className = 'up3-bfoot';
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'btn up3-submit';
+          btn.textContent = t('up3x.degradeGo');
+          btn.addEventListener('click', () => handBackToSite(s.html));
+          foot.appendChild(btn);
+          box.appendChild(note);
+          box.appendChild(foot);
+          if (tsub) { tsub.textContent = ''; tsub.hidden = true; }
+          return;
+        }
+      }
       return;
     }
     say('state', s.total
@@ -4771,7 +7725,24 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (bar) bar.style.width = s.total ? `${Math.min(100, Math.round((s.done / s.total) * 100))}%` : '100%';
   }
 
+  /* ---- 3.6 项目管理页 /project/<数字>：整页自绘，站点 DOM 一个节点都不进我们的壳 ----------------
+     数据是**那一页 HTML 的一份副本**（Api.fetchPage → DOMParser → Api.parseManage），
+     动作直发站点端点（mgSet / mgAct / mgAcl）。 */
+
   /* ---- 4. 数据编排 ---- */
+
+  /* 在线机器：主页那块只给「客户端 + 规格」，而运行状态 / 渲染方式 / 性能 / 帧数 / 积分
+     都在**每一台自己的会话页**上 —— 逐台取一次（最多 3 台，走 Api 的 60 秒缓存），
+     解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
+     `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
+  async function machineDetails(profile) {
+    const list = (profile && profile.machines && profile.machines.list) || [];
+    for (const m of list.slice(0, 3)) {
+      if (m.detail !== undefined || !m.url) continue;
+      m.detail = null;
+      try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
+    }
+  }
 
   async function ensureData(view) {
     if (view === 'settings') return;
@@ -4783,7 +7754,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
 
     if (view === 'upload') {
-      // /getstarted 就是数据源（见 50-views.js wireUploadDoc）：站点没给单独接口
+      // /getstarted 就是数据源（由 64-step1.js 解析成自绘界面）：站点没给单独接口
       if (!state.uploadHtml) state.uploadHtml = await Api.fetchPage('/getstarted');
       return;
     }
@@ -4824,6 +7795,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
         state.profile = Api.parseProfile(html, target);
         SP.state = state;   // 供 shell 里取头像
       }
+      await machineDetails(state.profile);
       if (!state.home) {
         try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
       }
@@ -4836,6 +7808,18 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
     }
 
+    /* 项目管理页：站点那一页的**副本**当数据源（我们在这一页上，fetch 同源地址拿回服务端渲染的
+       HTML，走 DOMParser 进不了活文档）。解析不出那一页的形状就说清楚、给重试，不画半张脸。 */
+    if (view === 'project') {
+      if (!state.projectId) throw new Error(t('mg.noId'));
+      if (!state.mg) {
+        const html = await Api.fetchPage(`/project/${encodeURIComponent(state.projectId)}`);
+        const mg = Api.parseManage(Util.parse(html), state.projectId);
+        if (!mg.found) throw new Error(t('mg.noData'));
+        state.mg = mg;
+      }
+    }
+
     if (view === 'projects' && !state.account && state.userName) {
       try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
       catch (e) { state.account = null; }
@@ -4844,6 +7828,17 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     // 顶部全站实时来自首页：直接落到这页也得取一次
     if (view === 'projects' && !state.home) {
       try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
+    }
+
+    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
+       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
+    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
+      const own = state.userName && state.profileName === state.userName && state.profile
+        ? state.profile
+        : (state.userName
+          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+          : null);
+      state.myProjects = (own && own.myProjects) || [];
     }
 
     if (view === 'ranking' && !state.ranking) {
@@ -4859,8 +7854,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
         || (view === 'projects' && !state.projects)
+        || (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects)
         || (view === 'ranking' && !state.ranking)
         || (view === 'upload' && !state.uploadHtml)
+        /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
+        || (view === 'account' && !state.account)
         || (view === 'session' && !state.session);
       state.loading = need;
       render();
@@ -4910,6 +7908,11 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       Api.invalidate();
       state.account = null;
       state.session = null;
+      /* 重取期间必须留下"在加载"的表示：数据已经置空，而 show({silent}) 不设 loading，这段窗口里
+         任何一次 render() 都会把整页画成「暂无数据」（实测：移出渲染优先后菜单还开着，随手点一下
+         菜单外面就中）。这里**不**立刻 render()：正常路径旧内容留到重取完，只有真发生 stray render
+         才显示骨架。 */
+      state.loading = true;
       await show(state.view, { silent: true });
       toast(okMsg || t('account.ok'));
       return true;
@@ -4932,7 +7935,14 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     }
 
     const nav = ev.target.closest('[data-nav]');
-    if (nav) { go(nav.dataset.nav); return; }
+    if (nav) {
+      if (nav.dataset.nav === 'upload') {
+        /* 「原版」档：站点自己的脚本才在那一页上，干脆开新标签页，我们一点都不碰。
+           「新版」档走下面的 go() → 应用内 #/upload。 */
+        if (state.uploadMode === 'raw') { window.open('/getstarted', '_blank', 'noopener'); return; }
+      }
+      go(nav.dataset.nav); return;
+    }
 
     const act = ev.target.closest('[data-act]');
     if (act) {
@@ -4947,6 +7957,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (kind === 'refresh') {
         Api.invalidate();
         state.profile = state.home = state.projects = state.ranking = state.account = null;
+        state.myProjects = null;
+        state.mg = null;
         state.session = null;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
@@ -5053,6 +8065,8 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
+        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。 */
+        Views.projState.menu = null;
         submit(() => Api.post(url));
         return;
       }
@@ -5062,6 +8076,7 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const del = ev.target.closest('[data-del]');
     if (del) {
       if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
+      if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
       submit(() => Api.post(del.dataset.del));
       return;
     }
@@ -5083,12 +8098,81 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       const k = sort.dataset.sort;
       if (Views.projState.sort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
       else { Views.projState.sort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();   // 点表头 = 记住这个默认（用户自定义排序）
+      render();
+      return;
+    }
+
+    // 「我发布的」那张表的表头（列少，跟全站那张分开记排序状态）
+    const msort = ev.target.closest('th[data-msort]');
+    if (msort) {
+      const k = msort.dataset.msort;
+      if (Views.projState.msort === k) Views.projState.dir = Views.projState.dir === 'asc' ? 'desc' : 'asc';
+      else { Views.projState.msort = k; Views.projState.dir = 'desc'; }
+      Views.saveSort();
       render();
       return;
     }
 
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+
+    // 项目设置：计算方式（站点那只 radio 是"点了就翻"，我们是"点了就是它"，发的是目标值）
+    const mc = ev.target.closest('#sp-mg-compute [data-v]');
+    if (mc) { mgSet('compute', mc.dataset.v); return; }
+
+    const md = ev.target.closest('[data-mg-del]');
+    if (md) {
+      if (!window.confirm(t('mg.delConfirm'))) return;
+      mgDelete(md.dataset.mgDel);
+      return;
+    }
+
+    // 项目管理页：暂停 / 继续 / 重置 / 部分存档
+    const ma = ev.target.closest('[data-mg-act]');
+    if (ma) { mgAct(ma.dataset.mgAct); return; }
+
+    // 名单：加 / 移除（加的时候团队那栏必须是从建议里选过的）
+    const aa = ev.target.closest('[data-acl-add]');
+    if (aa) {
+      const kind = aa.dataset.aclAdd;
+      const inp = document.getElementById(aa.dataset.input);
+      const typed = inp ? inp.value.trim() : '';
+      const msg = document.querySelector(`[data-acl-msg="${kind}"]`);
+      const say = (text) => { if (msg) { msg.textContent = text; msg.hidden = !text; } };
+      if (!typed) { say(t('mg.acl.needName')); return; }
+      if (kind === 'team' && !(inp && inp.dataset.pick)) { say(t('mg.acl.needPick')); return; }
+      say('');
+      mgAcl(kind, 'add', kind === 'team' ? inp.dataset.pick : typed);
+      return;
+    }
+    const ad = ev.target.closest('[data-acl-del]');
+    if (ad) {
+      const kind = ad.dataset.aclDel;
+      const value = kind === 'team' ? (ad.dataset.id || ad.dataset.name) : ad.dataset.name;
+      if (!value) return;
+      if (!window.confirm(t('mg.acl.delConfirm', { name: ad.dataset.name }))) return;
+      mgAcl(kind, 'del', value);
+      return;
+    }
+
+    /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
+    const sScope = ev.target.closest('#sp-scope [data-s]');
+    if (sScope) {
+      const v = sScope.dataset.s;
+      if (Views.projState.scope === v) return;
+      Views.projState.scope = v === 'mine' ? 'mine' : 'all';
+      Views.projState.filter = 'all';
+      Views.projState.limit = 120;
+      Views.projState.menu = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
+      else render();
+      return;
+    }
+
+    // 总览区块的「看全部」：先定好档位，再让 #/projects 这个链接照常跳
+    const jump = ev.target.closest('[data-scope]');
+    if (jump) { Views.projState.scope = jump.dataset.scope === 'mine' ? 'mine' : 'all'; Views.projState.filter = 'all'; }
 
     // 账户选项卡：只换面板，不重新取数
     const tb = ev.target.closest('#sp-acct-tabs [data-tab]');
@@ -5110,6 +8194,22 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return;
     }
 
+    /* 默认排序：改完落盘（两个列表下次打开都用它）。认不出的值、或点的就是当前那档，
+       set*Pref 会返回 false —— 那就没什么可画的，不白重画一次。 */
+    const ps = ev.target.closest('#sp-psort [data-v]');
+    if (ps) { if (Views.setSortPref(ps.dataset.v)) render(); return; }
+
+    const pd = ev.target.closest('#sp-pdir [data-v]');
+    if (pd) { if (Views.setDirPref(pd.dataset.v)) render(); return; }
+
+    // 总览区块的开关：点一下翻一个
+    const ob = ev.target.closest('[data-ov-toggle]');
+    if (ob) { if (Views.setOvHidden(ob.dataset.ovToggle)) render(); return; }
+
+    // 总览区块的上/下移：到头了 moveOv 返回 false，什么都不用画
+    const om = ev.target.closest('[data-ov-move]');
+    if (om) { if (Views.moveOv(om.dataset.ovMove, Number(om.dataset.ovDir))) render(); return; }
+
     const lg = ev.target.closest('#sp-lang [data-v]');
     if (lg) {
       I18n.set(lg.dataset.v);
@@ -5129,15 +8229,15 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
       return;
     }
 
-    /* 开关决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
-    const ex = ev.target.closest('#sp-exp [data-v]');
-    if (ex) {
-      const on = ex.dataset.v === 'on';
-      Util.store.set('expUpload', on);
-      state.expUpload = on;
-      const host = document.getElementById('sp');
-      if (host) host.innerHTML = shell();
-      show(state.view, { silent: true });
+    /* 三态决定顶栏有没有那个入口 → **重建整壳**（同语言开关）：render() 不增删导航项 */
+    const um = ev.target.closest('#sp-upmode [data-v]');
+    if (um) {
+      const v = um.dataset.v;
+      if (v === state.uploadMode) return;
+      Util.store.set('uploadMode', v);
+      state.uploadMode = v;
+      /* 换档会改变"哪些页接管、入口指向哪"，而这些判定在 boot 时就做完了 —— 老实重载一次 */
+      location.reload();
       return;
     }
   }
@@ -5145,7 +8245,156 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`));
+    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    const mg = ev.target.closest('[data-mg]');
+    if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
+  }
+
+  /* ---- 项目设置 / 动作 / 名单：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） ----
+     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*、doAddACL*）成功后就是
+     window.location.reload()：真相在服务端，我们不复制一份状态。这里照做，但先把结果说出来再重载。
+     端点逐个核对过 showjob.js 与 ProjectController 的 Route 表。 */
+  const MG_URL = {
+    compute: (id, v) => `/project/${id}/computemethod/${v}/1`,
+    mp4: (id, v) => `/project/${id}/mp4/${v}`,
+    public: (id, v) => `/project/${id}/visibility/${v}`,
+  };
+  const MG_ACT_URL = {
+    pause: (id) => `/project/${id}/pause`,
+    resume: (id) => `/project/${id}/resume`,
+    reset: (id) => `/project/${id}/reset`,
+  };
+  const MG_ACL_URL = {
+    /* 团队发**数字 id**（站点那只隐藏域就是它），用户发 **login** —— 见 showjob.js 的 doAddACL* */
+    manager: (id, op, name) => `/project/${id}/acl/manager/user/${op}/${encodeURIComponent(name)}`,
+    renderer: (id, op, name) => `/project/${id}/acl/renderer/user/${op}/${encodeURIComponent(name)}`,
+    team: (id, op, teamId) => `/project/${id}/acl/renderer/team/${op}/${encodeURIComponent(teamId)}`,
+  };
+
+  /** 成功后整页重载（站点自己的做法）；失败要把界面拨回服务端那个状态 */
+  async function mgDone(url, okMsg) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(url);
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); render(); return false; }
+      toast(okMsg || t('account.ok'));
+      setTimeout(() => location.reload(), 700);
+      return true;
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      render();
+      return false;
+    }
+  }
+
+  function mgSet(kind, value) {
+    const id = state.projectId;
+    if (!id || !MG_URL[kind]) return;
+    if (kind === 'compute' && state.mg && state.mg.compute === value) return;   // 点的是当前那档
+    mgDone(MG_URL[kind](id, value));
+  }
+
+  function mgAct(kind) {
+    const id = state.projectId;
+    if (!id) return;
+    if (kind === 'partial') {
+      /* 站点自己的确认文案（它那句话把后果说全了：会自动暂停、发邮件、恢复时存档销毁），照抄 */
+      if (!window.confirm(t('mg.partialConfirm'))) return;
+      const a = (state.mg.actions || []).find((x) => x.kind === 'partial');
+      if (!a || !a.url) return;
+      mgDone(a.url, t('mg.partialOk'));
+      return;
+    }
+    if (!MG_ACT_URL[kind]) return;
+    if (kind === 'reset' && !window.confirm(t('mg.resetConfirm'))) return;
+    mgDone(MG_ACT_URL[kind](id));
+  }
+
+  async function mgAcl(kind, op, value) {
+    const id = state.projectId;
+    if (!id || !MG_ACL_URL[kind] || !value) return;
+    await mgDone(MG_ACL_URL[kind](id, op, value));
+  }
+
+  async function mgDelete(id) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(`/project/${id}/remove_no_redirect`);
+      /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      location.href = '/home/projects';
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+    }
+  }
+
+  /* ---- 名单输入框的自动补全：站点的 jQuery UI autocomplete 替代品，走它同一个端点 ----------
+     `/user/list_from_term` 回的是一串 **login**，但**不是 JSON 数组而是对象**（`{"0":"alice",…}`）
+     —— 站点那边 `natcasesort()` 保留了键，`json_encode` 就把非连续数组编成对象了。所以两种形状都要认。
+     `/team/list_from_term` 回 `[{value: 数字 id, label: 团队名}]`。团队加白名单要的是 id，
+     所以那一栏必须从建议里选。 */
+  const aclSeq = {};
+  async function aclSearch(kind, term) {
+    const path = kind === 'team' ? '/team/list_from_term' : '/user/list_from_term';
+    const res = await fetch(`${path}?term=${encodeURIComponent(term)}`, {
+      credentials: 'include',
+      headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
+    });
+    if (!res.ok) return [];
+    let json = null;
+    try { json = await res.json(); } catch (e) { return []; }
+    const raw = Array.isArray(json) ? json
+      : (json && typeof json === 'object' ? Object.keys(json).sort((a, b) => a - b).map((k) => json[k]) : []);
+    return raw.map((o) => (typeof o === 'string'
+      ? { value: o, label: o }
+      : { value: String(o && o.value), label: String(o && o.label) }))
+      .filter((x) => x.value && x.value !== '#');
+  }
+
+  function wireManage(body) {
+    const box = body && body.querySelector('.aadd');
+    if (!box) return;
+    for (const wrap of body.querySelectorAll('.aadd .up1-dev')) {
+      const inp = wrap.querySelector('input[data-acl-input]');
+      const sug = wrap.querySelector('.up1-sug');
+      if (!inp || !sug) continue;
+      const kind = inp.dataset.aclInput;
+      let timer = null;
+      const close = () => { sug.hidden = true; sug.textContent = ''; };
+      inp.addEventListener('input', () => {
+        delete inp.dataset.pick;                        // 改了字就不再是"选过的那个"
+        close();
+        const term = inp.value.trim();
+        if (term.length < 3) return;
+        clearTimeout(timer);
+        timer = setTimeout(async () => {
+          const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
+          const list = await aclSearch(kind, term);
+          if (my !== aclSeq[kind]) return;
+          sug.textContent = '';
+          if (!list.length) { close(); return; }
+          list.slice(0, 12).forEach((o) => {
+            const li = document.createElement('div');
+            li.className = 'up1-sugitem';
+            li.textContent = o.label;
+            li.tabIndex = 0;
+            li.setAttribute('role', 'option');
+            const pickIt = () => {
+              inp.value = o.label;
+              inp.dataset.pick = o.value;
+              close();
+            };
+            li.addEventListener('click', pickIt);
+            li.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pickIt(); }
+            });
+            sug.appendChild(li);
+          });
+          sug.hidden = false;
+        }, 250);
+      });
+      inp.addEventListener('blur', () => setTimeout(close, 180));
+    }
   }
 
   let inputTimer = null;
@@ -5154,23 +8403,61 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
-      const host = document.getElementById('sp');
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* noop */ } }
-      void host;
     }, 180);
   }
 
+  /** 视图"该在"的那一页（pathname）。地址栏必须和内容对得上：
+      从会话页点「总览」以前只改 hash → 停在 `/session/<id>#/overview`，地址和内容对不上
+      （用户 2026-10-07 实报）。所以跨页的视图切换改成**整页导航**到它自己那一页，
+      站点那一页照旧由我们接管，hash 决定落在哪个视图（boot 里读）。
+      同一页内的视图切换（总览 ↔ 项目 ↔ 排行榜 ↔ 设置）仍走 replaceState，不重载。 */
+  function pageFor(view) {
+    const me = state.userName;
+    if (!me) return null;
+    const onProfile = /^\/user\/[^/]+\/profile$/.test(location.pathname);
+    /* 账户设置与主页那一族一样**留在主页地址上**（用户 2026-10-07：账户设置也别改地址，地址还是
+       那个 profile 的）——它的数据本来就走 fetchPage('/user/<me>/edit')，不需要换页。
+       已经在自己的 edit 页上（站点自己的链接进来的）也不动。 */
+    if (view === 'account') {
+      if (onProfile || /^\/user\/[^/]+\/edit$/.test(location.pathname)) return location.pathname;
+      return `/user/${encodeURIComponent(me)}/profile`;
+    }
+    if (view === 'overview' || view === 'projects' || view === 'ranking' || view === 'settings') {
+      /* 主页那一族：**任何人的**主页都算（在别人主页上看总览/项目是既有能力，别跳回自己主页）。
+         不在主页上（会话页 / 项目管理页 / 上传页…）才回自己的主页。 */
+      return onProfile ? location.pathname : `/user/${encodeURIComponent(me)}/profile`;
+    }
+    if (view === 'upload') return state.uploadMode === 'new' ? '/getstarted' : null;
+    return null;
+  }
+
   function go(view) {
+    const want = pageFor(view);
+    if (want && want !== location.pathname) {
+      /* 主页那一族带上 hash（地址里能看出落在哪个视图）；账户设置 / 上传页**不带** ——
+         那一页本身就是那个视图，`/user/<me>/edit#/account` 这种多余后缀只会让人以为有两层。 */
+      const hash = /^\/user\/[^/]+\/profile$/.test(want) ? (ROUTES[view] || '') : '';
+      location.assign(want + hash);
+      return;
+    }
     if (ROUTES[view]) history.replaceState(null, '', ROUTES[view]);
     show(view);
   }
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (m && m[1] !== state.view) show(m[1]);
+    if (!m || m[1] === state.view) return;
+    /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
+       留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
+    if (m[1] === 'upload' && state.uploadMode !== 'new') {
+      history.replaceState(null, '', ROUTES[state.view] || location.pathname);
+      return;
+    }
+    show(m[1]);
   });
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
@@ -5205,10 +8492,21 @@ body > ul.sp-acmenu li.ui-state-focus,body > ul.sp-acmenu li:hover{background:va
     const an = location.pathname.match(/^\/project\/add\/([^/]+)/);
     state.analyseToken = an ? decodeURIComponent(an[1]) : null;
 
+    // 项目管理页的编号只从地址来（同会话页）
+    const pj = location.pathname.match(/^\/project\/(\d+)/);
+    state.projectId = pj ? pj[1] : null;
+
     if (location.hash && /^#\/(\w+)$/.test(location.hash)) {
       const v = location.hash.slice(2);
-      if (ROUTES[v]) state.view = v;
+      /* #/upload 是应用内的上传页 —— 只属于「新版」档。off/raw 档那一页归站点自己，
+         手打 hash 不该越档（2026-10-07 实报：raw 档下 #/upload 照样画新版上传页）。 */
+      if (ROUTES[v] && (v !== 'upload' || state.uploadMode === 'new')) state.view = v;
     }
+
+    /* 项目管理页：站点没给出项目那一块（项目不存在 / 无权查看 → 站点自己那张 Forbidden 页）
+       就原样还回去，别接管成一屏空壳。数据虽然改为从**副本**解析，这道判据仍然要留着：
+       它认的是"这一页到底是不是一个能管的项目页"，而不是"我们要不要搬它的节点"。 */
+    if (state.view === 'project' && !document.getElementById('jobs_of_a_project')) { release(); return; }
 
     document.title = document.title.replace(/^\s*SheepIt\s*$/, 'SheepIt Plus');
 

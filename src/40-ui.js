@@ -21,8 +21,14 @@
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
+    /* 警示（三角 + 感叹号）：给"检测到降噪"这类"这一项为什么没得选"用 */
+    warn: '<path d="M12 2.4c.56 0 1.08.3 1.36.78l8.2 14.2A1.57 1.57 0 0 1 20.2 19.8H3.8a1.57 1.57 0 0 1-1.36-2.42l8.2-14.2A1.57 1.57 0 0 1 12 2.4zm0 2.4L5.06 17.4h13.88L12 4.8zm-1 3.1h2v4.9h-2zm0 6.1h2v2h-2z"/>',
     heart: '<path d="M12 20.3l-1.4-1.3C5.4 14.4 2 11.3 2 7.5 2 4.4 4.4 2 7.5 2c1.7 0 3.4.8 4.5 2.1C13.1 2.8 14.8 2 16.5 2 19.6 2 22 4.4 22 7.5c0 3.8-3.4 6.9-8.6 11.5L12 20.3z"/>',
     ban: '<circle cx="12" cy="12" r="8.6" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6 6l12 12" fill="none" stroke="currentColor" stroke-width="2"/>',
+    /* 上传第三步的 CPU/GPU 图标：站点挂的是两张 PNG（UI__HTML.php:1109/1122），
+       换我们自己的矢量图标（同一条路径，两格外形一眼能分辨）。 */
+    cpu: '<path d="M9 2h2v2H9zm4 0h2v2h-2zM9 19h2v2H9zm4 0h2v2h-2zM2 9h2v2H2zm0 4h2v2H2zm18-4h2v2h-2zm0 4h2v2h-2z"/><path d="M5.5 5.5h13v13h-13zm2 2v9h9v-9z"/>',
+    gpu: '<path d="M3 5.5h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 17V7A1.5 1.5 0 0 1 3 5.5zm.5 2v9h17v-9z"/><path d="M12 8.6a3.4 3.4 0 1 1-3.4 3.4A3.4 3.4 0 0 1 12 8.6zm0 1.8a1.6 1.6 0 1 0 1.6 1.6A1.6 1.6 0 0 0 12 10.4z"/><path d="M4.5 8.8h3v1.4h-3z"/>',
   };
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
@@ -176,13 +182,12 @@
       buckets.set(k, (buckets.get(k) || 0) + x.v);
     }
     const keys = [...buckets.keys()].sort();
-    if (!keys.length) return { html: '', first: '', mid: '', last: '' };
+    if (!keys.length) return { html: '' };
 
     const vals = keys.map((k) => buckets.get(k));
     const mx = Math.max(...vals), mn = Math.min(...vals);
-    const label = (k) => k;
     const bars = vals.map((v, i) =>
-      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(label(keys[i]))} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
+      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(keys[i])} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
 
     return {
       html: `<div class="months">${bars}</div>
@@ -214,12 +219,113 @@
     }).join('')}</div>`;
   }
 
+  /* 站点的时间字符串是 "06:40 Sep 29"（**不给年份**），认不出就返回 null —— 宁可不显示也不猜。 */
+  const MON3 = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  function whenOf(raw) {
+    const m = String(raw || '').trim().match(/^(\d{1,2}):(\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/);
+    const mo = m && MON3[m[3].toLowerCase()];
+    if (!mo) return null;
+    const now = new Date();
+    const mk = (y) => new Date(y, mo - 1, Number(m[4]), Number(m[1]), Number(m[2])).getTime();
+    const t = mk(now.getFullYear());
+    // 用它自己的年份算出来比现在晚一天以上 → 那是去年的（跨年那几天会踩到，所以留一天的余量）
+    return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
+  }
+
+  /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
+  function agoText(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
+    return d ? `${d}d${h}h` : h ? `${h}h${m}m` : m ? `${m}m` : `${s}s`;
+  }
+
+  /** 站点把「客户端侧暂停」与「服务端侧暂停」写成**两个独立条件、两行**
+      （`running.html.twig:296-314`），所以**两个可以同时成立**。返回全部命中的词条键（按站点行序）：
+      会话页一档画一个 chip；在线机器那行拼成一句（那里是紧凑数据行，不套 chip）。
+      原文一并返回，调用方挂在 title 上 —— 站点那行写的什么，悬浮就能看到。 */
+  const PAUSE_RES = [['sess.pausedClient', /paused\s+client\s+side/i], ['sess.pausedServer', /paused\s+server\s+side/i]];
+  function pauseKeys(note) {
+    const s = String(note || '');
+    return PAUSE_RES.filter(([, re]) => re.test(s)).map(([k]) => k);
+  }
+
+  /** 一台连着的机器的详情。主页那块只给「客户端 + 规格」；其余都是**逐台取它自己的会话页**
+      解析出来的（见 80-app.js 的 machineDetails）。取不到就整截不画、照旧只显示规格 ——
+      不编数据。
+
+      渲染方式看站点的 **Compute device** 那一格，那才是"客户端这一路开着没有"的权威字段
+      （模型单元格不能用：客户端取消了 CPU，CPU 型号照样在页上）。没那一格就退回算力单元格
+      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。**只画开着的那几路**：
+      只勾 CPU 的机器就只有一个 CPU 徽章，不再摆一个灰的 GPU。
+
+      算力百分比直接写在 CPU / GPU 标签里（`CPU 22 %` / `GPU 260 %`），不再单列「算力 CPU」
+      那种格子 —— 同一件事说两遍正是"看着杂"的来源。
+      时间显示**算出来的相对值**（跑着的算到"现在"，停了的算到最后一次请求），站点原文挂在
+      title 上，鼠标悬浮才出来；算不出来就整条不显示。 */
+  function machineDetail(d) {
+    if (!d || !d.info) return '';
+    const val = (k) => { const x = d.info[k]; return x && x.value ? String(x.value) : ''; };
+    const now = Date.now();
+    const cRaw = val('createdAt');
+    const cT = whenOf(cRaw);
+    const cdRaw = val('computeDevice');          // 站点原文（挂在 title 上，别小写化）
+    const cd = cdRaw.toLowerCase();              // 判据用小写比较
+    const power = (k) => { const v = val(k).trim(); return v && !/^0\s*%?$/.test(v) ? v : ''; };
+    const pCpu = power('power'), pGpu = power('powerGpu');
+    const cpuOn = cd ? /cpu/.test(cd) : !!pCpu;
+    const gpuOn = cd ? /gpu/.test(cd) : !!pGpu;
+    const chip = (label, v) => `<span class="on">${esc(label)}${v ? ` ${esc(v)}` : ''}</span>`;
+    /* **只画勾选了的那一路**（用户 2026-10-07）：只勾了 CPU 就只写 CPU，不再摆一个灰的 GPU 徽章。
+       判据仍是站点的 **Compute device** —— 它只可能是 `CPU` / `GPU` / `CPU,GPU` / 空
+       （SessionController.php:121-130 一段一段拼出来的），所以"哪几路开着"是站点自己说的；
+       没有那一格时退回"有非零算力才算开着"。认不出的值（站点以后加了第三种）原样画出来
+       —— 不猜，也不吞数据。cd 有值时把原文挂 title。 */
+    const devChips = [];
+    if (cpuOn) devChips.push(chip(t('proj.cpu'), pCpu));
+    if (gpuOn) devChips.push(chip(t('proj.gpu'), pGpu));
+    if (!devChips.length && cdRaw) devChips.push(chip(cdRaw, ''));
+    const dev = devChips.length
+      ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
+    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
+       没有信息量）。三种状态，判据都在站点自己的页面上：
+         · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
+         · 渲染中：`Current frames` 那一行**只在 frames_processing 非空时才印**（running.html.twig:381），
+           所以"有这一行"就是正在干活；
+         · 等待任务：连着的、没暂停、也没有当前帧 —— 就是闲着等派活。 */
+    const note = (d.info.note && d.info.note.value) || '';
+    const pauseText = pauseKeys(note).map((k) => t(k)).join(' · ');
+    const working = !!val('currentFrames');
+    const statusHtml = pauseText
+      ? `<span title="${esc(t('sess.statusRaw', { raw: note }))}">${esc(pauseText)}</span>`
+      : note ? `<span title="${esc(note)}">${esc(note)}</span>`
+        : working ? `<span>${esc(t('machines.state.rendering'))}</span>`
+          : d.running === false ? `<span>${esc(t('sess.off'))}</span>`
+            : d.running === true ? `<span>${esc(t('machines.state.idle'))}</span>` : '';
+    const bits = [
+      statusHtml,
+      cRaw && cT && endT
+        ? `<span title="${esc(t('machines.created', { v: cRaw }))}">${esc(t('machines.uptime', { v: agoText(endT - cT) }))}</span>` : '',
+    ].filter(Boolean);
+    const stats = [['frames', 'stat.frames'], ['points', 'stat.points']]
+      .filter(([k]) => val(k))
+      .map(([k, key]) => `<div class="ms"><span class="k">${esc(t(key))}</span><span class="v num">${esc(val(k))}</span></div>`);
+    if (!dev && !bits.length && !stats.length) return '';
+    const line = (dev || bits.length) ? `<div class="mline">${dev}${bits.join(' · ')}</div>` : '';
+    return `<div class="mfoot">${line}${stats.length ? `<div class="mstats">${stats.join('')}</div>` : ''}</div>`;
+  }
+
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
+    /* 一行一台：身份（标签 + 规格）→ 运行状态与产出 → 「查看会话」。链接放在**最后**，
+       它才落在整行右端；跟着身份走会插在状态中间，看着像"规格的附属"。 */
     return `<div class="machines">${list.map((x) => `<div class="machine">
-        <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
-        <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+        <div class="mhead">
+          <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
+          <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
+        </div>
+        ${machineDetail(x.detail)}
         ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
       </div>`).join('')}</div>`;
   }
@@ -233,8 +339,8 @@
       : `${p.toFixed(0)}%`;
   }
 
-  /** 6px 轨道 + 强调色填充。分数**不在这里**（见 50-views.js 的项目表）：挂在条子后面时
-   *  `flex:1` 的轨道会被每行不同的数字宽度挤成长短不一，独立成列才对得齐。 */
+  /** 6px 轨道 + 强调色填充。分数与条子**同一格**（见 50-views.js 的项目表 `pcell`，用户 2026-10-07）：
+   *  分数用 `.frac` 定宽（`min-width:6.6em`）才不会把每行的条子挤成长短不一；`label` 只挂在轨道上做悬停提示。 */
   function progress(pct, label) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
@@ -249,17 +355,19 @@
   }
 
   const state = {
-    loading: (msg) => `<div class="state"><div class="spin"></div><div class="small">${esc(msg || t('state.loading'))}</div></div>`,
     error: (msg, retryId) => `<div class="state">
         <div class="big">${esc(t('state.error'))}</div>
         <div class="small">${esc(msg || '')}</div>
         <button class="btn primary" id="${retryId || 'sp-retry'}">${icon('refresh')}${esc(t('state.retry'))}</button>
       </div>`,
     empty: (msg) => `<div class="state"><div class="small">${esc(msg || t('state.empty'))}</div></div>`,
+    /* 登录后跳回 /home。**重定向那段不能 URL 编码**：实测 /user/signin/%2Fhome 与
+       /user/signin%2Fhome 都是 404，站点路由认不出编码过的斜杠（2026-10-07 真机）。
+       /user/signin 与 /user/signin/home 都是 200，后者签完确实跳回 /home。 */
     loggedOut: () => `<div class="state">
         <div class="big">${esc(t('state.loggedOut'))}</div>
         <div class="small">${esc(t('state.loggedOutHint'))}</div>
-        <a class="btn primary" href="/user/signin/%2Fhome">${esc(t('state.loggedOutBtn'))}</a>
+        <a class="btn primary" href="/user/signin/home">${esc(t('state.loggedOutBtn'))}</a>
       </div>`,
   };
 
@@ -387,6 +495,6 @@
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
   SP.Charts = { points: pointsChart };
 })();

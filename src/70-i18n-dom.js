@@ -24,9 +24,6 @@
     timer: null,
     _blockIndex: null,
     _blockIndexFor: null,
-    stats: { text: 0, attr: 0, block: 0 },
-
-    /* ---------------------------------------------------------- 索引 */
 
     blockIndex() {
       const pack = I18n.SITE[I18n.lang];
@@ -38,8 +35,6 @@
       this._blockIndexFor = pack;
       return m;
     },
-
-    /* ---------------------------------------------------------- 翻译单点 */
 
     /** 短词条：保留首尾空白 */
     textNodeValue(node) {
@@ -59,8 +54,6 @@
       return I18n.siteText(normalizeBlock(v));
     },
 
-    /* ---------------------------------------------------------- 批量处理 */
-
     patchTextNodes(root) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode: (n) => {
@@ -74,7 +67,7 @@
       let n;
       while ((n = walker.nextNode())) {
         const out = this.textNodeValue(n);
-        if (out !== null) { n.nodeValue = out; this.stats.text++; }
+        if (out !== null) n.nodeValue = out;
       }
     },
 
@@ -86,14 +79,14 @@
           const v = el.getAttribute(a);
           if (!v) continue;
           const out = this.attrValue(v);
-          if (out !== null) { el.setAttribute(a, out); this.stats.attr++; }
+          if (out !== null) el.setAttribute(a, out);
         }
       }
       // 提交按钮的文案写在 value 里，不翻会留英文
       for (const el of (root.querySelectorAll ? root.querySelectorAll('input[type="submit"],input[type="button"]') : [])) {
         const v = el.getAttribute('value');
         const out = this.attrValue(v);
-        if (out !== null) { el.setAttribute('value', out); this.stats.attr++; }
+        if (out !== null) el.setAttribute('value', out);
       }
     },
 
@@ -128,11 +121,8 @@
         if (!el.isConnected || el.closest('[data-sp-block]')) continue;
         el.innerHTML = html;
         el.setAttribute('data-sp-block', '1');
-        this.stats.block++;
       }
     },
-
-    /* ---------------------------------------------------------- 入口 */
 
     /** translateSubtree：只翻一棵子树且**不跳过 #sp** —— 站点把估算结果 HTML（英文 + 表格）
      *  塞进我们卡片里，按「不进 #sp」会被整段挡掉，于是它一直是英文。词典仍是同一份。 */
@@ -176,7 +166,7 @@
       });
       this.observer.observe(document.body, {
         childList: true, subtree: true, attributes: true,
-        attributeFilter: ATTRS.concat(['value']),
+        attributeFilter: ATTRS,   // value 的变化回调里本来就不处理，别再让它触发 observer
       });
     },
 
@@ -185,13 +175,6 @@
     },
 
     /* ---------------------------------------------------------- 开关 */
-
-    setEnabled(on) {
-      this.enabled = !!on;
-      Util.store.set('translateSite', this.enabled);
-      if (on) { this.run(); document.documentElement.lang = htmlLang(); }
-      else { location.reload(); }   // 关掉最干净的方式是重载，避免半译状态
-    },
 
     mountPill() {
       if (document.getElementById('sp-lang-pill') || document.querySelector('#sp')) return;
@@ -244,10 +227,6 @@
       return out;
     },
   };
-
-  function htmlLang() {
-    return ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
-  }
 
   SP.DomI18n = DomI18n;
 })();

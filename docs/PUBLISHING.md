@@ -52,6 +52,10 @@ What it rebuilds
   render keys, two blocklists.
 - Settings — in-app: theme (system / dark / light), interface language, and whether to translate
   the pages that keep their original layout.
+- Uploading a project — the top bar has an "Upload" entry, with three settings: off (the entry does
+  not appear at all), "original" (the entry opens the site's own upload page in a new tab,
+  untouched), and "new" (the default: the upload card, the analysis wait, and the project-settings
+  step are drawn and submitted by the script, using the values the site's own analyzer returned).
 
 Privacy
 
@@ -60,10 +64,12 @@ endpoints, and no requests to third parties. The stylesheet and every chart are 
 no analytics, no external fonts, no CDN. Your preferences live in `localStorage` under
 `sheepit-plus:*`.
 
-Three things can change anything on the server, and each is a button you press, posting to the same
+Four things can change anything on the server, and each is a button you press, posting to the same
 endpoint the original page posts to: the forms in Account settings, pause/resume on a session page,
-and add/remove in your render priority. The script makes no scheduling decisions and does not touch
-points or frame accounting.
+add/remove in your render priority, and adding a project (the file upload, then the project settings
+you confirm). In the upload flow the script posts the same fields the site's own form posts, to the
+same addresses; it does not invent endpoints. The script makes no scheduling decisions and does not
+touch points or frame accounting.
 
 Prefer the old interface?
 
@@ -78,12 +84,14 @@ reads data through your own session. No extra permissions: `@grant none`.
 Known limitations
 
 - The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, `/getstarted`, …) keep their original
-  layout; text is replaced only where a translation exists. Uploading a project is its own page in
-  the new interface (`#/upload`, behind the experimental switch); `/getstarted` stays the site's page.
-- The last two steps of uploading a project are still the site's own interface: the project-settings
-  form that appears once the analysis finishes (engine, frame range, tiles, samples, resolution…),
-  and the project management page `/project/<id>`. They work; they just have not been rebuilt.
+- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, …) keep their original layout; text is
+  replaced only where a translation exists. The upload flow is rebuilt in "new" mode (the default);
+  "original" mode opens the site's own page untouched.
+- In "new" mode the project-settings step (engine, frame range, tiles, samples, resolution…) is drawn
+  and submitted by the script from the site's own analysis values. If that form stops matching the
+  upstream version the script was checked against, it says so and hands that page back to the site's
+  own interface — it never renders a half-and-half mixture. The project management page
+  `/project/<id>` keeps the site's own controls, restyled.
 - If the site is redesigned a parser can stop matching. The worst case is one view saying "no data";
   the site itself is unaffected.
 - The Chinese word list is the most complete; English is the baseline and falls back to the site's
@@ -117,6 +125,9 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
   按天的活动汇总与完整日志、可渲染的项目按原因分组；可以在这里暂停或恢复这台机器。
 - 账户设置（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单。
 - 设置（应用内）：主题（跟随系统/暗/亮）、界面语言、是否翻译保持原版的页面。
+- 上传项目：顶栏有「上传项目」入口，设置里有三档 —— 关闭（连入口都不出现）、原版（入口点一下＝
+  新标签页打开站点自己那页，我们一点不碰）、新版（**默认**：上传卡片、分析等待、项目设置三步
+  都由脚本自绘并自行提交，用的是站点分析器给的值）。
 
 关于隐私
 
@@ -124,9 +135,10 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
 发请求。样式和图表都是脚本自带的，没有统计代码、外部字体或 CDN。你的偏好存在 `localStorage`
 的 `sheepit-plus:*` 键下。
 
-只有三处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
-表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出。脚本不参与渲染调度，也不碰积分
-与帧数的计算。
+只有四处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
+表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出，以及添加项目（文件上传，再到你确认的
+项目设置）。上传链路上脚本发的是站点自己那张表单会发的同一组字段、同一个地址，不自造接口。
+脚本不参与渲染调度，也不碰积分与帧数的计算。
 
 想用回原版
 
@@ -140,11 +152,11 @@ SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页�
 已知限制
 
 - 原站的 CSS/JS 仍会下载，只是被隐藏了；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/faq`、`/project/*`、`/servers`、`/getstarted` 等）保持原版界面，只在有译文
-  时替换文案。上传项目在新界面里是单独一页（`#/upload`，需要在设置里打开「实验性」）；
-  `/getstarted` 仍是原站页面。
-- 上传项目的后两步还是站点自己的界面：分析完成后出现的项目设置表单（引擎、帧区间、切块、
-  采样、分辨率…），以及项目管理页 `/project/<数字>`。功能正常，只是还没重做。
+- 未重建的页面（`/faq`、`/project/*`、`/servers` 等）保持原版界面，只在有译文时替换文案。
+  上传链路只在「新版」档重做（这是默认档）；「原版」档完全不接管，打开的是站点自己那一页。
+- 「新版」档下，项目设置那一步（引擎、帧区间、切块、采样、分辨率…）由脚本按站点分析器给的值
+  自绘并自行提交。万一这张表单与脚本核对过的上游版本对不上，它会明说，并把这一页交回站点自己的
+  界面 —— 不做半新半旧的渲染。项目管理页 `/project/<数字>` 仍是站点自己的控件，只统一了外观。
 - 站点改版可能让某个解析器失效，最坏情况是那一个视图显示「无数据」，不影响站点本身。
 - 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
 - 未登录时会提示你先在原站登录。
@@ -187,7 +199,12 @@ MIT 许可。有问题欢迎反馈：告诉我哪个页面、你看到了什么�
 `0.1.9`（实验性入口改成**应用内**打开：把 /getstarted 抓回来装进卡片，不再跳去原站页面）→
 `0.1.10`（/getstarted 不再接管 —— 上传只留应用内那一页；脚本页与 README 的描述重写、语气放平）→
 `0.1.11`（修设备名自动补全的菜单被自己的守卫挡掉；补上菜单的失焦/点外面关闭；源码注释精简
-99.7→33.4 KB，产物 -20%）。
+99.7→33.4 KB，产物 -20%）→
+`0.1.12`–`0.1.18`（**未发布**：仓库里持续迭代，GreasyFork 上一直停在 0.1.11）→
+`0.2.0`（上传链路按上游源码重写：四档开关、新版上传页、新版第三步自绘自提交；验收记录见「五」的
+0.2.0 段）→
+`0.2.1`（兼容档退役：上传只剩 关闭/原版/新版，默认新版；上传页与第三步的一批可读性/可用性修正；
+真机端到端提交补验；产物 -9.3%）。
 
 ⚠️ **刚发布完别立刻拉 URL 判成败** —— `update.greasyfork.org` 有 CDN 缓存。0.1.4 发布后
 第一次查 `.meta.js` 拿到的还是 `0.1.3`，加一个 `?cb=<随机数>` 再查就是新版本了；脚本页上
@@ -290,6 +307,12 @@ false 才说明确实需要覆盖。更新日志 330 字符走 Markdown。
   **2026-10-06 追加第四枚，以后优先用它**：`#sp-guard` 的规则文本 —— 0.1.11 起是
   `body > *:not(#sp):not(.sp-acmenu)`，0.1.8–0.1.10 是 `body > *:not(#sp)`。这条是二值的，
   不受页面状态影响；而 `SP.CSS.length` 会被运行时状态带偏（见本节末尾）。
+
+  **2026-10-06 追加第五枚（判断"站点有没有改版"，不是判断"装的哪一版"）**：站点自己资源路径里的
+  `<short_version>`，即线上 `www` 仓库的 commit 短 id。取法：页面里任一 `script[src*="/media/"]` /
+  `link[href*="/media/"]` 的 `/\/media\/([0-9a-f]{8})\//`。0.1.14 的新版上传就是拿它当上游指纹
+  （`src/60-step3.js` 的 `VERIFIED_UPSTREAM = '9b13032c'`，设置页那张卡片会把它和"本脚本验证过的版本"
+  并排显示）。它与 GitLab `sheepitrenderfarm/www` 的 master HEAD 同值，改一次上传链路它就会变。
   仍未验证的还是**防闪**与"用户从旧版更新上来"那一跳。（后一条 2026-10-06 已补，见本节末尾；
   前一条只拿到一半证据。）
 - **0.1.9 的应用内上传视图（`#/upload`）三条路径都实测过**：直接以 `#/upload` 载入、
@@ -392,10 +415,497 @@ false 才说明确实需要覆盖。更新日志 330 字符走 Markdown。
 `src/50-views.js`、`src/10-core.js`）。**从这一刻起，仓库里的 0.1.11 与线上的 0.1.11 内容不同** ——
 按「`@version` 必须往上走」那条规矩升的，发不发等用户点头。
 
-**还没做的**：分析完成后的「新增项目」设置表单（引擎 / 帧区间 / 切块 / 采样 / 分辨率…，官方
-`formAddProject()` 约 490 行 PHP）与项目管理页 `/project/<数字>`。这两页**只对项目所有者开放**，
-手上没有可用的真实样本 —— 将来重制只能照官方源码写，成品**必须标注「未对真实页面验证」**，
-并优先请有项目的人复核。现在它们走的是原站界面，功能不受影响。
+**0.1.12 里的缺陷修复：加入/移出渲染优先后会闪一下「暂无数据」**（2026-10-06，用户实报，
+原话是"选择某用户加入优先，再删掉会出现暂无数据"）：`submit()`（`src/80-app.js`）POST 成功后先把
+`state.account` / `state.session` 置空，再用 `show(view, { silent: true })` 重取；而 `{silent}`
+不设 `state.loading`（`need` 里也没有 account 分支），所以这段重取窗口里**任何一次 `render()`**
+都会走"数据为 null"分支画成 `state.empty()`。**不是名单为空** —— 名单空显示的是「（空）」。
+最容易中的触发点：`prio-set` 原来不像 `owner-gift` / `owner-block` 那样清 `Views.projState.menu`，
+菜单一直敞着，随手点一下菜单外面就是一次 `render()`；切页签、Esc、刷新按钮同理。
+修法三处：`need` 补 account 分支、置空后设 `state.loading = true`（**不**立刻 render）、`prio-set` 关菜单。
+实测（真站点 + 注入改动后的产物，只看 `#sp-body` 的内容签名）：账户页首次进入
+`SKEL:5` → 1.3s → `PANELS:3 TABS`；窗口内切页签 `PANELS:3` → `SKEL:5` → `PANELS:1`；
+项目列表页 kebab → 优先 后菜单收起、56 行不变。**修之前这三处画的都是「暂无数据」**。
+
+**0.1.13（2026-10-06 起，尚未发布）**：`@version` 从 0.1.12 升到 0.1.13（0.1.12 从未发布过，但仓库里的
+0.1.12 产物已经变过几轮，升号才能让 Violentmonkey 明确认成一次更新）。这一版做的是**上传闭环的后半段**，
+按用户 2026-10-06 拍板的路线 A：第三步只补翻译与外观，再接管项目管理页。
+
+- **第三步（分析完成后的站点设置表单）**：注入站点表单后显式调 `SP.DomI18n.translateSubtree(box)`
+  （`src/80-app.js` 的 `paintAnalyse`）—— 翻译器默认跳过 `#sp` 内的节点，不显式放行就永远不翻。
+  只翻文案、不动结构：站点 JS 按 id 拼 24 个参数，改结构就断。实测（拿 `.tmp/upload-test/step3-outer.html`
+  当 fixture）可见文本 13 行只剩文件名 `sptest.blend`（故意不翻），属性只剩 `title=CPU` / `title=GPU`；
+  控件 58→58、id 74→74、`formAction` 仍是 `javascript:;`、`onsubmit` 仍是 `doAddProject(0); return false`。
+- **「排队情况」那段英文**（用户实报）：`src/12-lang-zh.js` 的 `patterns` 补了短变体
+  `The render order is based on points. … You currently have N points.`；原来那条长变体（带团队加成）
+  仍在 `blockPatterns`，两条互不冲突。
+- **接管 `/project/<数字>` 项目管理页**（`viewForPath` 新增一条路由 → 视图 `project`）：**不重新 fetch**，
+  而是把站点服务端渲染好的那一整块 `.w-section`（含 `#jobs_of_a_project`）**搬进** `#sp-mg-host`，
+  id、内联 `onclick`、表单全不动 —— 站点的 `projectAction` / `doModifyComputeMethod` /
+  `doModifyAttributeFromCheckbox` / `doAddACLUserProjectManage`（都在 `media/<ver>/script/ajax/showjob.js`）
+  因此照旧可用。渲染前 `parkManage()` 先把活节点送回原位的注释锚点，免得被 `body.innerHTML` 连同旧壳扔掉；
+  找不到 `#jobs_of_a_project`（别人的项目、站点改版）时 `boot()` 直接 `release()`，页面原样还给用户。
+- 站点的 `title` 属性也当文案用：动作按钮的图标写的是 Font Awesome 4 类名（`fa fa-search-plus`），
+  而站点装的是 FA6，`::before` 根本没内容、按钮是空心圆 → 我们直接把 `title` 当按钮文字；
+  帧缩略图站点只把 `<img src>` 塞在 `span.square` 的 `title` 里（原页面每帧都是空白小方块）→ 抠出来插真 `<img>`。
+- 日期本地化：`src/12-lang-zh.js` 加 `farmDate()`（`20th Oct 06:10` → `10月20日 06:10`）；
+  `patterns` 的替换值可以是函数（`src/10-core.js` 用的是 `text.replace(re, rep)`）。
+
+实测（Helium + BrowserSkill 驱动真站点，测试账号 `test-user`，注入 `dist` 产物）：
+
+| 检查 | 结果 |
+| --- | --- |
+| 第三步翻译（fixture） | 可见文本无英文残留；结构 / 控件数 / id 全不变 |
+| 管理页接管 | `#sp-mg-host` 子节点 1、`.sp-manage-sec` 已搬入、徽章「已渲染」、正文只剩 `sptest.blend` |
+| 页签（权限 / 渲染者 / 操作） | 点「权限」→ `tab-pane active` + `display:block`，另一个 pane 隐藏 |
+| 管理员自动补全 | 输入 `muw` → 站点读接口 `/user/list_from_term` 建出 8 项候选（**只读，无写入**） |
+| 顶栏刷新 → `show(view)` | 送还 + 再搬入各一次：`#jobs_of_a_project` 仍 1 个、`onclick` 原样、缩略图 2 枚 |
+| 别人的项目 `/project/1223983` | 站点自己回「无权限」页 → 我们 `release()`：`#sp` / `#sp-guard` 都不在，页面照常可见 |
+
+**样本从哪来**：这两页只对项目所有者开放，所以 2026-10-06 用测试账号真走了一遍上传（`sptest.blend`：
+Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/project/1224469`），第三步表单与项目管理页
+因此第一次有了**真实样本**（`step3-outer.html`、`manage.html` 落在 `.tmp/upload-test/`，`.tmp/` 不入库）。
+**验证方式仍然是注入式**（把 `dist` 产物在页面里 eval 一遍），不是真装路径 —— 真装路径下的管理页
+要在用户点过重新安装之后再复验一次。`/getstarted` 依旧有意不接管（0.1.10 拍板），上传只走应用内那一页。
+
+**体积提示线**：`build.mjs` 的 `BUDGET_OUT_BYTES` 从 285000 抬到 320000（这一版 +21 KB 后原线会每次
+构建都报，报久了没人看）；仍是**只提示不拦**，见该常量上面的注释。
+
+**0.1.14（2026-10-06 起，尚未发布）**：`@version` 0.1.13 → 0.1.14。上传闭环的**最后一跳**：第三步
+从"只翻文案"变成"自绘外观"，并补上面板级的上游指纹与提交护栏。用户 2026-10-06 拍板：外观 100% 自绘、
+容器之间也用我们的布局，但 **4 个容器本体、27 个控件的 id/name、提交方式一律保留站点原样**，
+"永不自己拼提交体"是硬约束。
+
+- **新增模块 `src/60-step3.js`**（构建时按文件名排序，落在 `50-views.js` 与 `70-i18n-dom.js` 之间）。
+  `SP.Step3 = { enhance, check, upstreamVersion, verifiedUpstream, report, fpRows }`。
+  `enhance(box)` 做四件事：**搬**（把站点渲染好的活节点一个个 `appendChild` 进我们的面板 —— 不
+  `innerHTML` 重建、不重新 fetch，id / 内联 `onsubmit` / 表单原样）→ **点名**（进面板前给 box 内所有
+  `[id]` 拍快照 `{id,type,value}`）→ **提交前复点**（元素没了 / type 变了 / hidden 的值被清空 → 拒绝提交）
+  → **接住结果**（成功会跳走；`.done` 出错时站点 `$('#addproject_content_i').html(data)`、`.fail` 时写
+  `#addproject_error_box_i`，两种都被 `MutationObserver` 接住，把树放回去、按钮放回去，换成我们的文案
+  并附上站点原文）。
+- **提交护栏挂在祖先的捕获阶段，不是表单自己身上**（这一条是踩出来的）：submit 事件的目标就是 `form`，
+  而在**目标节点**上捕获与非捕获**按注册先后执行** —— 站点那句 `onsubmit="doAddProject(0); return false"`
+  是先注册的，挂在 `form` 上抢不到它前面，站点函数会照跑、`$.ajax` 会照发。挂在 `#sp-an-result` 的
+  捕获阶段才拦得住（捕获阶段先于目标阶段，`stopPropagation` 之后事件到不了 form）。
+- **三态开关**：设置页原来的"实验性 / 项目上传（兼容界面）"两态换成三档 `uploadMode`
+  （`off` 不出现入口 / `compat` 兼容界面，默认 / `new` 新版）；旧的 `expUpload` 键不再读，值本身就是
+  默认档，不需要迁移。同一行下方是**上游指纹卡片**：站点资源版本 vs 本脚本验证过的版本（一致 / 已更新 /
+  读不到），以及上一次进入第三步与上一次提交前点名的结果（`up3Report` 存在 `NS:` 下）。
+- 新词条：`set.upmode*` / `set.fp.*` / `up3.vis|cpu|frames|adv|needCompute|missing|rejected|netFail`
+  （zh + en 两份），并删掉 `set.expUpload` / `set.expUploadHint`（grep 全仓库已无残留）。
+
+实测（Helium + BrowserSkill，真站点 `/getstarted`，**注入 `dist` 产物**，页面里 jQuery 与站点
+`addproject.js` 都是活的；把 `$.ajax` 打桩成"只记不发"，**全程零写入**；测试账号 `test-user`）：
+
+| 检查 | 结果 |
+| --- | --- |
+| id / 控件保真 | `[id]` 34 → 34（丢 0、增 0）；`input,select,textarea` 29 → 29 |
+| 表单语义 | `form#addproject_0` 仍 `action="javascript:;"`、`onsubmit="doAddProject(0); return false"`；提交按钮仍在 form 内；`#addproject_error_box_0` 仍在 form 外 |
+| 站点畸形字段 | `#addproject_split_tiles_number_0`（name 被站点 PHP 拼坏的那种）原样保留，值没动 |
+| **请求体逐字段比对** | 站点真函数 `doAddProject(0)` 在**改版前/改版后**各跑一次：27 个键**完全相同**（`diff: []`） |
+| 面板 | `.up3-sec` 四块（可见性 / 计算方式 / 帧范围 / 高级选项）全部可见；降噪提示进了 `.up3-note` |
+| 拦提交 | 抽掉 `#addproject_exe_0` 后点提交 → **ajax 调用 0 次** + 我们的文案；放回去再点 → 1 次 |
+| 错误片段 | `cont.innerHTML = 'Failed to add project'` → `form` 被放回、提交按钮被放回、文案含站点原文 |
+| `.fail` 路径 | `#addproject_error_box_0` 有字 → 清空 + "提交没有送到（网络或登录状态）：Error (timeout)" |
+| 形状护栏 | 没有 `[id^=addproject_content_]`/`form[id^=addproject_]` 的 box → `{ok:false,reason:'shape'}` 且**原样不动**；重复调用 → `{ok:false,reason:'done'}` |
+| 设置三档 | `off compat* new` → 点"新版"存储变 `new`；点"关闭"顶栏的"上传项目"消失 |
+| 指纹卡片 | "站点资源版本：9b13032c … 与本脚本验证过的版本一致"；"上次提交前点名：34 个控件全部在位" |
+| 野 token | `/project/add/bogus1234` → 服务端回 HTML 错误片段 → 走既有的"分析编号已经找不到了"，`#sp-an-result` 保持空、无异常 |
+
+**真装路径已复验（2026-10-06，用户点过一次重新安装后）**：`/home#/settings` 上 `#sp` 建好、
+`SP.Step3` 存在（这是"装的是 0.1.14"的判据）、`Step3.upstreamVersion()` 从活页面读到 `9b13032c`
+并与 `verifiedUpstream` 一致、设置页三档为 `off compat new*`、指纹卡片三行都在、顶栏含「上传项目」。
+**这一版页面侧 `SP.CSS.length = 56791`**（旧值 0.1.7=47615 / 0.1.8=51407 / 0.1.9=51763）。
+截图：`.tmp/upload-test/install-0114-settings.png`。
+
+**真流程 + 真提交已跑通（2026-10-06，测试账号 `test-user`，2 帧测试项目）**：
+`/getstarted` 用站点自己的第一步表单（`action=/project/internal/upload`，`bsk upload` 送
+`sptest.blend` 90,936 字节，点译成「发送此文件」的提交键）→ 落到 `/project/add/dB5Sq6`，
+分析页接管并走完"排队等分析器接手… → 分析完成"；第三步画出 `.up3-sec` 四块、
+`#addproject_content_0` 里 27 个控件、提交键「添加这个 blend」，服务端默认值逐项核对无误
+（`changeType=animation`、start=1 / end=2 / step=1、`exe=blender405`、`path=sptest.blend`、
+站点那个畸形的 `split_tiles` hidden 仍为空、cpu 选中 / gpu 未选、`public_render` 选中、
+`generate_mp4` 未选、高级选项 `display:none`）。容器链完好：
+`#addproject_content_0 → .form-light → .w-box → .w-section → .col-md-6 → .row → .container → section.slice`
+—— 我们只在**容器内部**重排，没有把站点容器搬出站点结构。
+
+点提交后站点真函数发出请求、浏览器跳到 `/project/1224486`（我们的管理页接管），
+`up3Report = {stage:'submit', ok:true, n:34, missing:[], upstream:'9b13032c', verified:'9b13032c'}`
+—— 真实提交那一刻 34 个控件全部在位。项目随后渲染完成（`已渲染 2/2`、已用存储 51.0 kB、
+实际渲染用时 0m、自动删除日 `10月20日 06:10`）。截图：`.tmp/upload-test/up3-real-step3.png`、
+`.tmp/upload-test/up3-real-project1224486.png`。
+
+**仍未验证**：上游指纹只钉了 `9b13032c` 这一个版本，站点下次改上传链路时应当"卡片变红 +
+建议切回兼容界面"，这条提示本身还没在真实改版场景里见过。
+
+**0.1.15（2026-10-06 起，尚未发布）**：`@version` 0.1.14 → 0.1.15。管理页（`/project/<数字>`）的文案
+收尾，外加一个真实缺陷的修复。
+
+- **修：动作按钮的文字变成了一串原始标签**。管理页那几个动作按钮只带 FA4 的图标类名（站点装的是
+  FA6，`::before` 没内容），所以 `wireManageDoc` 一直拿 `title` 属性当按钮文字；可站点给"生成压缩包"
+  那个按钮的 `title` 里塞的是**状态 HTML**（`<strong>Generating archive.</strong><br>Current position: 1st…`），
+  于是屏幕上出现字面标签。现在：`title` 里还有标签 → 去标签、取第一行当按钮文字、整段净化后逐行翻译
+  再放回 `title` 当悬停提示；判据是"title 里还有没有 HTML"而不是"有没有 span"，所以重复跑是空操作
+  （`render()` 会重入，搬回来的活节点还带着上一次那个 span）。实测（真站点 `/project/1224486`，
+  注入 `dist`）：label 现在是「正在打包存档。」，`title` 是
+  「正在打包存档。\n当前排位：第 1 位\n本项目任务数：1\nShepherd 上的任务总数：50」。
+- **词条落错了表（自己踩的）**：0.1.14 之后补的那 11 条短词条被写进了 `blocks:`（长句整块表），
+  而 `patchBlocks` 要求整块归一化文本 **40–600 字**（`src/70-i18n-dom.js:117`），
+  `title`/`placeholder`/`value` 又只查 `site`+`patterns`（`src/70-i18n-dom.js:57-60`）—— 短句永远不会命中。
+  已搬进 `site:`。这条结构性事实值得记住：**<40 字的词条只能进 `site:`；属性值只查 `site`+`patterns`**。
+  为了让这类错误可回归，新增只读体检脚本 `.tmp/check-dict.mjs`（vm 沙箱里跑 `10-core` + `12-lang-zh`，
+  对着一串真实页面文本问 `I18n.siteText()`；沙箱里 `navigator.language` 不生效，必须先手动 `I18n.init()`）。
+- 新增词条（zh）：调度器那一段（`Scheduler` / `How many machines can actually render the project?` /
+  `Connected machines:` / `Connected machines for CPU:` / `Potential rendering machines:` / `Pause` /
+  `Resume` / `Current renderers:` / `Rendering` / `Paused` / 限速提示 / `Ask for a partial Archive Frame`）、
+  已渲染状态（两句 packed 的**无空格拼接形态**加带空格变体、`Download video`、`Statistics about the render`、
+  两张缩略图 Note、`Generating archive.`、`More information about …`）、以及私有/封禁/服务器不可用那几句
+  （**故意不加单词 `private`** —— 全站任何独立的 `private` 文本节点都会被误伤，宁可那一句留半截英文）。
+- 新增 patterns：`Current position`（输出「第 N 位」）/ `Tasks for this project` / `Total tasks on Shepherd` /
+  `Cumulated time of render` / `Points spent` / `n/m (remaining …)` / 封禁原因 / 限速，以及**两条齿轮 tooltip
+  的 HTML 形态**（属性值是带 `<strong>`/`<br>` 的原文，先例是帧缩略图那条 tooltip）。`Connected machines:`
+  这类**值在兄弟 `<strong>` 里**的行，文本节点只到冒号，所以既有 pattern 永远不命中，靠 `site:` 短键兜住。
+- 实测：真站点 `/project/1224486`（已渲染态）注入后，`#sp` 内未译英文从 7 条降到 6 条，其中 4 条是数据
+  （用户名 `test-user`、文件名 `sptest.blend`）或探针白名单误报，`Tab widget` 那条实测 `display:none`；
+  `div.alert` 四段全部变中文。
+- 体积：`dist` 321,161 字节（注释 48,899 = 15.2%）。构建提示线从 320,000 抬到 **360,000**
+  （0.1.13 抬到 320,000 之后 0.1.15 正好贴线 —— 提示线贴着现状就等于每次构建都报）。
+- **真装路径已复验（2026-10-06，用户点过重新安装后，真站点 `/project/1224486`）**：页面里跑的是用户装的那份，
+  `SP.I18n.siteText()` 对 0.1.15 才有的词条全部命中（`Scheduler` → 调度器 / `Current position: 1st` →
+  当前排位：第 1 位 / `Tasks for this project: 1` → 本项目任务数：1 / `Total tasks on Shepherd: 50` →
+  Shepherd 上的任务总数：50 / `Connected machines:` → 已连接机器： / 两句 packed / `Generating archive.` /
+  `More information about …` / `Pause` → 暂停 / 限速提示 / 封禁那句 / 缩略图 Note）；三个动作按钮
+  label = 查看帧图像 / 下载帧图像 / 删除项目，**没有一个是含 `<` 的原始标签**（0.1.14 那个字面标签缺陷
+  在真装路径上确实没了）；页面文本除 `Tab widget`（`display:none`）外全中文。
+- **仍未验证**：私有 / 封禁 / 限速那几句（测试账号没有这些状态），只能靠 `.tmp/check-dict.mjs`
+  在词典层逐条验证。等待/渲染中态的调度器那一段**已在 0.1.16 补齐实证**（见下）。
+
+**0.1.16（2026-10-06 起，尚未发布）**：会话页「机器信息」里的原始值与一个死键 —— 也就是 Q5 那笔旧账。
+本版没有新功能，只有"站点给的值不是给人看的字"这一类收尾。
+
+- **站点把内部枚举当值印出来**（会话页 `/session/<id>` 的「机器信息」表）：`OS = linux`、
+  `Scheduler = very_slow_computer`（这格说的是**这台机器跑多快**，跟"调度模式"没关系，站点自己的页面
+  标题就叫 Scheduler）、从没活动过的机器几格印字面 `Never`、Action 那格是
+  `<input type="button" value="Pause">`。现在这些值在界面上翻成人话，**原文进悬停提示**
+  （`站点内部值：very_slow_computer`）：行标签『调度模式』改成『速度档位』，副标题改成
+  「站点报告的原值，未做换算；内部枚举翻成了人话，原文在悬停提示里」。识别规则只有三条
+  （`never` 大小写不敏感 / OS 表 / 速度档表），**认不出的值一律原样显示** —— 站点哪天加新档，
+  界面上照样看得见，不会被翻成空白。
+- **日期本地化下沉到语言包**：新增可选字段 `pack.dateText`（`src/12-lang-zh.js` 注册时给出），
+  核心加 `I18n.date()` 转发；站点两种日期形状 `20th Oct 06:10`（管理页）与 `06:40 Sep 29`（会话页）
+  都本地化成 `10月20日 06:10` / `9月29日 06:40`，认不出的形状原样返回。原来只认第一种形状的
+  `farmDate` 扩成两种后，管理页那条已验证过的 pattern（「项目将于 10月20日 06:10 自动删除」）
+  用 `check-dict.mjs` 复查过没有回归。
+- **死键**：`sess.publisher`（『发布者』/ `Publisher`）从 zh/en 两份词典里都删掉 —— 全仓库 grep
+  只有词典里有它，**没有任何代码 `t()` 它**（相邻的 `packLabel('sess.status', …)` 只拼 `sess.status.*`）。
+- 单位与时长仍按站点原值显示（`10m` / `9m` / `8h27m`）：它们是数字+单位，不是被误当文案的枚举，
+  副标题那句"未做换算"就是这个意思。另外补了一条 `site:` 短词条 `never` → 「从未」，管的是
+  **我们没重制的站点页面**（原版账户页那三行红字 `never`）。
+- **验证方式：真数据在本地快照上跑**。别人的 session 页我们打不开 —— 真站点 `/session/2155361`
+  在我们的视图里只显示「读取失败 / 这一页没读到机器信息」（站点不给非属主数据，实测）。所以把真站点
+  抓下来的 `.tmp/fixtures/raw/session.html`（43,281 字节，owner `other-user`，正好
+  `OS=linux` / `Scheduler=very_slow_computer`）放进夹具服务器，在**页面上下文里**喂给
+  `S.Api.parseSession()` + `Views.session()` 渲染（探针 `.tmp/upload-test/probe-sessview.js`；
+  跨源 fetch 到 8742 可用）。结果：`[速度档位] = [极慢档] tip=[站点内部值：very_slow_computer]`、
+  `[创建时间] = [9月29日 06:40]`、`[可用动作] = [暂停] tip=[站点内部值：Pause]`、
+  身份条 `Linux`（tip `站点内部值：linux`）、KPI 描述「自 9月29日 06:40 起」。
+  同一份快照的英文残留扫描（`.tmp/upload-test/probe-sessleftover.js`，列出含拉丁字母的文本节点）
+  从 37 条降到 35 条：剩下的全是数据（项目名 26 条、主机名 `SheepIt-Docker`、用户名 `other-user`）
+  与 CPU 型号串 `Intel(R) Core(TM) i5-10210U CPU @ 1.60GHz x 6`。
+- **补 0.1.15 那条"仍未验证"**：真提交第二个 2 帧测试项目（`/project/1224491`，同一条真流程：
+  站点第一步表单 → `/project/add/Qf0MYz` 分析 → 第三步 → 点提交）后 4 秒抓到的正是**等待态**，
+  调度器那段全中文：「调度器 / 有多少台机器能真正渲染这个项目？ / 已连接机器： 474 /
+  CPU 已连接机器： 245 / 474 / 能用 Blender 4.5+ 的机器： 202 / 245 / 潜在渲染机器： 202」，
+  动作按钮「查看帧图像 / 暂停 / 删除项目」，该态残留只有 3 条（用户名、文件名、`display:none`
+  的 `Tab widget`）。截图 `.tmp/upload-test/up3-waiting.png`。测试账号下曾留着两个项目：
+  1224486（已渲染完）与 1224491（等待中）；**收尾时两个都用站点自己的删除按钮删掉了**
+  （管理页红键 → `projectAction(id, 'remove_no_redirect')` → POST `/project/<id>/remove_no_redirect`
+  → 站点回 `EMPTY` 并自己跳 `/user/profile`；重访两页都是站点的「无权限」页）。
+- 体积：`dist` 325,494 字节（注释 50,353 = 15.5%）。
+- **收尾时踩到的一个假警报：先看一眼"界面档"再判缺陷**。用户浏览器当时停在**原版界面档**
+  （`Util.store.get('uiMode', 'modern') === 'classic'`）—— 这一档下我们**不接管任何页面**
+  （`80-app.js:81` 的 `uiMode === 'classic' || !pathView` 分支），只补翻译并挂左下角两个药丸
+  （`#sp-mode-pill` 文字「切回新界面」、`#sp-lang-pill` 文字「译 ZH」）。于是 `/project/1224486`
+  上 `#sp` 不存在、`SP.app.state` 读不到、站点原版页面照常显示。这不是缺陷，但**真装复验之前
+  必须先确认这一档是 `modern`**，否则很容易把"没接管"当成回归去查。
+
+---
+
+### 0.2.3（尚未发布；改动已就绪）
+
+**主题：废弃代码清理与纠错，界面不变。**
+
+变更清单（逐项依据与误报陷阱见 `docs/CLEANUP-AUDIT.md`，执行日志在它的 §十）：
+
+- **删死代码 / 死样式**：13 个无人调用的函数·常量·死守卫（`Util.compact`、`I18n.blockText/LANGS`、`DomI18n.setEnabled/htmlLang/stats`、`Step1.rulesFrom`、`Step3.tip()`、`80-app.js` 的 `if (!SP.DomI18n)` 死守卫、`void host` …）、17 个只写不读的字段（`manageable`/`fact.flag`/`rankNum`/`streakInclToday`/`totalDays`/`advanced`/`uid`/`url`/4 处 `raw`/`msg` 节点与形参/`cards` 载荷 …）、7 条永不匹配的 CSS、2 个零读者导出（`SP.NS`/`SP.TOKENS`）、约 35 处零信息量分隔线。
+- **修 2 个真缺陷**：账户页 `[data-del]` 缺空 URL 守卫（站点给不出动作地址时会向当前页发空 POST）；`DomI18n` 的 `attributeFilter` 含 `value` 而回调判据不处理它（配置与判据不自洽）。
+- **站点词典**：删 8 条结构上不可能命中的 `site` 条目（含 `Processing`、`CPU disabled` 两处重复键）与 6 条死 pattern；首页 h1 改用 `blocks` 整块翻译（站点把 `<strong>SheepIt</strong>` 与后半句拆成两个文本节点，短词条表够不到，**那行原先一直留英文**）。
+- **`--positive` 接上**：估算器「推荐这么切」行由品牌橙改成设计稿里的绿色（`label-success` 的原义）——**本版唯一的可见变化**。
+- **注释去重**：同一件事写多遍的删到只剩一处（−1.4 KB）；9 处"看着重复但各自带独有事实"的刻意保留（清单见 `CLEANUP-AUDIT.md` §十）。
+- `@version` 0.2.2 → 0.2.3；`@description`(:en) 补上上传页与项目管理页，并把"数据读自站点"改成"读写都在站点"。
+
+**当前产物**：`dist/sheepit-plus.user.js` = **466,732 字节**（注释 95,475 = 20.5%）；相对 0.2.2 的 474,261 字节 **−7,529**。
+
+**已过的门**：`node build.mjs`（语法 + `SP.CSS` 冒烟 + 体积/注释占比）、`.tmp/recon/probe-sort.mjs` **105 条断言全过**、`.tmp/recon/check-ui-dict.mjs` = `zh 502 / en 490`（仅那 12 条 `why.*`；退出码 1 是工具的差异报告方式，不是失败）、逐文件 `git diff` 复核。
+
+**浏览器实测（2026-10-08，本机 Chrome，夹具方式）**：7 个视图全部正常且控制台零 JS 异常 ——
+总览（真数据）、总览空变体、项目表 21 行、会话页、排行榜 500 行、设置（**上游指纹行正常**＝删掉 `model.upstream/verified` 后 `fpRows()` 未受影响）、
+账户设置（**「移除」按钮正常**＝新增的空 URL 守卫不误伤）、上传页（真 `/getstarted` 捕获上渲染自绘卡片 + 估算器守卫文案）；
+第三步四个形态（降噪 / EXR / 多 `.blend` / 指纹过期）全部复现。跑法见 `docs/CLEANUP-AUDIT.md` §十（`tools/harness.mjs` + `.tmp/recon/step3-standalone.mjs`）。
+
+**仍未验**：估算器「推荐这么切」那行的取色（`--positive`）——它要站点 `/project/estimator` 返回结果才渲染，本地夹具没有该端点。2026-10-08 曾在真站上用 document mock 跑通整条估算链路（真实返回 112,960 积分 + 16 行切块方案），但**被用户装着的另一个实例盖掉、画面归属不可信，结论作废**；教训与复验配方记在 `docs/CLEANUP-AUDIT.md` §十「真站上试跑估算器这一趟」。
+
+**发布动作**：**本版不单独发布，累计到下一次**（用户 2026-10-08 决定）。也就是说 0.2.2 → 下一版之间会一起带上：本次清理 + 缺陷修复 + 注释去重，以及后续的第三批（B5/B2/B11 三个修复与零风险删除）。
+届时按「四」的流程一次发：`node build.mjs` → `.tmp/make-stage.mjs` → `.tmp/critique/gf-fill.js` 填表（提交前复算 `script_version[code]` 的 SHA-256）→ 提交；`changelog.md` 要改写成**这一整段**的内容（现在的草稿只写了 0.2.3 的清理，累计后需覆盖第三批）。
+
+### 0.2.2（2026-10-07 已发布）
+
+**主题：项目管理页、排序、总览区块都交给自绘；在线机器逐台给详情。**
+
+变更清单（细节与验收数字都在 `docs/REWRITE-0.2.0.md`，§9/§10/§11）：
+
+- **项目管理页整页自绘**（§10）：设置、暂停/继续/重置/部分存档、名单增删全部自绘、直发站点端点；
+  站点节点一个都不进我们的壳，「搬节点」那条老路整条删掉（含随之变死的 CSS）。
+- **「我的项目」区块**（§9）：自己的主页才画；一个项目都没有时整块不画。
+- **排序自定义**（§11.1）：`P_SORTS`/`M_SORTS` + `sortCmp`，偏好落盘 `projSort`，设置页「默认排序」，
+  点表头排序也一并记住。
+- **总览区块显隐 + 调序**（§11.2）：设置页一行一块（开关 + ↑↓），指标带位置固定但仍可关。
+- **在线机器详情**（§11.3/§11.9）：逐台取 `/session/<id>`（最多 3 台），状态（渲染中 / 等待任务 /
+  两种暂停）、已连接时长、渲染方式（只画勾选的那一路）、算力、帧数、积分；一行一台。
+- **两个真缺陷**（§11.4）：登录入口改 `/user/signin/home`；`parseSession` 不再要求状态行有 `<th>`
+  —— 客户端侧 / 服务端侧两种暂停**可以同时成立**，现在各画一条。
+- **表格**（§11.5/§11.10）：指标带折行时空洞修掉；会话页与项目页两张表条子与分数合并、发布者列加宽、
+  长项目名与站点原因**换行显示全文**、进度条等长、截断处一律有 `title`。
+- **上传页闸门 / 第三步**（§11.7/§11.8）：站点给的原因（维护中 / 没传头像 / 并发超限 / 欠 10 帧）
+  照原文显示并汉化；第三步 EXR 清单、多 `.blend`、`up3x.unknown` 三个形态验过。
+
+**发布记录（2026-10-07）**：本地产物 **474,261 字节**；提交前在更新页对 `script_version[code]`
+复算 SHA-256 = 本地的 `43C18858CCD31A64838BE06064BE049F8981387685C70CDFF740BB9A29D31E75`（逐字节一致）
+→ 提交。脚本页版本 **0.2.1 → 0.2.2** ✓；线上 `.user.js` **474,257** vs 本地 **474,261**（**差 −4 字节**），
+8665 行里**只有第 16/17 行不同**（GreasyFork 对 `@updateURL`/`@downloadURL` 的重排）—— **第十次复现**。
+附加信息用 `make-stage.mjs` 抽出的新版正文覆盖（zh 1,649 + en 4,315 字符，表单里 5,972 字符）；
+更新日志 329 字符、Markdown 已勾。发布动作由 `.tmp/critique/gf-fill.js` 在
+`/zh-CN/scripts/598624/versions/new` 上完成（它从本机 8743 的 CORS 静态服务取代码 / 附加信息 / 更新日志）。
+
+**仍未验证**：防闪守卫 race；0.1.11 → 0.2.0 这一跳的装机实测；上传页闸门与第三步分支**只有桩验**
+（真站触发不了维护模式 / 无头像号 / 并发上限，站点改版时应重跑 `.tmp/recon/run-upload-matrix.ps1`、
+`run-step3-matrix.ps1`）。
+
+### 0.2.1（2026-10-07 发布）
+
+**主题：只留一条上传线 —— 兼容档退役。**
+
+- 用户拍板：站点一旦改版，两条线都要维护，代价不可接受；要么不做（原版档直接跳站点自己那页），
+  要么彻底自己做（新版档，盯上游变动即可）。删除 `src/60-step3.js` 整文件与 `50-views.js` 的
+  `wireUploadDoc()` 一线（含它专用的 `rewordFileLimit`/`tidyRules`/`watchEstimatorResult`/
+  `rebindDeviceSearch`），`30-style.js` 里的 `.sp-siteform*`、`.up3-sec/body/hid/ico/hint/foot`、
+  随它们一起死掉的 `.sp-acmenu`/`.q*`/`.numband`/`.expnote` 一并删除。**-1,714 行 / +320 行，
+  产物 457,473 → 414,853 字节（-9.3%）**，构建提示线从 460,000 收到 440,000。
+- `uploadMode()` 只剩 `off | raw | new`，历史值 `site`/`compat`/空值一律归一到 **`new`**（默认）。
+- **降级不再半新半旧**：`parseStep3` 认不出时，明说一句 + 「用站点自己的界面打开这一页」，
+  点下去走 `release()` 并把站点自己那份碎片写回站点自己的容器（与 `addproject.js:204` 的写法一致）。
+
+**真机验收（2026-10-07，注入 `dist` 到真站点）**：
+
+- **端到端提交第一次完整跑通**：点「添加这个文件」→ 站点建出项目 `/project/1224568`（项目页正常，
+  调度器与"已连接机器 472 CPU / 240 GPU"等真数据都在）→ `projectAction(1224568,'remove_no_redirect')`
+  删除 → `/home/projects` 里没有它、直接访问 `/project/1224568` 返回 **404**。
+- 27 键负载复核：`token/engine/start/end/step/width/height/framerate/compute_method/public_render/
+  public_thumbnail/archive` 逐项与预期一致，换桩时**零请求发出**。
+- 上传页：未选文件 `disabled + opacity .5`；错类型与 3.2 GB 都被本地拦住并给出原因；
+  上传中按钮变「正在上传…」、取消可见、「已传 80 MB / 200 MB」、预热两拍后出「约剩 0:01」；
+  点取消回到未上传态 + 中性色「已取消，文件没有发出去。」；须知 12 条 → 可见 8 + 折叠 4。
+- 第三步：大纲 `H2 分析完成 → H3 项目设置 → H4 sptest.blend`（跳级消失）；两条硬约束就地显示；
+  顶栏 `aria-current=upload`；页头完成态改口、副标题换成「存档 sptest 文件 1」。
+- 降级路：`parseStep3` 换成一律失败 → 提示 + 按钮出现；点下去我们的壳撤掉，站点真碎片
+  （11,719 字符，含 `#token=analysis-id` 与站点自己的内联 `onsubmit`）落进 `#project_add_analyse_result`。
+- 设置页只剩 关闭 / 原版 / 新版 三段，当前选中「新版」；原版档下 `/getstarted` 实测不接管。
+
+**发布记录（2026-10-07）**：产物 **412,359 B**，SHA-256
+`E431BCEA2A60514D82AACB8A30AF7611D4E80474B3063F1183F239EBE05D5382`（提交前对填好的
+`script_version[code]` 复算一致）。脚本页 = `0.2.1` / 402.7 KB；`/code`（直读库）里
+「在线机器」在、`up.maxNote`/`set.fp.bad`/`nav.uploadTip`/`up3x.splitGrid`/`set.upmode.compat`/
+`60-step3` 全不在；CDN `.user.js` = **412,355** vs 本地 412,359 —— 仍是那 4 个字节（**第九次复现**）。
+
+**仍未验证**：上传页错误分支（站点维护中 / 无头像 / 并发上限）只用桩验过；第三步其它分支形态
+（EXR 切块清单、多 .blend、`up3x.unknown`）；防闪守卫 race；`#/upload` 这个 hash 在关闭/原版档下
+仍会画出新版上传页（顶栏无入口，属待定的产品取舍）。
+
+### 0.2.0（2026-10-07 已发布）
+
+**主题：上传链路按上游源码重写，四档开关（关闭 / 原版 / 兼容 / 新版）。**
+
+上游契约逐条核对：GitLab `sheepitrenderfarm/www` 的 master HEAD = `9b13032c`，与当时线上资源
+路径 `/media/9b13032c/` 同值。三个服务端接口全部对着源码核过，落在新增的 `src/62-chain.js`：
+上传 `POST /project/internal/upload`（multipart：`addproject_archive` + `UPLOAD_IDENTIFIER`，
+成功 302 → `/project/add/<token>`）、轮询 `GET /project/add_analyse/<token>`（JSON `RETRY` /
+`PROCESSING` 或 HTML 碎片）、提交 `POST /project/add_internal`（27 键，成功体是 `http…` 开头的
+绝对地址）。新增 `src/64-step1.js`（新版上传页）与 `src/68-step3.js`（新版第三步，自绘自提交）。
+
+**真机实测**（真站点 + 注入 `dist`，测试账号 `test-user`）：
+
+- 真机上传 `sptest.blend`（89 KB）→ 站点建分析记录、302 到 `/project/add/analysis-id`。
+- 等待页轮询显示「分析器正在读：0 / 1 个文件」→ 分析完成后自绘第三步：引擎 CYCLES /
+  blender405 / 160×120 / 24 fps / 采样 153600 / 8 像素 / .png / 降噪 / 自适应采样 / 无头渲染。
+- **提交前拦截**（`SP.Chain.submit` 换桩，**没有发请求**）：27 键齐全、值正确。
+- **四分支逐键一致**：真碎片（EXR/降噪）、tiles 下拉、samples 滑条、单帧+滑条，各 27 键、
+  **零差异**（`.tmp/upload-test/probe-eq.js`）。
+- 兼容档与新版档在同一真实编号上的截图对比：`.tmp/upload-test/step3-v2-compat-vs-new.png`。
+- **架构性保证**：解析碎片用 `DOMParser`，站点 HTML **永不进活文档** —— 0.1.14–0.1.17
+  「两份同名表单」那一整类缺陷结构上不可能再出现。
+- 失效模式可见（用户拍板的 A 方案：两条路都留、都"坏得响"）：`62-chain.js` 的 `KNOWN_IDS`
+  结构指纹 + `model.unknown` → 第三步提示条 + 设置页指纹行变红；`50-views.js` 的
+  `shapeNotice()` 在兼容档拼不出来时明说并给出切档办法。
+- 2026-10-07 本轮 impeccable critique（dual-agent，含真机截图与确定性扫描）分数 **27/40**，
+  快照在 `.impeccable/critique/2026-10-06T21-38-40Z__src-68-step3-js.md`；五条改进项尚未动手。
+
+**本轮未验证（别当成已验证）**：
+
+- ~~真机点「添加这个文件」真正建项目~~ —— **2026-10-07 已补验**：真机点提交 → 站点建出项目
+  `/project/1224568`（项目页正常，调度器、可渲染机器数据都在）→ 立即用
+  `projectAction(1224568,'remove_no_redirect')` 删除 → 删除后 `/home/projects` 里没有它、
+  直接访问 `/project/1224568` 返回 **404**。**27 键提交第一次在真机上完整跑通。**
+- 新版上传页的错误分支（站点维护中 / 无头像账号 / 并发上限 / 站点拒绝原因的就地显示）
+  只用桩验过，没有真实截图。
+- 第三步的其它分支形态（EXR 切块清单、多 .blend 存档、`up3x.unknown` 指纹提示条、
+  提交中 / 提交失败 / 已提交）。
+- **用户从 0.1.11 更新到 0.2.0 的那一跳**（装机实测）：旧设置键里 `uploadMode` 的
+  `site`/`compat` 已做兼容归一，`uiMode`/`translateSite`/`lang`/`scale` 未动。
+- 防闪守卫的 race（第四期遗留）：`#sp` 注入早于站点渲染时仍有闪一下的风险。
+
+**发布记录（2026-10-07）**
+
+这是**跨版本发布**：GreasyFork 上一直停在 `0.1.11`，`0.1.12`–`0.1.18` 从未发布，所以这一跳是
+`0.1.11 → 0.2.0`。流程按「四」末尾那条走，逐项结果：
+
+- `@version` 0.1.18 → **0.2.0**；`node build.mjs` 通过（443,433 字节 / 8,173 行 / 注释占比 17.5%）；
+  `node .tmp/make-stage.mjs` 通过（版本一致性检查是它拦的，不是人眼看的）。
+- **发布件指纹**：`dist` 与 `.tmp/publish-stage/sheepit-plus.user.js` **逐字节一致**，
+  SHA-256 = `2ED23064844DDEF9E6F02EAA514DD807B8C2C314E61815B84532F1B602E88DA9`。
+- **提交前的自检**：对填好的 `script_version[code]` 求 SHA-256，与上一行一致才点提交
+  （不再是"拿 dist 去比"，比的是**真正会提交的那串字符**）。
+- **入库核对**（脚本页版本号说了算）：脚本页 = `0.2.0` / 433.0 KB；`/scripts/598624/code`
+  （直读库）里 `up1-drop`、`Step3x`、`62-chain.js`、`add_internal`、`KNOWN_IDS`、`up3x.degrade`
+  全在，0.1.x 时代的 `sp-inline` 已不在；脚本页正文已是 0.2.0 那版（含「上传项目」四档那段），
+  旧的"后两步还是站点自己的界面"已消失。
+- **CDN 复现第八次**：`update.greasyfork.org` 的 `.user.js` = **443,429** 字节 vs 本地 **443,433**，
+  差的仍是 `@updateURL` / `@downloadURL` 那 4 个空格（这次 CDN 没滞后，发布后立刻就是 0.2.0）。
+- **发布前的真机冒烟**（注入 0.2.0 产物到真站点）：新版上传页 `hasUp1:true`、第三步
+  `view:analyse / token:analysis-id / hasUp3:true`，真数据齐全。
+- 0.1.11 → 0.2.0 这一跳的**装机实测仍未做**（见上面「本轮未验证」）。
+- **发布之后仓库又改了**（`77c6042` 起）：上传页的发射前闸门/取消/剩余时间、第三步标题层级、
+  硬约束就地提示、须知折叠、估算器降权等。**这些改动不在 0.2.0 里** —— 线上仍是发布时那份
+  （SHA-256 `2ED23064…`）。下次发版会把它们带上，`@version` 要继续往上走。
+
+### 0.1.18（2026-10-06 起，尚未发布）
+
+**两块内容**：① 新版上传第三步的控件皮肤全部自绘（控件本体仍是站点原版，只换外观）+ 设置页那张
+指纹卡压成一行；② **修掉一个真缺陷：第三步的表单在页面上有两份，站点提交时读的是壳后面那份原件**。
+
+**缺陷（0.1.14 起一直存在，本轮才查出来）**：
+`80-app.js` 的 `paintAnalyse()` 拿到我们自己的 GET `/project/add_analyse/<token>` 结果后执行
+`box.innerHTML = s.html` —— 这是把服务端渲染的整块表单**当字符串复制**进 `#sp-an-result`。
+与此同时站点自己的轮询 `doAnalyseUploadedProject()`（`addproject.js:177-211`，由页面内联脚本起
+`setTimeout(..., 5000, token)`，写完就停）把同样的 HTML 写进它自己的
+`#project_add_analyse_result`，那份原件留在原地、被我们的整页外壳盖住。
+⇒ 页面上每个控件 id 都有两份；而站点取值一律 `$('#id')`（`doAddProject` 逐 id 读，
+`$('#public_render').is(':checked')` 这种写法，见 `addproject.js:1-101`），jQuery 命中文档序靠前的
+**隐藏原件**，于是：**用户在新版第三步里改的任何值都提交不上去，提交的是服务端默认值。**
+
+**为什么 0.1.14 的验收没发现**：验收跑的是"值全留默认"那条路径（payload `diff: []` 就是这个意思），
+而"34 个控件全部在位"那次点名查的是 `document.getElementById(rec.id)` —— 命中的正是那份隐藏原件。
+两边行为一致，所以三次真提交（1224486 / 1224491 / 1224502）都"成功"了，看不出问题。
+本轮用「先在原版页面给每个节点打标记、再注入」+「点界面上的勾选框、再回头问 jQuery 状态」
+两个实验才把它钉死（点完之后 `$('#public_render').is(':checked')` 仍是 `true`）。
+
+**改法（`src/80-app.js`）**：搬活节点，不复制 HTML。
+- 新增 `hideStaleAnalyse()`：在 `box.innerHTML = s.html` **之前**把站点那份
+  `#project_add_analyse_result` 从文档里摘下来（存 `anStale`），原位留一个 `<!--sp-analyse-->`
+  注释锚（`anAnchor`）；
+- 新增 `parkAnalyse()`：按锚点把摘下来的容器送回原位 —— `render()` 的重画前、`release()` 拆 `#sp`
+  之前各调一次，和既有的 `parkManage()` 同一套路。
+
+**实测（真站点 + 真流程，token `40c6Bk`）**：
+- 注入前（classic 档、站点原版页面）：`#project_add_analyse_result.container` 存在、`1170×533`、
+  内含 form、`[id]` 共 34 个、`$('#public_render')` 只 1 份且 13×13 可见。
+- 注入 0.1.18 之后：同名 id **每个都只剩 1 份**（`addproject_0` / `addproject_content_0` /
+  `public_render` / `generate_mp4` / `compute_method_cpu` / `addproject_animation_start|end|step_frame_0` /
+  `addproject_exe_0` / `token` / `addproject_submit_div_0` / `addproject_error_box_0` 全 = 1；
+  `addproject_split_animation_sample_range_value_0` = 0 是站点对 animation 本来就不给这个元素）；
+  `staleContainerInDoc: false`、注释锚 `["sp-analyse"]`、`controlsInBox: 34`、`up3secs` 四块齐全。
+- **用站点自己的取值路径读一遍 payload**（探针 `.tmp/upload-test/probe-payload.js`，逐条对照
+  `addproject.js:1-101`，**不发任何请求**）：27 个键齐全；每个 id 的 `$('#id')[0]` 都指向 `#sp` 里那份
+  （`jqHit: true`）；在界面上取消「所有成员均可渲染」、勾上「生成 MP4 视频」之后，payload 读到
+  `public_render: "0"`、`generate_mp4: "1"`（服务端默认分别是 1 和 0）⇒ **界面上的改动进得了 payload**。
+- 指纹卡改成一行：`9b13032c · 已核对 34/34`，悬停提示放三行细节（站点资源版本 / 与本脚本验证过的
+  版本一致 / 上次进入第三步的时间与控件数）；没走过第三步时是 `9b13032c · 还没走过第三步`。
+- 控件皮肤：「新版（实验）」档的第三步里，站点那两张 PNG（`cpu_enabled.png` / `gpu_enabled.png`）
+  换成我们的 SVG（16×16；CPU 选中时是主题色 `rgb(182, 71, 47)`、未选是 `rgb(75, 84, 98)`）；
+  「预计排队 / 项目总数」那两行裸文本包成 `.up3-hint`（`display:block`、11.5px、`#656d79`，
+  两行之间多余的 `<br>` 清掉）；勾选框/单选框/输入框/下拉一律 `appearance:none` + 自绘
+  —— 站点 CSS（`base-light.css` / `base-main.css` / `bootstrap.min.css`，已下载到
+  `.tmp/upload-test/site-css/`）里没有任何一条规则在画这些控件，之前看到的"橙色勾选框"其实是我们自己
+  `30-style.js` 里那条 `accent-color` 的效果，本轮已删。
+- 构建：`dist` 337,536 字节（注释 55,354 = 16.4%）。
+
+**踩到的坑（写下来免得再踩）**：
+1. **`new $.ajax(url, opts)` 的 URL 是第一个参数**。为了不真提交我写了个 `$.ajax` 桩，只拦 `opts.url`，
+   结果站点那次调用没被拦住、**真提交了**，建出项目 1224502（`public_render="0"`，因为探针刚把界面上
+   那个勾选框点掉）。事故反过来成了最硬的证据：该项目管理页显示站点的
+   「Your project is **private**, not every worker will be able to participate in your project.」提示
+   ⇒ 提交上去的正是界面里的值（不是默认值）。项目 1224502 事后用站点自己的删除按钮删掉了
+   （`projectAction(id, 'remove_no_redirect')`，与 1224486 / 1224491 同一条路径）。
+2. 站点那句私有提醒被 `<strong>` 切成三段文本节点，`site` 表（逐节点精确匹配）配不上整句；
+   逐节点配 `'Your project is'` / `'private'` / `', not every worker…'` 能翻，但 `textNodeValue`
+   会保留节点首尾空白，渲染成「你的项目是 私有的，…」—— 中文里多一个空格，难看。
+   最终走 `blockPatterns`（整块 textContent 正则 + 替换值自带 HTML）：
+   `/^Your project is private, not every worker will be able to participate in your project\./`
+   → `你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。`
+   （实测渲染为「你的项目是私有的，不是所有 worker 都能参与你的项目。」）
+3. `#public_thumbnail` 这个键：账号不能自己关缩略图时，站点渲染的是
+   `<input type="hidden" id="public_thumbnail" value="1" checked>`（`UI__HTML.php:1057`），
+   而站点自己用 `$('#public_thumbnail').is(':checked')` 取值 —— hidden 输入永远 `:checked === false`
+   ⇒ 站点一直提交 `public_thumbnail=0`。这是站点自己的既有行为，我们照原样透传、不动它。
+4. 「切回原版界面」是 `Util.store.set('uiMode','classic')` + `location.reload()`（`80-app.js:661-664`），
+   所以搬进壳里的活节点（管理页的 `.w-section`、分析页摘下来的 `#project_add_analyse_result`）
+   被重载连带销毁是安全的；只有"同一个页面里换实例"的调试场景（探针注入覆盖旧 `#sp`）会踩到。
+
+**仍未验证**：控件皮肤与"两份表单"的修复只在站点当前这一版（`9b13032c`）上测过；
+`public_thumbnail` 的 hidden 变体只在"不能关缩略图"的账号上见过。
+
+---
+
+### 0.1.17（2026-10-06 起，尚未发布）
+
+**缺陷（用户实报）**：今天刚注册的账号，总览显示「还没有渲染记录」那张新用户卡，而站点原版页面
+明明有数字（`Frames rendered 148` / `Points 20,062` / `Projects created 3`）。
+
+**根因**：`50-views.js` 的 `overview()` 用
+`hasData = points 时间线 > 1 点 || frames 时间线 > 0 点 || 热力图 activity > 0` 判断"有没有记录"。
+站点对**新账号**是"有统计表、没有图表"：实测 `/user/test-user/profile`（66,793 字节）里
+`line_points_timeline` / `line_frames_timeline` / `consecutive-render-heatmap` **三样整段不渲染**
+（探针 `arrFlags` 全 false），但 `dl.dl-horizontal` 里有真数字（Projects created 3 / Frames ordered 6 /
+Frames rendered 148 / Points 20,062 / Registration October 7th, 2026）。于是 `hasData` 为假、`st` 非空
+→ 正好落进"新用户空状态"分支。同页 `parseMachines` 其实读到了 1 台在线机器
+（`CLOUDCOMPUTER` / `GeForce RTX 3060`），也被一并忽略。
+
+**改法**（都在 `src/50-views.js`）：
+- `asCount` 提到模块作用域（原来定义在 `hasData` 之后的分支里，判断用不到它）。
+- `hasData` 增加三类证据：统计表里 `Frames rendered` / `Points` / `Time rendered` 任一 > 0、
+  `p.machines.count > 0`、`p.sessions.length > 0`。
+- 「当前连续 N 天」这张 KPI 只在**有产出日历**（`daily.length || activity.length`）时才画：
+  数字是从日历算出来的，站点不给日历就会给新账号摆一个"连续 0 天"。
+
+**实测（真站点注入 0.1.17）**：
+- 新账号总览：`emptyCard: false`；KPI = 已渲染帧数 148 / 积分 20,062 / 累计渲染时长 — / 建的项目 3 /
+  订的帧 6（连续天数那格没画）；「渲染产出」面板如实写「站点没有为这个账号提供产出日历」（`heat.none`）；
+  「已连接的机器 共 1 台 CLOUDCOMPUTER GeForce RTX 3060」。截图 `.tmp/upload-test/ov-after-fix.png`。
+- 回归（数据齐全的 `/user/johnnyvillas/profile`）：KPI 六格都在（含「当前连续 1 天 / 历史最长 16 天 ·
+  近 30 天活跃 2 天」）、热力图有真实数据（6 天有渲染）、机器面板「共 2 台 · 当前没有连着算力的客户端」。
+- 构建：`dist` 326,448 字节（注释 50,962 = 15.6%）。
+- **仍未验证**：只实测了"统计表有数字、图表缺席"这一种新账号形态；站点何时才给新账号渲染图表数组
+  没查（在前端控制范围之外）。
 
 ---
 

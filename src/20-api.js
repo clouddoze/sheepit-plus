@@ -46,7 +46,6 @@
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
   }
 
-  /* ------------------------------------------------------------ 内联数组 */
 
   function extractArray(html, anchors, keyed) {
     const list = Array.isArray(anchors) ? anchors : [anchors];
@@ -165,7 +164,9 @@
   const headingByText = (doc, re) => [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6')].find((h) => re.test(text(h)));
 
   /** 会话页 → 机器档案。Session information 按 <th> 标签逐行读、不认位置；站点的颜色无语义。
-   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事。 */
+   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事 —— 而且**两个可以同时有**
+   *  （站点是两条独立的 {% if %}，各写一行），所以这里把两行都收下来（见下面 info.note 的拼接），
+   *  由 40-ui.js 的 pauseKeys() 判成 0/1/2 个状态。 */
   function parseSession(html, id) {
     const doc = parse(html);
     const facts = [];
@@ -174,18 +175,34 @@
     const table = tableAfter(headingByText(doc, /^session\s*information$/i));
     if (table) {
       for (const tr of table.querySelectorAll('tr')) {
+        /* 只认这张表**自己的**行。站点把 `Current frames` 画成「td 里再嵌一张表」
+           （running.html.twig:381-400），那种内层 tr 没有 th，会被下面"没有 th = 状态行"的判据
+           误吃成 note —— 机器明明在渲染，界面上却把 `project: … frame: …` 当成一种状态
+           （会话页的状态 chip 与在线机器那一格都会显示这段作业文本）。 */
+        if (tr.closest('table') !== table) continue;
         const th = tr.querySelector('th');
-        const td = tr.querySelector('td');
-        if (!th || !td) continue;
-        const label = text(th);
+        const tds = [...tr.querySelectorAll('td')];
+        if (!tds.length) continue;
+        const label = th ? text(th) : '';
         if (!label) {
           /* **server side** 与 **client side** 是两种暂停。早先是 `if (!label) continue`，整行丢掉后
              两种暂停界面上长得一样，且 Status 那格都写 Enable，本地暂停被误报成「运行中」。它是状态
-             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。 */
-          const note = text(td);
-          if (note) info.note = { value: note, key: 'note', href: '' };
+             而非机器规格，故收进 info；认不出的值照样留着（不吞数据）。
+             ⚠ 这一行**没有 `<th>`**，而且是「空 td + 有字 td」两格（2026-10-07 真机原文：
+             `<tr><td style="…"></td><td><span style="color:red">Paused client side</span></td></tr>`）。
+             所以判据不能要求 th 存在、也不能只看第一个 td —— 这里取所有 td 里非空的那些。 */
+          const note = tds.map(text).filter(Boolean).join(' ');
+          if (note) {
+            /* 两种暂停在站点那边是**两行**（running.html.twig:296-314：session.paused() 客户端侧、
+               session.running()==false 服务端侧，两个条件独立 → 可以同时成立），所以这里会连着进两次。
+               早先是直接赋值，后一行把前一行顶掉 —— 两端都暂停时"客户端侧"那条就凭空消失了。
+               这张表里没有 `<th>` 的行**只有这两行暂停**（逐行核对过 twig），所以拼接是安全的。 */
+            const prev = info.note ? info.note.value : '';
+            info.note = { value: prev ? `${prev} · ${note}` : note, key: 'note', href: '' };
+          }
           continue;
         }
+        const td = tds[0];
         const hit = SESSION_LABELS.find(([re]) => re.test(label));
         const key = hit ? hit[1] : null;
         const a = td.querySelector('a[href]');
@@ -209,12 +226,6 @@
           fact.action = m ? Util.safePath(m[1]) : null;
           const st = fact.action && fact.action.match(/\/running\/(\d+)/);
           fact.target = st ? st[1] : null;
-        }
-        if (key === 'hostname') {
-          const img = td.querySelector('img');
-          const src = img ? String(img.getAttribute('data-src') || img.getAttribute('src') || '') : '';
-          const m = src.match(/flag\/([A-Za-z]{2})\./);
-          fact.flag = m ? m[1].toUpperCase() : '';
         }
         if (key === 'owner' && fact.href) {
           const m = fact.href.match(/\/user\/([^/]+)\//);
@@ -266,6 +277,212 @@
       .sort((a, b) => b.start - a.start);
   }
 
+  /* 「我的项目」= 个人主页上那张 <h2>Latest projects</h2> 表（**不是**页脚侧栏那个同名 <h4> 块，
+     后者是全站最新项目）。站点实况（2026-10-07 抓的真 HTML，`.tmp/recon/raw/profile-self.html`）：
+
+       <div class="w-box blog-post"><h2>Latest projects</h2><div class="padding-15">
+         <table class="table table-bordered table-striped table-comparision table-responsive">
+           <tr><td><a href="/project/1224469">sptest</a></td><td class="msg_finished">Rendered</td></tr>
+
+     三条站点行为决定了解析形状（都是上游源码 HTML.php:2551 printProjects 干的）：
+     ① 行里**没有项目 id**，id 只能从名字链上取；别人的主页不给链（canManageProject 为假），
+        所以那一侧解析出来 id 为空 —— 调用方据此判断"能不能进管理页"。
+     ② 状态是第二个 td 的 class `msg_<词>`（processing/finished/waiting/paused/unknown），
+        文案里另带百分比：「Rendering (88%)」。**用 class 判状态，不认英文文案**。
+     ③ 被封的项目整行 `class="danger"`；一个项目都没有时站点整块不渲染 → 返回空数组。 */
+  const MY_STATUS = { processing: 'rendering', waiting: 'waiting', paused: 'paused', finished: 'finished', unknown: 'other' };
+
+  function parseMyProjects(doc) {
+    // 页脚那个同名块是 <h4>，主页这块是 <h2>，且站的 h2 就是 w-box 的第一个孩子
+    const head = [...doc.querySelectorAll('h2')].find((h) => /latest projects/i.test(text(h)));
+    const table = head && head.parentElement ? head.parentElement.querySelector('table') : null;
+    if (!table) return [];
+
+    const out = [];
+    for (const tr of table.querySelectorAll('tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 2) continue;
+      const link = tds[0].querySelector('a[href*="/project/"]');
+      const id = link ? ((String(link.getAttribute('href')).match(/\/project\/(\d+)/) || [])[1] || '') : '';
+      const cell = tds[1];
+      const cls = (String(cell.getAttribute('class') || '').match(/\bmsg_([a-z]+)/i) || [])[1] || '';
+      const raw = text(cell);
+      const pct = Number((raw.match(/\((\d+)\s*%\)/) || [])[1]);
+      out.push({
+        id,
+        name: text(tds[0]),
+        statusKind: MY_STATUS[cls.toLowerCase()] || 'other',
+        status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
+        pct: Number.isFinite(pct) ? pct : null,
+        blocked: tr.classList.contains('danger'),
+      });
+    }
+    /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
+       id 是 IDENTITY 自增（上游 Project.php:63），按 id 倒序 ≈ 新建在前；没有 id 的行保持原序排在后面。 */
+    return out
+      .map((x, i) => ({ x, i }))
+      .sort((a, b) => ((Number(b.x.id) || 0) - (Number(a.x.id) || 0)) || (a.i - b.i))
+      .map((p) => p.x);
+  }
+
+  /* 项目管理页 /project/<id> 的**全量模型**：只读站点那一页（**传进来的是一份 HTML 副本**，
+     不是活文档 —— 和上传链路同一条路子），产出一份数据模型，视图层只吃模型、动作直发端点。
+     站点来源：templates/project/manage.html.twig:133-274 + src/UI/HTML.php 的 printBlend()，
+     2026-10-07 抓的真机 HTML 存在 `.tmp/recon/raw/manage-1224469-2.html`。
+
+     三处设置各有各的形态（坑写在下面），其余都是"照着站点自己的 id 读文本"：
+       ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+          （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+          所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+          GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+       ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（display_generate_mp4 为假时站点不渲染它）。
+       ③ 公开渲染**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+          + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+          可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 不看 id。 */
+  const MG_ACTION_TITLES = {
+    'see frames': 'frames', 'download frames': 'zip', 'download video': 'video',
+    'resume': 'resume', 'pause': 'pause', 'reset': 'reset', 'remove': 'delete',
+  };
+
+  function parseManage(doc, projectId) {
+    const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
+    const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+    const id = String(projectId || '');
+
+    const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
+    const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
+    const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
+    const stCls = stEl ? ((String(stEl.getAttribute('class') || '').match(/msg_([a-z]+)/i) || [])[1] || '') : '';
+
+    /* ---- 概要 Summary：一串 <li>，最后一条红字是"自动删除日期"（站点给的是整句）。
+       形状两种：`Storage used: 134.8 kB` 是纯文本，`On reference per frame rendertime: <span>0m00s</span>`
+       的是「标签 + span」。拆成 label/value 两段，视图那边才能分别套语言包（见 50-views 的 mgLine）。 ---- */
+    const sumHead = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(text(h).trim()));
+    const sumBox = sumHead ? sumHead.closest('.w-box') || sumHead.parentElement : null;
+    const summary = [];
+    let warn = { label: '', value: '' };
+    const pairOf = (li) => {
+      const span = li.querySelector('span');
+      if (span) {
+        const clone = li.cloneNode(true);
+        const dead = clone.querySelector('span');
+        if (dead) dead.remove();
+        return { label: text(clone).trim(), value: text(span).trim() };
+      }
+      const s = text(li);
+      const m = s.match(/^([^:]+):\s*(.+)$/);
+      return m ? { label: `${m[1]}:`, value: m[2].trim() } : { label: s, value: '' };
+    };
+    if (sumBox) {
+      for (const li of sumBox.querySelectorAll('li')) {
+        const p = pairOf(li);
+        if (!p.label && !p.value) continue;
+        if (li.querySelector('span[style*="red"]') || /automatically deleted/i.test(p.label + p.value)) warn = p;
+        else summary.push(p);
+      }
+    }
+
+    /* ---- 动作行：站点用 title 当唯一文字（图标按钮），按 title 归一成 kind ----
+       `resume` 在"活跃项目太多"时是 disabled 的 <a>（没有 onclick）→ 读出来但标记 disabled。 */
+    const box = id ? doc.getElementById(`project_job_${id}_div_actions`) : null;
+    const actions = [];
+    let canManage = false;
+    for (const a of box ? box.querySelectorAll('a') : []) {
+      const onclick = String(a.getAttribute('onclick') || '');
+      const href = String(a.getAttribute('href') || '');
+      const disabled = a.hasAttribute('disabled') || /\bdisabled\b/.test(String(a.getAttribute('class') || ''));
+      const title = String(a.getAttribute('title') || '').trim();
+      if (/remove_no_redirect/.test(onclick)) { canManage = true; continue; }
+      const partial = onclick.match(/doAskForProjectPartialArchiveFrame\('([^']+)'\)/);
+      if (partial) { actions.push({ kind: 'partial', url: partial[1], title, disabled }); continue; }
+      const act = onclick.match(/projectAction\('[^']*',\s*'([a-z_]+)'\)/);
+      if (act) {
+        const kind = MG_ACTION_TITLES[act[1]] || act[1];
+        actions.push({ kind, title, disabled });
+        continue;
+      }
+      if (!href || href === '#') {
+        /* 站点在"活跃项目太多"时渲染的是一只**没有 onclick、没有链接**的灰按钮，标题里写着原因：
+           `href="#"` + title="Resume is disabled because you have too many active projects"。
+           按 title 认回它并标 disabled —— 否则用户看到的是"这一栏什么都没有"，不知道为什么。 */
+        const low = title.toLowerCase();
+        const key = Object.keys(MG_ACTION_TITLES).find((k) => low.indexOf(k) === 0);
+        if (key) actions.push({ kind: MG_ACTION_TITLES[key], title, disabled: true });
+        continue;
+      }
+      const kind = MG_ACTION_TITLES[title.toLowerCase()] || (/\/frames\//.test(href) ? 'frames' : '');
+      if (kind === 'frames') { actions.push({ kind, url: href, title, disabled }); continue; }
+      /* 下载帧 / 下载视频是 shepherd 上的**绝对 URL**（主机名随项目变），原样留着 */
+      if (/\/zip$/.test(href) || /\/mp4\/final$/.test(href)) actions.push({ kind, url: href, title, disabled });
+    }
+
+    /* ---- 帧方块 + 视频预览：站点把 <img>/<video> 塞在 title 属性或 <source> 里 ---- */
+    const tiles = [];
+    for (const sq of doc.querySelectorAll('.tiles .square')) {
+      const raw = String(sq.getAttribute('title') || '');
+      const src = (/<img\s+src="([^"]+)"/i.exec(raw) || [])[1] || '';
+      if (!src) continue;
+      const cls = String(sq.getAttribute('class') || '');
+      const num = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
+      tiles.push({
+        src,
+        frame: num(/frame:\s*([^<]+)/i),
+        cost: num(/cost:\s*([^<]+)/i),
+        time: num(/rendertime:\s*([^<]+)/i),
+        state: /btn-warning/.test(cls) ? 'progress' : (/btn-neutral/.test(cls) ? 'done' : 'waiting'),
+      });
+    }
+    const videoEl = doc.querySelector('.tiles video source[src]');
+    const video = videoEl ? String(videoEl.getAttribute('src') || '') : '';
+
+    /* ---- 权限 / 渲染者：站点把名单渲染成 <ul><li><a>名字</a></li> ----
+       `#project_acl_team_current` 的链接是 /team/<数字 id>，名字在链接文字里（id 要从 href 抠，
+       加团队时站点发的就是那个数字 id）。公开渲染时站点**不渲染**这两份名单（只有那只 checkbox），
+       所以名单为空 ≠ 没人，视图要按 publicRender 说清。 */
+    const namesOf = (rootId) => {
+      const root = doc.getElementById(rootId);
+      if (!root) return [];
+      return [...root.querySelectorAll('li a')]
+        .map((a) => ({ name: text(a), url: Util.safePath(a.getAttribute('href')), id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '' }))
+        .filter((x) => x.name);
+    };
+    const acl = {
+      managers: namesOf('project_acl_manager_current'),
+      renderers: namesOf('project_acl_renderer_current'),
+      teams: namesOf('project_acl_team_current'),
+      hasManagerPanel: !!doc.getElementById('project_acl_manager_add_form_user'),
+      hasRendererPanel: !!doc.getElementById('project_acl_renderer_add_form_user'),
+      hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
+    };
+
+    let compute = '';
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!on(r)) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
+      if (m) compute = m[1];
+    }
+    const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
+    const pubA = doc.getElementById('project_public_render_checkbox_1');
+    const pubB = doc.getElementById('project_public_render_checkbox_value');
+    const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
+
+    return {
+      found: !!(nameEl || box || acl.hasManagerPanel),
+      id,
+      name: nameEl ? text(nameEl) : '',
+      statusText: stEl ? text(stEl) : '',
+      statusCls: stCls.toLowerCase(),
+      progression: progEl ? text(progEl) : '',
+      summary, warn, actions, tiles, video, acl, canManage,
+      compute,
+      mp4: mp4Box ? on(mp4Box) : null,
+      publicRender: pubEl ? on(pubEl) : null,
+      hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
+      hasMp4: !!mp4Box,
+      hasPublic: !!pubEl,
+    };
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -311,7 +528,10 @@
 
     const derived = computeDerived(activity);
 
-    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived };
+    // 主页那张表：自己的主页每行带 id 可进 /project/<id>，别人的主页只有名字（见 parseMyProjects）
+    const myProjects = parseMyProjects(doc);
+
+    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived, myProjects };
   }
 
   /** 派生：口径与原站 dl 的 "Consecutive render days" 对齐（不含今天） */
@@ -327,10 +547,8 @@
 
     return {
       streakExclToday: set.has(today) ? run(shift(today, -1)) : run(today),
-      streakInclToday: run(today),
       best,
       active30: [...Array(30)].filter((_, i) => set.has(shift(today, -i))).length,
-      totalDays: activity.length,
     };
   }
 
@@ -440,7 +658,6 @@
       };
       out.push({
         rank: text(tds[0]),
-        rankNum: numOf(tds[0]),
         user: link ? text(link) : text(tds[1]),
         // URL 里的用户名才是可靠身份（显示名可能与 URL 不同，只有 URL 那个能打开对的人）
         userId: link ? decodeURIComponent((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
@@ -593,6 +810,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
+    parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };

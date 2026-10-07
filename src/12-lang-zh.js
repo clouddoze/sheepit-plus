@@ -5,8 +5,28 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP || !SP.I18n) return;
 
+  /* 站点把日期写成「20th Oct 06:10」（项目管理页）或「06:40 Sep 29」（会话页）两种形状，
+     照抄进中文句子太刺眼：只本地化这两种。作为 pack.dateText 注册，视图层可以直接用
+     I18n.date() 要本地化结果（10-core.js 的 I18n.date）。
+     （patterns 的替换值可以是函数——10-core.js 用的是 String.replace(re, rep)。） */
+  const MONTH_ZH = { Jan: '1月', Feb: '2月', Mar: '3月', Apr: '4月', May: '5月', Jun: '6月',
+    Jul: '7月', Aug: '8月', Sep: '9月', Oct: '10月', Nov: '11月', Dec: '12月' };
+  const monthOf = (mon) => MONTH_ZH[String(mon).slice(0, 3).charAt(0).toUpperCase() + String(mon).slice(1, 3).toLowerCase()];
+  const farmDate = (s) => String(s == null ? '' : s)
+    .replace(/\b(\d{1,2})(?:st|nd|rd|th)\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2}:\d{2})\b/g,
+      (m, d, mon, time) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      })
+    .replace(/\b(\d{1,2}:\d{2})\s+([A-Za-z]{3})[a-z]*\s+(\d{1,2})\b/g,
+      (m, time, mon, d) => {
+        const z = monthOf(mon);
+        return z ? z + d + '日 ' + time : m;
+      });
+
   SP.I18n.register('zh', {
     label: '中文',
+    dateText: farmDate,
 
     /* 短词条 */
     site: {
@@ -41,7 +61,6 @@
       'Privacy policy': '隐私政策',
 
       /* 首页 */
-      'SheepIt is a free distributed renderfarm for Blender. Try it now!': 'SheepIt 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
       'Free': '免费',
       'No subscription, no credit card.': '无需订阅，无需信用卡。',
       'Free forever — since 2007.': '自 2007 年起永久免费。',
@@ -65,7 +84,6 @@
       'total frames rendered': '累计渲染帧数',
       'computed projects': '已完成项目',
       'Latest news': '最新动态',
-      'Read more': '阅读更多',
 
       /* 开始使用 */
       'Get started!': '开始使用！',
@@ -74,8 +92,6 @@
       "You don't need to have Blender installed, it will be downloaded for you.": '你不需要安装 Blender，客户端会自动下载。',
       'Your own project will be rendered first, then your computer will help other users.':
         '你自己的项目会优先渲染，之后你的电脑再帮助其他用户。',
-      "If you don't want to share your computer, but still help SheepIt, you should consider donating":
-        '如果你不想共享电脑，但仍想支持 SheepIt，可以考虑捐赠',
       'Download the client and start rendering now.': '下载客户端，立刻开始渲染。',
       'Minimum client requirements': '客户端最低要求',
       'Add your project': '添加你的项目',
@@ -112,7 +128,6 @@
       'Be aware that': '请注意：',
       'scripts are disabled due to security reasons.': '出于安全原因，脚本已被禁用。',
       'Your blend version is': '你的 blend 版本需要是',
-      'or higher.': '或更高。',
       'You set the output file to an': '你需要把输出文件设为',
       'image': '图片',
       ', for example jpg or png.': '，例如 jpg 或 png。',
@@ -155,14 +170,12 @@
       'Traffic per month': '每月流量',
       'Shepherds status': 'Shepherd 节点状态',
       'Server': '服务器',
-      'Processing': '处理中',
       'Storage': '存储',
       'Tasks': '任务',
       'binary mirror': '二进制镜像',
       ": stores Blender binary copy. Traffic is handled by Cloudflare's CDN.": '：存放 Blender 二进制副本，流量由 Cloudflare CDN 承载。',
       'project mirror': '项目镜像',
       ': stores blend file copy. Traffic is handled by Cloudflare\'s CDN.': '：存放 blend 文件副本，流量由 Cloudflare CDN 承载。',
-      'shepherd': 'shepherd',
       '(blue): stores the actual render. Creates zip and mp4.': '（蓝色）：存放实际渲染结果，生成 zip 和 mp4。',
       '(yellow), situated in Texas, USA. It handles users, project creation and rendering request.':
         '（黄色），位于美国德州，负责用户、项目创建和渲染请求。',
@@ -176,7 +189,6 @@
       'Loading': '加载中',
 
       /* 属性文案（title / alt / placeholder） */
-      'CPU disabled': 'CPU 已禁用',
       'cpu disabled': 'CPU 已禁用',
       'GPU nvidia enabled': 'GPU（NVIDIA）已启用',
       'gpu enabled': 'GPU 已启用',
@@ -202,11 +214,126 @@
       'Number of tiles': '分块数',
       'Expected render time': '预计耗时',
       'No split': '不拆分',
+
+      /* 分析完成后的站点「新增项目」表单：站点把它整块塞进 #sp-an-result，我们只翻文案、
+         不动结构（站点 JS 按 id 拼参数）。键必须与站点 DOM 归一化后的文本逐字一致——
+         原文快照见 .tmp/upload-test/step3-outer.html。 */
+      'Renderable by all members': '所有成员均可渲染',
+      'By default every member can render your project. If you want to restrict the access to your project do not check this box. On the project administration page you will be able to modify this setting and add specific members to renderers.':
+        '默认每个成员都能渲染你的项目。想限制访问就别勾这一项；之后可以在项目管理页改这个设置，并把指定成员加进渲染者名单。',
+      'Generate MP4 video': '生成 MP4 视频',
+      'Generates an MP4 video of the projects, it is really resource intensive for the server so only check it if you really need it.':
+        '为项目生成一段 MP4 视频。这非常吃服务器资源，确实需要时才勾。',
+      'Compute method:': '计算方式：',
+      'Denoising detected: Splits (multiple smaller frames with reduced samples) are not supported.':
+        '检测到降噪：本项目不支持拆分（把帧切成小块、再降低每块的采样）。',
+      'It does not make sense to denoise separate splits and recombine them together.':
+        '把拆分后的各块分别降噪、再拼回一起，是没有意义的。',
+      'Start frame': '起始帧',
+      'End frame': '结束帧',
+      'Step': '步长',
+      'Advanced options': '高级选项',
+      'Memory used': '内存占用',
+      'You can specify the memory used your project. If you think your project will take a lot of ram (more than 20GB), please fill the amount. You can find this value on the top right of Blender. It will help the renderfarm, by allowing the server to give a frame to a small configuration. It is an optional attribute, this value will be detected on the first frame rendered.':
+        '可以在这里指定项目要用的内存。预计占用很大（超过 20GB）就填上——这个值显示在 Blender 界面右上角。填了能帮农场把帧派给小机器。可选项，不填会在渲染第一帧时自动探测。',
+      'Memory used in Mbytes': '内存占用（MB）',
+      'Add this blend': '添加这个 blend',
+
+      /* 项目管理页 /project/<数字>：整页自绘（0.2.2 起），站点节点不进壳。这里这些词条
+         是给**解析出来的站点原文**用的（概要几行、动作按钮的 title、名单面板的占位符），
+         视图层自己那几句话走 10-core.js 的 UI 词典（mg.*）。 */
+      'Administration': '项目管理',
+      'Summary': '概要', 'Legend': '图例',
+      'Finished': '已完成', 'In progress': '进行中', 'Waiting': '等待中',
+      'Rendered': '已渲染', 'Processing': '渲染中', 'Failed': '失败', 'Expired': '已过期',
+      'Permissions': '权限', 'Renderers': '渲染者', 'Actions': '操作',
+      'Managers': '管理员', 'Users': '用户',
+      'Compute method': '计算方式',
+      'Add a user to manager list': '输入用户名，加入管理员名单',
+      'Add': '添加',
+      'See frames': '查看帧图像', 'Download frames': '下载帧图像', 'Remove': '删除项目',
+      'CPU enabled': 'CPU 已启用', 'CPU disabled': 'CPU 已禁用',
+      'GPU enabled': 'GPU 已启用', 'GPU disabled': 'GPU 已禁用',
+      /* 站点把这句话拆成 <strong>Caution!</strong> + 文本节点，整句当键永远匹配不上 */
+      'Caution!': '注意！',
+      'not all the rendering features are supported by GPUs': 'GPU 并不支持站点全部的渲染特性。',
+      'You might have different results depending on the rendering technology.': '换一种渲染技术，结果可能有差异。',
+
+      /* 项目管理页：调度器那一段（只在项目「等待中 / 渲染中」时渲染）。
+         注意 site 表是**短词条精确匹配**，值放在子 <b> 里的整句要用下面的 patterns。 */
+      'Scheduler': '调度器',
+      /* 站点在「从没活动过」的机器上印红色小字 never（账户页三行、旧版会话页）。 */
+      'never': '从未',
+      'How many machines can actually render the project?': '有多少台机器能真正渲染这个项目？',
+      'Connected machines:': '已连接机器：',
+      'Connected machines for CPU:': 'CPU 已连接机器：',
+      'Potential rendering machines:': '潜在渲染机器：',
+      'Pause': '暂停',
+      'Resume': '继续',
+
+      'Your project has finished rendering, the frames are being packed.The server hosting your project will soon create a zip with your frames.':
+        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
+      'Generating archive.': '正在打包存档。',
+      'More information about SheepIt network on the servers page': '关于 SheepIt 网络的更多信息见「服务器」页面。',
+
+      /* 项目管理页：其它状态（渲染中／暂停／私有／封禁／限速／服务器不可用）
+         注意 site 表是短词条精确匹配：被 <strong> 拆开的整句（如 "Your project is <strong>private</strong>, …"）
+         site 表盖不住（单词 "private" 又太泛、全站误伤面太大），所以那句走下面的 blockPatterns ——
+         patchBlocks 是按**整块 textContent** 匹配的，正则只吃英文前半句、替换值里带 <strong>，
+         后半句（另一句，已有 site 词条）原样留着给 patchTextNodes 翻（0.1.18）。 */
+      'Rendering': '渲染中',
+      'Paused': '已暂停',
+      'Current renderers:': '正在渲染的成员：',
+      'Resume is disabled because you have too many active projects': '继续已被禁用：你的进行中项目太多',
+      'Ask for a partial Archive Frame': '申请部分帧压缩包',
+      'Your project has finished rendering, the frames are being packed.': '项目已经渲染完成，正在打包帧文件。',
+      'Download video': '下载视频',
+      'Statistics about the render': '渲染统计',
+      'Note: this is not the final image. It is a thumbnail of the on going render.': '注意：这不是最终画面，而是渲染中的缩略图。',
+      'Note: this is not the final video. It is a reduced thumbnail.': '注意：这不是最终视频，而是降质缩略图。',
+      "To make it renderable by everyone, check 'Renderable by all members' on the renderers options.": '想让所有人都能渲染，请在渲染者选项里勾选「所有成员均可渲染」。',
+      'Your project has been blocked.': '你的项目已被封禁。',
+      'Members can not render your project BUT you still can.': '其他成员无法渲染你的项目，但你仍然可以。',
+      'Members (including you) can not render your project.': '包括你在内的成员都无法渲染你的项目。',
+      'You can remove this limitation by connecting your machine to the farm.': '把你的机器接入农场即可解除这个限制。',
+      'As long as you are rendering, your project will be unthrottled.': '只要你在参与渲染，你的项目就不会被限速。',
+      'The server hosting your project is currently not available.': '托管你项目的服务器当前不可用。',
+      'No download or rendering is possible.': '无法下载，也无法渲染。',
+      'Add a user to renderer list': '输入用户名，加入渲染者名单',
+      'Add a team to renderer list': '输入团队名，加入渲染者名单',
+      'If you are using Eevee, CPU rendering is not available.': '使用 Eevee 时无法使用 CPU 渲染。',
+      'MP4 generation disabled': 'MP4 生成已禁用',
+
+      /* 会话页（/session/<数字>）。**只在「原版界面」下才会走到这里** —— 新版界面把这一页整页
+         重制了，用的是 10-core.js 的 sess.f.* 词条。措辞与那边保持一致（处理器 / 显卡 /
+         物理内存 …），免得同一个字段在两个界面里叫两个名字。
+         2026-10-07 之前这一整块是空的：老版界面打开会话页，导航是中文、表格正文全英文。 */
+      'Session information': '会话信息', 'Owner': '属主', 'Hostname': '主机名', 'OS': '操作系统',
+      'RenderKey': '渲染密钥', 'RAM allowed': '渲染可用内存', 'RAM available': '物理内存',
+      'Max render time per frame': '单帧渲染时长上限', 'VRAM': '显存', 'Driver': '驱动',
+      'Compute device': '计算设备', 'Power CPU': 'CPU 性能', 'Power GPU': 'GPU 性能',
+      'Creation Time': '创建时间', 'Rendered Frames': '已渲染帧数', 'Points earned': '获得积分',
+      'Last request': '最后请求', 'Last request Job': '最后请求作业',
+      'Last Validated Job': '最后验证作业', 'User agent': '运行环境', 'Action': '可用动作',
+      'Version': '版本', 'Status': '状态',
+      /* 渲染密钥那个按钮的字写在 <input value> 里（DomI18n 会翻 input[type=button] 的 value） */
+      'Display renderkey': '显示渲染密钥',
+      /* 两种暂停不是一回事，站点那行的原文必须逐字对上 */
+      'Paused server side': '服务器端已暂停', 'Paused client side': '客户端已暂停',
+      'Enable': '启用',
+      /* 时间线：图例是站点的内部枚举，表头是三个词 */
+      'Timeline': '时间线', 'Type': '类型', 'Job': '作业', 'Start': '开始', 'End': '结束',
+      'login': '登录', 'request': '请求', 'rendering': '渲染', 'validate': '校验',
+      'senderror': '发送错误', 'frame_reset': '帧重置',
     },
 
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
        取键：把 translateSite 设为 false 打开页面，控制台跑 DomI18n.reportUnmatched(20)。 */
     blocks: {
+      /* 首页大标题：站点拆成 <strong>SheepIt</strong> + 后半句两个文本节点，短词条表（按整节点匹配）够不到 */
+      'SheepIt is a free distributed renderfarm for Blender. Try it now!':
+        '<strong>SheepIt</strong> 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
+
       "The render farm relies on you to live; the more computers that are connected to the system, the better the service will be. You don't need to have Blender installed, it will be downloaded for you. Your own project will be rendered first, then your computer will help other users. If you don't want to share your computer, but still help SheepIt, you should consider donating.":
         '渲染农场靠你而活：接入的机器越多，服务质量就越好。<br>你不需要安装 Blender，客户端会自动为你下载。<br>你自己的项目会优先渲染，之后你的电脑再帮助其他用户。<br>如果你不想共享电脑，但仍想支持 SheepIt，可以考虑<a href="/donation">捐赠</a>。',
 
@@ -235,6 +362,9 @@
 
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
+
+      [/^Your project is private, not every worker will be able to participate in your project\./,
+        '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
 
     /* 模式规则（带变量的文案） */
@@ -247,12 +377,7 @@
       [/^Total projects:\s*([\d,]+)$/, '项目总数：$1'],
       [/^Max:\s*([\d,]+) MB$/, '上限：$1 MB'],
       [/^(\d[\d,]*)\s+computed projects$/, '已完成 $1 个项目'],
-      [/^(\d[\d,]*)\s+computed frames per hour$/, '每小时 $1 帧'],
       [/^(\d+[mhd])\s+to complete all projects$/, '$1 可完成全部项目'],
-      [/^(\d[\d,]*)\s+frames? remaining$/i, '待渲染 $1 帧'],
-      [/^(\d[\d,]*)\s+connected clients?$/i, '在线客户端 $1'],
-      [/^(\d[\d,]*)\s+processing frames?$/i, '正在处理 $1 帧'],
-      [/^(\d[\d,]*)\s+active projects?$/i, '进行中项目 $1'],
       /* 序数：排行榜名次与排队位置（CPU: 1st）共用 */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
@@ -260,6 +385,81 @@
       [/^([\d,]+)\s+points$/, '$1 积分'],
       [/^If you could try to pick a render time of about (\d+) minutes, you can keep a margin of error for the max render time\.$/,
         '如果把单块渲染时间定在 $1 分钟左右，就能给「单帧上限」留出余量。'],
+      /* 上传页「排队情况」：站点看有没有团队加成会输出两个变体，上面 blockPatterns 只盖住长的那条 */
+      [/^The render order is based on points\. The more points you have, the higher priority you get\. You currently have ([\d,]+) points\.$/i,
+        '渲染顺序由积分决定：积分越高，优先级越高。你当前有 $1 积分。'],
+      /* 分析完成后第三步表单的排队位置 */
+      [/^Est\. queue position:\s*([\d,]+)(st|nd|rd|th)$/i, '预计排队：第 $1 位'],
+      /* 项目管理页 /project/<数字> 的概要行（数字每次不同，逐行规则） */
+      [/^The project will be done in\s*(.+)$/i, '预计完成：$1'],
+      [/^Storage used:\s*(.+)$/i, '已用存储：$1'],
+      [/^Real duration of render:\s*(.+)$/i, '实际渲染用时：$1'],
+      [/^On reference per frame rendertime:?$/i, '基准机单帧用时：'],
+      [/^RAM usage:\s*(.+)$/i, '内存占用：$1'],
+      [/^Project will be automatically deleted on\s*(.+)$/i,
+        (m, rest) => '项目将于 ' + farmDate(rest) + ' 自动删除'],
+      [/^Connected machines:\s*(.+)$/i, '已连接机器：$1'],
+      /* 项目管理页：调度器那一段（值常被站点放在子 <b> 里，纯标签的走 site 表） */
+      [/^Connected machines for CPU:\s*(.+)$/i, 'CPU 已连接机器：$1'],
+      [/^Potential rendering machines:\s*(.+)$/i, '潜在渲染机器：$1'],
+      /* 版本号会随站点升级变（Blender 4.5+），带值的写法必须排在纯标签那行之前 */
+      [/^Machines who can use ([^:]+):\s*(.+)$/i, '能用 $1 的机器：$2'],
+      [/^Machines who can use ([^:]+):\s*$/i, '能用 $1 的机器：'],
+      /* 项目管理页：项目「已渲染」时状态块里被 <br> 分行的几行 */
+      [/^Current position:\s*(\d+)(st|nd|rd|th)$/i, '当前排位：第 $1 位'],
+      [/^Tasks for this project:\s*([\d,]+)$/i, '本项目任务数：$1'],
+      [/^Total tasks on Shepherd:\s*([\d,]+)$/i, 'Shepherd 上的任务总数：$1'],
+      [/^Cumulated time of render:\s*(.+)$/i, '累计渲染用时：$1'],
+      [/^Points spent:\s*([\d,]+) points$/i, '已消耗积分：$1'],
+      [/^(\d+)\/([\d,]+) \(remaining (.+)\)$/, '$1/$2（剩余 $3）'],
+      /* 齿轮按钮的 title 属性：站点把整段状态 HTML 塞在里面（attr 只查 site + patterns） */
+      [/^<strong>Generating archive\.<\/strong>$/, '<strong>正在打包存档。</strong>'],
+      [/^<strong>Generating archive\.<\/strong><br>Current position: (\d+)(?:st|nd|rd|th)<br>Tasks for this project: ([\d,]+)<br>Total tasks on Shepherd: ([\d,]+)$/,
+        '<strong>正在打包存档。</strong><br>当前排位：第 $1 位<br>本项目任务数：$2<br>Shepherd 上的任务总数：$3'],
+      /* 封禁 / 限速（点位不够的账号） */
+      [/^Your project has been blocked because '(.+)'\.$/, '你的项目已被封禁，原因：「$1」。'],
+      [/^You are currently rated? limited to ([\d,]+) machines? because you have 0 points\.$/i, '你因为 0 积分被限速到 $1 台机器。'],
+      /* 帧缩略图的 tooltip：站点把整段 HTML 塞进了 title 属性（frame / cost / rendertime） */
+      [/^<center>frame:\s*([^<]+)<br\s*\/?>cost:\s*([^<]*)<br\s*\/?>rendertime:\s*([^<]*)<br\s*\/?><\/center>/i,
+        '<center>第 $1 帧<br>积分：$2<br>用时：$3<br></center>'],
+      /* 第三步「设置」里站点给每个 .blend 的说明/拒绝理由（68-step3.js 直接把它们当文本渲染，
+         走 siteText：先查 site 精确匹配，再走这里）。 */
+      [/^No camera in scene, cannot render\.$/, '场景里没有相机，无法渲染。'],
+      [/^Since active "output file" nodes result in files being written to arbitrary locations on the renderer's system we do not allow it\.$/, '活动的「输出文件」节点会把文件写到渲染机上的任意位置，所以站点不允许。'],
+      [/^We will accept your \.blend if you mute the node\.$/, '把这个节点静音（mute）后就可以重新上传。'],
+      [/^EXR output detected$/, '检测到 EXR 输出'],
+      [/^Limitation on EXR {2}support:$/, 'EXR 的限制：'],
+      [/^Full frame renders only\. No split-layers or checkerboarding\.$/, '只能整帧渲染，不支持拆分图层或棋盘格切块。'],
+      [/^Only animations are supported, no single image projects\.$/, '只支持动画项目，不支持单张图片项目。'],
+      [/^Maximum image resolution (\d+)x(\d+)y px\.$/, '最大分辨率 $1x$2 像素。'],
+      [/^Maximum image file size (.+)B$/, '单张图片最大 $1B。'],
+      [/^Use of compression is required \(any of (.+)\)\.$/, '必须使用压缩（$1 之一）。'],
+      [/^Denoising detected: Splits \(multiple smaller frames with reduced samples\) are not supported\.$/, '检测到降噪：不支持拆分（把帧切成小块、降低采样再拼回去）。'],
+      [/^It does not make sense to denoise separate splits and recombine them together\.$/, '把拆分后的各块分别降噪、再拼回一起没有意义。'],
+      [/^Drivers will not work$/i, '驱动器（Driver）不会生效'],
+      [/^because scripts are disabled for security reasons\.$/, '出于安全考虑站点禁用了脚本。'],
+      [/^Warning, files not found:$/, '警告：这些文件找不到：'],
+      [/^You can add project up to ([\d,]+) tiles, this project is over this limit, with your current tile setup you can go up to ([\d,]+) frames\.$/, '项目上限是 $1 块；按现在的切块设置，最多能做 $2 帧。'],
+      [/^You can add project up to ([\d,]+) frames, this project is over this limit\.$/, '项目上限是 $1 帧，这个项目超了。'],
+      /* 上传页的前置闸门。两条来源，文案逐字抄自上游源码：
+         ① 页面 /getstarted 的 printError（HTML.php:2022-2045，命中即提前 return、不给表单）；
+         ② POST /project/internal/upload 的纯文本理由（ProjectController.php:1108-1125）。
+         两处的同一句话时态不同（"have been set" vs "has been set"），用正则一起吃。 */
+      [/^Server in maintenance, you can't add a project\.\s*(.*)$/, '站点正在维护，暂时不能添加项目。 $1'],
+      [/^You can't add a project, yet\.$/, '现在还加不了项目。'],
+      [/^Oh no!$/, '哦不！'],
+      /* POST 那条纯文本是"标题 + 正文"拼成一句（页面上是 h2 + p 两块），单独一条兜住。 */
+      [/^You can't add a project, yet\.\s*Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '现在还加不了项目。我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^Friendly community is really important to us\. Please add a profile image in order to add a project\.\s*To add one, go on your account page\.$/,
+        '我们很看重友好的社区氛围。请先在「账户设置」里上传一张头像，之后就能添加项目了。'],
+      [/^You can not add a project because you have exceeded your limit of concurrent projects\..*Your current limit is (\d+) projects\.$/,
+        '你正在进行中的项目已经到上限，暂时加不了新项目。站点设这个上限是为了不让一个人的项目把农场压满；等其中一个项目渲染完，就能再加。你当前的上限是 $1 个项目。'],
+      [/^You can not add a project because an admin explicitly disabled it for your account\.\s*If you think it is a mistake, contact us on Discord\.$/,
+        '管理员明确关掉了你添加项目的权限。如果你认为这是误操作，请在 Discord 上联系我们。'],
+      [/^SheepIt is a renderfarm kept alive thanks to the community\.\s*You have rendered less than 10 frames\..*You must have rendered at least 10 frames to be able to add a project\.$/,
+        '羊场靠社区贡献活着。你还没渲染够 10 帧 —— 不要求每个人都渲染得和索取的一样多，但每一份贡献都算数。至少要渲染满 10 帧才能添加项目。'],
+      [/^Internal error, please retry to upload your file$/, '站点内部错误，请重试上传。'],
     ],
   });
 })();
