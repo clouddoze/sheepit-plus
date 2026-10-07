@@ -365,6 +365,7 @@
       'sess.on': '运行中', 'sess.off': '已暂停',
       'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
       'sess.statusRaw': '站点原文：{raw}',
+      'sess.computeRaw': '站点给的计算方式：{raw}',
       // 暂停时说"当前作业"，否则和旁边的「已暂停」徽章自相矛盾。
       'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
@@ -734,6 +735,7 @@
       'sess.on': 'Running', 'sess.off': 'Paused',
       'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
       'sess.statusRaw': 'the site writes: {raw}',
+      'sess.computeRaw': 'compute method from the site: {raw}',
       'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
@@ -3709,11 +3711,11 @@ ${Theme.css('#sp')}
 
       渲染方式看站点的 **Compute device** 那一格，那才是"客户端这一路开着没有"的权威字段
       （模型单元格不能用：客户端取消了 CPU，CPU 型号照样在页上）。没那一格就退回算力单元格
-      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。
+      ——**关掉的那一路不会有 Power 值**；两样都没有就整排不画，不猜。**只画开着的那几路**：
+      只勾 CPU 的机器就只有一个 CPU 徽章，不再摆一个灰的 GPU。
 
       算力百分比直接写在 CPU / GPU 标签里（`CPU 22 %` / `GPU 260 %`），不再单列「算力 CPU」
       那种格子 —— 同一件事说两遍正是"看着杂"的来源。
-
       时间显示**算出来的相对值**（跑着的算到"现在"，停了的算到最后一次请求），站点原文挂在
       title 上，鼠标悬浮才出来；算不出来就整条不显示。 */
   function machineDetail(d) {
@@ -3722,14 +3724,24 @@ ${Theme.css('#sp')}
     const now = Date.now();
     const cRaw = val('createdAt');
     const cT = whenOf(cRaw);
-    const cd = val('computeDevice').toLowerCase();
+    const cdRaw = val('computeDevice');          // 站点原文（挂在 title 上，别小写化）
+    const cd = cdRaw.toLowerCase();              // 判据用小写比较
     const power = (k) => { const v = val(k).trim(); return v && !/^0\s*%?$/.test(v) ? v : ''; };
     const pCpu = power('power'), pGpu = power('powerGpu');
     const cpuOn = cd ? /cpu/.test(cd) : !!pCpu;
     const gpuOn = cd ? /gpu/.test(cd) : !!pGpu;
-    const chip = (label, v, on) => `<span class="${on ? 'on' : ''}">${esc(label)}${on && v ? ` ${esc(v)}` : ''}</span>`;
-    const dev = (cd || pCpu || pGpu)
-      ? `<span class="dev">${chip(t('proj.cpu'), pCpu, cpuOn)}${chip(t('proj.gpu'), pGpu, gpuOn)}</span>` : '';
+    const chip = (label, v) => `<span class="on">${esc(label)}${v ? ` ${esc(v)}` : ''}</span>`;
+    /* **只画勾选了的那一路**（用户 2026-10-07）：只勾了 CPU 就只写 CPU，不再摆一个灰的 GPU 徽章。
+       判据仍是站点的 **Compute device** —— 它只可能是 `CPU` / `GPU` / `CPU,GPU` / 空
+       （SessionController.php:121-130 一段一段拼出来的），所以"哪几路开着"是站点自己说的；
+       没有那一格时退回"有非零算力才算开着"。认不出的值（站点以后加了第三种）原样画出来
+       —— 不猜，也不吞数据。cd 有值时把原文挂 title。 */
+    const devChips = [];
+    if (cpuOn) devChips.push(chip(t('proj.cpu'), pCpu));
+    if (gpuOn) devChips.push(chip(t('proj.gpu'), pGpu));
+    if (!devChips.length && cdRaw) devChips.push(chip(cdRaw, ''));
+    const dev = devChips.length
+      ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
     const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
     /* **两种暂停是两件事，而且可以同时成立**（站点两行独立条件）。都只看 Action 会把它们报成
        「运行中」（本地暂停时 Status 那格照样 Enable），所以以站点那行 note 为准；两条都在就都写出来，

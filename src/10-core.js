@@ -341,6 +341,7 @@
       'sess.on': '运行中', 'sess.off': '已暂停',
       'sess.pausedServer': '服务器端已暂停', 'sess.pausedClient': '客户端已暂停',
       'sess.statusRaw': '站点原文：{raw}',
+      'sess.computeRaw': '站点给的计算方式：{raw}',
       // 暂停时说"当前作业"，否则和旁边的「已暂停」徽章自相矛盾。
       'sess.rendering': '正在渲染', 'sess.currentJob': '当前作业', 'sess.frame': '帧',
       'sess.status.enable': '已启用', 'sess.status.disable': '已停用',
@@ -710,6 +711,7 @@
       'sess.on': 'Running', 'sess.off': 'Paused',
       'sess.pausedServer': 'Paused server-side', 'sess.pausedClient': 'Paused client-side',
       'sess.statusRaw': 'the site writes: {raw}',
+      'sess.computeRaw': 'compute method from the site: {raw}',
       'sess.rendering': 'Rendering', 'sess.currentJob': 'Current job', 'sess.frame': 'frame',
       'sess.status.enable': 'Enabled', 'sess.status.disable': 'Disabled',
       'sess.noId': 'No session id in the address', 'sess.parseFailed': 'No machine information on this page',
