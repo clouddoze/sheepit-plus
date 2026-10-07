@@ -381,4 +381,53 @@
 
 - **最后更新时间没有数据源**：站点这张表不给，要它就得每个项目跑一趟项目页。区块里因此不画"最近更新"。
 - 「我的项目」只在**自己的主页**上画（别人的主页那张表没有 id，点不进管理页）。
-- 总览区块的位置（指标带下 / 页面末）与空态是否要画 —— 等用户看完截图拍板。
+- 一个项目都没有时**整块不画**（用户 2026-10-07 拍板）；区块位置固定在指标带下面。去上传页的入口留在
+  项目页「我发布的」那一档的空态里。
+
+## 10. 项目设置（0.2.2，用户 2026-10-07 拍板：先自绘「操作」区）
+
+用户定的方向：**现状（把站点那一大块搬进我们的壳）只是兼容适配，最终要像上传链路那样彻底重写**。
+所以这一版就按终态的形状写：**解析器出数据模型 → 视图只吃模型 → 动作直发站点端点**，
+不再往搬进来的站点节点上加耦合。
+
+### 10.1 契约（上游源码逐个核对）
+
+`templates/project/manage.html.twig:133-274` 渲染设置控件，`showjob.js` / `admin.js` 是提交方：
+
+| 设置 | 当前值怎么读 | 写端点（无 CSRF 的 POST，回纯文本 `OK`） |
+|---|---|---|
+| 计算方式 | `input[name=compute_method]` 里哪只 `checked`，onclick 里写着 `'cpu'`/`'gpu'` | `/project/<id>/computemethod/<cpu\|gpu>/<0\|1>` |
+| 生成 MP4 | `#project_generate_mp4_checkbox_1` 的 checked | `/project/<id>/mp4/<0\|1>` |
+| 公开渲染 | 公开时 `#project_public_render_checkbox_1`（checked）+ 一只 hidden `#..._value`；私有时 `#..._value` **自己**就是那只可见 checkbox | `/project/<id>/visibility/<0\|1>` |
+| 删除项目 | —（按钮恒在，`can_manage` 才渲染） | `/project/<id>/remove_no_redirect` |
+
+三个坑（都写进 `20-api.js` 的注释里了）：① 站点 radio 的 onclick 值是**翻转后的目标值**
+（`checked_cpu ? '0' : '1'`），判当前值只能看哪只 checked；② 公开渲染那两只控件的 id 会**换形态**
+（判据看 `type` 不看 id）；③ 站点 GPU 那只 radio 的外层判据写成了 `canUseCPU()`（站点自己的 bug，别照抄）。
+
+### 10.2 实现与验收
+
+- `20-api.js: parseManage(doc)` → `{ compute, mp4, publicRender, hasCompute, hasMp4, hasPublic }`；
+  站点没渲染的那几项解析成 `null`/`false`，视图就**不画那一行**（不猜默认值）。
+- `50-views.js: manageOps(state)`：自绘「项目设置」面板（计算方式二选一 + 两只开关 + 危险动作一行）。
+- `80-app.js`：`state.mg` **一载只读一次**（读完之后 wireManageDoc 会把站点那份重复控件去掉，
+  再读就读不到 —— 实测踩过，第二次 render 把两行读没了）；`mgSet()` / `mgDelete()` 直发端点，
+  成功后说完结果再 `location.reload()`（站点自己的 JS 也是 reload，真相在服务端渲染的 DOM 里）；
+  `hideSiteOps()` 把站点那份重复的「计算方式 / MP4 / 操作页签」藏掉/去掉（用 `style.display`，
+  不用 `[hidden]` —— `#sp` 里有 display 规则压过它，这个坑踩过一次）。
+- 真机验收（`.tmp/recon/inject-page.js`：把**真实页面** document.write 进被 mock 的 Document，
+  再装 dev dist，于是 `/project/<id>` 的站点 DOM 与真机同形）：
+  `POST /project/1224469/mp4/1 → OK`（刷新后 `mp4:true`，再点回 `false`）、
+  `POST .../computemethod/gpu/1 → OK`（刷新后 GPU 选中，再点回 CPU）、
+  `POST .../visibility/0 → OK`（刷新后读到**私有形态** `pubA:false/pubB:true`、`publicRender:false`，
+  再点回 1）—— 三次都按原值还原，测试项目最终状态与测试前一致。
+- **删除项目没在真机上点过**（不可逆）：端点与站点自己的垃圾桶按钮同一个（上一期已实测过
+  `remove_no_redirect` 的删除+404 效果），但自绘按钮 → confirm → 导航这条链路只有代码级核对。
+
+### 10.3 还欠的（后续重写）
+
+- 权限（管理员 ACL）/ 渲染者白名单（人 + 团队）仍借站点的控件；`showjob.js` 的端点已查清：
+  `/acl/manager/user/{add,del}/<login>`、`/acl/renderer/user/{add,del}/<login>`、
+  `/acl/renderer/team/{add,del}/<team id>`（团队发**数字 id**，用户发 **login**），
+  自动补全源是 `/user/list_from_term` 与 `/team/list_from_term`。
+- 暂停 / 继续 / 重置 / 部分存档仍在站点那一行图标按钮里（`projectAction(id, resume|pause|reset)`）。

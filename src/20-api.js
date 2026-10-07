@@ -315,6 +315,45 @@
       .map((p) => p.x);
   }
 
+  /* 项目管理页 /project/<id> 的**可改设置**：只读站点那一页的控件，产出一份数据模型，
+     视图层只吃模型、动作直发端点（和上传链路同一条路子 —— 站点 DOM 不是我们的状态容器）。
+     站点模板 templates/project/manage.html.twig:133-274，三处状态各有各的形态：
+
+     ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+        （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+        所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+        GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+     ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（`display_generate_mp4` 为假、或 canGenerateMp4
+        为假时站点不渲染它 → 解析出 null，视图就不画这一行）。
+     ③ 公开渲染有**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+        + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+        可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 而不是看 id。 */
+  function parseManage(doc) {
+    const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
+    const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+
+    let compute = '';
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!on(r)) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
+      if (m) compute = m[1];
+    }
+
+    const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
+    const pubA = doc.getElementById('project_public_render_checkbox_1');
+    const pubB = doc.getElementById('project_public_render_checkbox_value');
+    const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
+
+    return {
+      compute,
+      mp4: mp4Box ? on(mp4Box) : null,
+      publicRender: pubEl ? on(pubEl) : null,
+      hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
+      hasMp4: !!mp4Box,
+      hasPublic: !!pubEl,
+    };
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -645,7 +684,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
-    parseMyProjects,
+    parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };

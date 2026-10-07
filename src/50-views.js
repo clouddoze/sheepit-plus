@@ -122,26 +122,13 @@
 
   const MY_SHOW = 5;
 
-  /** 总览的「我的项目」区块；不是自己的主页就整块不画（那张表没有 id，点不进管理页）。 */
+  /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
+   *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
+   *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
   function myPanel(state, p) {
     if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
     const rows = (p && p.myProjects) || [];
-    const head = (sub, right) => `<div class="phead">
-        <h2>${esc(t('my.title'))}</h2>
-        <span class="sub num">${esc(sub)}</span>
-        <span class="spacer"></span>${right || ''}
-      </div>`;
-
-    if (!rows.length) {
-      return `<div class="panel" style="margin-top:16px">
-        ${head(t('my.count', { n: 0 }))}
-        <div class="state" style="padding:26px 12px 30px">
-          <div class="small">${esc(t('my.empty'))}</div>
-          ${state.uploadMode === 'off' ? ''
-    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
-        </div>
-      </div>`;
-    }
+    if (!rows.length) return '';
 
     const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
         <span class="nm">${myName(x)}</span>
@@ -149,10 +136,13 @@
         <span class="st">${esc(myStatus(x))}</span>
       </div>`).join('');
 
-    /* 「看全部」是这一块的入口，只要有一个项目就画（不是"超长才给"）：点进项目页的「我发布的」档 */
-    const all = `<a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>`;
     return `<div class="panel" style="margin-top:16px">
-      ${head(t('my.count', { n: rows.length }), all)}
+      <div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        <span class="spacer"></span>
+        <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
+      </div>
       <div class="myproj">${list}</div>
     </div>`;
   }
@@ -200,9 +190,8 @@
     if (!hasData) {
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，空态文案下面那块"还没发布过项目"就不重复了
-      const mine = (p.myProjects && p.myProjects.length) ? myPanel(state, p) : '';
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + mine + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + myPanel(state, p) + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -294,17 +283,13 @@
       ${UI.machines(mc)}
     </div>`;
 
-    /* ---- 我的项目：有项目就摆在指标带下面（一进总览能看见），空态垫到页面最后（别占头条） ---- */
-    const myP = myPanel(state, p);
-    const myHas = !!(p.myProjects && p.myProjects.length);
-
+    /* ---- 我的项目：有项目就摆在指标带下面；一个都没有时 myPanel 返回空串（整块不画） ---- */
     return identity(p, st)
       + kpiBand
-      + (myHas ? myP : '')
+      + myPanel(state, p)
       + main
       + heat
       + machinesPanel
-      + (myHas ? '' : myP)
       + foot();
   }
 
@@ -1222,8 +1207,9 @@
     </div>`;
   }
 
-  /** 项目管理页 /project/<数字>：站点那一大块由 80-app.js 的 wireManageDoc **搬**进来（活节点）。
-   *  这里只画外壳；名字 / 进度 / 状态从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
+  /** 项目管理页 /project/<id>：**设置区我们自绘**（状态来自 Api.parseManage，动作直发站点端点，
+   *  见 80-app.js 的 mgSet），站点那一大块只剩「权限 / 渲染者」两个页签还借它的节点。
+   *  名字 / 进度 / 状态仍从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
   function project(state) {
     const id = state.projectId || '';
     const sec = document.getElementById('jobs_of_a_project');
@@ -1245,9 +1231,44 @@
         <h2>${esc(t('mg.title'))}</h2>
         <span class="sub">${meta || esc(t('mg.unknown'))}</span>
       </div>
+      ${manageOps(state)}
       <div class="sp-manage" id="sp-mg-host"></div>
       <div class="hint">${esc(t('mg.note'))}</div>
       <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假），
+   *  不猜默认值 —— 少一行比编一个错的强。 */
+  function manageOps(state) {
+    const m = state.mg;
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic)) return '';
+    const id = state.projectId || '';
+    const sw = (kind, on, onState, title, hint) => `<label class="sw">
+      <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
+        data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
+      <span class="track"><span class="knob"></span></span>
+      <span class="txt"><b>${esc(title)}</b><small>${esc(hint)}</small></span>
+    </label>`;
+    return `<div class="panel mg-ops">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.ops'))}</h2><span class="sub">${esc(t('mg.opsSub'))}</span></div>
+      <div class="pbody">
+        ${!m.hasCompute ? '' : `<div class="mg-row">
+          <div class="k">${esc(t('mg.compute'))}</div>
+          <div class="seg" id="sp-mg-compute">
+            <button data-v="cpu" aria-pressed="${m.compute === 'cpu'}">${esc(t('proj.cpu'))}</button>
+            <button data-v="gpu" aria-pressed="${m.compute === 'gpu'}">${esc(t('proj.gpu'))}</button>
+          </div>
+          <small>${esc(t('mg.computeHint'))}</small>
+        </div>`}
+        ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
+        ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
+        ${!id ? '' : `<div class="mg-row danger">
+          <div class="k">${esc(t('mg.del'))}</div>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
+          <small>${esc(t('mg.delHint'))}</small>
+        </div>`}
+      </div>
     </div>`;
   }
 

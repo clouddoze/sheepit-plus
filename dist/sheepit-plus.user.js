@@ -401,6 +401,13 @@
 
       /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
       'mg.title': '项目管理', 'mg.unknown': '项目',
+      /* 设置区自绘：三行开关 + 一行危险动作，动作直发站点端点（见 80-app.js 的 mgSet） */
+      'mg.ops': '项目设置', 'mg.opsSub': '这些开关直接提交到站点自己的接口，和你原来在这一页点它们是一回事。',
+      'mg.compute': '计算方式', 'mg.computeHint': 'CPU 与 GPU 二选一。GPU 不支持站点的全部渲染特性，结果可能有差异。',
+      'mg.mp4': '生成 MP4 视频', 'mg.mp4Hint': '把渲染好的帧打成一段 MP4。很吃服务器资源，真需要再开。',
+      'mg.public': '公开渲染', 'mg.publicHint': '关掉之后，只有「渲染者」名单里的人与团队能渲染这个项目。',
+      'mg.del': '删除项目', 'mg.delHint': '不可撤销：项目与已渲染的帧会一起消失。',
+      'mg.delConfirm': '确定删除这个项目吗？删了就回不来了。',
       'mg.note': '这一页沿用站点自己的控件与动作（只统一了外观与文案）：改计算方式、生成 MP4、删除项目、加管理员，都直接作用在这个项目上。',
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
@@ -731,6 +738,12 @@
       'sess.tl.error': 'Error',
 
       'mg.title': 'Project', 'mg.unknown': 'Project',
+      'mg.ops': 'Project settings', 'mg.opsSub': 'These switches POST to the site\u2019s own endpoints \u2014 the same thing the original page does.',
+      'mg.compute': 'Compute method', 'mg.computeHint': 'CPU or GPU. Not every render feature is supported on GPU; results can differ.',
+      'mg.mp4': 'Generate MP4 video', 'mg.mp4Hint': 'Pack the rendered frames into an MP4. Very heavy on the server \u2014 only if you really need it.',
+      'mg.public': 'Renderable by all members', 'mg.publicHint': 'Turn it off and only the users and teams on your renderer list can render this project.',
+      'mg.del': 'Delete project', 'mg.delHint': 'Cannot be undone: the project and its rendered frames go away.',
+      'mg.delConfirm': 'Delete this project? It can NOT be undone.',
       'mg.note': 'This page keeps the site\u2019s own controls and actions (only the look and the wording are unified): compute method, MP4, remove and managers all act on this project directly.',
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',
@@ -1785,6 +1798,45 @@
       .map((p) => p.x);
   }
 
+  /* 项目管理页 /project/<id> 的**可改设置**：只读站点那一页的控件，产出一份数据模型，
+     视图层只吃模型、动作直发端点（和上传链路同一条路子 —— 站点 DOM 不是我们的状态容器）。
+     站点模板 templates/project/manage.html.twig:133-274，三处状态各有各的形态：
+
+     ① 计算方式 = `input[name="compute_method"]` 两只 radio，onclick 里写死 'cpu'/'gpu'
+        （`doModifyComputeMethod(id, 'cpu', checked_cpu ? '0' : '1')` —— 那个值是**翻转后的目标值**，
+        所以判"当前是什么"只能看哪只 checked，不能看 onclick 里的数字）。站点还有一只 site bug：
+        GPU 那只 radio 的外层判据写的是 canUseCPU()，别照抄。
+     ② 生成 MP4 = `#project_generate_mp4_checkbox_1`（`display_generate_mp4` 为假、或 canGenerateMp4
+        为假时站点不渲染它 → 解析出 null，视图就不画这一行）。
+     ③ 公开渲染有**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
+        + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
+        可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 而不是看 id。 */
+  function parseManage(doc) {
+    const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
+    const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
+
+    let compute = '';
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!on(r)) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
+      if (m) compute = m[1];
+    }
+
+    const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
+    const pubA = doc.getElementById('project_public_render_checkbox_1');
+    const pubB = doc.getElementById('project_public_render_checkbox_value');
+    const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
+
+    return {
+      compute,
+      mp4: mp4Box ? on(mp4Box) : null,
+      publicRender: pubEl ? on(pubEl) : null,
+      hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
+      hasMp4: !!mp4Box,
+      hasPublic: !!pubEl,
+    };
+  }
+
   function parseProfile(html, userName) {
     const doc = parse(html);
 
@@ -2115,7 +2167,7 @@
   SP.Api = {
     fetchPage, fetchJson, invalidate, cache, post,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
-    parseMyProjects,
+    parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };
@@ -2582,6 +2634,23 @@ ${Theme.css('#sp')}
 #sp .sw .txt b{display:block;font-weight:550;color:var(--text)}
 #sp .sw .txt small{display:block;font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.55}
 #sp .sw:hover .track{border-color:var(--border-strong)}
+
+/* ==== 项目管理页自绘的「项目设置」区 ====
+   一行一件事：左边标签、右边控件、下面一句后果。开关行直接用 .sw，所以分隔线统一下在直接子元素上。 */
+#sp .mg-ops .pbody > *{border-bottom:1px solid var(--border)}
+#sp .mg-ops .pbody > *:last-child{border-bottom:none}
+#sp .mg-ops .mg-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+#sp .mg-ops .mg-row .k{flex:none;width:96px;font-size:13px;color:var(--text-2)}
+#sp .mg-ops .mg-row .seg{flex:none}
+#sp .mg-ops .mg-row small{font-size:12px;color:var(--text-3);line-height:1.5;min-width:0}
+#sp .mg-ops .mg-row.danger .k{color:var(--text);font-weight:550}
+/* 危险动作：只有这一处用强调色描边，不做实心红按钮（误点的代价不可逆，宁可它不显眼） */
+#sp .btn.danger{color:var(--accent);border-color:var(--accent)}
+#sp .btn.danger:hover{background:var(--accent-weak);border-color:var(--accent);color:var(--accent)}
+@media (max-width:560px){
+  #sp .mg-ops .mg-row{flex-wrap:wrap;gap:8px 12px}
+  #sp .mg-ops .mg-row .k{width:100%}
+}
 
 #sp .ulist{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 #sp .ulist .u{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border)}
@@ -3812,26 +3881,13 @@ ${Theme.css('#sp')}
 
   const MY_SHOW = 5;
 
-  /** 总览的「我的项目」区块；不是自己的主页就整块不画（那张表没有 id，点不进管理页）。 */
+  /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
+   *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
+   *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
   function myPanel(state, p) {
     if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
     const rows = (p && p.myProjects) || [];
-    const head = (sub, right) => `<div class="phead">
-        <h2>${esc(t('my.title'))}</h2>
-        <span class="sub num">${esc(sub)}</span>
-        <span class="spacer"></span>${right || ''}
-      </div>`;
-
-    if (!rows.length) {
-      return `<div class="panel" style="margin-top:16px">
-        ${head(t('my.count', { n: 0 }))}
-        <div class="state" style="padding:26px 12px 30px">
-          <div class="small">${esc(t('my.empty'))}</div>
-          ${state.uploadMode === 'off' ? ''
-    : `<a class="btn primary" href="#/upload" data-nav="upload" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>`}
-        </div>
-      </div>`;
-    }
+    if (!rows.length) return '';
 
     const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
         <span class="nm">${myName(x)}</span>
@@ -3839,10 +3895,13 @@ ${Theme.css('#sp')}
         <span class="st">${esc(myStatus(x))}</span>
       </div>`).join('');
 
-    /* 「看全部」是这一块的入口，只要有一个项目就画（不是"超长才给"）：点进项目页的「我发布的」档 */
-    const all = `<a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>`;
     return `<div class="panel" style="margin-top:16px">
-      ${head(t('my.count', { n: rows.length }), all)}
+      <div class="phead">
+        <h2>${esc(t('my.title'))}</h2>
+        <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        <span class="spacer"></span>
+        <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
+      </div>
       <div class="myproj">${list}</div>
     </div>`;
   }
@@ -3890,9 +3949,8 @@ ${Theme.css('#sp')}
     if (!hasData) {
       // 统计读到了但确实一帧都没有 → 新用户空状态，不摆一排 0；连统计都读不到是解析失败，如实说无数据。
       const parsed = Object.keys(st).length > 0;
-      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，空态文案下面那块"还没发布过项目"就不重复了
-      const mine = (p.myProjects && p.myProjects.length) ? myPanel(state, p) : '';
-      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + mine + foot();
+      // 新用户却已经有项目（在建、还没出帧）：把项目摆出来，别让人找不到自己传上去的东西
+      return identity(p, st) + (parsed ? UI.newUser() : UI.state.empty()) + myPanel(state, p) + foot();
     }
 
     /* ---- 指标带 ---- */
@@ -3984,17 +4042,13 @@ ${Theme.css('#sp')}
       ${UI.machines(mc)}
     </div>`;
 
-    /* ---- 我的项目：有项目就摆在指标带下面（一进总览能看见），空态垫到页面最后（别占头条） ---- */
-    const myP = myPanel(state, p);
-    const myHas = !!(p.myProjects && p.myProjects.length);
-
+    /* ---- 我的项目：有项目就摆在指标带下面；一个都没有时 myPanel 返回空串（整块不画） ---- */
     return identity(p, st)
       + kpiBand
-      + (myHas ? myP : '')
+      + myPanel(state, p)
       + main
       + heat
       + machinesPanel
-      + (myHas ? '' : myP)
       + foot();
   }
 
@@ -4912,8 +4966,9 @@ ${Theme.css('#sp')}
     </div>`;
   }
 
-  /** 项目管理页 /project/<数字>：站点那一大块由 80-app.js 的 wireManageDoc **搬**进来（活节点）。
-   *  这里只画外壳；名字 / 进度 / 状态从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
+  /** 项目管理页 /project/<id>：**设置区我们自绘**（状态来自 Api.parseManage，动作直发站点端点，
+   *  见 80-app.js 的 mgSet），站点那一大块只剩「权限 / 渲染者」两个页签还借它的节点。
+   *  名字 / 进度 / 状态仍从站点 DOM 里读，拿不到就少显示几个字，不编数据。 */
   function project(state) {
     const id = state.projectId || '';
     const sec = document.getElementById('jobs_of_a_project');
@@ -4935,9 +4990,44 @@ ${Theme.css('#sp')}
         <h2>${esc(t('mg.title'))}</h2>
         <span class="sub">${meta || esc(t('mg.unknown'))}</span>
       </div>
+      ${manageOps(state)}
       <div class="sp-manage" id="sp-mg-host"></div>
       <div class="hint">${esc(t('mg.note'))}</div>
       <div class="foot">${esc(t('footer.source'))}</div>
+    </div>`;
+  }
+
+  /** 自绘的「操作」区。三行开关 + 一行危险动作；站点没给的那几项不画（has* 为假），
+   *  不猜默认值 —— 少一行比编一个错的强。 */
+  function manageOps(state) {
+    const m = state.mg;
+    if (!m || (!m.hasCompute && !m.hasMp4 && !m.hasPublic)) return '';
+    const id = state.projectId || '';
+    const sw = (kind, on, onState, title, hint) => `<label class="sw">
+      <input type="checkbox" data-mg="${esc(kind)}" data-id="${esc(id)}"
+        data-on="${onState ? '1' : '0'}" data-off="${onState ? '0' : '1'}" ${on ? 'checked' : ''}>
+      <span class="track"><span class="knob"></span></span>
+      <span class="txt"><b>${esc(title)}</b><small>${esc(hint)}</small></span>
+    </label>`;
+    return `<div class="panel mg-ops">
+      <div class="phead" style="padding-bottom:0"><h2>${esc(t('mg.ops'))}</h2><span class="sub">${esc(t('mg.opsSub'))}</span></div>
+      <div class="pbody">
+        ${!m.hasCompute ? '' : `<div class="mg-row">
+          <div class="k">${esc(t('mg.compute'))}</div>
+          <div class="seg" id="sp-mg-compute">
+            <button data-v="cpu" aria-pressed="${m.compute === 'cpu'}">${esc(t('proj.cpu'))}</button>
+            <button data-v="gpu" aria-pressed="${m.compute === 'gpu'}">${esc(t('proj.gpu'))}</button>
+          </div>
+          <small>${esc(t('mg.computeHint'))}</small>
+        </div>`}
+        ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
+        ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
+        ${!id ? '' : `<div class="mg-row danger">
+          <div class="k">${esc(t('mg.del'))}</div>
+          <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
+          <small>${esc(t('mg.delHint'))}</small>
+        </div>`}
+      </div>
     </div>`;
   }
 
@@ -7018,7 +7108,14 @@ ${Theme.css('#sp')}
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
-    else if (state.view === 'project') html = Views.project(state);
+    else if (state.view === 'project') {
+      /* 设置状态**这一载只读一次**：站点那一页是服务端渲染的真相，而读完之后 wireManageDoc 会把
+         站点那份重复控件藏掉、整只「操作」页签去掉 —— 再读就读不到了（实测：第二次 render 把
+         hasCompute/mp4 读成 false，自绘区跟着塌掉两行）。写操作成功后整页重载，所以不存在
+         "页面生命周期内站点状态变了而我们不知道"的情况。 */
+      if (!state.mg) state.mg = Api.parseManage(document);
+      html = Views.project(state);
+    }
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -7238,6 +7335,50 @@ ${Theme.css('#sp')}
     }
   }
 
+  /* 设置区自绘之后，站点那一份「计算方式 / MP4」就是重复的：先把这两块藏掉（用 style，不用
+     [hidden] —— #sp 里已有 display:flex 之类的规则压过 [hidden]，这个坑踩过一次）。
+     藏完页签里若只剩管理员工具（block / reset vram / 重生成 token 那些），普通用户看着是空页签，
+     就把整只「操作」页签连头一起去掉，并把第一个剩下的页签设为当前 —— 内容区不能没有 active 面板。
+     这一段要能重复跑（每次 render 都会回搬再搬进来），判据都写成"找不到就跳过"。 */
+  function hideSiteOps() {
+    if (!mgNode || !state.mg) return;
+    const acts = mgNode.querySelector('#tab_actions');
+    if (!acts) return;
+
+    const h4 = [...acts.querySelectorAll('h4')].find((h) => /compute method/i.test(h.textContent || ''));
+    if (h4) {
+      h4.style.display = 'none';
+      const box = h4.nextElementSibling;                   // 紧跟的那只 div 装的是两只 radio
+      if (box) box.style.display = 'none';
+    }
+    /* 藏 MP4 那块要藏**直接子元素**那一层：checkbox 自己埋在 label/form/div 里面，
+       藏它只藏掉控件，外层 div 还留着 "Generate MP4 video" 这段文字（实测：于是页签判不出空）。 */
+    const mp4 = acts.querySelector('#project_generate_mp4_checkbox_1');
+    if (mp4) {
+      let wrap = mp4;
+      while (wrap && wrap.parentElement && wrap.parentElement !== acts) wrap = wrap.parentElement;
+      if (wrap) wrap.style.display = 'none';
+    }
+
+    /* 站点那一行图标按钮里的「删除」和自绘的删除是同一个端点（admin.js 的 remove_no_redirect）：
+       留一个就够。暂停/继续/部分存档仍归站点那一行，不动。 */
+    const rm = mgNode.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]');
+    if (rm) rm.style.display = 'none';
+
+    const shown = [...acts.children].some((c) => c.style.display !== 'none' && (c.textContent || '').trim());
+    if (shown) return;
+
+    const li = [...mgNode.querySelectorAll('.nav-tabs a')].find((a) => a.getAttribute('href') === '#tab_actions');
+    if (li && li.closest('li')) li.closest('li').remove();
+    acts.remove();
+    const first = mgNode.querySelector('.tab-pane');
+    if (first) {
+      first.classList.add('active');
+      const a = [...mgNode.querySelectorAll('.nav-tabs a')].find((x) => x.getAttribute('href') === `#${first.id}`);
+      if (a && a.closest('li')) a.closest('li').classList.add('active');
+    }
+  }
+
   function wireManageDoc(body) {
     const host = body && body.querySelector('#sp-mg-host');
     if (!host) return;
@@ -7250,6 +7391,7 @@ ${Theme.css('#sp')}
     }
     host.appendChild(mgNode);            // 搬进来；id / 内联 onclick / 表单全不动
     mgNode.classList.add('sp-manage-sec');
+    hideSiteOps();
     /* 站点这块是英文的：翻译器默认跳过 #sp，这里显式放行（同 analyse 的站点表单那条通道） */
     if (SP.DomI18n) {
       SP.DomI18n.enabled = state.translateSite !== false;
@@ -7655,6 +7797,17 @@ ${Theme.css('#sp')}
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
 
+    // 项目设置：计算方式（站点那只 radio 是"点了就翻"，我们是"点了就是它"，发的是目标值）
+    const mc = ev.target.closest('#sp-mg-compute [data-v]');
+    if (mc) { mgSet('compute', mc.dataset.v); return; }
+
+    const md = ev.target.closest('[data-mg-del]');
+    if (md) {
+      if (!window.confirm(t('mg.delConfirm'))) return;
+      mgDelete(md.dataset.mgDel);
+      return;
+    }
+
     /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
     const sScope = ev.target.closest('#sp-scope [data-s]');
     if (sScope) {
@@ -7728,7 +7881,48 @@ ${Theme.css('#sp')}
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`));
+    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    const mg = ev.target.closest('[data-mg]');
+    if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
+  }
+
+  /* ---- 项目设置：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） --------------
+     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*）成功后就是 window.location.reload()：
+     真相在服务端渲染的 DOM 里，我们不复制一份状态。这里照做，但先把结果说出来再重载。
+     端点在 showjob.js 里逐个核对过：/project/<id>/computemethod/<cpu|gpu>/<0|1>、
+     /mp4/<0|1>、/visibility/<0|1>、/remove_no_redirect。 */
+  const MG_URL = {
+    compute: (id, v) => `/project/${id}/computemethod/${v}/1`,
+    mp4: (id, v) => `/project/${id}/mp4/${v}`,
+    public: (id, v) => `/project/${id}/visibility/${v}`,
+  };
+
+  async function mgSet(kind, value) {
+    const id = state.projectId;
+    if (!id || !MG_URL[kind]) return;
+    if (kind === 'compute' && state.mg && state.mg.compute === value) return;   // 点的是当前那档
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(MG_URL[kind](id, value));
+      if (r && r !== 'OK') { toast(t('account.failed', { msg: r })); render(); return; }
+      toast(t('account.ok'));
+      setTimeout(() => location.reload(), 700);
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      render();   // 失败要把开关拨回站点说的那个状态（模型是现读的）
+    }
+  }
+
+  async function mgDelete(id) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(`/project/${id}/remove_no_redirect`);
+      /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      location.href = '/home/projects';
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+    }
   }
 
   let inputTimer = null;

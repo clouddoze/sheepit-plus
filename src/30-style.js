@@ -459,6 +459,23 @@ ${Theme.css('#sp')}
 #sp .sw .txt small{display:block;font-size:12px;color:var(--text-3);margin-top:2px;line-height:1.55}
 #sp .sw:hover .track{border-color:var(--border-strong)}
 
+/* ==== 项目管理页自绘的「项目设置」区 ====
+   一行一件事：左边标签、右边控件、下面一句后果。开关行直接用 .sw，所以分隔线统一下在直接子元素上。 */
+#sp .mg-ops .pbody > *{border-bottom:1px solid var(--border)}
+#sp .mg-ops .pbody > *:last-child{border-bottom:none}
+#sp .mg-ops .mg-row{display:flex;align-items:center;gap:14px;padding:12px 0}
+#sp .mg-ops .mg-row .k{flex:none;width:96px;font-size:13px;color:var(--text-2)}
+#sp .mg-ops .mg-row .seg{flex:none}
+#sp .mg-ops .mg-row small{font-size:12px;color:var(--text-3);line-height:1.5;min-width:0}
+#sp .mg-ops .mg-row.danger .k{color:var(--text);font-weight:550}
+/* 危险动作：只有这一处用强调色描边，不做实心红按钮（误点的代价不可逆，宁可它不显眼） */
+#sp .btn.danger{color:var(--accent);border-color:var(--accent)}
+#sp .btn.danger:hover{background:var(--accent-weak);border-color:var(--accent);color:var(--accent)}
+@media (max-width:560px){
+  #sp .mg-ops .mg-row{flex-wrap:wrap;gap:8px 12px}
+  #sp .mg-ops .mg-row .k{width:100%}
+}
+
 #sp .ulist{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden}
 #sp .ulist .u{display:flex;align-items:center;gap:9px;padding:9px 12px;border-bottom:1px solid var(--border)}
 #sp .ulist .u:last-child{border-bottom:none}

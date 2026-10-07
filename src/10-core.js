@@ -377,6 +377,13 @@
 
       /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
       'mg.title': '项目管理', 'mg.unknown': '项目',
+      /* 设置区自绘：三行开关 + 一行危险动作，动作直发站点端点（见 80-app.js 的 mgSet） */
+      'mg.ops': '项目设置', 'mg.opsSub': '这些开关直接提交到站点自己的接口，和你原来在这一页点它们是一回事。',
+      'mg.compute': '计算方式', 'mg.computeHint': 'CPU 与 GPU 二选一。GPU 不支持站点的全部渲染特性，结果可能有差异。',
+      'mg.mp4': '生成 MP4 视频', 'mg.mp4Hint': '把渲染好的帧打成一段 MP4。很吃服务器资源，真需要再开。',
+      'mg.public': '公开渲染', 'mg.publicHint': '关掉之后，只有「渲染者」名单里的人与团队能渲染这个项目。',
+      'mg.del': '删除项目', 'mg.delHint': '不可撤销：项目与已渲染的帧会一起消失。',
+      'mg.delConfirm': '确定删除这个项目吗？删了就回不来了。',
       'mg.note': '这一页沿用站点自己的控件与动作（只统一了外观与文案）：改计算方式、生成 MP4、删除项目、加管理员，都直接作用在这个项目上。',
       'up.title': '上传项目', 'up.sub': '把 .blend 或 ZIP 交给农场，站点的分析器会先读一遍',
       'up.formTitle': '选择文件',
@@ -707,6 +714,12 @@
       'sess.tl.error': 'Error',
 
       'mg.title': 'Project', 'mg.unknown': 'Project',
+      'mg.ops': 'Project settings', 'mg.opsSub': 'These switches POST to the site\u2019s own endpoints \u2014 the same thing the original page does.',
+      'mg.compute': 'Compute method', 'mg.computeHint': 'CPU or GPU. Not every render feature is supported on GPU; results can differ.',
+      'mg.mp4': 'Generate MP4 video', 'mg.mp4Hint': 'Pack the rendered frames into an MP4. Very heavy on the server \u2014 only if you really need it.',
+      'mg.public': 'Renderable by all members', 'mg.publicHint': 'Turn it off and only the users and teams on your renderer list can render this project.',
+      'mg.del': 'Delete project', 'mg.delHint': 'Cannot be undone: the project and its rendered frames go away.',
+      'mg.delConfirm': 'Delete this project? It can NOT be undone.',
       'mg.note': 'This page keeps the site\u2019s own controls and actions (only the look and the wording are unified): compute method, MP4, remove and managers all act on this project directly.',
       'up.title': 'Upload a project', 'up.sub': 'Hand the farm a .blend or a ZIP; the site analyses it first',
       'up.formTitle': 'Choose a file',

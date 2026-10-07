@@ -258,7 +258,14 @@
     else if (state.loading) html = UI.skeleton(5);
     else if (state.view === 'analyse') html = Views.analyse();
     else if (state.view === 'upload') html = Views.upload(state);
-    else if (state.view === 'project') html = Views.project(state);
+    else if (state.view === 'project') {
+      /* 设置状态**这一载只读一次**：站点那一页是服务端渲染的真相，而读完之后 wireManageDoc 会把
+         站点那份重复控件藏掉、整只「操作」页签去掉 —— 再读就读不到了（实测：第二次 render 把
+         hasCompute/mp4 读成 false，自绘区跟着塌掉两行）。写操作成功后整页重载，所以不存在
+         "页面生命周期内站点状态变了而我们不知道"的情况。 */
+      if (!state.mg) state.mg = Api.parseManage(document);
+      html = Views.project(state);
+    }
     else if (state.view === 'account') html = state.account ? Views.account(state) : UI.state.empty();
     else if (state.view === 'session') html = state.session ? Views.session(state) : UI.state.empty();
     else if (state.view === 'overview') html = state.profile ? Views.overview(state) : UI.state.empty();
@@ -478,6 +485,50 @@
     }
   }
 
+  /* 设置区自绘之后，站点那一份「计算方式 / MP4」就是重复的：先把这两块藏掉（用 style，不用
+     [hidden] —— #sp 里已有 display:flex 之类的规则压过 [hidden]，这个坑踩过一次）。
+     藏完页签里若只剩管理员工具（block / reset vram / 重生成 token 那些），普通用户看着是空页签，
+     就把整只「操作」页签连头一起去掉，并把第一个剩下的页签设为当前 —— 内容区不能没有 active 面板。
+     这一段要能重复跑（每次 render 都会回搬再搬进来），判据都写成"找不到就跳过"。 */
+  function hideSiteOps() {
+    if (!mgNode || !state.mg) return;
+    const acts = mgNode.querySelector('#tab_actions');
+    if (!acts) return;
+
+    const h4 = [...acts.querySelectorAll('h4')].find((h) => /compute method/i.test(h.textContent || ''));
+    if (h4) {
+      h4.style.display = 'none';
+      const box = h4.nextElementSibling;                   // 紧跟的那只 div 装的是两只 radio
+      if (box) box.style.display = 'none';
+    }
+    /* 藏 MP4 那块要藏**直接子元素**那一层：checkbox 自己埋在 label/form/div 里面，
+       藏它只藏掉控件，外层 div 还留着 "Generate MP4 video" 这段文字（实测：于是页签判不出空）。 */
+    const mp4 = acts.querySelector('#project_generate_mp4_checkbox_1');
+    if (mp4) {
+      let wrap = mp4;
+      while (wrap && wrap.parentElement && wrap.parentElement !== acts) wrap = wrap.parentElement;
+      if (wrap) wrap.style.display = 'none';
+    }
+
+    /* 站点那一行图标按钮里的「删除」和自绘的删除是同一个端点（admin.js 的 remove_no_redirect）：
+       留一个就够。暂停/继续/部分存档仍归站点那一行，不动。 */
+    const rm = mgNode.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]');
+    if (rm) rm.style.display = 'none';
+
+    const shown = [...acts.children].some((c) => c.style.display !== 'none' && (c.textContent || '').trim());
+    if (shown) return;
+
+    const li = [...mgNode.querySelectorAll('.nav-tabs a')].find((a) => a.getAttribute('href') === '#tab_actions');
+    if (li && li.closest('li')) li.closest('li').remove();
+    acts.remove();
+    const first = mgNode.querySelector('.tab-pane');
+    if (first) {
+      first.classList.add('active');
+      const a = [...mgNode.querySelectorAll('.nav-tabs a')].find((x) => x.getAttribute('href') === `#${first.id}`);
+      if (a && a.closest('li')) a.closest('li').classList.add('active');
+    }
+  }
+
   function wireManageDoc(body) {
     const host = body && body.querySelector('#sp-mg-host');
     if (!host) return;
@@ -490,6 +541,7 @@
     }
     host.appendChild(mgNode);            // 搬进来；id / 内联 onclick / 表单全不动
     mgNode.classList.add('sp-manage-sec');
+    hideSiteOps();
     /* 站点这块是英文的：翻译器默认跳过 #sp，这里显式放行（同 analyse 的站点表单那条通道） */
     if (SP.DomI18n) {
       SP.DomI18n.enabled = state.translateSite !== false;
@@ -895,6 +947,17 @@
     const f = ev.target.closest('#sp-filter [data-f]');
     if (f) { Views.projState.filter = f.dataset.f; render(); return; }
 
+    // 项目设置：计算方式（站点那只 radio 是"点了就翻"，我们是"点了就是它"，发的是目标值）
+    const mc = ev.target.closest('#sp-mg-compute [data-v]');
+    if (mc) { mgSet('compute', mc.dataset.v); return; }
+
+    const md = ev.target.closest('[data-mg-del]');
+    if (md) {
+      if (!window.confirm(t('mg.delConfirm'))) return;
+      mgDelete(md.dataset.mgDel);
+      return;
+    }
+
     /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
     const sScope = ev.target.closest('#sp-scope [data-s]');
     if (sScope) {
@@ -968,7 +1031,48 @@
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`));
+    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    const mg = ev.target.closest('[data-mg]');
+    if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
+  }
+
+  /* ---- 项目设置：动作直发站点端点（无 CSRF 的 POST，回纯文本 OK / 原文原因） --------------
+     站点自己的 JS（admin.js:projectAction / showjob.js:doModify*）成功后就是 window.location.reload()：
+     真相在服务端渲染的 DOM 里，我们不复制一份状态。这里照做，但先把结果说出来再重载。
+     端点在 showjob.js 里逐个核对过：/project/<id>/computemethod/<cpu|gpu>/<0|1>、
+     /mp4/<0|1>、/visibility/<0|1>、/remove_no_redirect。 */
+  const MG_URL = {
+    compute: (id, v) => `/project/${id}/computemethod/${v}/1`,
+    mp4: (id, v) => `/project/${id}/mp4/${v}`,
+    public: (id, v) => `/project/${id}/visibility/${v}`,
+  };
+
+  async function mgSet(kind, value) {
+    const id = state.projectId;
+    if (!id || !MG_URL[kind]) return;
+    if (kind === 'compute' && state.mg && state.mg.compute === value) return;   // 点的是当前那档
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(MG_URL[kind](id, value));
+      if (r && r !== 'OK') { toast(t('account.failed', { msg: r })); render(); return; }
+      toast(t('account.ok'));
+      setTimeout(() => location.reload(), 700);
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      render();   // 失败要把开关拨回站点说的那个状态（模型是现读的）
+    }
+  }
+
+  async function mgDelete(id) {
+    toast(t('account.saving'));
+    try {
+      const r = await Api.post(`/project/${id}/remove_no_redirect`);
+      /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
+      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      location.href = '/home/projects';
+    } catch (e) {
+      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+    }
   }
 
   let inputTimer = null;
