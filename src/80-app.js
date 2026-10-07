@@ -41,8 +41,6 @@
     if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
-    /* 项目管理页 /project/<数字>：整页自绘。数据是那一页 HTML 的**副本**（Api.fetchPage →
-       DOMParser → Api.parseManage），动作直发站点端点 —— 站点节点一个都不进我们的壳。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
     // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
@@ -78,7 +76,6 @@
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
@@ -139,7 +136,6 @@
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    /* 上传项目三态：off 关 / raw 原版（站点自己那页）/ new 新版（源码重写）—— 见 viewForPath 上方 */
     uploadMode: 'new',
     uiScale: 1,            // 界面整体缩放
   };
@@ -182,8 +178,6 @@
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 上传入口：「新版」档走**应用内** #/upload；「原版」档点一下＝新标签页打开站点自己那页
-       （见 onClick）；三态里只有「关闭」不出这个入口 */
     if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
@@ -463,8 +457,7 @@
 
   /* ---- 3.6 项目管理页 /project/<数字>：整页自绘，站点 DOM 一个节点都不进我们的壳 ----------------
      数据是**那一页 HTML 的一份副本**（Api.fetchPage → DOMParser → Api.parseManage），
-     动作直发站点端点（mgSet / mgAct / mgAcl）。0.2.2 之前这里是把站点那一整块活节点搬进来、
-     靠它的内联 onclick 发请求 —— 那条路已经删干净了。 */
+     动作直发站点端点（mgSet / mgAct / mgAcl）。 */
 
   /* ---- 4. 数据编排 ---- */
 
@@ -802,8 +795,7 @@
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
-        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。原来只有这两处收，
-           prio-set 的菜单会一直敞着，用户随手一点就是一次 render()。 */
+        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。 */
         Views.projState.menu = null;
         submit(() => Api.post(url));
         return;
@@ -814,6 +806,7 @@
     const del = ev.target.closest('[data-del]');
     if (del) {
       if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
+      if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
       submit(() => Api.post(del.dataset.del));
       return;
     }
@@ -1140,12 +1133,10 @@
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
-      const host = document.getElementById('sp');
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* noop */ } }
-      void host;
     }, 180);
   }
 

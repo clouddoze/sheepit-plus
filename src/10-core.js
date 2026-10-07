@@ -4,7 +4,6 @@
 
   const NS = 'sheepit-plus';
   const SP = (window.__SHEEPIT_PLUS__ = window.__SHEEPIT_PLUS__ || {});
-  SP.NS = NS;
 
   /* ==== 工具 ==== */
 
@@ -45,17 +44,6 @@
       if (rd > 0 || y > 0) out += `${rd}d`;
       if (h > 0 || !out) out += `${h}h`;
       return out || `${Math.floor((s % 3600) / 60)}m`;
-    },
-
-    /** 大数压缩：1339098454 -> 1.3 G */
-    compact(v) {
-      const n = Number(v);
-      if (!Number.isFinite(n)) return Util.num(v);
-      const abs = Math.abs(n);
-      if (abs >= 1e9) return (n / 1e9).toFixed(1) + ' G';
-      if (abs >= 1e6) return (n / 1e6).toFixed(1) + ' M';
-      if (abs >= 1e3) return (n / 1e3).toFixed(1) + ' K';
-      return String(n);
     },
 
     /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
@@ -904,7 +892,6 @@
     BASE: 'en',
     lang: 'en',
     pref: 'auto',
-    LANGS: DICT,
     SITE,
 
     register(code, pack) {
@@ -973,13 +960,6 @@
       return pack && pack.dateText ? pack.dateText(raw) : raw;
     },
 
-    /** 整块替换：被内联标签切碎的句子；未命中返回 null */
-    blockText(text) {
-      if (this.lang === this.BASE) return null;
-      const pack = SITE[this.lang];
-      return pack && pack.blocks[text] !== undefined ? pack.blocks[text] : null;
-    },
-
     canTranslateSite() {
       const pack = SITE[this.lang];
       return this.lang !== this.BASE && !!pack
@@ -1015,7 +995,7 @@
       '--heat-5': 'rgba(224,109,88,1)',
       '--shadow': '0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)',
       '--r': '10px', '--r-sm': '6px',
-      // DESIGN.md 里一直有 positive，但从来没接进 token 表：用处第一次出现是上传页的"可以传"读数点
+      // 上传页估算器的「推荐这么切」行（30-style 的 .up1-tbl td.ok）：站点原本用 label-success 标它
       '--positive': '#3fb950',
     },
     light: {
@@ -1064,6 +1044,5 @@
   SP.Util = Util;
   SP.I18n = I18n;
   SP.Theme = Theme;
-  SP.TOKENS = TOKENS;
   SP.t = (k, v) => I18n.t(k, v);
 })();

@@ -182,13 +182,12 @@
       buckets.set(k, (buckets.get(k) || 0) + x.v);
     }
     const keys = [...buckets.keys()].sort();
-    if (!keys.length) return { html: '', first: '', mid: '', last: '' };
+    if (!keys.length) return { html: '' };
 
     const vals = keys.map((k) => buckets.get(k));
     const mx = Math.max(...vals), mn = Math.min(...vals);
-    const label = (k) => k;
     const bars = vals.map((v, i) =>
-      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(label(keys[i]))} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
+      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(keys[i])} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
 
     return {
       html: `<div class="months">${bars}</div>
@@ -340,8 +339,8 @@
       : `${p.toFixed(0)}%`;
   }
 
-  /** 6px 轨道 + 强调色填充。分数**不在这里**（见 50-views.js 的项目表）：挂在条子后面时
-   *  `flex:1` 的轨道会被每行不同的数字宽度挤成长短不一，独立成列才对得齐。 */
+  /** 6px 轨道 + 强调色填充。分数与条子**同一格**（见 50-views.js 的项目表 `pcell`，用户 2026-10-07）：
+   *  分数用 `.frac` 定宽（`min-width:6.6em`）才不会把每行的条子挤成长短不一；`label` 只挂在轨道上做悬停提示。 */
   function progress(pct, label) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
@@ -356,7 +355,6 @@
   }
 
   const state = {
-    loading: (msg) => `<div class="state"><div class="spin"></div><div class="small">${esc(msg || t('state.loading'))}</div></div>`,
     error: (msg, retryId) => `<div class="state">
         <div class="big">${esc(t('state.error'))}</div>
         <div class="small">${esc(msg || '')}</div>

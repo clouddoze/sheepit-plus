@@ -10,7 +10,7 @@
      估算器  POST /project/estimator + GET /device/search?term=（ProjectController.php:925-997）
 
    站点的进度条靠轮询 POST /project/internal/progress；我们用 XHR 自己的 upload 进度事件，
-   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（那一页由 66 那边接管）。 */
+   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（第二步整页由 80-app.js 的 analyse 线接管）。 */
 
 (function () {
   'use strict';
@@ -33,24 +33,11 @@
 
   /* ---------------------------------------------------------------- 数据 */
 
-  /** 站点"上传须知"那段 <ul>（HTML.php:2219+），只取文字 */
-  function rulesFrom(html) {
-    const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
-    const head = [].slice.call(d.querySelectorAll('h4')).filter((x) => /Before adding a file/i.test(x.textContent))[0];
-    if (!head) return [];
-    let ul = head.nextElementSibling;
-    while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
-    if (!ul && head.parentNode) ul = head.parentNode.querySelector('ul');
-    if (!ul) return [];
-    return [].slice.call(ul.querySelectorAll('li')).map((li) => li.textContent.replace(/\s+/g, ' ').trim());
-  }
-
   function limitFrom(note) {
     const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(note || '');
     return m ? m[1] : '';
   }
 
-  /* ---------------------------------------------------------------- 上传 */
 
   function buildForm(slot, page, html) {
     slot.textContent = '';
@@ -237,7 +224,6 @@
     return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
   }
 
-  /* -------------------------------------------------------------- 估算器 */
 
   function buildEst(slot) {
     slot.textContent = '';
@@ -446,5 +432,5 @@
     return true;
   }
 
-  SP.Step1 = { mount, rulesFrom, limitFrom, fmtSize };
+  SP.Step1 = { mount, limitFrom, fmtSize };
 })();

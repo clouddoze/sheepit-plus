@@ -61,7 +61,6 @@
       'Privacy policy': '隐私政策',
 
       /* 首页 */
-      'SheepIt is a free distributed renderfarm for Blender. Try it now!': 'SheepIt 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
       'Free': '免费',
       'No subscription, no credit card.': '无需订阅，无需信用卡。',
       'Free forever — since 2007.': '自 2007 年起永久免费。',
@@ -85,7 +84,6 @@
       'total frames rendered': '累计渲染帧数',
       'computed projects': '已完成项目',
       'Latest news': '最新动态',
-      'Read more': '阅读更多',
 
       /* 开始使用 */
       'Get started!': '开始使用！',
@@ -94,8 +92,6 @@
       "You don't need to have Blender installed, it will be downloaded for you.": '你不需要安装 Blender，客户端会自动下载。',
       'Your own project will be rendered first, then your computer will help other users.':
         '你自己的项目会优先渲染，之后你的电脑再帮助其他用户。',
-      "If you don't want to share your computer, but still help SheepIt, you should consider donating":
-        '如果你不想共享电脑，但仍想支持 SheepIt，可以考虑捐赠',
       'Download the client and start rendering now.': '下载客户端，立刻开始渲染。',
       'Minimum client requirements': '客户端最低要求',
       'Add your project': '添加你的项目',
@@ -132,7 +128,6 @@
       'Be aware that': '请注意：',
       'scripts are disabled due to security reasons.': '出于安全原因，脚本已被禁用。',
       'Your blend version is': '你的 blend 版本需要是',
-      'or higher.': '或更高。',
       'You set the output file to an': '你需要把输出文件设为',
       'image': '图片',
       ', for example jpg or png.': '，例如 jpg 或 png。',
@@ -175,14 +170,12 @@
       'Traffic per month': '每月流量',
       'Shepherds status': 'Shepherd 节点状态',
       'Server': '服务器',
-      'Processing': '处理中',
       'Storage': '存储',
       'Tasks': '任务',
       'binary mirror': '二进制镜像',
       ": stores Blender binary copy. Traffic is handled by Cloudflare's CDN.": '：存放 Blender 二进制副本，流量由 Cloudflare CDN 承载。',
       'project mirror': '项目镜像',
       ': stores blend file copy. Traffic is handled by Cloudflare\'s CDN.': '：存放 blend 文件副本，流量由 Cloudflare CDN 承载。',
-      'shepherd': 'shepherd',
       '(blue): stores the actual render. Creates zip and mp4.': '（蓝色）：存放实际渲染结果，生成 zip 和 mp4。',
       '(yellow), situated in Texas, USA. It handles users, project creation and rendering request.':
         '（黄色），位于美国德州，负责用户、项目创建和渲染请求。',
@@ -196,7 +189,6 @@
       'Loading': '加载中',
 
       /* 属性文案（title / alt / placeholder） */
-      'CPU disabled': 'CPU 已禁用',
       'cpu disabled': 'CPU 已禁用',
       'GPU nvidia enabled': 'GPU（NVIDIA）已启用',
       'gpu enabled': 'GPU 已启用',
@@ -279,11 +271,7 @@
       'Pause': '暂停',
       'Resume': '继续',
 
-      /* 项目管理页：项目「已渲染」状态下的提示块与动作按钮
-         （站点把两句话直接拼在一起，中间**没有空格**，所以带空格的变体也留一份） */
       'Your project has finished rendering, the frames are being packed.The server hosting your project will soon create a zip with your frames.':
-        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
-      'Your project has finished rendering, the frames are being packed. The server hosting your project will soon create a zip with your frames.':
         '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
       'Generating archive.': '正在打包存档。',
       'More information about SheepIt network on the servers page': '关于 SheepIt 网络的更多信息见「服务器」页面。',
@@ -342,6 +330,10 @@
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
        取键：把 translateSite 设为 false 打开页面，控制台跑 DomI18n.reportUnmatched(20)。 */
     blocks: {
+      /* 首页大标题：站点拆成 <strong>SheepIt</strong> + 后半句两个文本节点，短词条表（按整节点匹配）够不到 */
+      'SheepIt is a free distributed renderfarm for Blender. Try it now!':
+        '<strong>SheepIt</strong> 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
+
       "The render farm relies on you to live; the more computers that are connected to the system, the better the service will be. You don't need to have Blender installed, it will be downloaded for you. Your own project will be rendered first, then your computer will help other users. If you don't want to share your computer, but still help SheepIt, you should consider donating.":
         '渲染农场靠你而活：接入的机器越多，服务质量就越好。<br>你不需要安装 Blender，客户端会自动为你下载。<br>你自己的项目会优先渲染，之后你的电脑再帮助其他用户。<br>如果你不想共享电脑，但仍想支持 SheepIt，可以考虑<a href="/donation">捐赠</a>。',
 
@@ -371,9 +363,6 @@
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
 
-      /* 项目是私有的时候那句提醒：站点写成 "Your project is <strong>private</strong>, not every worker…"，
-         <strong> 把句子切成三个文本节点、site 表配不上整句 —— 这里整块吃英文前半句、替换值自带 <strong>，
-         后面那句（"To make it renderable by everyone…"）有 site 词条，交给 patchTextNodes 翻。 */
       [/^Your project is private, not every worker will be able to participate in your project\./,
         '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
@@ -388,12 +377,7 @@
       [/^Total projects:\s*([\d,]+)$/, '项目总数：$1'],
       [/^Max:\s*([\d,]+) MB$/, '上限：$1 MB'],
       [/^(\d[\d,]*)\s+computed projects$/, '已完成 $1 个项目'],
-      [/^(\d[\d,]*)\s+computed frames per hour$/, '每小时 $1 帧'],
       [/^(\d+[mhd])\s+to complete all projects$/, '$1 可完成全部项目'],
-      [/^(\d[\d,]*)\s+frames? remaining$/i, '待渲染 $1 帧'],
-      [/^(\d[\d,]*)\s+connected clients?$/i, '在线客户端 $1'],
-      [/^(\d[\d,]*)\s+processing frames?$/i, '正在处理 $1 帧'],
-      [/^(\d[\d,]*)\s+active projects?$/i, '进行中项目 $1'],
       /* 序数：排行榜名次与排队位置（CPU: 1st）共用 */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],

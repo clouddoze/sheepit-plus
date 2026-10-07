@@ -68,8 +68,8 @@
     return upper ? s.toUpperCase() : s;
   }
 
-  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
-     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用 WHY_RULES 规则匹配；
+     英文词典里没有 why.* 条目，所以没命中要回落原句。 */
   const WHY_RULES = [
     [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
       const key = 'why.notEnoughMemory';
@@ -242,7 +242,6 @@
 
   function overview(state) {
     const p = state.profile;
-    const home = state.home;
     if (!p) return UI.state.error('profile parse failed');
 
     const st = p.stats || {};
@@ -518,8 +517,7 @@
       : null;
   }
 
-  /** 进度：条子与分数**同一格**（用户 2026-10-07）。早先是两列、分数右对齐 → 条子右端到数字
-      之间空出近 100px（列宽减去条宽 + 数字列左半截），而项目名反被挤到截断。
+  /** 进度：条子与分数**同一格**（用户 2026-10-07）。
       合成一格后条子 `flex:1` 吃满剩余宽度，和数字之间只隔一个 10px 的 gap。 */
   const pcell = (pct, frac, title) => `<td><div class="pwrap">${UI.progress(pct, frac)}`
     + `<span class="frac num"${title ? ` title="${esc(title)}"` : ''}>${esc(frac)}</span></div></td>`;

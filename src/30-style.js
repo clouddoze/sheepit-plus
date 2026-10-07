@@ -566,7 +566,6 @@ ${Theme.css('#sp')}
 /* file input 让 label 当按钮，但绝不能 display:none —— 那会把它从 Tab 顺序里摘掉；改成 1px 透明。 */
 #sp .filepick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 #sp .filepick:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
-#sp .toast.ok{border-color:var(--border-strong);color:var(--text)}
 
 #sp .state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:88px 20px;text-align:center}
 #sp .state .big{font-size:15px;color:var(--text-2);font-weight:600}
@@ -627,7 +626,6 @@ ${Theme.css('#sp')}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
-#sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 #sp .acts{padding:2px 0 0}
 #sp .acthead,#sp .actrow{display:flex;align-items:center;gap:12px;padding:0 20px}
@@ -699,6 +697,8 @@ ${Theme.css('#sp')}
 }
 
 /* ==== 抹掉原站外观 ==== */
+/* 兼容档（把站点节点搬进卡片）已删，所以下面这一组压制规则**当前没有匹配对象**（页面上只有我们自己造的节点）。
+   留着当级联底座：真要恢复搬节点的路线，它们是必需的；别再往下加同类规则。 */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
 #sp .up-body .sign-in-wr,#sp .up-body .blog-post{
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
@@ -735,7 +735,6 @@ ${Theme.css('#sp')}
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
-#sp .up-body table input[type=text]{width:92px}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
 /* ==== 分析等待页 ==== */
@@ -841,10 +840,9 @@ ${Theme.css('#sp')}
 #sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
 #sp .up1-cost b{color:var(--accent);font-weight:600}
 #sp .up1-tbl{margin-top:10px}
-#sp .up1-tbl td.bad{color:var(--accent)}
 /* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
    "推荐这么切" 与普通行长得一模一样，等于白算。 */
-#sp .up1-tbl td.ok{color:var(--accent);font-weight:600}
+#sp .up1-tbl td.ok{color:var(--positive);font-weight:600}
 #sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
@@ -959,7 +957,7 @@ ${Theme.css('#sp')}
   font-size:12.5px;color:var(--accent);line-height:1.7}
 #sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
 #sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
-/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
 #sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
@@ -968,9 +966,6 @@ ${Theme.css('#sp')}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-msg{margin:14px 0 0;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.75}
-#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
 #sp .sp-up3 button.up3-submit{
   font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
   background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
@@ -988,10 +983,6 @@ ${Theme.css('#sp')}
 }
 #sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
 #sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
-#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
-/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
-#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
-#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
 
 `;
 

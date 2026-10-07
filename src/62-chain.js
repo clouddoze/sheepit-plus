@@ -39,7 +39,6 @@
     return '';
   }
 
-  /* ------------------------------------------------------------------ 解析 */
 
   const str = (v) => (v == null ? '' : String(v));
   const parseDoc = (html) => new DOMParser().parseFromString(str(html), 'text/html');
@@ -53,12 +52,10 @@
   const siteChecked = (el) => !!(el && String(el.type).toLowerCase() !== 'hidden' && el.checked);
 
   /** 三种开关形态：checkbox（用户可改）/ hidden（站点替用户定了）/ none（这一版没给）。 */
-  function toggleOf(el, why) {
-    if (!el) return { kind: 'none', on: false, why: why || '' };
-    if (String(el.type).toLowerCase() === 'hidden') {
-      return { kind: 'hidden', on: false, force: str(el.value) === '1', why: why || '' };
-    }
-    return { kind: 'check', on: !!el.checked, why: why || '', title: (el.parentNode && el.parentNode.querySelector('span[title]') || {}).title || '' };
+  function toggleOf(el) {
+    if (!el) return { kind: 'none', on: false };
+    if (String(el.type).toLowerCase() === 'hidden') return { kind: 'hidden', on: false, force: str(el.value) === '1' };
+    return { kind: 'check', on: !!el.checked };
   }
 
   /** 计算方式那一列：CPU / GPU 各带自己的"排队位次 / 项目总数"两行**裸文本**（HTML.php:1112）。 */
@@ -163,14 +160,12 @@
 
     return {
       token,
-      upstream: upstreamVersion(),
-      verified: UPSTREAM,
       /* 这一版多出来的元素（不在上面清单里）= 站点新加的控件，界面上要提示 */
       unknown: unknownIds(d),
       vis: {
         render: toggleOf(pub),
-        mp4: toggleOf($id(d, 'generate_mp4'), 'mp4Hidden'),
-        thumb: toggleOf($id(d, 'public_thumbnail'), 'thumbHidden'),
+        mp4: toggleOf($id(d, 'generate_mp4')),
+        thumb: toggleOf($id(d, 'public_thumbnail')),
       },
       compute: computeOf(d),
       blends,
@@ -211,7 +206,6 @@
     const forced = typeRadios.length === 1;
     const checkedType = (typeRadios.filter((r) => r.checked)[0] || typeRadios[0] || {}).value || 'animation';
 
-    const num = (el) => (el ? el.value : '');
     const anim = {};
     const single = {};
     [].slice.call(form.querySelectorAll('[id]')).forEach((el) => {
@@ -245,8 +239,6 @@
       split = { kind: 'fixed', tiles: tilesEl ? str(tilesEl.value) : '' };
     }
 
-    const advChk = form.querySelector('[id="checkbox_ad_' + i + '"]');
-    const advBox = form.querySelector('[id="checkbox_advanced_option_' + i + '"]');
     const ram = form.querySelector('[id="addproject_max_ram_optional_' + i + '"]');
 
     return Object.assign(base, {
@@ -255,7 +247,6 @@
       anim: { start: str(anim.start), end: str(anim.end), step: str(anim.step) },
       single: { frame: str(single.frame) },
       split,
-      advanced: !!advChk && !!advBox,
       ram: ram ? str(ram.value) : '',
       notes: notesOf(form),
     });
@@ -363,10 +354,10 @@
       body: new URLSearchParams(payload).toString(),
     });
     const text = await res.text();
-    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }), raw: text };
+    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }) };
     const body = text.trim();
     if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
-    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400), raw: body };
+    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400) };
   }
 
   /** 站点原文（错误体 / 纯文本理由）上屏前先过一遍中文字典；未命中就保持原文，
@@ -445,16 +436,16 @@
   function classifyUpload(xhr) {
     const url = xhr.responseURL || '';
     const m = /\/project\/add\/([^/?#]+)/.exec(url);
-    if (m) return { ok: true, token: decodeURIComponent(m[1]), url };
+    if (m) return { ok: true, token: decodeURIComponent(m[1]) };
     if (xhr.status === 401 || xhr.status === 403) return { ok: false, message: t('state.loggedOut') };
     const text = str(xhr.responseText);
-    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }), raw: text };
+    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }) };
     if (/Upload new project|add_step2/i.test(text)) {
       /* 兜底：有些路径回的是第二步整页但地址没变（理论上不会），那就当成功，让用户自己走第二步 */
       const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
       if (tk) return { ok: true, token: tk[1] };
     }
-    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd'), raw: text };
+    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd') };
   }
 
   /* ------------------------------------------------------------- 「原版」用 */
@@ -472,7 +463,6 @@
   function uploadPage(html) {
     const d = parseDoc(html);
     const form = d.querySelector('form[action*="/project/internal/upload"]');
-    const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
     /* 站点在 printError()（HTML.php:1637）里写的是"为什么没有表单"：维护中 / 没头像 /
        并发上限 / ACL 被禁，四条都走它，而 printError 是提前 return 的 —— 页面上就只剩这一块。
@@ -500,7 +490,6 @@
          站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
       limitBytes: lim.bytes,
       limitText: lim.text,
-      uid: uid ? str(uid.value) : '',
     };
   }
 

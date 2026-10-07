@@ -2,9 +2,9 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.2
-// @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表、排行榜、会话页、账户设置；中英双语、明暗双主题。数据读自站点自己的页面，不向第三方发送。
-// @description:en  A new front end for SheepIt Render Farm: dashboard, project list, ranking, session page, account settings. Bilingual (zh/en), dark and light. All data is read from the site's own pages.
+// @version      0.2.3
+// @description  给 SheepIt Render Farm 换一套新前端：仪表盘、项目列表与项目管理、排行榜、会话页、上传页、账户设置；中英双语、明暗双主题。读写都在站点自己的页面上完成，不向第三方发送。
+// @description:en  A new front end for SheepIt Render Farm: dashboard, projects (plus per-project management), ranking, sessions, uploading and account settings. Bilingual (zh/en), dark and light. Every read and write goes through the site's own pages.
 // @author       clouddoze
 // @match        https://www.sheepit-renderfarm.com/*
 // @exclude      https://www.sheepit-renderfarm.com/forum/*
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.2.2 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.2.3 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -28,7 +28,6 @@
 
   const NS = 'sheepit-plus';
   const SP = (window.__SHEEPIT_PLUS__ = window.__SHEEPIT_PLUS__ || {});
-  SP.NS = NS;
 
   /* ==== 工具 ==== */
 
@@ -69,17 +68,6 @@
       if (rd > 0 || y > 0) out += `${rd}d`;
       if (h > 0 || !out) out += `${h}h`;
       return out || `${Math.floor((s % 3600) / 60)}m`;
-    },
-
-    /** 大数压缩：1339098454 -> 1.3 G */
-    compact(v) {
-      const n = Number(v);
-      if (!Number.isFinite(n)) return Util.num(v);
-      const abs = Math.abs(n);
-      if (abs >= 1e9) return (n / 1e9).toFixed(1) + ' G';
-      if (abs >= 1e6) return (n / 1e6).toFixed(1) + ' M';
-      if (abs >= 1e3) return (n / 1e3).toFixed(1) + ' K';
-      return String(n);
     },
 
     /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
@@ -928,7 +916,6 @@
     BASE: 'en',
     lang: 'en',
     pref: 'auto',
-    LANGS: DICT,
     SITE,
 
     register(code, pack) {
@@ -997,13 +984,6 @@
       return pack && pack.dateText ? pack.dateText(raw) : raw;
     },
 
-    /** 整块替换：被内联标签切碎的句子；未命中返回 null */
-    blockText(text) {
-      if (this.lang === this.BASE) return null;
-      const pack = SITE[this.lang];
-      return pack && pack.blocks[text] !== undefined ? pack.blocks[text] : null;
-    },
-
     canTranslateSite() {
       const pack = SITE[this.lang];
       return this.lang !== this.BASE && !!pack
@@ -1039,7 +1019,7 @@
       '--heat-5': 'rgba(224,109,88,1)',
       '--shadow': '0 1px 2px rgba(0,0,0,.5), 0 4px 12px rgba(0,0,0,.28)',
       '--r': '10px', '--r-sm': '6px',
-      // DESIGN.md 里一直有 positive，但从来没接进 token 表：用处第一次出现是上传页的"可以传"读数点
+      // 上传页估算器的「推荐这么切」行（30-style 的 .up1-tbl td.ok）：站点原本用 label-success 标它
       '--positive': '#3fb950',
     },
     light: {
@@ -1088,7 +1068,6 @@
   SP.Util = Util;
   SP.I18n = I18n;
   SP.Theme = Theme;
-  SP.TOKENS = TOKENS;
   SP.t = (k, v) => I18n.t(k, v);
 })();
 
@@ -1156,7 +1135,6 @@
       'Privacy policy': '隐私政策',
 
       /* 首页 */
-      'SheepIt is a free distributed renderfarm for Blender. Try it now!': 'SheepIt 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
       'Free': '免费',
       'No subscription, no credit card.': '无需订阅，无需信用卡。',
       'Free forever — since 2007.': '自 2007 年起永久免费。',
@@ -1180,7 +1158,6 @@
       'total frames rendered': '累计渲染帧数',
       'computed projects': '已完成项目',
       'Latest news': '最新动态',
-      'Read more': '阅读更多',
 
       /* 开始使用 */
       'Get started!': '开始使用！',
@@ -1189,8 +1166,6 @@
       "You don't need to have Blender installed, it will be downloaded for you.": '你不需要安装 Blender，客户端会自动下载。',
       'Your own project will be rendered first, then your computer will help other users.':
         '你自己的项目会优先渲染，之后你的电脑再帮助其他用户。',
-      "If you don't want to share your computer, but still help SheepIt, you should consider donating":
-        '如果你不想共享电脑，但仍想支持 SheepIt，可以考虑捐赠',
       'Download the client and start rendering now.': '下载客户端，立刻开始渲染。',
       'Minimum client requirements': '客户端最低要求',
       'Add your project': '添加你的项目',
@@ -1227,7 +1202,6 @@
       'Be aware that': '请注意：',
       'scripts are disabled due to security reasons.': '出于安全原因，脚本已被禁用。',
       'Your blend version is': '你的 blend 版本需要是',
-      'or higher.': '或更高。',
       'You set the output file to an': '你需要把输出文件设为',
       'image': '图片',
       ', for example jpg or png.': '，例如 jpg 或 png。',
@@ -1270,14 +1244,12 @@
       'Traffic per month': '每月流量',
       'Shepherds status': 'Shepherd 节点状态',
       'Server': '服务器',
-      'Processing': '处理中',
       'Storage': '存储',
       'Tasks': '任务',
       'binary mirror': '二进制镜像',
       ": stores Blender binary copy. Traffic is handled by Cloudflare's CDN.": '：存放 Blender 二进制副本，流量由 Cloudflare CDN 承载。',
       'project mirror': '项目镜像',
       ': stores blend file copy. Traffic is handled by Cloudflare\'s CDN.': '：存放 blend 文件副本，流量由 Cloudflare CDN 承载。',
-      'shepherd': 'shepherd',
       '(blue): stores the actual render. Creates zip and mp4.': '（蓝色）：存放实际渲染结果，生成 zip 和 mp4。',
       '(yellow), situated in Texas, USA. It handles users, project creation and rendering request.':
         '（黄色），位于美国德州，负责用户、项目创建和渲染请求。',
@@ -1291,7 +1263,6 @@
       'Loading': '加载中',
 
       /* 属性文案（title / alt / placeholder） */
-      'CPU disabled': 'CPU 已禁用',
       'cpu disabled': 'CPU 已禁用',
       'GPU nvidia enabled': 'GPU（NVIDIA）已启用',
       'gpu enabled': 'GPU 已启用',
@@ -1374,11 +1345,7 @@
       'Pause': '暂停',
       'Resume': '继续',
 
-      /* 项目管理页：项目「已渲染」状态下的提示块与动作按钮
-         （站点把两句话直接拼在一起，中间**没有空格**，所以带空格的变体也留一份） */
       'Your project has finished rendering, the frames are being packed.The server hosting your project will soon create a zip with your frames.':
-        '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
-      'Your project has finished rendering, the frames are being packed. The server hosting your project will soon create a zip with your frames.':
         '项目已经渲染完成，正在打包帧文件。托管你项目的服务器很快会生成一个包含所有帧的 zip。',
       'Generating archive.': '正在打包存档。',
       'More information about SheepIt network on the servers page': '关于 SheepIt 网络的更多信息见「服务器」页面。',
@@ -1437,6 +1404,10 @@
     /* 整块替换（值是 HTML，可保留链接）：键 = 翻译前的整块归一化文本，必须与页面拼接结果一致。
        取键：把 translateSite 设为 false 打开页面，控制台跑 DomI18n.reportUnmatched(20)。 */
     blocks: {
+      /* 首页大标题：站点拆成 <strong>SheepIt</strong> + 后半句两个文本节点，短词条表（按整节点匹配）够不到 */
+      'SheepIt is a free distributed renderfarm for Blender. Try it now!':
+        '<strong>SheepIt</strong> 是一个面向 Blender 的免费分布式渲染农场，立刻试试！',
+
       "The render farm relies on you to live; the more computers that are connected to the system, the better the service will be. You don't need to have Blender installed, it will be downloaded for you. Your own project will be rendered first, then your computer will help other users. If you don't want to share your computer, but still help SheepIt, you should consider donating.":
         '渲染农场靠你而活：接入的机器越多，服务质量就越好。<br>你不需要安装 Blender，客户端会自动为你下载。<br>你自己的项目会优先渲染，之后你的电脑再帮助其他用户。<br>如果你不想共享电脑，但仍想支持 SheepIt，可以考虑<a href="/donation">捐赠</a>。',
 
@@ -1466,9 +1437,6 @@
       [/^The render order is based on points\..*?You currently have ([\d,]+) points\.\s*Since you are part of a team who generated ([\d,]+) points some of those will give you an extra boost of ([\d,]+) points\.\s*Predicted position in queue:$/i,
         '渲染顺序由积分决定：积分越高，优先级越高。你当前拥有 $1 积分。由于你所在团队累计产生了 $2 积分，其中一部分会给你带来 $3 积分的额外加成。<br>预计排队位置：'],
 
-      /* 项目是私有的时候那句提醒：站点写成 "Your project is <strong>private</strong>, not every worker…"，
-         <strong> 把句子切成三个文本节点、site 表配不上整句 —— 这里整块吃英文前半句、替换值自带 <strong>，
-         后面那句（"To make it renderable by everyone…"）有 site 词条，交给 patchTextNodes 翻。 */
       [/^Your project is private, not every worker will be able to participate in your project\./,
         '你的项目是<strong>私有的</strong>，不是所有 worker 都能参与你的项目。'],
     ],
@@ -1483,12 +1451,7 @@
       [/^Total projects:\s*([\d,]+)$/, '项目总数：$1'],
       [/^Max:\s*([\d,]+) MB$/, '上限：$1 MB'],
       [/^(\d[\d,]*)\s+computed projects$/, '已完成 $1 个项目'],
-      [/^(\d[\d,]*)\s+computed frames per hour$/, '每小时 $1 帧'],
       [/^(\d+[mhd])\s+to complete all projects$/, '$1 可完成全部项目'],
-      [/^(\d[\d,]*)\s+frames? remaining$/i, '待渲染 $1 帧'],
-      [/^(\d[\d,]*)\s+connected clients?$/i, '在线客户端 $1'],
-      [/^(\d[\d,]*)\s+processing frames?$/i, '正在处理 $1 帧'],
-      [/^(\d[\d,]*)\s+active projects?$/i, '进行中项目 $1'],
       /* 序数：排行榜名次与排队位置（CPU: 1st）共用 */
       [/^(\d+)(st|nd|rd|th)$/i, '第 $1 位'],
       [/^([\d.]+)\s+or higher\.?$/, '$1 或更高。'],
@@ -1624,7 +1587,6 @@
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
   }
 
-  /* ------------------------------------------------------------ 内联数组 */
 
   function extractArray(html, anchors, keyed) {
     const list = Array.isArray(anchors) ? anchors : [anchors];
@@ -1806,12 +1768,6 @@
           const st = fact.action && fact.action.match(/\/running\/(\d+)/);
           fact.target = st ? st[1] : null;
         }
-        if (key === 'hostname') {
-          const img = td.querySelector('img');
-          const src = img ? String(img.getAttribute('data-src') || img.getAttribute('src') || '') : '';
-          const m = src.match(/flag\/([A-Za-z]{2})\./);
-          fact.flag = m ? m[1].toUpperCase() : '';
-        }
         if (key === 'owner' && fact.href) {
           const m = fact.href.match(/\/user\/([^/]+)\//);
           fact.user = m ? decodeURIComponent(m[1]) : fact.value;
@@ -1900,7 +1856,6 @@
         status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
         pct: Number.isFinite(pct) ? pct : null,
         blocked: tr.classList.contains('danger'),
-        manageable: !!id,
       });
     }
     /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
@@ -1935,7 +1890,6 @@
     const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
     const id = String(projectId || '');
 
-    /* ---- 标题 / 状态 / 进度 ---- */
     const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
     const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
     const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
@@ -2042,7 +1996,6 @@
       hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
     };
 
-    /* ---- 设置三项（形态见文件头注释） ---- */
     let compute = '';
     for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
       if (!on(r)) continue;
@@ -2135,10 +2088,8 @@
 
     return {
       streakExclToday: set.has(today) ? run(shift(today, -1)) : run(today),
-      streakInclToday: run(today),
       best,
       active30: [...Array(30)].filter((_, i) => set.has(shift(today, -i))).length,
-      totalDays: activity.length,
     };
   }
 
@@ -2248,7 +2199,6 @@
       };
       out.push({
         rank: text(tds[0]),
-        rankNum: numOf(tds[0]),
         user: link ? text(link) : text(tds[1]),
         // URL 里的用户名才是可靠身份（显示名可能与 URL 不同，只有 URL 那个能打开对的人）
         userId: link ? decodeURIComponent((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
@@ -2976,7 +2926,6 @@ ${Theme.css('#sp')}
 /* file input 让 label 当按钮，但绝不能 display:none —— 那会把它从 Tab 顺序里摘掉；改成 1px 透明。 */
 #sp .filepick input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
 #sp .filepick:focus-within{border-color:var(--accent);outline:2px solid var(--accent);outline-offset:2px}
-#sp .toast.ok{border-color:var(--border-strong);color:var(--text)}
 
 #sp .state{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:88px 20px;text-align:center}
 #sp .state .big{font-size:15px;color:var(--text-2);font-weight:600}
@@ -3037,7 +2986,6 @@ ${Theme.css('#sp')}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
-#sp .sess .none{padding:4px 0;font-size:13px;color:var(--text-3)}
 
 #sp .acts{padding:2px 0 0}
 #sp .acthead,#sp .actrow{display:flex;align-items:center;gap:12px;padding:0 20px}
@@ -3109,6 +3057,8 @@ ${Theme.css('#sp')}
 }
 
 /* ==== 抹掉原站外观 ==== */
+/* 兼容档（把站点节点搬进卡片）已删，所以下面这一组压制规则**当前没有匹配对象**（页面上只有我们自己造的节点）。
+   留着当级联底座：真要恢复搬节点的路线，它们是必需的；别再往下加同类规则。 */
 #sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
 #sp .up-body .sign-in-wr,#sp .up-body .blog-post{
   padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
@@ -3145,7 +3095,6 @@ ${Theme.css('#sp')}
   font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
   background:var(--surface-2);border:1px solid var(--border);color:var(--text);
 }
-#sp .up-body table input[type=text]{width:92px}
 #sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
 #sp .up-body form.form-inline{display:block;margin:0 0 14px}
 /* ==== 分析等待页 ==== */
@@ -3251,10 +3200,9 @@ ${Theme.css('#sp')}
 #sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
 #sp .up1-cost b{color:var(--accent);font-weight:600}
 #sp .up1-tbl{margin-top:10px}
-#sp .up1-tbl td.bad{color:var(--accent)}
 /* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
    "推荐这么切" 与普通行长得一模一样，等于白算。 */
-#sp .up1-tbl td.ok{color:var(--accent);font-weight:600}
+#sp .up1-tbl td.ok{color:var(--positive);font-weight:600}
 #sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
 #sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
 #sp .up1-rules li + li{margin-top:6px}
@@ -3369,7 +3317,7 @@ ${Theme.css('#sp')}
   font-size:12.5px;color:var(--accent);line-height:1.7}
 #sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
 #sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
-/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot / .up3-msg 同一套消息块 */
+/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
 #sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
 #sp .sp-up3 .up3-notes > div + div{margin-top:3px}
@@ -3378,9 +3326,6 @@ ${Theme.css('#sp')}
 #sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
   background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
 #sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-msg{margin:14px 0 0;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);color:var(--text-2);font-size:12.5px;line-height:1.75}
-#sp .sp-up3 .up3-msg.bad{border-color:var(--accent);color:var(--accent)}
 #sp .sp-up3 button.up3-submit{
   font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
   background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
@@ -3398,10 +3343,6 @@ ${Theme.css('#sp')}
 }
 #sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
 #sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
-#sp .sp-up3 input[type=submit]{padding:9px 18px;width:auto;float:none}
-/* 站点自己的错误框：正常情况下我们接住内容、换成自己的话，它保持空；万一脚本没接住，它仍能显示原文 */
-#sp .sp-up3 [id^="addproject_error_box_"]{font-size:12.5px;color:var(--accent);margin:0 0 10px}
-#sp .sp-up3 [id^="addproject_error_box_"]:empty{display:none}
 
 `;
 
@@ -3653,13 +3594,12 @@ ${Theme.css('#sp')}
       buckets.set(k, (buckets.get(k) || 0) + x.v);
     }
     const keys = [...buckets.keys()].sort();
-    if (!keys.length) return { html: '', first: '', mid: '', last: '' };
+    if (!keys.length) return { html: '' };
 
     const vals = keys.map((k) => buckets.get(k));
     const mx = Math.max(...vals), mn = Math.min(...vals);
-    const label = (k) => k;
     const bars = vals.map((v, i) =>
-      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(label(keys[i]))} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
+      `<i style="height:${Math.max(2, Math.round((v / Math.max(1, mx)) * 132))}px" title="${esc(keys[i])} · ${fmt(v)} ${esc(t('heat.frame'))}"></i>`).join('');
 
     return {
       html: `<div class="months">${bars}</div>
@@ -3811,8 +3751,8 @@ ${Theme.css('#sp')}
       : `${p.toFixed(0)}%`;
   }
 
-  /** 6px 轨道 + 强调色填充。分数**不在这里**（见 50-views.js 的项目表）：挂在条子后面时
-   *  `flex:1` 的轨道会被每行不同的数字宽度挤成长短不一，独立成列才对得齐。 */
+  /** 6px 轨道 + 强调色填充。分数与条子**同一格**（见 50-views.js 的项目表 `pcell`，用户 2026-10-07）：
+   *  分数用 `.frac` 定宽（`min-width:6.6em`）才不会把每行的条子挤成长短不一；`label` 只挂在轨道上做悬停提示。 */
   function progress(pct, label) {
     const p = Math.max(0, Math.min(100, Number(pct) || 0));
     return `<div class="bar"${label ? ` title="${esc(label)}"` : ''}><div class="t"><div class="f" style="width:${p}%"></div></div></div>`;
@@ -3827,7 +3767,6 @@ ${Theme.css('#sp')}
   }
 
   const state = {
-    loading: (msg) => `<div class="state"><div class="spin"></div><div class="small">${esc(msg || t('state.loading'))}</div></div>`,
     error: (msg, retryId) => `<div class="state">
         <div class="big">${esc(t('state.error'))}</div>
         <div class="small">${esc(msg || '')}</div>
@@ -4043,8 +3982,8 @@ ${Theme.css('#sp')}
     return upper ? s.toUpperCase() : s;
   }
 
-  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用规则匹配。
-     与下面的 STATUS_RULES 同一套做法；英文词典里没有 why.* 条目，所以没命中要回落原句。 */
+  /* 站点给的原因里有的带数字（内存那句每次都不一样），slug 查不到 → 先用 WHY_RULES 规则匹配；
+     英文词典里没有 why.* 条目，所以没命中要回落原句。 */
   const WHY_RULES = [
     [/^not enough free memory,\s*requiring:\s*(.+?),\s*available:\s*(.+)$/i, (m) => {
       const key = 'why.notEnoughMemory';
@@ -4217,7 +4156,6 @@ ${Theme.css('#sp')}
 
   function overview(state) {
     const p = state.profile;
-    const home = state.home;
     if (!p) return UI.state.error('profile parse failed');
 
     const st = p.stats || {};
@@ -4493,8 +4431,7 @@ ${Theme.css('#sp')}
       : null;
   }
 
-  /** 进度：条子与分数**同一格**（用户 2026-10-07）。早先是两列、分数右对齐 → 条子右端到数字
-      之间空出近 100px（列宽减去条宽 + 数字列左半截），而项目名反被挤到截断。
+  /** 进度：条子与分数**同一格**（用户 2026-10-07）。
       合成一格后条子 `flex:1` 吃满剩余宽度，和数字之间只隔一个 10px 的 gap。 */
   const pcell = (pct, frac, title) => `<td><div class="pwrap">${UI.progress(pct, frac)}`
     + `<span class="frac num"${title ? ` title="${esc(title)}"` : ''}>${esc(frac)}</span></div></td>`;
@@ -5608,7 +5545,6 @@ ${Theme.css('#sp')}
     return '';
   }
 
-  /* ------------------------------------------------------------------ 解析 */
 
   const str = (v) => (v == null ? '' : String(v));
   const parseDoc = (html) => new DOMParser().parseFromString(str(html), 'text/html');
@@ -5622,12 +5558,10 @@ ${Theme.css('#sp')}
   const siteChecked = (el) => !!(el && String(el.type).toLowerCase() !== 'hidden' && el.checked);
 
   /** 三种开关形态：checkbox（用户可改）/ hidden（站点替用户定了）/ none（这一版没给）。 */
-  function toggleOf(el, why) {
-    if (!el) return { kind: 'none', on: false, why: why || '' };
-    if (String(el.type).toLowerCase() === 'hidden') {
-      return { kind: 'hidden', on: false, force: str(el.value) === '1', why: why || '' };
-    }
-    return { kind: 'check', on: !!el.checked, why: why || '', title: (el.parentNode && el.parentNode.querySelector('span[title]') || {}).title || '' };
+  function toggleOf(el) {
+    if (!el) return { kind: 'none', on: false };
+    if (String(el.type).toLowerCase() === 'hidden') return { kind: 'hidden', on: false, force: str(el.value) === '1' };
+    return { kind: 'check', on: !!el.checked };
   }
 
   /** 计算方式那一列：CPU / GPU 各带自己的"排队位次 / 项目总数"两行**裸文本**（HTML.php:1112）。 */
@@ -5732,14 +5666,12 @@ ${Theme.css('#sp')}
 
     return {
       token,
-      upstream: upstreamVersion(),
-      verified: UPSTREAM,
       /* 这一版多出来的元素（不在上面清单里）= 站点新加的控件，界面上要提示 */
       unknown: unknownIds(d),
       vis: {
         render: toggleOf(pub),
-        mp4: toggleOf($id(d, 'generate_mp4'), 'mp4Hidden'),
-        thumb: toggleOf($id(d, 'public_thumbnail'), 'thumbHidden'),
+        mp4: toggleOf($id(d, 'generate_mp4')),
+        thumb: toggleOf($id(d, 'public_thumbnail')),
       },
       compute: computeOf(d),
       blends,
@@ -5780,7 +5712,6 @@ ${Theme.css('#sp')}
     const forced = typeRadios.length === 1;
     const checkedType = (typeRadios.filter((r) => r.checked)[0] || typeRadios[0] || {}).value || 'animation';
 
-    const num = (el) => (el ? el.value : '');
     const anim = {};
     const single = {};
     [].slice.call(form.querySelectorAll('[id]')).forEach((el) => {
@@ -5814,8 +5745,6 @@ ${Theme.css('#sp')}
       split = { kind: 'fixed', tiles: tilesEl ? str(tilesEl.value) : '' };
     }
 
-    const advChk = form.querySelector('[id="checkbox_ad_' + i + '"]');
-    const advBox = form.querySelector('[id="checkbox_advanced_option_' + i + '"]');
     const ram = form.querySelector('[id="addproject_max_ram_optional_' + i + '"]');
 
     return Object.assign(base, {
@@ -5824,7 +5753,6 @@ ${Theme.css('#sp')}
       anim: { start: str(anim.start), end: str(anim.end), step: str(anim.step) },
       single: { frame: str(single.frame) },
       split,
-      advanced: !!advChk && !!advBox,
       ram: ram ? str(ram.value) : '',
       notes: notesOf(form),
     });
@@ -5932,10 +5860,10 @@ ${Theme.css('#sp')}
       body: new URLSearchParams(payload).toString(),
     });
     const text = await res.text();
-    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }), raw: text };
+    if (!res.ok) return { ok: false, message: t('up3x.httpFail', { code: res.status }) };
     const body = text.trim();
     if (/^https?:\/\//i.test(body)) return { ok: true, url: body };
-    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400), raw: body };
+    return { ok: false, message: zh(messageFrom(body)) || body.slice(0, 400) };
   }
 
   /** 站点原文（错误体 / 纯文本理由）上屏前先过一遍中文字典；未命中就保持原文，
@@ -6014,16 +5942,16 @@ ${Theme.css('#sp')}
   function classifyUpload(xhr) {
     const url = xhr.responseURL || '';
     const m = /\/project\/add\/([^/?#]+)/.exec(url);
-    if (m) return { ok: true, token: decodeURIComponent(m[1]), url };
+    if (m) return { ok: true, token: decodeURIComponent(m[1]) };
     if (xhr.status === 401 || xhr.status === 403) return { ok: false, message: t('state.loggedOut') };
     const text = str(xhr.responseText);
-    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }), raw: text };
+    if (xhr.status !== 200) return { ok: false, message: t('up3x.httpFail', { code: xhr.status }) };
     if (/Upload new project|add_step2/i.test(text)) {
       /* 兜底：有些路径回的是第二步整页但地址没变（理论上不会），那就当成功，让用户自己走第二步 */
       const tk = /doAnalyseUploadedProject\('([^']+)'\)/.exec(text);
       if (tk) return { ok: true, token: tk[1] };
     }
-    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd'), raw: text };
+    return { ok: false, message: zh(messageFrom(text)) || t('up3x.uploadOdd') };
   }
 
   /* ------------------------------------------------------------- 「原版」用 */
@@ -6041,7 +5969,6 @@ ${Theme.css('#sp')}
   function uploadPage(html) {
     const d = parseDoc(html);
     const form = d.querySelector('form[action*="/project/internal/upload"]');
-    const uid = form && d.querySelector('input[name="UPLOAD_IDENTIFIER"]');
     const warn = d.getElementById('addproject_warning_zero_frame');
     /* 站点在 printError()（HTML.php:1637）里写的是"为什么没有表单"：维护中 / 没头像 /
        并发上限 / ACL 被禁，四条都走它，而 printError 是提前 return 的 —— 页面上就只剩这一块。
@@ -6069,7 +5996,6 @@ ${Theme.css('#sp')}
          站点不写上限时是 0 = 不判断。提示里照抄站点那个单位（"2,048 MB"），别换算成 "2.0 GB"。 */
       limitBytes: lim.bytes,
       limitText: lim.text,
-      uid: uid ? str(uid.value) : '',
     };
   }
 
@@ -6152,7 +6078,7 @@ ${Theme.css('#sp')}
      估算器  POST /project/estimator + GET /device/search?term=（ProjectController.php:925-997）
 
    站点的进度条靠轮询 POST /project/internal/progress；我们用 XHR 自己的 upload 进度事件，
-   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（那一页由 66 那边接管）。 */
+   少一趟请求，也少一份状态。上传成功就让浏览器跳到第二步（第二步整页由 80-app.js 的 analyse 线接管）。 */
 
 (function () {
   'use strict';
@@ -6175,24 +6101,11 @@ ${Theme.css('#sp')}
 
   /* ---------------------------------------------------------------- 数据 */
 
-  /** 站点"上传须知"那段 <ul>（HTML.php:2219+），只取文字 */
-  function rulesFrom(html) {
-    const d = new DOMParser().parseFromString(String(html || ''), 'text/html');
-    const head = [].slice.call(d.querySelectorAll('h4')).filter((x) => /Before adding a file/i.test(x.textContent))[0];
-    if (!head) return [];
-    let ul = head.nextElementSibling;
-    while (ul && ul.tagName !== 'UL') ul = ul.nextElementSibling;
-    if (!ul && head.parentNode) ul = head.parentNode.querySelector('ul');
-    if (!ul) return [];
-    return [].slice.call(ul.querySelectorAll('li')).map((li) => li.textContent.replace(/\s+/g, ' ').trim());
-  }
-
   function limitFrom(note) {
     const m = /Max:\s*([\d.,]+\s*[KMGT]?B)/i.exec(note || '');
     return m ? m[1] : '';
   }
 
-  /* ---------------------------------------------------------------- 上传 */
 
   function buildForm(slot, page, html) {
     slot.textContent = '';
@@ -6379,7 +6292,6 @@ ${Theme.css('#sp')}
     return `${v >= 10 || i === 0 ? Math.round(v) : v.toFixed(1)} ${u[i]}`;
   }
 
-  /* -------------------------------------------------------------- 估算器 */
 
   function buildEst(slot) {
     slot.textContent = '';
@@ -6588,7 +6500,7 @@ ${Theme.css('#sp')}
     return true;
   }
 
-  SP.Step1 = { mount, rulesFrom, limitFrom, fmtSize };
+  SP.Step1 = { mount, limitFrom, fmtSize };
 })();
 
 /* ===== src/68-step3.js ===== */
@@ -6649,7 +6561,6 @@ ${Theme.css('#sp')}
     return String(Math.round(n * 100) / 100);
   };
 
-  /* ------------------------------------------------------------------ 小组件 */
 
   function line(k, content) {
     const l = mk('div', 'up3-line');
@@ -6660,12 +6571,6 @@ ${Theme.css('#sp')}
     l.appendChild(a);
     l.appendChild(b);
     return l;
-  }
-
-  function tip(text) {
-    const d = mk('div', 'up3-tip');
-    d.textContent = text;
-    return d;
   }
 
   /** 选项行：<label class="up3-opt" title="…"><input …><span>文字</span></label> */
@@ -6762,8 +6667,6 @@ ${Theme.css('#sp')}
     const uid = 'sp3-' + (++seq);
     const root = mk('div', 'up3');
     const state = { vis: {}, compute: 0, blends: {} };
-    const msg = mk('div', 'up3-msg');
-    msg.hidden = true;
 
     /* 状态先摆好：内存那一行在上半部分，但它写的是每个文件的值（服务端契约如此） */
     model.blends.forEach((b) => {
@@ -6882,7 +6785,7 @@ ${Theme.css('#sp')}
     }
 
     let parsedKeys = 0;
-    const cards = [];
+    let cardCount = 0;
     model.blends.forEach((b) => {
       parsedKeys += Object.keys(b.hidden).length + (b.rejected ? 0 : 3);
       const bl = mk('div', 'up3-blend');
@@ -6905,7 +6808,7 @@ ${Theme.css('#sp')}
         bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
         bl.appendChild(bad);
         root.appendChild(bl);
-        cards.push({ b, card: bl, body: bl, submit: null });
+        cardCount++;
         return;
       }
 
@@ -7023,9 +6926,9 @@ ${Theme.css('#sp')}
       slot.hidden = true;
       bl.appendChild(slot);
 
-      btn.addEventListener('click', () => doSubmit(b, bl, slot, btn, msg, state, model));
+      btn.addEventListener('click', () => doSubmit(b, slot, btn, state, model));
       root.appendChild(bl);
-      cards.push({ b, card: bl, body: bl, submit: btn, slot });
+      cardCount++;
     });
 
     /* 站点这一版多了我们没画过的控件：它们会按站点给的默认值提交 —— 明说，别沉默 */
@@ -7043,25 +6946,21 @@ ${Theme.css('#sp')}
       root.appendChild(warn);
     }
 
-    root.appendChild(msg);
     box.appendChild(root);
 
     saveReport({
-      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys, missing: [],
+      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys,
       unknown: (model.unknown || []).slice(0, 12),
-      upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
     });
     /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
-    return { ok: true, cards: cards.length, state, model };
+    return { ok: true, cards: cardCount, state, model };
   }
 
-  /* ------------------------------------------------------------------ 提交 */
 
-  async function doSubmit(b, card, slot, btn, msg, state, model) {
+  async function doSubmit(b, slot, btn, state, model) {
     slot.hidden = true;
     slot.textContent = '';
     slot.classList.remove('up3-bad');
-    msg.hidden = true;
 
     const ui = { vis: state.vis, compute: state.compute, blends: state.blends };
     const errs = SP.Chain.validate(model, ui);
@@ -7081,16 +6980,14 @@ ${Theme.css('#sp')}
       const r = await SP.Chain.submit(list[0].data);
       if (r.ok) {
         saveReport({
-          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length, missing: [],
-          upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length,
         });
         btn.textContent = t('up3x.done');
         location.href = r.url;
         return;
       }
       saveReport({
-        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length, missing: [],
-        upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length,
       });
       slot.hidden = false;
       slot.classList.add('up3-bad');
@@ -7163,9 +7060,6 @@ ${Theme.css('#sp')}
     timer: null,
     _blockIndex: null,
     _blockIndexFor: null,
-    stats: { text: 0, attr: 0, block: 0 },
-
-    /* ---------------------------------------------------------- 索引 */
 
     blockIndex() {
       const pack = I18n.SITE[I18n.lang];
@@ -7177,8 +7071,6 @@ ${Theme.css('#sp')}
       this._blockIndexFor = pack;
       return m;
     },
-
-    /* ---------------------------------------------------------- 翻译单点 */
 
     /** 短词条：保留首尾空白 */
     textNodeValue(node) {
@@ -7198,8 +7090,6 @@ ${Theme.css('#sp')}
       return I18n.siteText(normalizeBlock(v));
     },
 
-    /* ---------------------------------------------------------- 批量处理 */
-
     patchTextNodes(root) {
       const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
         acceptNode: (n) => {
@@ -7213,7 +7103,7 @@ ${Theme.css('#sp')}
       let n;
       while ((n = walker.nextNode())) {
         const out = this.textNodeValue(n);
-        if (out !== null) { n.nodeValue = out; this.stats.text++; }
+        if (out !== null) n.nodeValue = out;
       }
     },
 
@@ -7225,14 +7115,14 @@ ${Theme.css('#sp')}
           const v = el.getAttribute(a);
           if (!v) continue;
           const out = this.attrValue(v);
-          if (out !== null) { el.setAttribute(a, out); this.stats.attr++; }
+          if (out !== null) el.setAttribute(a, out);
         }
       }
       // 提交按钮的文案写在 value 里，不翻会留英文
       for (const el of (root.querySelectorAll ? root.querySelectorAll('input[type="submit"],input[type="button"]') : [])) {
         const v = el.getAttribute('value');
         const out = this.attrValue(v);
-        if (out !== null) { el.setAttribute('value', out); this.stats.attr++; }
+        if (out !== null) el.setAttribute('value', out);
       }
     },
 
@@ -7267,11 +7157,8 @@ ${Theme.css('#sp')}
         if (!el.isConnected || el.closest('[data-sp-block]')) continue;
         el.innerHTML = html;
         el.setAttribute('data-sp-block', '1');
-        this.stats.block++;
       }
     },
-
-    /* ---------------------------------------------------------- 入口 */
 
     /** translateSubtree：只翻一棵子树且**不跳过 #sp** —— 站点把估算结果 HTML（英文 + 表格）
      *  塞进我们卡片里，按「不进 #sp」会被整段挡掉，于是它一直是英文。词典仍是同一份。 */
@@ -7315,7 +7202,7 @@ ${Theme.css('#sp')}
       });
       this.observer.observe(document.body, {
         childList: true, subtree: true, attributes: true,
-        attributeFilter: ATTRS.concat(['value']),
+        attributeFilter: ATTRS,   // value 的变化回调里本来就不处理，别再让它触发 observer
       });
     },
 
@@ -7324,13 +7211,6 @@ ${Theme.css('#sp')}
     },
 
     /* ---------------------------------------------------------- 开关 */
-
-    setEnabled(on) {
-      this.enabled = !!on;
-      Util.store.set('translateSite', this.enabled);
-      if (on) { this.run(); document.documentElement.lang = htmlLang(); }
-      else { location.reload(); }   // 关掉最干净的方式是重载，避免半译状态
-    },
 
     mountPill() {
       if (document.getElementById('sp-lang-pill') || document.querySelector('#sp')) return;
@@ -7384,10 +7264,6 @@ ${Theme.css('#sp')}
     },
   };
 
-  function htmlLang() {
-    return ({ zh: 'zh-CN', en: 'en' })[I18n.lang] || I18n.lang;
-  }
-
   SP.DomI18n = DomI18n;
 })();
 
@@ -7435,8 +7311,6 @@ ${Theme.css('#sp')}
     if (p === '/getstarted') return takeover ? 'upload' : null;
     // /project/add/<任意串> 同一模板：token 从地址读，只认形状不认值
     if (/^\/project\/add\/[^/]+$/.test(p)) return takeover ? 'analyse' : null;
-    /* 项目管理页 /project/<数字>：整页自绘。数据是那一页 HTML 的**副本**（Api.fetchPage →
-       DOMParser → Api.parseManage），动作直发站点端点 —— 站点节点一个都不进我们的壳。 */
     if (/^\/project\/\d+$/.test(p)) return 'project';
     // 还没接管：新增项目表单（见 docs/PUBLISHING.md「五」）
     return null;
@@ -7472,7 +7346,6 @@ ${Theme.css('#sp')}
     I18n.init();
     const on = Util.store.get('translateSite', true) !== false;
     SP.DomI18n.enabled = on;
-    if (!SP.DomI18n) return;
 
     const go = () => {
       if (!document.body) return;
@@ -7533,7 +7406,6 @@ ${Theme.css('#sp')}
     themePref: 'auto',
     langPref: 'auto',
     translateSite: true,
-    /* 上传项目三态：off 关 / raw 原版（站点自己那页）/ new 新版（源码重写）—— 见 viewForPath 上方 */
     uploadMode: 'new',
     uiScale: 1,            // 界面整体缩放
   };
@@ -7576,8 +7448,6 @@ ${Theme.css('#sp')}
   function shell() {
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
-    /* 上传入口：「新版」档走**应用内** #/upload；「原版」档点一下＝新标签页打开站点自己那页
-       （见 onClick）；三态里只有「关闭」不出这个入口 */
     if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
     nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
       ['account', t('nav.account'), t('nav.accountShort')],
@@ -7857,8 +7727,7 @@ ${Theme.css('#sp')}
 
   /* ---- 3.6 项目管理页 /project/<数字>：整页自绘，站点 DOM 一个节点都不进我们的壳 ----------------
      数据是**那一页 HTML 的一份副本**（Api.fetchPage → DOMParser → Api.parseManage），
-     动作直发站点端点（mgSet / mgAct / mgAcl）。0.2.2 之前这里是把站点那一整块活节点搬进来、
-     靠它的内联 onclick 发请求 —— 那条路已经删干净了。 */
+     动作直发站点端点（mgSet / mgAct / mgAcl）。 */
 
   /* ---- 4. 数据编排 ---- */
 
@@ -8196,8 +8065,7 @@ ${Theme.css('#sp')}
       if (kind === 'prio-set') {
         const url = act.dataset.url;
         if (!url) return;
-        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。原来只有这两处收，
-           prio-set 的菜单会一直敞着，用户随手一点就是一次 render()。 */
+        /* 与 owner-gift / owner-block 一致：动作发出后菜单要收起来。 */
         Views.projState.menu = null;
         submit(() => Api.post(url));
         return;
@@ -8208,6 +8076,7 @@ ${Theme.css('#sp')}
     const del = ev.target.closest('[data-del]');
     if (del) {
       if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
+      if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
       submit(() => Api.post(del.dataset.del));
       return;
     }
@@ -8534,12 +8403,10 @@ ${Theme.css('#sp')}
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
-      const host = document.getElementById('sp');
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* noop */ } }
-      void host;
     }, 180);
   }
 

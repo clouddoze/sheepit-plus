@@ -55,7 +55,6 @@
     return String(Math.round(n * 100) / 100);
   };
 
-  /* ------------------------------------------------------------------ 小组件 */
 
   function line(k, content) {
     const l = mk('div', 'up3-line');
@@ -66,12 +65,6 @@
     l.appendChild(a);
     l.appendChild(b);
     return l;
-  }
-
-  function tip(text) {
-    const d = mk('div', 'up3-tip');
-    d.textContent = text;
-    return d;
   }
 
   /** 选项行：<label class="up3-opt" title="…"><input …><span>文字</span></label> */
@@ -168,8 +161,6 @@
     const uid = 'sp3-' + (++seq);
     const root = mk('div', 'up3');
     const state = { vis: {}, compute: 0, blends: {} };
-    const msg = mk('div', 'up3-msg');
-    msg.hidden = true;
 
     /* 状态先摆好：内存那一行在上半部分，但它写的是每个文件的值（服务端契约如此） */
     model.blends.forEach((b) => {
@@ -288,7 +279,7 @@
     }
 
     let parsedKeys = 0;
-    const cards = [];
+    let cardCount = 0;
     model.blends.forEach((b) => {
       parsedKeys += Object.keys(b.hidden).length + (b.rejected ? 0 : 3);
       const bl = mk('div', 'up3-blend');
@@ -311,7 +302,7 @@
         bad.textContent = zh(b.reason) || t('up3x.rejectedBlend');
         bl.appendChild(bad);
         root.appendChild(bl);
-        cards.push({ b, card: bl, body: bl, submit: null });
+        cardCount++;
         return;
       }
 
@@ -429,9 +420,9 @@
       slot.hidden = true;
       bl.appendChild(slot);
 
-      btn.addEventListener('click', () => doSubmit(b, bl, slot, btn, msg, state, model));
+      btn.addEventListener('click', () => doSubmit(b, slot, btn, state, model));
       root.appendChild(bl);
-      cards.push({ b, card: bl, body: bl, submit: btn, slot });
+      cardCount++;
     });
 
     /* 站点这一版多了我们没画过的控件：它们会按站点给的默认值提交 —— 明说，别沉默 */
@@ -449,25 +440,21 @@
       root.appendChild(warn);
     }
 
-    root.appendChild(msg);
     box.appendChild(root);
 
     saveReport({
-      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys, missing: [],
+      at: Date.now(), stage: 'enter', ok: true, n: parsedKeys,
       unknown: (model.unknown || []).slice(0, 12),
-      upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
     });
     /* state 一并交出去：离线验收要用它组提交体跟站点的 doAddProject 逐键比对 */
-    return { ok: true, cards: cards.length, state, model };
+    return { ok: true, cards: cardCount, state, model };
   }
 
-  /* ------------------------------------------------------------------ 提交 */
 
-  async function doSubmit(b, card, slot, btn, msg, state, model) {
+  async function doSubmit(b, slot, btn, state, model) {
     slot.hidden = true;
     slot.textContent = '';
     slot.classList.remove('up3-bad');
-    msg.hidden = true;
 
     const ui = { vis: state.vis, compute: state.compute, blends: state.blends };
     const errs = SP.Chain.validate(model, ui);
@@ -487,16 +474,14 @@
       const r = await SP.Chain.submit(list[0].data);
       if (r.ok) {
         saveReport({
-          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length, missing: [],
-          upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+          at: Date.now(), stage: 'submit', ok: true, n: Object.keys(list[0].data).length,
         });
         btn.textContent = t('up3x.done');
         location.href = r.url;
         return;
       }
       saveReport({
-        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length, missing: [],
-        upstream: model.upstream, verified: model.verified, version: '0.2.0-rewrite',
+        at: Date.now(), stage: 'submit', ok: false, n: Object.keys(list[0].data).length,
       });
       slot.hidden = false;
       slot.classList.add('up3-bad');

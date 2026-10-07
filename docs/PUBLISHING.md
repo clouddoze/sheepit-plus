@@ -632,6 +632,27 @@ Blender 4.5 默认场景、2 帧、160×120、Cycles 8 采样 → 项目 `/proje
 
 ---
 
+### 0.2.3（尚未发布；改动已就绪）
+
+**主题：废弃代码清理与纠错，界面不变。**
+
+变更清单（逐项依据与误报陷阱见 `docs/CLEANUP-AUDIT.md`，执行日志在它的 §十）：
+
+- **删死代码 / 死样式**：13 个无人调用的函数·常量·死守卫（`Util.compact`、`I18n.blockText/LANGS`、`DomI18n.setEnabled/htmlLang/stats`、`Step1.rulesFrom`、`Step3.tip()`、`80-app.js` 的 `if (!SP.DomI18n)` 死守卫、`void host` …）、17 个只写不读的字段（`manageable`/`fact.flag`/`rankNum`/`streakInclToday`/`totalDays`/`advanced`/`uid`/`url`/4 处 `raw`/`msg` 节点与形参/`cards` 载荷 …）、7 条永不匹配的 CSS、2 个零读者导出（`SP.NS`/`SP.TOKENS`）、约 35 处零信息量分隔线。
+- **修 2 个真缺陷**：账户页 `[data-del]` 缺空 URL 守卫（站点给不出动作地址时会向当前页发空 POST）；`DomI18n` 的 `attributeFilter` 含 `value` 而回调判据不处理它（配置与判据不自洽）。
+- **站点词典**：删 8 条结构上不可能命中的 `site` 条目（含 `Processing`、`CPU disabled` 两处重复键）与 6 条死 pattern；首页 h1 改用 `blocks` 整块翻译（站点把 `<strong>SheepIt</strong>` 与后半句拆成两个文本节点，短词条表够不到，**那行原先一直留英文**）。
+- **`--positive` 接上**：估算器「推荐这么切」行由品牌橙改成设计稿里的绿色（`label-success` 的原义）——**本版唯一的可见变化**。
+- **注释去重**：同一件事写多遍的删到只剩一处（−1.4 KB）；9 处"看着重复但各自带独有事实"的刻意保留（清单见 `CLEANUP-AUDIT.md` §十）。
+- `@version` 0.2.2 → 0.2.3；`@description`(:en) 补上上传页与项目管理页，并把"数据读自站点"改成"读写都在站点"。
+
+**当前产物**：`dist/sheepit-plus.user.js` = **466,732 字节**（注释 95,475 = 20.5%）；相对 0.2.2 的 474,261 字节 **−7,529**。
+
+**已过的门**：`node build.mjs`（语法 + `SP.CSS` 冒烟 + 体积/注释占比）、`.tmp/recon/probe-sort.mjs` **105 条断言全过**、`.tmp/recon/check-ui-dict.mjs` = `zh 502 / en 490`（仅那 12 条 `why.*`；退出码 1 是工具的差异报告方式，不是失败）、逐文件 `git diff` 复核。
+
+**未验（上线前补）**：浏览器桩验 —— `.tmp/recon/run-upload-matrix.ps1`、`run-step3-matrix.ps1` 与目视截图。本会话沙箱起不来 bsk daemon（写 `~/.bsk` 被拒 + 需要命名管道），这三条跑不了。改动集中在 62/68/80 的签名与死字段（grep 已确认零读者），风险低，但**未做 DOM 级验证**。
+
+**发布动作**：本版**尚未发布**，等用户点头。发布时按「四」的流程：`node build.mjs` → `.tmp/make-stage.mjs` → `.tmp/critique/gf-fill.js` 在 `/zh-CN/scripts/598624/versions/new` 填表（提交前复算 `script_version[code]` 的 SHA-256）→ 提交；`changelog.md` 已改写成当版内容。
+
 ### 0.2.2（2026-10-07 已发布）
 
 **主题：项目管理页、排序、总览区块都交给自绘；在线机器逐台给详情。**

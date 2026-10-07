@@ -46,7 +46,6 @@
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
   }
 
-  /* ------------------------------------------------------------ 内联数组 */
 
   function extractArray(html, anchors, keyed) {
     const list = Array.isArray(anchors) ? anchors : [anchors];
@@ -228,12 +227,6 @@
           const st = fact.action && fact.action.match(/\/running\/(\d+)/);
           fact.target = st ? st[1] : null;
         }
-        if (key === 'hostname') {
-          const img = td.querySelector('img');
-          const src = img ? String(img.getAttribute('data-src') || img.getAttribute('src') || '') : '';
-          const m = src.match(/flag\/([A-Za-z]{2})\./);
-          fact.flag = m ? m[1].toUpperCase() : '';
-        }
         if (key === 'owner' && fact.href) {
           const m = fact.href.match(/\/user\/([^/]+)\//);
           fact.user = m ? decodeURIComponent(m[1]) : fact.value;
@@ -322,7 +315,6 @@
         status: raw.replace(/\s*\(\d+\s*%\)\s*$/, ''),
         pct: Number.isFinite(pct) ? pct : null,
         blocked: tr.classList.contains('danger'),
-        manageable: !!id,
       });
     }
     /* 站点自己那份顺序是插入序（实测：Wiza 主页里正在渲染的两个排在最后），拿"前 N 条"会挑到最老的。
@@ -357,7 +349,6 @@
     const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
     const id = String(projectId || '');
 
-    /* ---- 标题 / 状态 / 进度 ---- */
     const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
     const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
     const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
@@ -464,7 +455,6 @@
       hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
     };
 
-    /* ---- 设置三项（形态见文件头注释） ---- */
     let compute = '';
     for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
       if (!on(r)) continue;
@@ -557,10 +547,8 @@
 
     return {
       streakExclToday: set.has(today) ? run(shift(today, -1)) : run(today),
-      streakInclToday: run(today),
       best,
       active30: [...Array(30)].filter((_, i) => set.has(shift(today, -i))).length,
-      totalDays: activity.length,
     };
   }
 
@@ -670,7 +658,6 @@
       };
       out.push({
         rank: text(tds[0]),
-        rankNum: numOf(tds[0]),
         user: link ? text(link) : text(tds[1]),
         // URL 里的用户名才是可靠身份（显示名可能与 URL 不同，只有 URL 那个能打开对的人）
         userId: link ? decodeURIComponent((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
