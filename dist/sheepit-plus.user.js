@@ -1834,6 +1834,9 @@
       hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
       hasMp4: !!mp4Box,
       hasPublic: !!pubEl,
+      /* 能不能管这个项目：站点自己的删除按钮只在 `$can_manage` 为真时渲染（printBlend 的
+         `..._action4`），直接拿它当判据 —— 自绘的删除行不该出现在别人（或只读管理员）的项目上 */
+      canManage: !!doc.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]'),
     };
   }
 
@@ -5022,7 +5025,7 @@ ${Theme.css('#sp')}
         </div>`}
         ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
         ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
-        ${!id ? '' : `<div class="mg-row danger">
+        ${!id || !m.canManage ? '' : `<div class="mg-row danger">
           <div class="k">${esc(t('mg.del'))}</div>
           <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
           <small>${esc(t('mg.delHint'))}</small>

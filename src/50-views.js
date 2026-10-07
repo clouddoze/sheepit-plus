@@ -1263,7 +1263,7 @@
         </div>`}
         ${!m.hasMp4 ? '' : sw('mp4', m.mp4 === true, true, t('mg.mp4'), t('mg.mp4Hint'))}
         ${!m.hasPublic ? '' : sw('public', m.publicRender === true, true, t('mg.public'), t('mg.publicHint'))}
-        ${!id ? '' : `<div class="mg-row danger">
+        ${!id || !m.canManage ? '' : `<div class="mg-row danger">
           <div class="k">${esc(t('mg.del'))}</div>
           <button class="btn danger" data-mg-del="${esc(id)}">${esc(t('mg.del'))}</button>
           <small>${esc(t('mg.delHint'))}</small>

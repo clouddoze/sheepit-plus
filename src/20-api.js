@@ -351,6 +351,9 @@
       hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
       hasMp4: !!mp4Box,
       hasPublic: !!pubEl,
+      /* 能不能管这个项目：站点自己的删除按钮只在 `$can_manage` 为真时渲染（printBlend 的
+         `..._action4`），直接拿它当判据 —— 自绘的删除行不该出现在别人（或只读管理员）的项目上 */
+      canManage: !!doc.querySelector('[id$="_div_actions"] [onclick*="remove_no_redirect"]'),
     };
   }
 
