@@ -1039,18 +1039,20 @@
     const val = (k) => (s.info[k] ? s.info[k].value : '');
     const owner = s.info.owner || null;
 
-    /* **两种暂停是两件事**："Paused server side" 与客户端自己的 "Paused client side" 以站点那行为准；
-       Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），只看 Action 会报成「运行中」。 */
+    /* **两种暂停是两件事，而且可以同时成立**："Paused server side" 与 "Paused client side" 以站点那行为准
+       （站点是两条独立条件、各写一行）；Action 只说"服务器认不认它在跑"（本地暂停时 Status 照样 Enable），
+       只看 Action 会报成「运行中」。两个都在就画两个 chip —— 合成一个词会丢掉"哪一端停的"。
+       词条与 40-ui.js 的 pauseKeys() 共用一份判据。 */
     const status = val('status');
     const note = s.info.note ? s.info.note.value : '';
-    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
-      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
     const noteTitle = note ? ` title="${esc(t('sess.statusRaw', { raw: note }))}"` : '';
-    const chip = note
-      ? `<span class="chip off"${noteTitle}>${esc(noteKey ? t(noteKey) : note)}</span>`
-      : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
-        : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
-          : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
+    const pauseChip = UI.pauseKeys(note).map((k) => `<span class="chip off"${noteTitle}>${esc(t(k))}</span>`).join('');
+    const chip = pauseChip
+      ? pauseChip
+      : note ? `<span class="chip off"${noteTitle}>${esc(note)}</span>`
+        : s.running === false ? `<span class="chip off">${esc(t('sess.off'))}</span>`
+          : s.running === true ? `<span class="chip on">${esc(t('sess.on'))}</span>`
+            : (status ? `<span class="chip">${esc(packLabel('sess.status', status))}</span>` : '');
 
     const bits = [];
     /* "Current frames"：这台机器此刻在跑什么（空闲不印）。它是**活的**，留身份条、不进「机器信息」表；

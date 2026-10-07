@@ -240,6 +240,16 @@
     return d ? `${d}d${h}h` : h ? `${h}h${m}m` : m ? `${m}m` : `${s}s`;
   }
 
+  /** 站点把「客户端侧暂停」与「服务端侧暂停」写成**两个独立条件、两行**
+      （`running.html.twig:296-314`），所以**两个可以同时成立**。返回全部命中的词条键（按站点行序）：
+      会话页一档画一个 chip；在线机器那行拼成一句（那里是紧凑数据行，不套 chip）。
+      原文一并返回，调用方挂在 title 上 —— 站点那行写的什么，悬浮就能看到。 */
+  const PAUSE_RES = [['sess.pausedClient', /paused\s+client\s+side/i], ['sess.pausedServer', /paused\s+server\s+side/i]];
+  function pauseKeys(note) {
+    const s = String(note || '');
+    return PAUSE_RES.filter(([, re]) => re.test(s)).map(([k]) => k);
+  }
+
   /** 一台连着的机器的详情。主页那块只给「客户端 + 规格」；其余都是**逐台取它自己的会话页**
       解析出来的（见 80-app.js 的 machineDetails）。取不到就整截不画、照旧只显示规格 ——
       不编数据。
@@ -268,15 +278,16 @@
     const dev = (cd || pCpu || pGpu)
       ? `<span class="dev">${chip(t('proj.cpu'), pCpu, cpuOn)}${chip(t('proj.gpu'), pGpu, gpuOn)}</span>` : '';
     const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
-    /* **两种暂停是两件事**，而且都只看 Action 会被报成「运行中」（本地暂停时 Status 那格照样 Enable）。
-       以站点那行 note 为准：Paused server side / Paused client side —— 和会话页视图同一套判据。 */
+    /* **两种暂停是两件事，而且可以同时成立**（站点两行独立条件）。都只看 Action 会把它们报成
+       「运行中」（本地暂停时 Status 那格照样 Enable），所以以站点那行 note 为准；两条都在就都写出来，
+       中间用 ` · ` 分开（在线机器是紧凑数据行，这里不套 chip —— 那套语言留给会话页的身份条）。 */
     const note = (d.info.note && d.info.note.value) || '';
-    const noteKey = /paused\s+server\s+side/i.test(note) ? 'sess.pausedServer'
-      : /paused\s+client\s+side/i.test(note) ? 'sess.pausedClient' : '';
-    const statusHtml = note
-      ? `<span title="${esc(note)}">${esc(noteKey ? t(noteKey) : note)}</span>`
-      : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
-        : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
+    const pauseText = pauseKeys(note).map((k) => t(k)).join(' · ');
+    const statusHtml = pauseText
+      ? `<span title="${esc(t('sess.statusRaw', { raw: note }))}">${esc(pauseText)}</span>`
+      : note ? `<span title="${esc(note)}">${esc(note)}</span>`
+        : d.running === true ? `<span>${esc(t('sess.on'))}</span>`
+          : d.running === false ? `<span>${esc(t('sess.off'))}</span>` : '';
     const bits = [
       statusHtml,
       cRaw && cT && endT
@@ -293,13 +304,15 @@
   function machines(m) {
     const list = (m && m.list) || [];
     if (!list.length) return `<div class="machines"><div class="none">${esc(t('machines.none'))}</div></div>`;
+    /* 一行一台：身份（标签 + 规格）→ 运行状态与产出 → 「查看会话」。链接放在**最后**，
+       它才落在整行右端；跟着身份走会插在状态中间，看着像"规格的附属"。 */
     return `<div class="machines">${list.map((x) => `<div class="machine">
         <div class="mhead">
           <span class="tag">${esc(x.client || t('machines.unknown'))}</span>
           <span class="spec" title="${esc(x.spec)}">${esc(x.spec || '—')}</span>
-          ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
         </div>
         ${machineDetail(x.detail)}
+        ${x.url ? `<a class="open" href="${esc(x.url)}" target="_self">${esc(t('machines.open'))}</a>` : ''}
       </div>`).join('')}</div>`;
   }
 
@@ -469,6 +482,6 @@
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
   SP.Charts = { points: pointsChart };
 })();

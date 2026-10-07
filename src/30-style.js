@@ -406,14 +406,17 @@ ${Theme.css('#sp')}
 #sp .empty .cta{margin-top:26px;display:inline-flex;gap:9px;flex-wrap:wrap;justify-content:center}
 @media (max-width:560px){#sp .empty .inner{padding:32px 18px}}
 
-/* ==== 已连接的机器 ==== */
-/* 一行一台，三段：身份（标签 + 规格 + 查看会话）/ 状态与时间 / 产出。
-   字号一层层收（13.5 / 12 / 11.5+15），且**不套第二层盒子** —— 之前拿 .farm 画那排数值，
-   看着像面板里又嵌一个面板，跟总览其它块不是一套语言。 */
+/* ==== 已连接的机器 ====
+   **一行一台**（用户 2026-10-07）：身份（标签 + 规格）/ 运行状态与时间 / 产出 / 查看会话 全在同一条线上。
+   规格是唯一可伸缩的那段（窗口不够先省略号化），其余各段 nowrap；窄到 900px 以下才折行，
+   那时身份独占第一行。之前是"标题一行 + 明细一行"两层盒子，两台机器就吃掉四行。 */
 #sp .machines{display:flex;flex-direction:column}
-#sp .machine{display:flex;flex-direction:column;gap:9px;padding:13px 20px;border-bottom:1px solid var(--border)}
+#sp .machine{
+  display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;
+  padding:12px 20px;border-bottom:1px solid var(--border);
+}
 #sp .machine:last-child{border-bottom:none}
-#sp .machine .mhead{display:flex;align-items:center;gap:10px}
+#sp .machine .mhead{display:flex;align-items:center;gap:10px;flex:1 1 200px;min-width:0}
 #sp .machine .tag{
   flex:none;font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:4px;
   background:var(--accent-weak);color:var(--accent);
@@ -421,15 +424,22 @@ ${Theme.css('#sp')}
 #sp .machine .spec{flex:1;min-width:0;font-size:13.5px;font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .machine a.open{flex:none;font-size:12px;color:var(--text-3);white-space:nowrap;text-decoration:none}
 #sp .machine a.open:hover{color:var(--accent);text-decoration:underline}
-#sp .machine .mline{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:12px;color:var(--text-3);min-width:0;overflow-wrap:anywhere}
-/* 产出那排贴着右边：左边是状态与时间，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
-   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块，和左边那行
-   文字对齐时会出来两条基线（标签浮在上面、数值和状态挤在一条线上），看着就是错位。 */
-#sp .machine .mfoot{display:flex;align-items:center;gap:10px 20px;flex-wrap:wrap}
-#sp .machine .mstats{display:flex;align-items:baseline;gap:22px;flex-wrap:wrap;margin-left:auto}
+/* 状态与时间那一段：现在是**一条不折的行**（用「 · 」连起来），跟着规格后面走 */
+#sp .machine .mline{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-3);min-width:0}
+#sp .machine .mline > span{white-space:nowrap}
+/* 产出那排贴着右边：左边是身份与状态，右边是数值 —— 全堆在左侧时右半边是空的，重心偏得厉害。
+   数值做成**单行**（标签+数值并排）而不是标签在上/数值在下：后者是两行高的块。 */
+#sp .machine .mfoot{display:flex;align-items:center;gap:10px 18px;min-width:0}
+#sp .machine .mstats{display:flex;align-items:baseline;gap:18px}
 #sp .machine .mstats .ms{display:flex;align-items:baseline;gap:5px;min-width:0}
 #sp .machine .mstats .k{font-size:11.5px;color:var(--text-3);white-space:nowrap}
 #sp .machine .mstats .v{font-size:14px;font-weight:600;color:var(--text);letter-spacing:-.2px;white-space:nowrap}
+/* 窄到 900px：一行真放不下了才折 —— 身份占满第一行，明细与链接落到第二行，链接靠右 */
+@media (max-width:900px){
+  #sp .machine .mhead{flex:1 1 100%}
+  #sp .machine .mfoot{flex:1 1 auto;flex-wrap:wrap}
+  #sp .machine a.open{margin-left:auto}
+}
 #sp .machines .none{padding:16px 20px;font-size:13px;color:var(--text-3)}
 @media (max-width:560px){#sp .machine{padding:12px 16px} #sp .machine .mstats{gap:22px}}
 

@@ -165,7 +165,9 @@
   const headingByText = (doc, re) => [...doc.querySelectorAll('h1,h2,h3,h4,h5,h6')].find((h) => re.test(text(h)));
 
   /** 会话页 → 机器档案。Session information 按 <th> 标签逐行读、不认位置；站点的颜色无语义。
-   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事。 */
+   *  没有 th 的状态行是 **server side** / **client side** 两种暂停，不是一回事 —— 而且**两个可以同时有**
+   *  （站点是两条独立的 {% if %}，各写一行），所以这里把两行都收下来（见下面 info.note 的拼接），
+   *  由 40-ui.js 的 pauseKeys() 判成 0/1/2 个状态。 */
   function parseSession(html, id) {
     const doc = parse(html);
     const facts = [];
@@ -186,7 +188,14 @@
              `<tr><td style="…"></td><td><span style="color:red">Paused client side</span></td></tr>`）。
              所以判据不能要求 th 存在、也不能只看第一个 td —— 这里取所有 td 里非空的那些。 */
           const note = tds.map(text).filter(Boolean).join(' ');
-          if (note) info.note = { value: note, key: 'note', href: '' };
+          if (note) {
+            /* 两种暂停在站点那边是**两行**（running.html.twig:296-314：session.paused() 客户端侧、
+               session.running()==false 服务端侧，两个条件独立 → 可以同时成立），所以这里会连着进两次。
+               早先是直接赋值，后一行把前一行顶掉 —— 两端都暂停时"客户端侧"那条就凭空消失了。
+               这张表里没有 `<th>` 的行**只有这两行暂停**（逐行核对过 twig），所以拼接是安全的。 */
+            const prev = info.note ? info.note.value : '';
+            info.note = { value: prev ? `${prev} · ${note}` : note, key: 'note', href: '' };
+          }
           continue;
         }
         const td = tds[0];
