@@ -61,7 +61,7 @@
     const classic = kind === 'classic';
     b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
     b.setAttribute('aria-label', b.title);
-    b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
+    b.innerHTML = UI.logo() + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
       Util.store.set('uiMode', 'modern');
       if (classic) location.reload();
@@ -137,6 +137,8 @@
     langPref: 'auto',
     translateSite: true,
     uploadMode: 'new',
+    showRanking: true,     // 导航里是否显示「排行榜」（设置里可关）
+    ovRight: 'recent',     // 总览右侧那张卡：'recent' 近 30 天概览 / 'months' 月度产出（用户可随时切回）
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -147,10 +149,19 @@
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
     state.uploadMode = uploadMode();
+    state.showRanking = Util.store.get('showRanking', true) !== false;
+    /* 旧值 'eff'（早期试做的估算卡）一并归到 'recent'，别让老偏好把卡片留在已删的模式上 */
+    state.ovRight = Util.store.get('ovRight', 'recent') === 'months' ? 'months' : 'recent';
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
   }
+
+  /* 顶栏主题按钮：图标跟**实际生效**的主题走（auto 时看系统），title 说当前档位；
+     点击按 auto → light → dark 循环。设置在「设置」页，这里只管快速切换。 */
+  const THEME_ORDER = ['auto', 'light', 'dark'];
+  const themeQuickIcon = (pref) => UI.icon(Theme.effective(pref) === 'dark' ? 'moon' : 'sun');
+  const themeQuickTitle = (pref) => t('top.themeCycle', { cur: t(`set.theme.${pref}`) });
 
   function applyTheme() {
     const host = document.getElementById('sp');
@@ -160,6 +171,12 @@
     host.style.zoom = state.uiScale === 1 ? '' : String(state.uiScale);
     // 图表（SVG var()）也要这份颜色方案
     host.style.colorScheme = Theme.effective(state.themePref);
+    const tb = document.getElementById('sp-theme-quick');
+    if (tb) {
+      tb.title = themeQuickTitle(state.themePref);
+      tb.setAttribute('aria-label', tb.title);
+      tb.innerHTML = themeQuickIcon(state.themePref);
+    }
   }
 
   /* ---- 3. 挂载 ---- */
@@ -179,23 +196,30 @@
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
     if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
-    nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
-      ['account', t('nav.account'), t('nav.accountShort')],
+    /* 排行榜可以在「设置」里关掉（用户 2026-10-18）：关掉只是导航项消失，
+       直接开 /ranking/user 仍然接管。 */
+    if (state.showRanking) nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')]);
+    nav.push(['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
     /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
     const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
       `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
+    /* 右侧顺序（用户 2026-10-18 定）：刷新时间 → 主题快速切换 → 刷新 → 原版界面 → 头像 */
+    const classic = Util.esc(t('mode.toClassic'));
     return `<div class="wrap">
       <div class="top">
-        <a class="brand" href="#/overview">${UI.icon('sheep', 'sheep')}SheepIt <em>PLUS</em></a>
+        <a class="brand" href="#/overview">${UI.logo('sheep')}SheepIt <em>PLUS</em></a>
         <nav>${nav.map(item).join('')}</nav>
         <span class="spacer"></span>
-        <span class="metaline num" id="sp-updated"></span>
-        <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
-        <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
+        <div class="topright">
+          <span class="metaline num" id="sp-updated"></span>
+          <button class="iconbtn" id="sp-theme-quick" data-act="theme-cycle" title="${Util.esc(themeQuickTitle(state.themePref))}" aria-label="${Util.esc(themeQuickTitle(state.themePref))}">${themeQuickIcon(state.themePref)}</button>
+          <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
+          <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.classicTip'))}"><span class="txt">&lt; ${classic}</span><span class="txts">&lt; ${Util.esc(t('mode.toClassicShort'))}</span></button>
+          ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
+        </div>
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -283,6 +307,7 @@
      带 analysed/total）/ 完成**直接把「新增项目」表单当 HTML 吐回来**；站点那个轮询函数（写死英文）摘掉。 */
   let analyseTimer = null;
   let siteAnalyseNeutralised = false;
+  let analyseDone = false;   // 分析完成、第三步表单已经画出来：刷新/重进都不能再重画它（会丢用户填的设置）
   const fmtN = (n) => Number(n).toLocaleString('en-US');
 
   function stopAnalysePoll() {
@@ -311,7 +336,7 @@
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'done') { analyseDone = true; paintAnalyse({ html: r.html }); return; }
     if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
     if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
     if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
@@ -466,12 +491,14 @@
      解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
      `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
   async function machineDetails(profile) {
-    const list = (profile && profile.machines && profile.machines.list) || [];
-    for (const m of list.slice(0, 3)) {
-      if (m.detail !== undefined || !m.url) continue;
+    const list = ((profile && profile.machines && profile.machines.list) || [])
+      .slice(0, 3)
+      .filter((m) => m.detail === undefined && m.url);
+    /* 每台机器互相独立：并行取。原来是 `for + await`，三台就把三个 RTT 串成一条。 */
+    await Promise.all(list.map(async (m) => {
       m.detail = null;
       try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
-    }
+    }));
   }
 
   async function ensureData(view) {
@@ -479,7 +506,12 @@
 
     if (view === 'account') {
       if (!state.userName) throw new Error(t('account.only'));
-      state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`));
+      /* 账户设置页常常就是当前页：解析活 document，省一次 53KB 重抓；认不出邮箱才回退。 */
+      const path = `/user/${encodeURIComponent(state.userName)}/edit`;
+      const doc = Api.currentDoc(path);
+      let acc = doc ? Api.parseAccount(doc) : null;
+      if (!acc || !acc.email) acc = Api.parseAccount(await Api.fetchPage(path));
+      state.account = acc;
       return;
     }
 
@@ -491,6 +523,8 @@
 
     if (view === 'analyse') {
       if (!state.analyseToken) throw new Error(t('an.noToken'));
+      /* 已经画过第三步就别再轮询/重画：表单里是用户填的东西，重画会全部回默认值。 */
+      if (analyseDone) return;
       startAnalysePoll();
       return;
     }
@@ -498,22 +532,29 @@
     if (view === 'session') {
       if (!state.sessionId) throw new Error(t('sess.noId'));
       if (!state.session) {
-        state.session = Api.parseSession(await Api.fetchPage(`/session/${state.sessionId}`), state.sessionId);
-        if (!state.session) throw new Error(t('sess.parseFailed'));
+        /* 会话页常常就是"当前页"：直接解析活 document，省一次 43KB 的整页重抓；
+           站点 JS 改过 DOM 导致解析不出东西时（parseSession 回 null）再回退 fetch。 */
+        const path = `/session/${state.sessionId}`;
+        const doc = Api.currentDoc(path);
+        let sess = doc ? Api.parseSession(doc, state.sessionId) : null;
+        if (!sess) sess = Api.parseSession(await Api.fetchPage(path), state.sessionId);
+        if (!sess) throw new Error(t('sess.parseFailed'));
+        state.session = sess;
       }
-      // 时间线是站点 AJAX JSON：拿不到只让那一块说"没取到"
-      if (state.session.timeline === undefined) {
-        try { state.session.timeline = Api.parseTimeline(await Api.fetchJson(state.session.timelineUrl)); }
-        catch (e) { state.session.timeline = []; state.session.timelineFailed = true; }
-      }
-      if (!state.projects) {
-        try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); }
-        catch (e) { state.projects = null; }
-      }
-      if (!state.account && state.userName) {
-        try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
-        catch (e) { state.account = null; }
-      }
+      /* 时间线 / 项目表 / 名单互不依赖：并行发。时间线地址已从本页解析出来，不用等第二趟。 */
+      await Promise.all([
+        state.session.timeline === undefined && state.session.timelineUrl
+          ? Api.fetchJson(state.session.timelineUrl)
+            .then((j) => { state.session.timeline = Api.parseTimeline(j); })
+            .catch(() => { state.session.timeline = []; state.session.timelineFailed = true; })
+          : null,
+        !state.projects
+          ? Api.fetchPage('/home/projects').then((h) => { state.projects = Api.parseProjects(h); }).catch(() => { state.projects = null; })
+          : null,
+        !state.account && state.userName
+          ? Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`).then((h) => { state.account = Api.parseAccount(h); }).catch(() => { state.account = null; })
+          : null,
+      ].filter(Boolean));
       return;
     }
 
@@ -521,65 +562,92 @@
       const target = state.profileName || state.userName;
       if (!target) throw new Error(t('state.loggedOut'));
       if (!state.profile) {
-        const html = await Api.fetchPage(`/user/${encodeURIComponent(target)}/profile`);
-        state.profile = Api.parseProfile(html, target);
+        /* 主页常常就是当前页：直接解析活 document，省一次 166KB 重抓；
+           站点 JS 改过 DOM 导致读不出统计（dl 没了）时再回退 fetch。 */
+        const path = `/user/${encodeURIComponent(target)}/profile`;
+        const doc = Api.currentDoc(path);
+        let prof = doc ? Api.parseProfile(doc, target) : null;
+        if (!prof || !Object.keys(prof.stats || {}).length) prof = Api.parseProfile(await Api.fetchPage(path), target);
+        state.profile = prof;
         SP.state = state;   // 供 shell 里取头像
       }
       await machineDetails(state.profile);
-      if (!state.home) {
-        try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
-      }
-      if (!state.projects) {
-        try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); } catch (e) { /* 保持 null */ }
-      }
+      /* 这里原来还取 /home 与 /home/projects：但总览视图一个都不消费
+         （state.home 只有项目视图用，state.projects 只有项目/会话视图用），
+         等于白等 2 个 RTT + 约 78KB。项目视图进来时自己会取。 */
+      return;
     }
 
-    if (view === 'projects' && !state.projects) {
-      state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
+    if (view === 'projects') {
+      if (!state.projects) state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
+      /* 顶部全站实时、账户名单（发布者那格）、「我发布的」三件事互不依赖：一次并行发完。
+         「我发布的」吃的是个人主页那张表——看自己总览时它已在 state.profile 里，不用再取。 */
+      await Promise.all([
+        !state.account && state.userName
+          ? Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)
+            .then((h) => { state.account = Api.parseAccount(h); })
+            .catch(() => { state.account = null; })
+          : null,
+        !state.home
+          ? Api.fetchPage('/home')
+            .then((h) => { state.home = Api.parseHome(h); })
+            .catch(() => { state.home = { stats: [], news: [] }; })
+          : null,
+        Views.projState.scope === 'mine' && !state.myProjects
+          ? (async () => {
+            const own = state.userName && state.profileName === state.userName && state.profile
+              ? state.profile
+              : (state.userName
+                ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+                : null);
+            state.myProjects = (own && own.myProjects) || [];
+          })()
+          : null,
+      ].filter(Boolean));
+      return;
     }
 
-    /* 项目管理页：站点那一页的**副本**当数据源（我们在这一页上，fetch 同源地址拿回服务端渲染的
-       HTML，走 DOMParser 进不了活文档）。解析不出那一页的形状就说清楚、给重试，不画半张脸。 */
+    /* 项目管理页：站点那一页的**副本**当数据源。当前页就是它，所以直接解析活 document；
+       解析不出那一页的形状才回退 fetch，仍然认不出就如实报错、不画半张脸。 */
     if (view === 'project') {
       if (!state.projectId) throw new Error(t('mg.noId'));
       if (!state.mg) {
-        const html = await Api.fetchPage(`/project/${encodeURIComponent(state.projectId)}`);
-        const mg = Api.parseManage(Util.parse(html), state.projectId);
+        const path = `/project/${encodeURIComponent(state.projectId)}`;
+        const doc = Api.currentDoc(path);
+        let mg = doc ? Api.parseManage(doc, state.projectId) : null;
+        if (!mg || !mg.found) mg = Api.parseManage(Util.parse(await Api.fetchPage(path)), state.projectId);
         if (!mg.found) throw new Error(t('mg.noData'));
         state.mg = mg;
       }
-    }
-
-    if (view === 'projects' && !state.account && state.userName) {
-      try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
-      catch (e) { state.account = null; }
-    }
-
-    // 顶部全站实时来自首页：直接落到这页也得取一次
-    if (view === 'projects' && !state.home) {
-      try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
-    }
-
-    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
-       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
-    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
-      const own = state.userName && state.profileName === state.userName && state.profile
-        ? state.profile
-        : (state.userName
-          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
-          : null);
-      state.myProjects = (own && own.myProjects) || [];
+      return;
     }
 
     if (view === 'ranking' && !state.ranking) {
-      state.ranking = Api.parseRanking(await Api.fetchPage('/ranking/user'));
+      /* 排行榜整页 1.76MB：当前页就是数据源，API 却把刚下载的整页再 fetch 一遍。
+         直接解析活 document；解析不出（站点改版）才回退抓取。 */
+      const path = '/ranking/user';
+      const doc = Api.currentDoc(path);
+      let list = doc ? Api.parseRanking(doc) : null;
+      if (!list || !list.length) list = Api.parseRanking(await Api.fetchPage(path));
+      state.ranking = list;
     }
   }
 
+  /* show() 是异步的：慢请求还没回来时用户可能已经切到别的视图。导航序号保证只有**最新**一次
+     能写 error/loading 并 render —— 否则旧视图的失败会把当前视图盖成「读取失败」，旧视图的
+     成功会把当前视图的骨架提前清掉、闪一下「暂无数据」。 */
+  let navSeq = 0;
   async function show(view, opts) {
+    const seq = ++navSeq;
+    const prev = state.view;
     const viewChanged = state.view !== view;
     state.view = view;
     state.error = null;
+    /* 离开「分析等待」页：站点轮询还开着的话，它会继续往已摘掉的节点里画（结果静默丢失），
+       而且再没有入口回第三步 —— 这里直接停掉。 */
+    if (prev === 'analyse' && view !== 'analyse') stopAnalysePoll();
+    /* 列表页的 3 点菜单属于上一屏：换视图/重取前先清掉，免得回来时"没人点它却开着"。 */
+    Views.projState.menu = null;
 
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
@@ -589,18 +657,27 @@
         || (view === 'upload' && !state.uploadHtml)
         /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
         || (view === 'account' && !state.account)
-        || (view === 'session' && !state.session);
+        || (view === 'session' && !state.session)
+        /* 项目管理页同样漏了：缺数据时先画的是「站点没给这一页的项目数据」空态而不是骨架。 */
+        || (view === 'project' && !state.mg);
       state.loading = need;
       render();
     }
 
     try {
       await ensureData(view);
-      state.error = null;
+      if (seq === navSeq) state.error = null;
     } catch (e) {
-      state.error = (e && e.message) || String(e);
-      if (/401|403|signin/i.test(state.error)) state.error = t('state.loggedOut');
+      if (seq !== navSeq) return;
+      /* 站点把「未登录」做成 302 → /user/signin（fetch 跟随后是 200 登录页）：Api 抛 SIGNED_OUT。
+         另外 401/403 与老消息也按未登录处理。 */
+      if (e && e.code === 'SIGNED_OUT') state.error = t('state.loggedOut');
+      else {
+        state.error = (e && e.message) || String(e);
+        if (/401|403|signin/i.test(state.error)) state.error = t('state.loggedOut');
+      }
     } finally {
+      if (seq !== navSeq) return;
       state.loading = false;
       animOnce = viewChanged || !painted;
       render();
@@ -629,12 +706,20 @@
     toastTimer = setTimeout(() => { if (el.parentNode) el.remove(); }, 2600);
   }
 
+  /** 写操作失败统一的文案：登录过期（SIGNED_OUT）别把内部错误串直接摆给用户 */
+  const errText = (e) => (e && e.code === 'SIGNED_OUT' ? t('state.loggedOut') : ((e && e.message) || String(e)));
+
   /** 写操作统一收口：回 'OK' 就重取重画，否则原样转述错误 */
+  let submitting = false;   // 防重入：双击「新建密钥」会建出两把
   async function submit(fn, okMsg) {
+    if (submitting) { toast(t('account.saving')); return false; }
+    submitting = true;
     toast(t('account.saving'));
     try {
       const r = await fn();
-      if (r && r !== 'OK') { toast(t('account.failed', { msg: r })); return false; }
+      /* 站点写操作的成功体不止 'OK'（见 20-api.js 的 isOk）：只认 OK 会把调度开关/改邮箱的
+         成功当失败，而且这里 return false 后不 invalidate、不重取 → 勾选状态会回弹。 */
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); return false; }
       Api.invalidate();
       state.account = null;
       state.session = null;
@@ -644,11 +729,19 @@
          才显示骨架。 */
       state.loading = true;
       await show(state.view, { silent: true });
+      /* 换头像后顶栏那张也要跟着换（否则账户面板是新图、顶栏还是旧的）。
+         show() 已经画完这一轮了，这里补一次 render。 */
+      if (state.account && state.account.avatar && state.account.avatar !== state.myAvatar) {
+        state.myAvatar = state.account.avatar;
+        render();
+      }
       toast(okMsg || t('account.ok'));
       return true;
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
       return false;
+    } finally {
+      submitting = false;
     }
   }
 
@@ -657,11 +750,22 @@
     return el ? String(el.value || '').trim() : '';
   };
 
+  /** 关 3 点菜单：只做定向 DOM 更新，**不整页重画** —— 菜单开着时点搜索框/筛选/表格任意一处，
+      整页重画会把刚点到的节点换掉（焦点丢、要再点一次、输入和滚动被打断）。 */
+  function closeProjMenu() {
+    if (!Views.projState.menu) return;
+    Views.projState.menu = null;
+    const host = document.getElementById('sp');
+    if (!host) return;
+    host.querySelectorAll('.omenu').forEach((n) => n.remove());
+    host.querySelectorAll('[data-act="owner-menu"][aria-expanded="true"]')
+      .forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  }
+
   function onClick(ev) {
     // 3 点菜单是浮层：点别处先关掉；不 return，该干的事继续干
     if (Views.projState.menu && !ev.target.closest('.omenu') && !ev.target.closest('[data-act="owner-menu"]')) {
-      Views.projState.menu = null;
-      render();
+      closeProjMenu();
     }
 
     const nav = ev.target.closest('[data-nav]');
@@ -678,6 +782,24 @@
     if (act) {
       const kind = act.dataset.act;
 
+      if (kind === 'ov-right') {
+        /* 总览右侧卡片在「近 30 天概览 / 月度产出」之间切换；选择落盘，随时可以切回来 */
+        const v = act.dataset.v === 'months' ? 'months' : 'recent';
+        Util.store.set('ovRight', v);
+        state.ovRight = v;
+        render();
+        return;
+      }
+
+      if (kind === 'theme-cycle') {
+        /* auto → light → dark 循环；不动设置页的持久化逻辑（Theme.set 就是它用的那个） */
+        const next = THEME_ORDER[(THEME_ORDER.indexOf(state.themePref) + 1) % THEME_ORDER.length] || 'auto';
+        Theme.set(next);
+        syncPrefs();
+        render();
+        return;
+      }
+
       if (kind === 'mode-classic') {
         Util.store.set('uiMode', 'classic');
         location.reload();
@@ -690,6 +812,11 @@
         state.myProjects = null;
         state.mg = null;
         state.session = null;
+        /* 上传页原来刷新是死按钮：uploadHtml 不清 + #sp-body 的"已接线"标记没删，render() 直接早退。
+           清掉这两样，让 show() 重新取 /getstarted、重画骨架。 */
+        state.uploadHtml = null;
+        const sb = document.getElementById('sp-body');
+        if (sb) delete sb.dataset.spWired;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
         const keepY = host ? host.scrollTop : 0;
@@ -895,8 +1022,16 @@
       Views.projState.filter = 'all';
       Views.projState.limit = 120;
       Views.projState.menu = null;
-      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
-      else render();
+      state.error = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) {
+        /* silent show 不设 loading；这里先画骨架，取数失败时错误态也能顶上来（原来失败会卡在空白/旧错误） */
+        state.loading = true;
+        render();
+        show('projects', { silent: true });
+      } else {
+        state.loading = false;
+        render();
+      }
       return;
     }
 
@@ -914,6 +1049,20 @@
 
     const th = ev.target.closest('#sp-theme [data-v]');
     if (th) { Theme.set(th.dataset.v); syncPrefs(); show(state.view, { silent: true }); return; }
+
+    /* 导航里显不显示「排行榜」：外壳要重建（导航项是 shell 的一部分），保留滚动位置 */
+    const sr = ev.target.closest('#sp-showranking [data-v]');
+    if (sr) {
+      const on = sr.dataset.v === 'on';
+      Util.store.set('showRanking', on);
+      state.showRanking = on;
+      const host = document.getElementById('sp');
+      const y = host ? host.scrollTop : 0;
+      if (host) host.innerHTML = shell();
+      render();
+      if (host) host.scrollTop = y;
+      return;
+    }
 
     // 缩放只改 #sp 自己（applyTheme 写 zoom）
     const sc = ev.target.closest('#sp-scale [data-v]');
@@ -975,7 +1124,12 @@
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    if (sc) {
+      /* 失败要把勾选拨回服务端那个状态（sponsor-set 早就是这么做的，调度开关漏了） */
+      submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`))
+        .then((ok) => { if (!ok) show(state.view, { silent: true }); });
+      return;
+    }
     const mg = ev.target.closest('[data-mg]');
     if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
   }
@@ -1006,12 +1160,12 @@
     toast(t('account.saving'));
     try {
       const r = await Api.post(url);
-      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); render(); return false; }
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); render(); return false; }
       toast(okMsg || t('account.ok'));
       setTimeout(() => location.reload(), 700);
       return true;
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
       render();
       return false;
     }
@@ -1051,10 +1205,10 @@
     try {
       const r = await Api.post(`/project/${id}/remove_no_redirect`);
       /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
-      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); return; }
       location.href = '/home/projects';
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
     }
   }
 
@@ -1066,10 +1220,11 @@
   const aclSeq = {};
   async function aclSearch(kind, term) {
     const path = kind === 'team' ? '/team/list_from_term' : '/user/list_from_term';
-    const res = await fetch(`${path}?term=${encodeURIComponent(term)}`, {
+    /* 走带超时的 fetch：名单补全挂住时不会让输入框一直停在"旧建议"状态 */
+    const res = await SP.Api.fetchWithTimeout(`${path}?term=${encodeURIComponent(term)}`, {
       credentials: 'include',
       headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
-    });
+    }, 10000);
     if (!res.ok) return [];
     let json = null;
     try { json = await res.json(); } catch (e) { return []; }
@@ -1094,12 +1249,14 @@
       inp.addEventListener('input', () => {
         delete inp.dataset.pick;                        // 改了字就不再是"选过的那个"
         close();
+        clearTimeout(timer);
+        /* 每次输入都推进序号（包括删到 <3 个字符）：否则更早发出的请求晚到，会把过期建议弹回来 */
+        const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
         const term = inp.value.trim();
         if (term.length < 3) return;
-        clearTimeout(timer);
         timer = setTimeout(async () => {
-          const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
-          const list = await aclSearch(kind, term);
+          let list = [];
+          try { list = await aclSearch(kind, term); } catch (e) { list = []; }
           if (my !== aclSeq[kind]) return;
           sug.textContent = '';
           if (!list.length) { close(); return; }
@@ -1130,6 +1287,8 @@
   let inputTimer = null;
   function onInput(ev) {
     if (ev.target.id !== 'sp-q') return;
+    /* 中文输入法组合期间不要重画：整页重画会换掉输入框，候选/拼音被打断（组合结束时还会再来一次 input） */
+    if (ev.isComposing) return;
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
@@ -1180,7 +1339,17 @@
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (!m || m[1] === state.view) return;
+    /* 按浏览器 Back 回到"没有 hash"时，hash 变空 —— 原来直接 return，画面停在旧视图、
+       地址栏却已经变了。回到这一页本来的视图（boot 里的 pathView）。 */
+    if (!m) {
+      /* 分析等待页不能靠 show() 回来：它首屏一画就锁 dataset.spWired（防重画抹掉站点注入的表单），
+         show('analyse') 会早退、把上一屏留在 #sp-body 里，视图/地址/轮询三者对不上。
+         直接重载这一页最稳（token 重新走一遍）。 */
+      if (pathView === 'analyse') { location.reload(); return; }
+      if (pathView && state.view !== pathView) show(pathView);
+      return;
+    }
+    if (m[1] === state.view) return;
     /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
        留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
     if (m[1] === 'upload' && state.uploadMode !== 'new') {
@@ -1192,7 +1361,7 @@
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
   window.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape' && Views.projState.menu) { Views.projState.menu = null; render(); }
+    if (ev.key === 'Escape' && Views.projState.menu) closeProjMenu();
   });
 
   /* ---- 6. 启动 ---- */

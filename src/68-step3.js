@@ -2,7 +2,7 @@
 
    与已砍掉的兼容档那一套的根本区别：**不再搬站点的活节点**。
    服务端那份 HTML 只在 62-chain.js 里被 DOMParser 解析成数据，页面上从头到尾只有我们
-   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，27 键）。
+   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，28 键；65b8c8b2 起多 osl）。
    于是 0.1.14–0.1.17 反复踩的那一类缺陷（两份同名控件、站点 JS 抢 DOM、$('#id') 取到
    隐藏原件）在结构上不可能出现。
 

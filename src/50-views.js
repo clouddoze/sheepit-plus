@@ -234,9 +234,13 @@
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
 
     return `<div class="identity">
-      ${UI.avatar(p.avatar, p.name, 'av')}
-      <h1>${esc(p.name)}</h1>
-      ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
+      <div class="idmain">
+        ${UI.avatar(p.avatar, p.name, 'av')}
+        <div class="idtext">
+          <h1>${esc(p.name)}</h1>
+          ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
+        </div>
+      </div>
     </div>`;
   }
 
@@ -295,9 +299,7 @@
       ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
-        d: d.best !== undefined
-          ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
-          : '',
+        d: d.best !== undefined ? t('stat.streakHint', { best: fmt(d.best) }) : '',
       }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
@@ -308,25 +310,69 @@
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
-       只有**自己的主页**内联这两块；没有数据源就整块不画（不摆"暂无数据"），只剩一块时铺满整行。 */
+       只有**自己的主页**内联这两块；没有数据源就整块不画（不摆"暂无数据"），只剩一块时铺满整行。
+       副标题不再写"当前 X 积分"：上面指标带已有同一个数（用户 2026-10-18）。 */
     const hasPoints = !!(p.points && p.points.length > 1);
     const first = p.points[0], last = p.points[p.points.length - 1];
     const chartSub = t('chart.pointsSub', {
       n: p.points.length, from: first ? first.d : '—', to: last ? last.d : '—',
-      now: last ? Util.num(last.v) : '—',
     });
     const mo = UI.months(daily);
     const pointsPanel = !hasPoints ? '' : `<div class="panel">
         <div class="phead"><h2>${esc(t('chart.points'))}</h2><span class="sub num">${esc(chartSub)}</span></div>
         <div class="chart" id="sp-chart"><div class="tip" id="sp-tip"></div></div>
       </div>`;
+
+    /* 右侧那张卡：默认「近 30 天概览」，右上角可一键切回「月度产出」，选择落盘（用户 2026-10-18）。
+       口径是**含今天的 30 个日历日**（没跑的日子按 0 算），全部是真值、不做任何估算。 */
+    const today = Util.dkeyLocal();
+    const start30 = Util.dshift(today, -29);
+    const byDay = new Map(daily.map((x) => [x.d, x.v]));
+    let frames30 = 0, peak30 = { d: '', v: 0 };
+    for (let n = 0, d = start30; n < 30; n += 1, d = Util.dshift(d, 1)) {
+      const v = byDay.get(d) || 0;
+      frames30 += v;
+      if (v > peak30.v) peak30 = { d, v };
+    }
+    /* 活跃天数用站点自己的渲染日历（derived.active30，和上面 KPI 的连续天数同一份数据）；
+       帧数曲线在个别日子缺采样点，数出来会比站点少一天。 */
+    const active30 = Number.isFinite(Number(d.active30))
+      ? Number(d.active30)
+      : daily.filter((x) => x.d >= start30 && x.d <= today && x.v > 0).length;
+    const avg30 = Math.round(frames30 / 30);
+    const peakDate = peak30.v ? new Date(`${peak30.d}T00:00:00`).toLocaleDateString(
+      I18n.lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' },
+    ) : '';
+    /* 积分是累计曲线：取"30 天前（含今天算起）那个采样点"做差，能反映净变化（可能是负的） */
+    const pCurve = (p.points && p.points.length > 1) ? p.points : [];
+    const pLast = pCurve.length ? pCurve[pCurve.length - 1] : null;
+    const pBase = pLast
+      ? (pCurve.slice(0, -1).reverse().find((x) => Util.ddiff(x.d, today) >= 30) || pCurve[0])
+      : null;
+    const points30 = (pLast && pBase) ? Number(pLast.v) - Number(pBase.v) : null;
+    const recentOk = daily.length > 0;
+    const canToggle = !!(mo.html && recentOk);
+    const toggleBtn = (v, label) =>
+      `<span class="spacer"></span><button type="button" class="subbtn" data-act="ov-right" data-v="${v}">${esc(label)}</button>`;
+    const effCell = (k, v, h) => `<div class="eff"><div class="k">${esc(k)}</div><div class="v num">${esc(v)}</div>${h ? `<div class="h">${esc(h)}</div>` : ''}</div>`;
+    const recentPanel = !recentOk ? '' : `<div class="panel">
+        <div class="phead"><h2>${esc(t('recent.title'))}</h2><span class="sub">${esc(t('recent.sub'))}</span>${canToggle ? toggleBtn('months', t('recent.toMonths')) : ''}</div>
+        <div class="produce"><div class="effgrid">
+          ${effCell(t('recent.frames'), fmt(frames30), t('recent.framesHint', { avg: fmt(avg30) }))}
+          ${effCell(t('recent.active'), `${active30} / 30`, t('recent.activeHint'))}
+          ${effCell(t('recent.peak'), peak30.v ? fmt(peak30.v) : '—', peak30.v ? t('recent.peakHint', { date: peakDate }) : '')}
+          ${effCell(t('recent.points'), points30 == null ? '—' : `${points30 > 0 ? '+' : ''}${fmt(points30)}`, t('recent.pointsHint'))}
+        </div></div>
+      </div>`;
     const monthsPanel = !mo.html ? '' : `<div class="panel">
-        <div class="phead"><h2>${esc(t('months.title'))}</h2><span class="sub">${esc(t('months.sub'))}</span></div>
+        <div class="phead"><h2>${esc(t('months.title'))}</h2><span class="sub">${esc(t('months.sub'))}</span>${canToggle ? toggleBtn('recent', t('months.toRecent')) : ''}</div>
         <div class="produce">${mo.html}</div>
       </div>`;
-    const main = pointsPanel && monthsPanel
-      ? `<div class="grid">${pointsPanel}${monthsPanel}</div>`
-      : pointsPanel + monthsPanel;
+    /* 偏好 'months' 才显示月度；没有近 30 天数据时自动回退；两边都没有就整块不画 */
+    const rightPanel = (state.ovRight === 'months' || !recentPanel) ? monthsPanel : recentPanel;
+    const main = pointsPanel && rightPanel
+      ? `<div class="grid">${pointsPanel}${rightPanel}</div>`
+      : pointsPanel + rightPanel;
 
     const actDaily = (p.activity || []).map((x) => ({ d: x.d, v: Number(x.c) || 1 }));
     const byFrames = daily.length > 0;
@@ -726,6 +772,12 @@
           ${seg('sp-theme', state.themePref, [['auto', t('set.theme.auto')], ['dark', t('set.theme.dark')], ['light', t('set.theme.light')]])}</div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.showRanking'))}</div>
+          ${seg('sp-showranking', state.showRanking ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
+          <div class="hint">${esc(t('set.showRankingHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.scale'))}</div>
           ${seg('sp-scale', String(state.uiScale), [['0.9', '90%'], ['1', '100%'], ['1.1', '110%'], ['1.25', '125%'], ['1.4', '140%']])}
           <div class="hint">${esc(t('set.scaleHint'))}</div>
@@ -974,7 +1026,7 @@
     return `${y}${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
 
-  /** 事件时长单独写：Util.duration 是给"机时"设计的，几秒的事件会被它读成 0m。 */
+  /** 事件时长单独写：时间线里的事件要精确到秒/分，和排行榜那种"机时"（y/d/h）不是一个口径。 */
   function spanText(ms) {
     const s = Math.max(0, Math.round(Number(ms) / 1000));
     if (s < 60) return `${s}s`;
@@ -1377,7 +1429,12 @@
       const label = esc(mgActLabel(a));
       const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
       if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
-      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      /* 只有站点给的是「纯链接」（看帧图像 / 下载帧图像 / 看视频）才渲染成 <a>。
+         partial（申请部分帧压缩包）也带 url，但它是个**动作**：站点自己的按钮带确认、走 AJAX；
+         渲染成链接会绕过确认，GET 直接触发动作，页面还会跳成纯文本 "OK"、整个界面丢失。 */
+      if (a.url && (a.kind === 'frames' || a.kind === 'zip' || a.kind === 'video')) {
+        return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      }
       return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
     };
     return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
@@ -1552,6 +1609,9 @@
 
 
   function mount(root, state) {
+    /* 上一屏的图表观察器/兜底 resize 监听先收掉：否则它挂在已摘除的节点上（单节点泄漏，
+       切走再回来还可能对 0 宽节点重画）。 */
+    if (SP.Charts && SP.Charts.dispose) SP.Charts.dispose();
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
        render() 再 show()，直接开 #/upload 那次只拿到空卡片）。少了任一道就会把 body 早标成"已接线"，
        之后 render() 全被守卫早退 —— 用户拿到空壳（实测踩过）。 */

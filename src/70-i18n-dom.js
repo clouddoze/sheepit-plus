@@ -113,6 +113,14 @@
           for (const [re, rep] of bp) { if (re.test(norm)) { html = norm.replace(re, rep); break; } }
         }
         if (html === undefined) continue;
+        /* 原文里的链接必须一个不少地出现在译文里，否则整块跳过：整块替换会把 <a> 一起删掉
+           （实测 /getstarted 的 20 分钟规则原文 3 个链接、zh 译文只有 1 个，
+           /reference_machine.blend 和「各机器算力」都被吃掉）。跳过 = 这块留英文，链接还能点。 */
+        const origLinks = el.querySelectorAll('a[href]').length;
+        if (origLinks) {
+          const transLinks = (String(html).match(/<a\s[^>]*href/gi) || []).length;
+          if (transLinks < origLinks) continue;
+        }
         cands.push([el, norm, html]);
       }
       // 从外到内会互相覆盖，先处理最长的（最具体），处理过的子树打标记跳过
@@ -159,9 +167,12 @@
     observe() {
       if (this.observer || !document.body) return;
       this.observer = new MutationObserver((records) => {
-        // 纯 characterData 多是我自己改的
-        const relevant = records.some((r) =>
-          r.type === 'childList' || (r.type === 'attributes' && ATTRS.includes(r.attributeName)));
+        // 纯 characterData 多是我自己改的；#sp 里的重绘（整页 swap、图表、卡片）不该触发整页重扫
+        const relevant = records.some((r) => {
+          const t = r.target;
+          if (t && t.nodeType === 1 && t.closest && t.closest('#sp')) return false;
+          return r.type === 'childList' || (r.type === 'attributes' && ATTRS.includes(r.attributeName));
+        });
         if (relevant) this.schedule();
       });
       this.observer.observe(document.body, {
