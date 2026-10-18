@@ -42,12 +42,22 @@
       let out = '';
       if (y > 0) out += `${y}y`;
       if (rd > 0 || y > 0) out += `${rd}d`;
-      if (h > 0 || !out) out += `${h}h`;
-      return out || `${Math.floor((s % 3600) / 60)}m`;
+      if (h > 0) out += `${h}h`;
+      if (out) return out;
+      /* 不到 1 小时：别写 "0h"（原来的 `|| !out` 会先塞 0h，末尾的 m 分支永远走不到）。 */
+      const m = Math.floor((s % 3600) / 60);
+      return m > 0 ? `${m}m` : `${Math.max(1, Math.round(s))}s`;
     },
 
     /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
     dkey(d) { return (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10); },
+
+    /** 本地日历日的 'YYYY-MM-DD'。站点给的「某一天有没有渲染」是本地日；
+        用 dkey() 的 UTC 日期在东八区 00:00–08:00 会差一天（热力图高亮/连续天数会错）。 */
+    dkeyLocal(d) {
+      const x = d instanceof Date ? d : new Date(d === undefined ? Date.now() : d);
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    },
 
     dshift(key, n) {
       const x = new Date(`${key}T00:00:00Z`);
@@ -167,15 +177,15 @@
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
       'nav.rankingShort': '排行', 'nav.accountShort': '账户',
       'top.refresh': '刷新', 'top.updated': '更新于',
+      'top.themeCycle': '主题：{cur}（点击切换）',
       'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
       'stat.streak': '当前连续', 'stat.days': '天',
-      'stat.streakHint': '历史最长 {best} 天 · 近 30 天活跃 {d30} 天',
-      'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
+      'stat.streakHint': '历史最长 {best} 天',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
       /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
-      'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
+      'stat.avgPeak': '历史日均 {avg} 帧 · 历史峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
@@ -184,9 +194,16 @@
       'site.clients': '在线客户端', 'site.processing': '正在处理帧',
       'chart.points': '积分增长',
       'chart.tipPoints': '积分',
-      'chart.pointsSub': '{n} 个采样点 · {from} → {to} · 当前 {now}',
+      'chart.pointsSub': '{n} 个采样点 · {from} → {to}',
       'months.title': '月度产出', 'months.sub': '按月汇总',
       'months.max': '最高月', 'months.min': '最低月',
+      'months.toRecent': '换成近 30 天',
+      'recent.title': '近 30 天概览', 'recent.sub': '含今天',
+      'recent.frames': '产出帧数', 'recent.framesHint': '日均 {avg} 帧',
+      'recent.active': '活跃天数', 'recent.activeHint': '按站点渲染日历统计',
+      'recent.peak': '单日峰值', 'recent.peakHint': '{date}',
+      'recent.points': '积分变化', 'recent.pointsHint': '30 天净变化（含支出）',
+      'recent.toMonths': '换回月度产出',
       'heat.title': '渲染产出', 'heat.sub': '近 53 周 · 每格一天 · 按当天帧数着色',
       'heat.legendLow': '少', 'heat.legendHigh': '多',
       'heat.note': '{nz} 天有产出 · 峰值 {peak} 帧',
@@ -227,7 +244,7 @@
       'my.empty': '你还没有发布过项目',
       'my.emptyCta': '上传一个项目',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
-      'mode.toClassic': '切回原版界面',
+      'mode.toClassic': '原版界面', 'mode.toClassicShort': '原版',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
@@ -290,6 +307,7 @@
       'state.empty': '暂无数据',
       'set.title': '设置', 'set.theme': '主题', 'set.theme.auto': '跟随系统',
       'set.theme.dark': '暗色', 'set.theme.light': '亮色',
+      'set.showRanking': '导航显示排行榜', 'set.showRankingHint': '关掉后顶栏不出现「排行榜」，直接打开 /ranking/user 仍然接管。',
       'set.lang': '界面语言', 'set.lang.auto': '跟随浏览器',
       'set.scale': '界面缩放', 'set.scaleHint': '觉得小就调大。整块界面按这个比例缩放 —— 字号、间距、图表一起走，不是只放大字。',
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
@@ -549,13 +567,13 @@
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
       'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
       'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'top.themeCycle': 'Theme: {cur} (click to cycle)',
       'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
       'stat.streak': 'Current streak', 'stat.days': 'days',
-      'stat.streakHint': 'Best {best}d · {d30}/30 active days',
-      'stat.streakFull': 'Best {best}d · every day of the last 30',
+      'stat.streakHint': 'Best {best}d',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
-      'stat.avgPeak': 'Avg {avg} · peak {peak}',
+      'stat.avgPeak': 'Lifetime avg {avg}/day · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
       'stat.created': 'Projects created', 'stat.createdHint': 'Tasks you uploaded',
@@ -564,9 +582,16 @@
       'site.clients': 'Connected clients', 'site.processing': 'Processing frames',
       'chart.points': 'Points growth',
       'chart.tipPoints': 'points',
-      'chart.pointsSub': '{n} samples · {from} → {to} · now {now}',
+      'chart.pointsSub': '{n} samples · {from} → {to}',
       'months.title': 'Monthly output', 'months.sub': 'By calendar month',
       'months.max': 'Best month', 'months.min': 'Lowest month',
+      'months.toRecent': 'Switch to last 30 days',
+      'recent.title': 'Last 30 days', 'recent.sub': 'Through today',
+      'recent.frames': 'Frames', 'recent.framesHint': 'Avg {avg} frames/day',
+      'recent.active': 'Active days', 'recent.activeHint': "From the site's render calendar",
+      'recent.peak': 'Best day', 'recent.peakHint': '{date}',
+      'recent.points': 'Points change', 'recent.pointsHint': 'Net over 30 days (incl. spending)',
+      'recent.toMonths': 'Switch to monthly output',
       'heat.title': 'Render output', 'heat.sub': 'Last 53 weeks · one cell per day · shaded by frames',
       'heat.legendLow': 'Less', 'heat.legendHigh': 'More',
       'heat.note': '{nz} active days · peak {peak}',
@@ -604,7 +629,7 @@
       'my.empty': 'You have not published a project yet',
       'my.emptyCta': 'Upload a project',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
-      'mode.toClassic': 'Switch to the original interface',
+      'mode.toClassic': 'Classic UI', 'mode.toClassicShort': 'Classic',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
       'machines.title': 'Online machines', 'machines.count': '{n} machines',
@@ -658,6 +683,7 @@
       'state.empty': 'No data',
       'set.title': 'Settings', 'set.theme': 'Theme', 'set.theme.auto': 'System',
       'set.theme.dark': 'Dark', 'set.theme.light': 'Light',
+      'set.showRanking': 'Show ranking in nav', 'set.showRankingHint': 'When off, the 「Ranking」 tab is hidden; opening /ranking/user still works.',
       'set.lang': 'Language', 'set.lang.auto': 'Browser',
       'set.scale': 'Interface scale', 'set.scaleHint': 'Everything scales together \u2014 type, spacing and charts, not just the font size.',
       'set.langHint': 'Language packs are data, not code: register a dictionary and the UI lists it automatically. No logic changes needed.',

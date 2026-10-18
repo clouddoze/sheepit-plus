@@ -66,12 +66,22 @@
       let out = '';
       if (y > 0) out += `${y}y`;
       if (rd > 0 || y > 0) out += `${rd}d`;
-      if (h > 0 || !out) out += `${h}h`;
-      return out || `${Math.floor((s % 3600) / 60)}m`;
+      if (h > 0) out += `${h}h`;
+      if (out) return out;
+      /* 不到 1 小时：别写 "0h"（原来的 `|| !out` 会先塞 0h，末尾的 m 分支永远走不到）。 */
+      const m = Math.floor((s % 3600) / 60);
+      return m > 0 ? `${m}m` : `${Math.max(1, Math.round(s))}s`;
     },
 
     /** Date → 'YYYY-MM-DD'；走 UTC，免得时区把日期挪一天 */
     dkey(d) { return (d instanceof Date ? d : new Date(d)).toISOString().slice(0, 10); },
+
+    /** 本地日历日的 'YYYY-MM-DD'。站点给的「某一天有没有渲染」是本地日；
+        用 dkey() 的 UTC 日期在东八区 00:00–08:00 会差一天（热力图高亮/连续天数会错）。 */
+    dkeyLocal(d) {
+      const x = d instanceof Date ? d : new Date(d === undefined ? Date.now() : d);
+      return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`;
+    },
 
     dshift(key, n) {
       const x = new Date(`${key}T00:00:00Z`);
@@ -191,15 +201,15 @@
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
       'nav.rankingShort': '排行', 'nav.accountShort': '账户',
       'top.refresh': '刷新', 'top.updated': '更新于',
+      'top.themeCycle': '主题：{cur}（点击切换）',
       'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
       'stat.streak': '当前连续', 'stat.days': '天',
-      'stat.streakHint': '历史最长 {best} 天 · 近 30 天活跃 {d30} 天',
-      'stat.streakFull': '历史最长 {best} 天 · 近 30 天全勤',
+      'stat.streakHint': '历史最长 {best} 天',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
       /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
-      'stat.avgPeak': '日均 {avg} 帧 · 峰值 {peak}',
+      'stat.avgPeak': '历史日均 {avg} 帧 · 历史峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
@@ -208,9 +218,16 @@
       'site.clients': '在线客户端', 'site.processing': '正在处理帧',
       'chart.points': '积分增长',
       'chart.tipPoints': '积分',
-      'chart.pointsSub': '{n} 个采样点 · {from} → {to} · 当前 {now}',
+      'chart.pointsSub': '{n} 个采样点 · {from} → {to}',
       'months.title': '月度产出', 'months.sub': '按月汇总',
       'months.max': '最高月', 'months.min': '最低月',
+      'months.toRecent': '换成近 30 天',
+      'recent.title': '近 30 天概览', 'recent.sub': '含今天',
+      'recent.frames': '产出帧数', 'recent.framesHint': '日均 {avg} 帧',
+      'recent.active': '活跃天数', 'recent.activeHint': '按站点渲染日历统计',
+      'recent.peak': '单日峰值', 'recent.peakHint': '{date}',
+      'recent.points': '积分变化', 'recent.pointsHint': '30 天净变化（含支出）',
+      'recent.toMonths': '换回月度产出',
       'heat.title': '渲染产出', 'heat.sub': '近 53 周 · 每格一天 · 按当天帧数着色',
       'heat.legendLow': '少', 'heat.legendHigh': '多',
       'heat.note': '{nz} 天有产出 · 峰值 {peak} 帧',
@@ -251,7 +268,7 @@
       'my.empty': '你还没有发布过项目',
       'my.emptyCta': '上传一个项目',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
-      'mode.toClassic': '切回原版界面',
+      'mode.toClassic': '原版界面', 'mode.toClassicShort': '原版',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
       'mode.classicHint': '切回新界面', 'mode.classicTip': '点这里回到 SheepIt Plus 的现代化界面',
       'mode.enter': '进入新界面', 'mode.enterTip': '这一页没有重制版，点此去新界面的总览',
@@ -314,6 +331,7 @@
       'state.empty': '暂无数据',
       'set.title': '设置', 'set.theme': '主题', 'set.theme.auto': '跟随系统',
       'set.theme.dark': '暗色', 'set.theme.light': '亮色',
+      'set.showRanking': '导航显示排行榜', 'set.showRankingHint': '关掉后顶栏不出现「排行榜」，直接打开 /ranking/user 仍然接管。',
       'set.lang': '界面语言', 'set.lang.auto': '跟随浏览器',
       'set.scale': '界面缩放', 'set.scaleHint': '觉得小就调大。整块界面按这个比例缩放 —— 字号、间距、图表一起走，不是只放大字。',
       'set.langHint': '语言包是数据不是代码：新增一门语言只需注册一个词表，界面会自动列出，无需改动任何逻辑。',
@@ -573,13 +591,13 @@
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
       'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
       'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'top.themeCycle': 'Theme: {cur} (click to cycle)',
       'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
       'stat.streak': 'Current streak', 'stat.days': 'days',
-      'stat.streakHint': 'Best {best}d · {d30}/30 active days',
-      'stat.streakFull': 'Best {best}d · every day of the last 30',
+      'stat.streakHint': 'Best {best}d',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
-      'stat.avgPeak': 'Avg {avg} · peak {peak}',
+      'stat.avgPeak': 'Lifetime avg {avg}/day · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
       'stat.created': 'Projects created', 'stat.createdHint': 'Tasks you uploaded',
@@ -588,9 +606,16 @@
       'site.clients': 'Connected clients', 'site.processing': 'Processing frames',
       'chart.points': 'Points growth',
       'chart.tipPoints': 'points',
-      'chart.pointsSub': '{n} samples · {from} → {to} · now {now}',
+      'chart.pointsSub': '{n} samples · {from} → {to}',
       'months.title': 'Monthly output', 'months.sub': 'By calendar month',
       'months.max': 'Best month', 'months.min': 'Lowest month',
+      'months.toRecent': 'Switch to last 30 days',
+      'recent.title': 'Last 30 days', 'recent.sub': 'Through today',
+      'recent.frames': 'Frames', 'recent.framesHint': 'Avg {avg} frames/day',
+      'recent.active': 'Active days', 'recent.activeHint': "From the site's render calendar",
+      'recent.peak': 'Best day', 'recent.peakHint': '{date}',
+      'recent.points': 'Points change', 'recent.pointsHint': 'Net over 30 days (incl. spending)',
+      'recent.toMonths': 'Switch to monthly output',
       'heat.title': 'Render output', 'heat.sub': 'Last 53 weeks · one cell per day · shaded by frames',
       'heat.legendLow': 'Less', 'heat.legendHigh': 'More',
       'heat.note': '{nz} active days · peak {peak}',
@@ -628,7 +653,7 @@
       'my.empty': 'You have not published a project yet',
       'my.emptyCta': 'Upload a project',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
-      'mode.toClassic': 'Switch to the original interface',
+      'mode.toClassic': 'Classic UI', 'mode.toClassicShort': 'Classic',
       'mode.classicHint': 'Back to the new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
       'mode.enter': 'Open the new UI', 'mode.enterTip': 'This page has no rebuilt version; open the modern overview instead',
       'machines.title': 'Online machines', 'machines.count': '{n} machines',
@@ -682,6 +707,7 @@
       'state.empty': 'No data',
       'set.title': 'Settings', 'set.theme': 'Theme', 'set.theme.auto': 'System',
       'set.theme.dark': 'Dark', 'set.theme.light': 'Light',
+      'set.showRanking': 'Show ranking in nav', 'set.showRankingHint': 'When off, the 「Ranking」 tab is hidden; opening /ranking/user still works.',
       'set.lang': 'Language', 'set.lang.auto': 'Browser',
       'set.scale': 'Interface scale', 'set.scaleHint': 'Everything scales together \u2014 type, spacing and charts, not just the font size.',
       'set.langHint': 'Language packs are data, not code: register a dictionary and the UI lists it automatically. No logic changes needed.',
@@ -1418,7 +1444,7 @@
         '渲染引擎需要受支持，目前支持 Cycles、Eevee 和 Workbench 渲染器。',
 
       'You should keep the render time per frame (or split) under 20 min (on the reference machine). As an example, this scene will be rendered in 20min on the reference machine (i5-9600).There is a list of average power per machine, check out the faq for more info.':
-        '每帧（或每个分块）在基准机器上的渲染时间应控制在 20 分钟以内。例如这个场景在基准机器（i5-9600）上需要 20 分钟。这里有一份<a href="/faq">各机器的平均算力列表</a>，详见 FAQ。',
+        '每帧（或每个分块）在基准机器上的渲染时间应控制在 20 分钟以内。例如<a href="/reference_machine.blend">这个场景</a>在基准机器（i5-9600）上需要 20 分钟。这里有一份<a href="/ranking/machine">各机器的平均算力列表</a>，<a href="/faq#power_rating">详见 FAQ</a>。',
 
       "You can add up to 12,000 tiles at a time. If you divide it into 8x8, your project can be up to 187 frames; if you don't split frames, you will have 1 tile <=> 1 frame.":
         '一次最多可以添加 12,000 个分块。如果按 8x8 拆分，你的项目最多可以有 187 帧；如果不拆分帧，则 1 个分块对应 1 帧。',
@@ -1546,14 +1572,82 @@
   const { Util, parse, text } = { Util: SP.Util, parse: SP.Util.parse, text: SP.Util.text };
   const inflight = {};
 
+  /* 站点把「未登录」做成 302 → /user/signin（**不是** 401），而 fetch 会跟随跳转拿到 200 的登录页。
+     只看 res.ok 会把过期登录当成功：写操作假保存、读操作静默空数据。所以认最终 URL。 */
+  function redirectedToSignin(res) {
+    if (!res || !res.redirected || !res.url) return false;
+    try {
+      /* 只看路径，别在整串 URL 上匹配：`/home?next=/user/signin` 这类查询参数会误伤。 */
+      const p = new URL(res.url, location.href).pathname.replace(/\/+$/, '');
+      return p === '/user/signin' || p.startsWith('/user/signin/');
+    } catch (e) { return false; }
+  }
+  function signedOutError(path) {
+    const e = new Error(`${path} → signin`);
+    e.code = 'SIGNED_OUT';
+    return e;
+  }
+
+  /** 解析器既吃 fetch 回来的 HTML 字符串，也吃当前页的活 document（省一次整页抓取）。 */
+  const asDoc = (src) => (typeof src === 'string' ? parse(src) : src);
+
+  /** 活 document 里的「原文」：站点内联 <script> 文本拼接。
+      排除脚本自己那一个 —— grant:none 的管理器可能把产物作为内联 <script> 塞进文档，
+      里面的注释/字符串会污染 `url: '/session/…/timeline'`、`var data` 这类锚点。 */
+  function scriptsSource(doc) {
+    return [...doc.scripts]
+      .filter((s) => !String(s.textContent || '').includes('__SHEEPIT_PLUS__'))
+      .map((s) => s.textContent || '')
+      .join('\n');
+  }
+
+  /* 活 document 只允许**每页消费一次**：首屏省掉重抓；之后（写操作 submit、刷新按钮、
+     暂停/恢复）必须回服务器拿新 DOM —— 否则会把写之前的旧 DOM 再解析一遍，
+     界面看起来"回弹"，还会 toast「已保存」。invalidate 不需要重置它：invalidate 的语义
+     就是"下一次必须走网络"。整页 reload 会重置模块状态，标志自然失效。 */
+  let liveDocUsed = '';
+  function currentDoc(path) {
+    const norm = (p) => String(p || '').replace(/\/+$/, '') || '/';
+    if (norm(location.pathname) !== norm(path)) return null;
+    if (liveDocUsed === norm(path)) return null;
+    liveDocUsed = norm(path);
+    return document;
+  }
+
+  /* 站点写操作的「成功」不止 'OK'（上游 UserController.php）：调度开关回 `Settings changed`、
+     邮箱回一整句 "An email have been sent…"、密码回 `Password successfully changed`。
+     只认 OK 会把成功误报成失败，而且 submit 不重取 → 开关状态回弹。 */
+  const OK_RE = /^(?:ok|empty|settings changed|notification level changed|password successfully changed|an email have been sent\b[^\n]*)$/i;
+  function isOk(r) { return !r || OK_RE.test(String(r).trim()); }
+
   /** 同源抓取（带凭据）+ 缓存 + 并发去重 */
   const cache = new Map();
+
+  /* 请求超时：站点偶发不回包时，没有 abort 就是"骨架永久 + inflight 去重一直复用同一个
+     永不 settle 的 Promise"，刷新页面才能救。15s 够慢网；超时按失败走错误态/降级。 */
+  const FETCH_TIMEOUT = 15000;
+  async function fetchWithTimeout(path, opts, ms = FETCH_TIMEOUT) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    try {
+      return await fetch(path, { ...opts, signal: c.signal });
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        const err = new Error(`${path} → 超时（${Math.round(ms / 1000)}s）`);
+        err.code = 'TIMEOUT';
+        throw err;
+      }
+      throw e;
+    } finally { clearTimeout(t); }
+  }
+
   async function fetchPage(path, { ttl = 60000, force = false } = {}) {
     const now = Date.now();
     const hit = cache.get(path);
     if (!force && hit && now - hit.at < ttl) return hit.html;
     return Util.once(inflight, path, async () => {
-      const res = await fetch(path, { credentials: 'include', headers: { 'X-Requested-With': 'fetch' } });
+      const res = await fetchWithTimeout(path, { credentials: 'include', headers: { 'X-Requested-With': 'fetch' } });
+      if (redirectedToSignin(res)) throw signedOutError(path);
       if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
       const html = await res.text();
       cache.set(path, { at: Date.now(), html });
@@ -1564,10 +1658,11 @@
 
   /** 会话时间线不在 HTML 里，走站点自己的 AJAX 端点；失败抛错，调用方降级 */
   async function fetchJson(path) {
-    const res = await fetch(path, {
+    const res = await fetchWithTimeout(path, {
       credentials: 'include',
       headers: { 'X-Requested-With': 'fetch', Accept: 'application/json' },
     });
+    if (redirectedToSignin(res)) throw signedOutError(path);
     if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
     return res.json();
   }
@@ -1581,7 +1676,10 @@
       opts.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
       opts.body = new URLSearchParams(data || {}).toString();
     }
-    const res = await fetch(path, opts);
+    const res = await fetchWithTimeout(path, opts);
+    /* 登录过期时站点把动作也 302 到登录页：跟随之后是 200 + 整页 HTML，
+       下面「>400 字节按成功算」会把它当成功。先认这条。 */
+    if (redirectedToSignin(res)) throw signedOutError(path);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const txt = (await res.text()).trim();
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
@@ -1599,6 +1697,23 @@
       let body = html.slice(s, e + 1).replace(/,\s*\]$/, ']');   // 去尾逗号
       if (keyed) body = body.replace(/([{,])\s*([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":'); // 键加引号
       try { return JSON.parse(body.replace(/'/g, '"')); } catch (err) { /* 落到下一个锚点 */ }
+    }
+    return null;
+  }
+
+  /** 站点把图表数据写在单个内联 <script> 里。活 document 下不能按「热力图 div 的 id」定位：
+      那个 id 不在 script 文本里，锚点会落到插件初始化之后、把数据数组整段切掉。
+      所以按内容认 —— 同脚本里含 `date:` 的 `var data`，且带 CalendarHeatmap / heatmap id。 */
+  function heatmapData(doc) {
+    for (const s of doc.scripts) {
+      const t = s.textContent || '';
+      if (t.includes('__SHEEPIT_PLUS__')) continue;   // 别扫到我们自己的脚本
+      if (!/var\s+data\s*=/.test(t) || !/date\s*:/.test(t)) continue;
+      /* 同脚本还得是热力图那一份：站点以后再加别的含 date: 的图表数组时，
+         只靠 "var data + date:" 会先到先得拿错。 */
+      if (!/CalendarHeatmap|consecutive-render-heatmap/i.test(t)) continue;
+      const raw = extractArray(t, ['data'], true);
+      if (Array.isArray(raw)) return raw;
     }
     return null;
   }
@@ -1709,7 +1824,7 @@
    *  （站点是两条独立的 {% if %}，各写一行），所以这里把两行都收下来（见下面 info.note 的拼接），
    *  由 40-ui.js 的 pauseKeys() 判成 0/1/2 个状态。 */
   function parseSession(html, id) {
-    const doc = parse(html);
+    const doc = asDoc(html);
     const facts = [];
     const info = {};
 
@@ -1777,7 +1892,10 @@
       }
     }
 
-    const um = html.match(/url\s*:\s*['"]([^'"]*\/timeline[^'"]*)['"]/);
+    /* 时间线地址写在站点内联 JS 里（`url: '/session/…/timeline'`）。传进来的是活 document 时，
+       把站点各 <script> 的文本拼起来搜 —— 站点脚本改 DOM 也不会改 script 文本。 */
+    const source = typeof html === 'string' ? html : scriptsSource(doc);
+    const um = source.match(/url\s*:\s*['"]([^'"]*\/timeline[^'"]*)['"]/);
     const timelineUrl = Util.safePath(um ? um[1] : `/session/${id || ''}/timeline`);
 
     const projects = [];
@@ -2025,7 +2143,10 @@
   }
 
   function parseProfile(html, userName) {
-    const doc = parse(html);
+    const doc = asDoc(html);
+    /* 时间线数组与热力图数据写在站点内联 <script> 里。传进来的是活 document 时，
+       用站点脚本的文本当原文扫（站点脚本改 DOM 不改 script 文本）。 */
+    const source = typeof html === 'string' ? html : scriptsSource(doc);
 
     const stats = {};
     const dl = doc.querySelector('dl.dl-horizontal');
@@ -2041,15 +2162,21 @@
     // 用户名读 <title>：导航栏 logo <h1>SheepIt</h1> 会污染 querySelector('h1')
     const name = (text(doc.querySelector('title')) || userName || '').trim();
 
-    const points = (extractArray(html, 'line_points_timeline') || [])
+    const points = (extractArray(source, 'line_points_timeline') || [])
       .slice(1).map((r) => ({ d: String(r[0]), v: Number(r[1]) })).filter((p) => Number.isFinite(p.v));
 
-    const frames = (extractArray(html, ['line_frames_timeline', 'line_frames_timeline_2']) || [])
+    const frames = (extractArray(source, ['line_frames_timeline', 'line_frames_timeline_2']) || [])
       .slice(1).map((r) => ({ d: String(r[0]), v: Number(r[1]) })).filter((p) => Number.isFinite(p.v));
 
     let activity = [];
-    const anchor = html.indexOf('consecutive-render-heatmap');
-    const raw = extractArray(html.slice(Math.max(0, anchor)), ['data'], true);
+    /* 热力图数组按内容认（含 `date:` 且同脚本有 CalendarHeatmap 的那个 `var data`）。
+       活 document 下不能按 div id 的位置锚点切分（那个 id 不在 script 文本里，锚点会落在
+       数据数组之后）；字符串模式保留原来的锚点回退，站点把数据与初始化拆到两个脚本时还有退路。 */
+    let raw = heatmapData(doc);
+    if (!Array.isArray(raw) && typeof html === 'string') {
+      const anchor = source.indexOf('consecutive-render-heatmap');
+      raw = extractArray(source.slice(Math.max(0, anchor)), ['data'], true);
+    }
     if (Array.isArray(raw)) {
       activity = raw.filter((x) => x && x.date)
         .map((x) => ({ d: String(x.date).slice(0, 10), c: Number(x.count) || 0 }))
@@ -2080,7 +2207,9 @@
     const key = (dt) => dt.toISOString().slice(0, 10);
     const shift = (d, n) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return key(x); };
     const set = new Set(activity.map((x) => x.d));
-    const today = key(new Date());
+    /* "今天"必须按**本地日期**取：站点给的活动日期是本地日历日；用 toISOString() 在
+       东八区 00:00–08:00 会算出前一天，连续天数会差一天。 */
+    const today = Util.dkeyLocal();
     const run = (from) => { let n = 0, c = from; while (set.has(c) && n < 5000) { n++; c = shift(c, -1); } return n; };
 
     let best = 0, cur = 0, prev = null;
@@ -2122,25 +2251,38 @@
     const doc = parse(html);
     const out = [];
 
+    /* 列位置别写死：站点给版主账号会多出 creation_time 等 extras 列（HomeController.php:726-734），
+       硬编码 tds[5] 会把「内存」读成别的列。优先按表头定位，认不出才回退老下标。 */
+    const firstRow = doc.querySelector('tr[data-project_id]');
+    const table = firstRow ? firstRow.closest('table') : doc;
+    const heads = [...(table || doc).querySelectorAll('thead th')].map((th) => text(th).toLowerCase());
+    const col = (re, fallback) => { const i = heads.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
+    const I_NAME = col(/^project$/, 0);
+    const I_OWNER = col(/^owner$/, 1);
+    const I_STATUS = col(/^status$/, 2);
+    const I_DEV = col(/^device/, 4);
+    const I_MEM = col(/^memory/, 5);
+
     for (const tr of doc.querySelectorAll('tr[data-project_id]')) {
       const tds = [...tr.querySelectorAll('td')];
       const id = tr.getAttribute('data-project_id');
-      const name = text(tr.querySelector('.project_link')) || text(tds[0]);
+      const name = text(tr.querySelector('.project_link')) || text(tds[I_NAME]);
 
       // 发布者：第一个有文字的 <a> 才是名字（前一个只有 <img> 头像）
       const links = [...tr.querySelectorAll('td a[href*="/user/"]')];
       const ownerAnchor = links.find((a) => text(a)) || null;
-      const owner = ownerAnchor ? text(ownerAnchor) : (tds[1]?.getAttribute('data-sort') || '');
+      const owner = ownerAnchor ? text(ownerAnchor) : (tds[I_OWNER]?.getAttribute('data-sort') || '');
       // URL 里的用户名才是稳定的键
       const ownerId = (ownerAnchor && (ownerAnchor.getAttribute('href').match(/\/user\/([^/]+)\//) || [])[1]) || '';
       const avatarImg = tr.querySelector('td .avatar-small img') || tr.querySelector('td img.avatar');
       const ownerAvatar = Util.safePath(avatarImg?.getAttribute('data-src') || avatarImg?.getAttribute('src') || '');
 
-      const status = parseStatus(text(tr.querySelector('.status')) || text(tds[2]));
+      const status = parseStatus(text(tr.querySelector('.status')) || text(tds[I_STATUS]));
 
       // 进度：aria-valuenow 是百分比，分数在 .sr-only 里
       const bar = tr.querySelector('.progress-bar');
-      let pct = Number(bar?.getAttribute('aria-valuenow'));
+      const rawPct = bar?.getAttribute('aria-valuenow');
+      let pct = rawPct == null || rawPct === '' ? NaN : Number(rawPct);
       if (!Number.isFinite(pct)) {
         const w = bar?.getAttribute('style')?.match(/width:\s*([\d.]+)%/);
         pct = w ? Number(w[1]) : 0;
@@ -2150,8 +2292,9 @@
       const total = frac ? Number(frac[2].replace(/,/g, '')) : null;
 
       // 设备：data-sort 是位掩码 CPU=1 / GPU=8（站点 addproject.js 的算法），掩码缺失才回退读 img
-      const devCell = tds[4];
-      const mask = Number(devCell?.getAttribute('data-sort'));
+      const devCell = tds[I_DEV];
+      const rawMask = devCell?.getAttribute('data-sort');
+      const mask = rawMask == null || rawMask === '' ? NaN : Number(rawMask);
       let cpu = false, gpu = false;
       if (Number.isFinite(mask)) {
         cpu = (mask & 1) === 1;
@@ -2164,9 +2307,10 @@
       }
 
       // 内存：显示文本保留，同时留 KB 原值供排序（文本是 "1.3 G" 这类字面量）
-      const memCell = tds[5];
+      const memCell = tds[I_MEM];
       const memText = text(memCell);
-      const memKb = Number(memCell?.getAttribute('data-sort'));
+      const rawKb = memCell?.getAttribute('data-sort');
+      const memKb = rawKb == null || rawKb === '' ? null : Number(rawKb);
       const mem = (memText.match(/([\d.]+\s*[KMGT]?B)/i) || [memText])[0];
 
       out.push({
@@ -2183,7 +2327,7 @@
 
   /** 排行榜：用站点自带的 data-sort 原始数值（排行榜按站点原始值排、不按 "1.3 G" 字面量） */
   function parseRanking(html) {
-    const doc = parse(html);
+    const doc = asDoc(html);
     const rows = [...doc.querySelectorAll('table tr')].filter((tr) => tr.querySelector('td'));
     const out = [];
     for (const tr of rows) {
@@ -2193,9 +2337,16 @@
       const av = tr.querySelector('td .avatar-small img') || tr.querySelector('td img.avatar') || link?.querySelector('img');
       const numOf = (td) => {
         const raw = td.getAttribute('data-sort');
-        const n = Number(raw);
-        if (Number.isFinite(n)) return n;
-        return Number(text(td).replace(/[^\d.]/g, '')) || null;
+        if (raw != null && raw !== '') {
+          const v = Number(raw);
+          if (Number.isFinite(v)) return v;
+        }
+        /* 没有 data-sort 才退到显示文本。注意 "2y244d43m" 这类缩写会被抠成 224443 ——
+           只当排序兜底；榜单每列都带 data-sort 原值（夹具 1658 行 × 4 个），正常走不到这里。 */
+        const txt = text(td).trim();
+        if (!txt || !/\d/.test(txt)) return null;
+        const n = Number(txt.replace(/[^\d.]/g, ''));
+        return Number.isFinite(n) ? n : null;
       };
       out.push({
         rank: text(tds[0]),
@@ -2207,14 +2358,13 @@
         seconds: numOf(tds[3]),
         points: numOf(tds[4]),
       });
-      if (out.length >= 500) break;
     }
     return out;
   }
 
   /** 账户设置页（/user/<u>/edit）：整页 11 个分区都在 DOM 里（站点用 display 切换），一次抓取够用 */
   function parseAccount(html) {
-    const doc = parse(html);
+    const doc = asDoc(html);
 
     const checked = (id) => {
       const el = doc.getElementById(id);
@@ -2349,7 +2499,8 @@
   }
 
   SP.Api = {
-    fetchPage, fetchJson, invalidate, cache, post,
+    fetchPage, fetchJson, fetchWithTimeout, invalidate, cache, post,
+    currentDoc, isOk,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
     parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,
@@ -2406,7 +2557,8 @@ ${Theme.css('#sp')}
 }
 @supports not (background:color-mix(in srgb,var(--bg),transparent)){#sp .top{background:var(--bg)}}
 #sp .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.3px;flex:none;text-decoration:none}
-#sp .brand .sheep{width:20px;height:20px;flex:none;color:var(--accent)}
+/* 品牌图标是位图（深色底），固定尺寸 + 圆角；别给它上 currentColor（那是给单色 SVG 的） */
+#sp .brand .sheep{width:24px;height:24px;flex:none;border-radius:6px;object-fit:cover;display:block}
 #sp .brand em{
   font-style:normal;font-weight:500;font-size:11px;color:var(--text-3);
   border:1px solid var(--border);border-radius:4px;padding:1px 5px;letter-spacing:.4px;
@@ -2420,9 +2572,11 @@ ${Theme.css('#sp')}
 #sp nav button[aria-current="page"]{background:var(--surface-2);color:var(--text);font-weight:550}
 #sp nav .navshort{display:none}
 #sp .top .spacer{flex:1}
+/* 右侧控制组：刷新时间 / 主题快速切换 / 刷新 / 原版界面 / 头像（用户 2026-10-18 定序） */
+#sp .topright{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
 #sp .metaline{font-size:12px;color:var(--text-3);white-space:nowrap}
 #sp .who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);min-width:0}
-#sp .who .uname{font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .who .uname{font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .who .ini{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-3);flex:none}
 
@@ -2434,8 +2588,13 @@ ${Theme.css('#sp')}
 }
 @media (max-width:620px){
   #sp .top{gap:8px}
+  /* 一行摆不下（品牌 + 6 个导航 + 右侧组）：右侧整组换到第二行，别横向溢出。
+     原版本在 390 宽时就已经溢出约 90px，这里顺手修掉。 */
+  #sp .top{flex-wrap:wrap;row-gap:6px}
+  #sp .top .spacer{display:none}
+  #sp .topright{flex:1 1 100%;justify-content:flex-end}
   #sp .brand{font-size:14px}
-  #sp .brand .sheep{width:18px;height:18px}
+  #sp .brand .sheep{width:20px;height:20px;border-radius:5px}
   #sp .brand em{display:none}
   #sp nav{gap:0}
   #sp nav button{padding:6px 7px;font-size:13px}
@@ -2471,14 +2630,21 @@ ${Theme.css('#sp')}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
-/* ==== 身份条 ==== */
-#sp .identity{display:flex;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap}
+/* ==== 身份条 ====
+   用户名一行、排名/TOP/团队/注册时间另一行（用户 2026-10-18 拍板）。用户名用正文色，
+   不要和下面那排灰色元信息混成一片。 */
+#sp .identity{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:22px 0 18px}
+/* 头像与右侧两行文字按**底边**对齐：元信息行的底边正好压在头像下边缘上（用户 2026-10-18） */
+#sp .idmain{display:flex;align-items:flex-end;gap:14px;min-width:0;max-width:100%}
+#sp .idtext{display:flex;flex-direction:column;gap:4px;min-width:0}
 #sp .identity .av,#sp .identity img{
   width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;
   border:1px solid var(--border);background:var(--surface-2);display:block;
 }
 #sp .identity .av{display:grid;place-items:center;font-size:20px;font-weight:600;color:var(--text-2)}
-#sp .identity h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.3px}
+#sp .identity h1{margin:0;font-size:20px;line-height:1.15;font-weight:600;letter-spacing:-.3px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 两行合计 = 23(h1) + 4(gap) + 19(meta) = 46 = 头像高度，所以底边天然齐平 */
+#sp .identity .meta{max-width:100%}
 #sp .meta{display:flex;align-items:center;gap:0;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
 #sp .meta span{padding:0 12px;border-left:1px solid var(--border)}
 #sp .meta span:first-child{padding-left:0;border-left:none}
@@ -2607,6 +2773,23 @@ ${Theme.css('#sp')}
 #sp .mstat div{flex:1;min-width:0}
 #sp .mstat .k{font-size:11.5px;color:var(--text-3)}
 #sp .mstat .v{font-size:16px;font-weight:600;margin-top:4px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ==== 渲染效率卡（总览右侧，可与月度产出互换） ==== */
+#sp .effgrid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  overflow:hidden;background:var(--border);
+}
+#sp .eff{background:var(--surface);padding:12px 14px;min-width:0}
+#sp .eff .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sp .eff .v{margin-top:6px;font-size:19px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sp .eff .h{margin-top:4px;font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 卡片右上角的「换回…」：phead 里的文字按钮 */
+#sp .phead .subbtn{
+  font:inherit;font-size:12px;color:var(--text-3);background:none;border:none;
+  padding:0;cursor:pointer;white-space:nowrap;text-decoration:none;
+}
+#sp .phead .subbtn:hover{color:var(--accent);text-decoration:underline}
 @media (max-width:560px){
   #sp .months{height:96px}
   #sp .mstat{gap:12px}
@@ -2848,8 +3031,10 @@ ${Theme.css('#sp')}
   color:var(--text-2);font-size:12px;cursor:pointer;transition:border-color .12s,color .12s;white-space:nowrap;
 }
 #sp .modebtn:hover{border-color:var(--border-strong);color:var(--text)}
-#sp .modebtn .icon{width:13px;height:13px}
-@media (max-width:1000px){#sp .modebtn .txt{display:none}#sp .modebtn{padding:0 7px}}
+/* 按钮内容只有文字（用户 2026-10-18：不要前面的羊图标，文案改成「< 原版界面」）。
+   窄屏换短文案，别退化成空按钮。 */
+#sp .modebtn .txts{display:none}
+@media (max-width:1000px){#sp .modebtn .txt{display:none}#sp .modebtn .txts{display:inline}#sp .modebtn{padding:0 7px}}
 
 /* ==== 账户设置 ==== */
 #sp .acct{max-width:820px}
@@ -3382,6 +3567,7 @@ ${Theme.css('#sp')}
       #sp-mode-pill:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.34)}
       #sp-mode-pill:focus-visible{outline:2px solid #fff;outline-offset:2px}
       #sp-mode-pill svg{width:15px;height:15px;flex:none;fill:#fff}
+      #sp-mode-pill img{width:16px;height:16px;flex:none;border-radius:4px;display:block}
     `;
     (document.head || document.documentElement).appendChild(s);
   };
@@ -3423,7 +3609,11 @@ ${Theme.css('#sp')}
   const HEAT = (i) => `var(${SHADE[i]})`;
 
   const ICONS = {
-    refresh: '<path d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"/>',
+    /* 16×16 的路径放进 24 的 viewBox 会偏到左上角（刷新按钮"看着不居中"就是这个）：
+       统一 scale(1.5) 折到 24，圆心正好落在中间。 */
+    refresh: '<g transform="scale(1.5)"><path d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"/></g>',
+    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.6M12 19.4V22M2 12h2.6M19.4 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    moon: '<path d="M20.6 14.4A8.7 8.7 0 0 1 9.6 3.4a8.7 8.7 0 1 0 11 11z"/>',
     search: '<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>',
     user: '<path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.34 0-10 1.67-10 5v3h20v-3c0-3.33-6.66-5-10-5z"/>',
     gear: '<path d="M19.14 12.94a7.5 7.5 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.86a.5.5 0 0 0 .12.62l2.03 1.58a7.5 7.5 0 0 0 0 1.88L2.82 14.52a.5.5 0 0 0-.12.62l1.92 3.32c.12.22.38.3.6.22l2.39-.96c.5.39 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/>',
@@ -3442,6 +3632,11 @@ ${Theme.css('#sp')}
     cpu: '<path d="M9 2h2v2H9zm4 0h2v2h-2zM9 19h2v2H9zm4 0h2v2h-2zM2 9h2v2H2zm0 4h2v2H2zm18-4h2v2h-2zm0 4h2v2h-2z"/><path d="M5.5 5.5h13v13h-13zm2 2v9h9v-9z"/>',
     gpu: '<path d="M3 5.5h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 17V7A1.5 1.5 0 0 1 3 5.5zm.5 2v9h17v-9z"/><path d="M12 8.6a3.4 3.4 0 1 1-3.4 3.4A3.4 3.4 0 0 1 12 8.6zm0 1.8a1.6 1.6 0 1 0 1.6 1.6A1.6 1.6 0 0 0 12 10.4z"/><path d="M4.5 8.8h3v1.4h-3z"/>',
   };
+  /* 品牌图标：用户给的位图（64×64，深色底，量化到 64 色减小体积）。
+     顶栏 20px、左下角「切回新界面」16px 都用它；替换素材时只改这一条 data URI。 */
+  const LOGO = 'data:image/png;base64,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';
+  const logo = (cls) => `<img class="logo ${cls || ''}" src="${LOGO}" alt="" decoding="async">`;
+
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
@@ -3467,7 +3662,7 @@ ${Theme.css('#sp')}
     const WEEKS = weeks || 53;
     const span = WEEKS * 7;
     const byDate = new Map((daily || []).map((x) => [x.d, x.v]));
-    const today = Util.dkey(new Date());
+    const today = Util.dkeyLocal();   // 本地日：与站点活动日期、streak 口径一致（UTC 在东八区 0–8 点会差一天）
     const start = Util.dshift(today, -(span - 1));
 
     const cells = [];
@@ -3644,6 +3839,19 @@ ${Theme.css('#sp')}
     return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
   }
 
+  /** 站点的「相对时间」："9m" / "02h05m" / "3d04h" / "1y20d"（Misc::humanTime 的格式，可补零）。
+      返回毫秒数；认不出（如 "Never"）返回 null。会话页的 Last request (Job) 就是这种。 */
+  function agoMs(raw) {
+    const s = String(raw || '').trim();
+    if (!/^\d/.test(s)) return null;
+    const m = s.match(/^(?:(\d+)y)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+    if (!m) return null;
+    const [y, d, h, mi, se] = m.slice(1).map((v) => Number(v || 0));
+    if (!y && !d && !h && !mi && !se && !/\d/.test(s)) return null;
+    return ((((y * 365 + d) * 24 + h) * 60 + mi) * 60 + se) * 1000;
+  }
+  const relOf = (raw) => { const ms = agoMs(raw); return ms == null ? null : Date.now() - ms; };
+
   /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
   function agoText(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
@@ -3698,7 +3906,12 @@ ${Theme.css('#sp')}
     if (!devChips.length && cdRaw) devChips.push(chip(cdRaw, ''));
     const dev = devChips.length
       ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
-    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    const lastRaw = val('lastRequestJob');
+    /* Last request (Job) 是**相对时间**（"19m" / "02h05m"），Creation Time 才是绝对时间。
+       停着的机器用「最后一次请求」当结束点，两种格式都认；认不出就不画那条。
+       用显式 null 判断（别用 ||：绝对时间戳理论上可能是 0）。 */
+    const lastAbs = whenOf(lastRaw);
+    const endT = d.running === true ? now : (lastAbs != null ? lastAbs : relOf(lastRaw));
     /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
        没有信息量）。三种状态，判据都在站点自己的页面上：
          · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
@@ -3807,6 +4020,13 @@ ${Theme.css('#sp')}
      **按实测像素**渲染。绝不用 preserveAspectRatio="none"：它会把轴标签一起**非等比拉伸**。 */
 
   let chartObs = null;   // 模块级单例：重渲染必须先断开旧的，否则观察器挂在已摘除的节点上
+  let chartResize = null;   // 没有 ResizeObserver 时的 window.resize 兜底监听
+
+  /** 视图卸载/切换时收掉图表观察器（单节点泄漏 + 对 0 宽节点重画）。 */
+  function disposeCharts() {
+    if (chartObs) { chartObs.disconnect(); chartObs = null; }
+    if (chartResize) { window.removeEventListener('resize', chartResize); chartResize = null; }
+  }
 
   function pointsChart(box, series) {
     if (!box || !series || series.length < 2) return;
@@ -3888,11 +4108,12 @@ ${Theme.css('#sp')}
     });
 
     draw();
-    if (chartObs) chartObs.disconnect();
+    disposeCharts();
     if (window.ResizeObserver) {
       chartObs = new ResizeObserver(() => window.requestAnimationFrame(draw));
       chartObs.observe(box);
     } else {
+      chartResize = draw;
       window.addEventListener('resize', draw);
     }
   }
@@ -3907,8 +4128,8 @@ ${Theme.css('#sp')}
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
-  SP.Charts = { points: pointsChart };
+  SP.UI = { icon, ICONS, logo, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.Charts = { points: pointsChart, dispose: disposeCharts };
 })();
 
 /* ===== src/50-views.js ===== */
@@ -4148,9 +4369,13 @@ ${Theme.css('#sp')}
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
 
     return `<div class="identity">
-      ${UI.avatar(p.avatar, p.name, 'av')}
-      <h1>${esc(p.name)}</h1>
-      ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
+      <div class="idmain">
+        ${UI.avatar(p.avatar, p.name, 'av')}
+        <div class="idtext">
+          <h1>${esc(p.name)}</h1>
+          ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
+        </div>
+      </div>
     </div>`;
   }
 
@@ -4209,9 +4434,7 @@ ${Theme.css('#sp')}
       ...(hasCalendar ? [{
         k: t('stat.streak'),
         v: d.streakExclToday !== undefined ? `${fmt(d.streakExclToday)} ${t('stat.days')}` : '—',
-        d: d.best !== undefined
-          ? t(d.active30 === 30 ? 'stat.streakFull' : 'stat.streakHint', { best: fmt(d.best), d30: fmt(d.active30 || 0) })
-          : '',
+        d: d.best !== undefined ? t('stat.streakHint', { best: fmt(d.best) }) : '',
       }] : []),
       ...(asCount(created) > 0
         ? [{ k: t('stat.created'), v: Util.statNum(created), d: t('stat.createdHint') }] : []),
@@ -4222,25 +4445,69 @@ ${Theme.css('#sp')}
     const kpiBand = UI.kpis(kpiItems);
 
     /* ---- 8/4 主区：积分增长 + 月度产出 ----
-       只有**自己的主页**内联这两块；没有数据源就整块不画（不摆"暂无数据"），只剩一块时铺满整行。 */
+       只有**自己的主页**内联这两块；没有数据源就整块不画（不摆"暂无数据"），只剩一块时铺满整行。
+       副标题不再写"当前 X 积分"：上面指标带已有同一个数（用户 2026-10-18）。 */
     const hasPoints = !!(p.points && p.points.length > 1);
     const first = p.points[0], last = p.points[p.points.length - 1];
     const chartSub = t('chart.pointsSub', {
       n: p.points.length, from: first ? first.d : '—', to: last ? last.d : '—',
-      now: last ? Util.num(last.v) : '—',
     });
     const mo = UI.months(daily);
     const pointsPanel = !hasPoints ? '' : `<div class="panel">
         <div class="phead"><h2>${esc(t('chart.points'))}</h2><span class="sub num">${esc(chartSub)}</span></div>
         <div class="chart" id="sp-chart"><div class="tip" id="sp-tip"></div></div>
       </div>`;
+
+    /* 右侧那张卡：默认「近 30 天概览」，右上角可一键切回「月度产出」，选择落盘（用户 2026-10-18）。
+       口径是**含今天的 30 个日历日**（没跑的日子按 0 算），全部是真值、不做任何估算。 */
+    const today = Util.dkeyLocal();
+    const start30 = Util.dshift(today, -29);
+    const byDay = new Map(daily.map((x) => [x.d, x.v]));
+    let frames30 = 0, peak30 = { d: '', v: 0 };
+    for (let n = 0, d = start30; n < 30; n += 1, d = Util.dshift(d, 1)) {
+      const v = byDay.get(d) || 0;
+      frames30 += v;
+      if (v > peak30.v) peak30 = { d, v };
+    }
+    /* 活跃天数用站点自己的渲染日历（derived.active30，和上面 KPI 的连续天数同一份数据）；
+       帧数曲线在个别日子缺采样点，数出来会比站点少一天。 */
+    const active30 = Number.isFinite(Number(d.active30))
+      ? Number(d.active30)
+      : daily.filter((x) => x.d >= start30 && x.d <= today && x.v > 0).length;
+    const avg30 = Math.round(frames30 / 30);
+    const peakDate = peak30.v ? new Date(`${peak30.d}T00:00:00`).toLocaleDateString(
+      I18n.lang === 'zh' ? 'zh-CN' : 'en-US', { month: 'short', day: 'numeric' },
+    ) : '';
+    /* 积分是累计曲线：取"30 天前（含今天算起）那个采样点"做差，能反映净变化（可能是负的） */
+    const pCurve = (p.points && p.points.length > 1) ? p.points : [];
+    const pLast = pCurve.length ? pCurve[pCurve.length - 1] : null;
+    const pBase = pLast
+      ? (pCurve.slice(0, -1).reverse().find((x) => Util.ddiff(x.d, today) >= 30) || pCurve[0])
+      : null;
+    const points30 = (pLast && pBase) ? Number(pLast.v) - Number(pBase.v) : null;
+    const recentOk = daily.length > 0;
+    const canToggle = !!(mo.html && recentOk);
+    const toggleBtn = (v, label) =>
+      `<span class="spacer"></span><button type="button" class="subbtn" data-act="ov-right" data-v="${v}">${esc(label)}</button>`;
+    const effCell = (k, v, h) => `<div class="eff"><div class="k">${esc(k)}</div><div class="v num">${esc(v)}</div>${h ? `<div class="h">${esc(h)}</div>` : ''}</div>`;
+    const recentPanel = !recentOk ? '' : `<div class="panel">
+        <div class="phead"><h2>${esc(t('recent.title'))}</h2><span class="sub">${esc(t('recent.sub'))}</span>${canToggle ? toggleBtn('months', t('recent.toMonths')) : ''}</div>
+        <div class="produce"><div class="effgrid">
+          ${effCell(t('recent.frames'), fmt(frames30), t('recent.framesHint', { avg: fmt(avg30) }))}
+          ${effCell(t('recent.active'), `${active30} / 30`, t('recent.activeHint'))}
+          ${effCell(t('recent.peak'), peak30.v ? fmt(peak30.v) : '—', peak30.v ? t('recent.peakHint', { date: peakDate }) : '')}
+          ${effCell(t('recent.points'), points30 == null ? '—' : `${points30 > 0 ? '+' : ''}${fmt(points30)}`, t('recent.pointsHint'))}
+        </div></div>
+      </div>`;
     const monthsPanel = !mo.html ? '' : `<div class="panel">
-        <div class="phead"><h2>${esc(t('months.title'))}</h2><span class="sub">${esc(t('months.sub'))}</span></div>
+        <div class="phead"><h2>${esc(t('months.title'))}</h2><span class="sub">${esc(t('months.sub'))}</span>${canToggle ? toggleBtn('recent', t('months.toRecent')) : ''}</div>
         <div class="produce">${mo.html}</div>
       </div>`;
-    const main = pointsPanel && monthsPanel
-      ? `<div class="grid">${pointsPanel}${monthsPanel}</div>`
-      : pointsPanel + monthsPanel;
+    /* 偏好 'months' 才显示月度；没有近 30 天数据时自动回退；两边都没有就整块不画 */
+    const rightPanel = (state.ovRight === 'months' || !recentPanel) ? monthsPanel : recentPanel;
+    const main = pointsPanel && rightPanel
+      ? `<div class="grid">${pointsPanel}${rightPanel}</div>`
+      : pointsPanel + rightPanel;
 
     const actDaily = (p.activity || []).map((x) => ({ d: x.d, v: Number(x.c) || 1 }));
     const byFrames = daily.length > 0;
@@ -4640,6 +4907,12 @@ ${Theme.css('#sp')}
           ${seg('sp-theme', state.themePref, [['auto', t('set.theme.auto')], ['dark', t('set.theme.dark')], ['light', t('set.theme.light')]])}</div>
 
         <div class="row block">
+          <div class="lbl">${esc(t('set.showRanking'))}</div>
+          ${seg('sp-showranking', state.showRanking ? 'on' : 'off', [['on', t('set.on')], ['off', t('set.off')]])}
+          <div class="hint">${esc(t('set.showRankingHint'))}</div>
+        </div>
+
+        <div class="row block">
           <div class="lbl">${esc(t('set.scale'))}</div>
           ${seg('sp-scale', String(state.uiScale), [['0.9', '90%'], ['1', '100%'], ['1.1', '110%'], ['1.25', '125%'], ['1.4', '140%']])}
           <div class="hint">${esc(t('set.scaleHint'))}</div>
@@ -4888,7 +5161,7 @@ ${Theme.css('#sp')}
     return `${y}${pad2(d.getMonth() + 1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
   }
 
-  /** 事件时长单独写：Util.duration 是给"机时"设计的，几秒的事件会被它读成 0m。 */
+  /** 事件时长单独写：时间线里的事件要精确到秒/分，和排行榜那种"机时"（y/d/h）不是一个口径。 */
   function spanText(ms) {
     const s = Math.max(0, Math.round(Number(ms) / 1000));
     if (s < 60) return `${s}s`;
@@ -5291,7 +5564,12 @@ ${Theme.css('#sp')}
       const label = esc(mgActLabel(a));
       const why = a.title ? (I18n.siteText(a.title) || a.title) : '';
       if (a.disabled) return `<button class="btn" disabled title="${esc(why || t('mg.act.disabled'))}">${label}</button>`;
-      if (a.url) return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      /* 只有站点给的是「纯链接」（看帧图像 / 下载帧图像 / 看视频）才渲染成 <a>。
+         partial（申请部分帧压缩包）也带 url，但它是个**动作**：站点自己的按钮带确认、走 AJAX；
+         渲染成链接会绕过确认，GET 直接触发动作，页面还会跳成纯文本 "OK"、整个界面丢失。 */
+      if (a.url && (a.kind === 'frames' || a.kind === 'zip' || a.kind === 'video')) {
+        return `<a class="btn" href="${esc(a.url)}" target="_self"${why ? ` title="${esc(why)}"` : ''}>${label}</a>`;
+      }
       return `<button class="btn" data-mg-act="${esc(a.kind)}"${why ? ` title="${esc(why)}"` : ''}>${label}</button>`;
     };
     return `<div class="toolbar mg-acts">${acts.map(one).join('')}</div>`;
@@ -5466,6 +5744,9 @@ ${Theme.css('#sp')}
 
 
   function mount(root, state) {
+    /* 上一屏的图表观察器/兜底 resize 监听先收掉：否则它挂在已摘除的节点上（单节点泄漏，
+       切走再回来还可能对 0 宽节点重画）。 */
+    if (SP.Charts && SP.Charts.dispose) SP.Charts.dispose();
     /* 上传视图接线的两道判据：`.up-grid`（show() 先画骨架，那时还没卡片）与 `state.uploadHtml`（boot() 先
        render() 再 show()，直接开 #/upload 那次只拿到空卡片）。少了任一道就会把 body 早标成"已接线"，
        之后 render() 全被守卫早退 —— 用户拿到空壳（实测踩过）。 */
@@ -5506,16 +5787,19 @@ ${Theme.css('#sp')}
 /* ===== src/62-chain.js ===== */
 /* ==== 62-chain.js：上传链路的**数据层**（0.2.0）====================================
 
-   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 9b13032c
-   （= 线上资源路径 /media/9b13032c/，就是 getShortVersion()）。行号对着那一版看。
+   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 65b8c8b2
+   （= 线上资源路径 /media/65b8c8b2/，就是 getShortVersion()）。
+   2026-10-18 复核：相对 9b13032c 只多了 OSL 一项 —— addproject.js 多一个 `osl` 键、
+   HTML.php 多一个 `addproject_osl_<i>` 隐藏项、ProjectController 读 `$request->request->get('osl')`；
+   templates 零改动，上传四步结构与 27 个旧键全部不变。下列行号沿用旧版（偏差 ≤1 行）。
 
-   契约 A 上传（第一步）  HTML.php:2127-2152 → POST /project/internal/upload（multipart）
+   契约 A 上传（第一步）  HTML.php:2128-2153 → POST /project/internal/upload（multipart）
                           字段：addproject_archive（文件）+ UPLOAD_IDENTIFIER（32 位 hex）
                           成功 = 302 → /project/add/<token>；失败 = 200 纯文本原因 或 error 页
    契约 B 等待（第二步）  ProjectController.php:194-221 → GET /project/add_analyse/<token>
                           JSON {"status":"RETRY"|"PROCESSING",analysed,total} 或整段 HTML 碎片
    契约 C 提交（第三步）  addproject.js:1-101 / ProjectController.php:226-448 → POST /project/add_internal
-                          27 键；响应以 "http" 开头 = 成功地址，否则整段是错误说明
+                          28 键（65b8c8b2 起多 osl）；响应以 "http" 开头 = 成功地址，否则整段是错误说明
 
    这一层的纪律：**服务端返回的 HTML 只经 DOMParser 走一遭，永不进活文档**。
    界面用我们自己的 id、我们自己的提交 —— 于是"两份同名控件""站点 JS 抢 DOM"那一整类缺陷
@@ -5528,7 +5812,7 @@ ${Theme.css('#sp')}
   const t = SP.t;
 
   /** 核对过的上游版本；站点升级后要重新核对并同时改这里与 docs/REWRITE-0.2.0.md。 */
-  const UPSTREAM = '9b13032c';
+  const UPSTREAM = '65b8c8b2';
 
   const URL_UPLOAD = '/project/internal/upload';
   const URL_SUBMIT = '/project/add_internal';
@@ -5590,7 +5874,7 @@ ${Theme.css('#sp')}
   }
 
   /* 我们自己渲染的控件（这些 id 的内容不进"说明文字"）：帧、切块、内存、提交、错误框、隐藏项 */
-  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
+  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|osl|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
 
   /** 把服务端写的**说明文字**（EXR 限制、降噪提示、切块解释、缺文件、驱动警告…）抽出来。
       不抽控件、不抽 label 的 for 目标 —— 那些我们自己画。 */
@@ -5632,7 +5916,7 @@ ${Theme.css('#sp')}
     /^token$/, /^public_render$/, /^public_thumbnail$/, /^generate_mp4$/,
     /^compute_method_(cpu|gpu)$/,
     /^addproject_\d+$/, /^addproject_content_\d+$/,
-    /^addproject_(exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
+    /^addproject_(exe|path|archive|engine|denoising|osl|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
     /^addproject_(animation_start_frame|animation_end_frame|animation_step_frame|singleframe_start_frame|max_ram_optional)_\d+$/,
     /^addproject_(split_tiles_number|split_animation_sample_range_value|animation_split_sample_value|split_sample_range_value|split_sample_value)_\d+$/,
     /^addproject_(submit|submit_div|error_box)_\d+$/,
@@ -5693,7 +5977,7 @@ ${Theme.css('#sp')}
     const rej = cont.querySelector('div.error');
     const hidden = {};
     const readHidden = (key) => str(valOf(cont, 'addproject_' + key + '_' + i));
-    ['exe', 'path', 'archive', 'engine', 'denoising', 'color_management', 'render_on_gpu_headless',
+    ['exe', 'path', 'archive', 'engine', 'denoising', 'osl', 'color_management', 'render_on_gpu_headless',
       'use_adaptive_sampling', 'framerate', 'output_path', 'width', 'height', 'cycles_samples',
       'samples_pixel', 'image_extension'].forEach((k) => { hidden[k] = readHidden(k); });
 
@@ -5760,9 +6044,9 @@ ${Theme.css('#sp')}
 
   /* ------------------------------------------------------------- 组提交体 */
 
-  /** 27 键，顺序与站点 addproject.js:57-85 一致（顺序不影响服务端，但方便逐键比对）。 */
+  /** 28 键，顺序与站点 addproject.js:57-85 一致（65b8c8b2 起多 osl；顺序不影响服务端，但方便逐键比对）。 */
   const SUBMIT_KEYS = [
-    'type', 'compute_method', 'executable', 'engine', 'denoising', 'color_management',
+    'type', 'compute_method', 'executable', 'engine', 'denoising', 'osl', 'color_management',
     'render_on_gpu_headless', 'token', 'public_render', 'public_thumbnail', 'generate_mp4',
     'start_frame', 'end_frame', 'step_frame', 'archive', 'max_ram_optional', 'path', 'framerate',
     'output_path', 'width', 'height', 'split_tiles', 'split_samples', 'use_adaptive_sampling',
@@ -5775,7 +6059,7 @@ ${Theme.css('#sp')}
   };
 
   /**
-   * model（服务端给的事实）+ ui（用户改的）→ 27 键。
+   * model（服务端给的事实）+ ui（用户改的）→ 28 键。
    * 与站点 doAddProject 的逐键对应写在括号里；**不做任何"顺手修正"**，只做站点做的事：
    *   · 单帧项目：end_frame 恒为 0、step_frame 恒为 1（addproject.js:3-4,20-21）
    *   · 没滑条时 split_samples 发空串（站点那边是 undefined，jQuery 也发 `split_samples=`）
@@ -5799,6 +6083,7 @@ ${Theme.css('#sp')}
           executable: key('exe'),
           engine: key('engine'),
           denoising: key('denoising'),
+          osl: key('osl'),
           color_management: key('color_management'),
           render_on_gpu_headless: key('render_on_gpu_headless'),
           token: model.token,
@@ -5853,7 +6138,7 @@ ${Theme.css('#sp')}
 
   /** 契约 C：提交。成功体是 `{scheme}://{host}/project/<id>`（ProjectController.php:430）。 */
   async function submit(payload) {
-    const res = await fetch(URL_SUBMIT, {
+    const res = await SP.Api.fetchWithTimeout(URL_SUBMIT, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
@@ -5889,7 +6174,7 @@ ${Theme.css('#sp')}
 
   /** 契约 B：轮询分析状态。 */
   async function analyse(token) {
-    const res = await fetch(analyseUrl(token), {
+    const res = await SP.Api.fetchWithTimeout(analyseUrl(token), {
       credentials: 'include', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (!res.ok) return { kind: 'error', message: t('up3x.httpFail', { code: res.status }) };
@@ -6015,7 +6300,7 @@ ${Theme.css('#sp')}
   /** 契约 D：估算器。POST /project/estimator（ProjectController.php:925-997）——
       time = 每帧分钟数，count = 帧数，device = `cpu_<id>` 或 `gpu_<id>`（下面那个接口给的 value）。 */
   async function estimator(fields) {
-    const res = await fetch('/project/estimator', {
+    const res = await SP.Api.fetchWithTimeout('/project/estimator', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
@@ -6044,7 +6329,7 @@ ${Theme.css('#sp')}
   /** 设备自动补全：GET /device/search?term=（DeviceController.php:45-）→ [{value:'cpu_12',label:'…'}]。
       站点遇到非法字符会回一条 value='#' 的提示，那条不是设备，过滤掉。 */
   async function deviceSearch(term) {
-    const res = await fetch('/device/search?term=' + encodeURIComponent(String(term)), {
+    const res = await SP.Api.fetchWithTimeout('/device/search?term=' + encodeURIComponent(String(term)), {
       credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
     });
     if (!res.ok) return [];
@@ -6360,7 +6645,8 @@ ${Theme.css('#sp')}
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const my = ++seq;
-        const list = await SP.Chain.deviceSearch(term);
+        let list = [];
+        try { list = await SP.Chain.deviceSearch(term); } catch (e) { list = []; }
         if (my !== seq) return;
         sug.textContent = '';
         if (!list.length) { closeSug(); return; }
@@ -6390,7 +6676,10 @@ ${Theme.css('#sp')}
       if (!(time > 0) || !(count > 0)) { say(t('up1.estNeed'), true); return; }
       btn.disabled = true;
       btn.textContent = t('up1.estimating');
-      const r = await SP.Chain.estimator({ time, count, device: devValue });
+      /* 估算请求失败/超时也要把按钮恢复：fetchWithTimeout 会抛，异常不接住按钮就永久 disabled */
+      let r;
+      try { r = await SP.Chain.estimator({ time, count, device: devValue }); }
+      catch (e) { r = { ok: false, message: (e && e.message) || '' }; }
       btn.disabled = false;
       btn.textContent = t('up1.estGo');
       if (!r.ok) {
@@ -6508,7 +6797,7 @@ ${Theme.css('#sp')}
 
    与已砍掉的兼容档那一套的根本区别：**不再搬站点的活节点**。
    服务端那份 HTML 只在 62-chain.js 里被 DOMParser 解析成数据，页面上从头到尾只有我们
-   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，27 键）。
+   这一套 DOM、这一套 id，提交也是我们自己发（POST /project/add_internal，28 键；65b8c8b2 起多 osl）。
    于是 0.1.14–0.1.17 反复踩的那一类缺陷（两份同名控件、站点 JS 抢 DOM、$('#id') 取到
    隐藏原件）在结构上不可能出现。
 
@@ -7149,6 +7438,14 @@ ${Theme.css('#sp')}
           for (const [re, rep] of bp) { if (re.test(norm)) { html = norm.replace(re, rep); break; } }
         }
         if (html === undefined) continue;
+        /* 原文里的链接必须一个不少地出现在译文里，否则整块跳过：整块替换会把 <a> 一起删掉
+           （实测 /getstarted 的 20 分钟规则原文 3 个链接、zh 译文只有 1 个，
+           /reference_machine.blend 和「各机器算力」都被吃掉）。跳过 = 这块留英文，链接还能点。 */
+        const origLinks = el.querySelectorAll('a[href]').length;
+        if (origLinks) {
+          const transLinks = (String(html).match(/<a\s[^>]*href/gi) || []).length;
+          if (transLinks < origLinks) continue;
+        }
         cands.push([el, norm, html]);
       }
       // 从外到内会互相覆盖，先处理最长的（最具体），处理过的子树打标记跳过
@@ -7195,9 +7492,12 @@ ${Theme.css('#sp')}
     observe() {
       if (this.observer || !document.body) return;
       this.observer = new MutationObserver((records) => {
-        // 纯 characterData 多是我自己改的
-        const relevant = records.some((r) =>
-          r.type === 'childList' || (r.type === 'attributes' && ATTRS.includes(r.attributeName)));
+        // 纯 characterData 多是我自己改的；#sp 里的重绘（整页 swap、图表、卡片）不该触发整页重扫
+        const relevant = records.some((r) => {
+          const t = r.target;
+          if (t && t.nodeType === 1 && t.closest && t.closest('#sp')) return false;
+          return r.type === 'childList' || (r.type === 'attributes' && ATTRS.includes(r.attributeName));
+        });
         if (relevant) this.schedule();
       });
       this.observer.observe(document.body, {
@@ -7331,7 +7631,7 @@ ${Theme.css('#sp')}
     const classic = kind === 'classic';
     b.title = classic ? t('mode.classicTip') : t('mode.enterTip');
     b.setAttribute('aria-label', b.title);
-    b.innerHTML = UI.icon('sheep') + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
+    b.innerHTML = UI.logo() + `<span>${Util.esc(classic ? t('mode.classicHint') : t('mode.enter'))}</span>`;
     b.addEventListener('click', () => {
       Util.store.set('uiMode', 'modern');
       if (classic) location.reload();
@@ -7407,6 +7707,8 @@ ${Theme.css('#sp')}
     langPref: 'auto',
     translateSite: true,
     uploadMode: 'new',
+    showRanking: true,     // 导航里是否显示「排行榜」（设置里可关）
+    ovRight: 'recent',     // 总览右侧那张卡：'recent' 近 30 天概览 / 'months' 月度产出（用户可随时切回）
     uiScale: 1,            // 界面整体缩放
   };
 
@@ -7417,10 +7719,19 @@ ${Theme.css('#sp')}
     state.langPref = Util.store.get('lang', 'auto');
     state.translateSite = Util.store.get('translateSite', true) !== false;
     state.uploadMode = uploadMode();
+    state.showRanking = Util.store.get('showRanking', true) !== false;
+    /* 旧值 'eff'（早期试做的估算卡）一并归到 'recent'，别让老偏好把卡片留在已删的模式上 */
+    state.ovRight = Util.store.get('ovRight', 'recent') === 'months' ? 'months' : 'recent';
     const z = Number(Util.store.get('scale', 1));
     state.uiScale = Number.isFinite(z) && z >= 0.5 && z <= 2 ? z : 1;
     I18n.init();
   }
+
+  /* 顶栏主题按钮：图标跟**实际生效**的主题走（auto 时看系统），title 说当前档位；
+     点击按 auto → light → dark 循环。设置在「设置」页，这里只管快速切换。 */
+  const THEME_ORDER = ['auto', 'light', 'dark'];
+  const themeQuickIcon = (pref) => UI.icon(Theme.effective(pref) === 'dark' ? 'moon' : 'sun');
+  const themeQuickTitle = (pref) => t('top.themeCycle', { cur: t(`set.theme.${pref}`) });
 
   function applyTheme() {
     const host = document.getElementById('sp');
@@ -7430,6 +7741,12 @@ ${Theme.css('#sp')}
     host.style.zoom = state.uiScale === 1 ? '' : String(state.uiScale);
     // 图表（SVG var()）也要这份颜色方案
     host.style.colorScheme = Theme.effective(state.themePref);
+    const tb = document.getElementById('sp-theme-quick');
+    if (tb) {
+      tb.title = themeQuickTitle(state.themePref);
+      tb.setAttribute('aria-label', tb.title);
+      tb.innerHTML = themeQuickIcon(state.themePref);
+    }
   }
 
   /* ---- 3. 挂载 ---- */
@@ -7449,23 +7766,30 @@ ${Theme.css('#sp')}
     const u = state.userName;
     const nav = [['overview', t('nav.overview'), ''], ['projects', t('nav.projects'), '']];
     if (state.uploadMode !== 'off') nav.push(['upload', t('nav.upload'), t('nav.upload')]);
-    nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')],
-      ['account', t('nav.account'), t('nav.accountShort')],
+    /* 排行榜可以在「设置」里关掉（用户 2026-10-18）：关掉只是导航项消失，
+       直接开 /ranking/user 仍然接管。 */
+    if (state.showRanking) nav.push(['ranking', t('nav.ranking'), t('nav.rankingShort')]);
+    nav.push(['account', t('nav.account'), t('nav.accountShort')],
       ['settings', t('nav.settings'), '']);
     /* 第二步（/project/add/<token>）是上传链路的一环，顶栏不该在这里丢掉位置标记 */
     const navHere = state.view === 'analyse' ? 'upload' : state.view;
     const item = ([k, label, short]) =>
       `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
+    /* 右侧顺序（用户 2026-10-18 定）：刷新时间 → 主题快速切换 → 刷新 → 原版界面 → 头像 */
+    const classic = Util.esc(t('mode.toClassic'));
     return `<div class="wrap">
       <div class="top">
-        <a class="brand" href="#/overview">${UI.icon('sheep', 'sheep')}SheepIt <em>PLUS</em></a>
+        <a class="brand" href="#/overview">${UI.logo('sheep')}SheepIt <em>PLUS</em></a>
         <nav>${nav.map(item).join('')}</nav>
         <span class="spacer"></span>
-        <span class="metaline num" id="sp-updated"></span>
-        <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassic'))}">${UI.icon('sheep')}<span class="txt">${Util.esc(t('mode.toClassic'))}</span></button>
-        <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
-        ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.avatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
+        <div class="topright">
+          <span class="metaline num" id="sp-updated"></span>
+          <button class="iconbtn" id="sp-theme-quick" data-act="theme-cycle" title="${Util.esc(themeQuickTitle(state.themePref))}" aria-label="${Util.esc(themeQuickTitle(state.themePref))}">${themeQuickIcon(state.themePref)}</button>
+          <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
+          <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.classicTip'))}"><span class="txt">&lt; ${classic}</span><span class="txts">&lt; ${Util.esc(t('mode.toClassicShort'))}</span></button>
+          ${u ? `<span class="who">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}<b class="uname" title="${Util.esc(u)}">${Util.esc(u)}</b></span>` : ''}
+        </div>
       </div>
       <div id="sp-body"></div>
     </div>`;
@@ -7553,6 +7877,7 @@ ${Theme.css('#sp')}
      带 analysed/total）/ 完成**直接把「新增项目」表单当 HTML 吐回来**；站点那个轮询函数（写死英文）摘掉。 */
   let analyseTimer = null;
   let siteAnalyseNeutralised = false;
+  let analyseDone = false;   // 分析完成、第三步表单已经画出来：刷新/重进都不能再重画它（会丢用户填的设置）
   const fmtN = (n) => Number(n).toLocaleString('en-US');
 
   function stopAnalysePoll() {
@@ -7581,7 +7906,7 @@ ${Theme.css('#sp')}
       paintAnalyse({ failed: (e && e.message) || String(e) });
       return;
     }
-    if (r.kind === 'done') { paintAnalyse({ html: r.html }); return; }
+    if (r.kind === 'done') { analyseDone = true; paintAnalyse({ html: r.html }); return; }
     if (r.kind === 'gone') { paintAnalyse({ gone: true }); return; }
     if (r.kind === 'error') { paintAnalyse({ failed: r.message || '' }); return; }
     if (r.kind === 'processing') paintAnalyse({ done: r.done, total: r.total });
@@ -7736,12 +8061,14 @@ ${Theme.css('#sp')}
      解析结果挂回机器对象给视图用。取不到就留 null，视图照旧只显示规格，不编数据。
      `detail !== undefined` 是防重复：这一轮取过（哪怕失败）就不再打第二次。 */
   async function machineDetails(profile) {
-    const list = (profile && profile.machines && profile.machines.list) || [];
-    for (const m of list.slice(0, 3)) {
-      if (m.detail !== undefined || !m.url) continue;
+    const list = ((profile && profile.machines && profile.machines.list) || [])
+      .slice(0, 3)
+      .filter((m) => m.detail === undefined && m.url);
+    /* 每台机器互相独立：并行取。原来是 `for + await`，三台就把三个 RTT 串成一条。 */
+    await Promise.all(list.map(async (m) => {
       m.detail = null;
       try { m.detail = Api.parseSession(await Api.fetchPage(m.url), ''); } catch (e) { /* 保持 null */ }
-    }
+    }));
   }
 
   async function ensureData(view) {
@@ -7749,7 +8076,12 @@ ${Theme.css('#sp')}
 
     if (view === 'account') {
       if (!state.userName) throw new Error(t('account.only'));
-      state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`));
+      /* 账户设置页常常就是当前页：解析活 document，省一次 53KB 重抓；认不出邮箱才回退。 */
+      const path = `/user/${encodeURIComponent(state.userName)}/edit`;
+      const doc = Api.currentDoc(path);
+      let acc = doc ? Api.parseAccount(doc) : null;
+      if (!acc || !acc.email) acc = Api.parseAccount(await Api.fetchPage(path));
+      state.account = acc;
       return;
     }
 
@@ -7761,6 +8093,8 @@ ${Theme.css('#sp')}
 
     if (view === 'analyse') {
       if (!state.analyseToken) throw new Error(t('an.noToken'));
+      /* 已经画过第三步就别再轮询/重画：表单里是用户填的东西，重画会全部回默认值。 */
+      if (analyseDone) return;
       startAnalysePoll();
       return;
     }
@@ -7768,22 +8102,29 @@ ${Theme.css('#sp')}
     if (view === 'session') {
       if (!state.sessionId) throw new Error(t('sess.noId'));
       if (!state.session) {
-        state.session = Api.parseSession(await Api.fetchPage(`/session/${state.sessionId}`), state.sessionId);
-        if (!state.session) throw new Error(t('sess.parseFailed'));
+        /* 会话页常常就是"当前页"：直接解析活 document，省一次 43KB 的整页重抓；
+           站点 JS 改过 DOM 导致解析不出东西时（parseSession 回 null）再回退 fetch。 */
+        const path = `/session/${state.sessionId}`;
+        const doc = Api.currentDoc(path);
+        let sess = doc ? Api.parseSession(doc, state.sessionId) : null;
+        if (!sess) sess = Api.parseSession(await Api.fetchPage(path), state.sessionId);
+        if (!sess) throw new Error(t('sess.parseFailed'));
+        state.session = sess;
       }
-      // 时间线是站点 AJAX JSON：拿不到只让那一块说"没取到"
-      if (state.session.timeline === undefined) {
-        try { state.session.timeline = Api.parseTimeline(await Api.fetchJson(state.session.timelineUrl)); }
-        catch (e) { state.session.timeline = []; state.session.timelineFailed = true; }
-      }
-      if (!state.projects) {
-        try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); }
-        catch (e) { state.projects = null; }
-      }
-      if (!state.account && state.userName) {
-        try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
-        catch (e) { state.account = null; }
-      }
+      /* 时间线 / 项目表 / 名单互不依赖：并行发。时间线地址已从本页解析出来，不用等第二趟。 */
+      await Promise.all([
+        state.session.timeline === undefined && state.session.timelineUrl
+          ? Api.fetchJson(state.session.timelineUrl)
+            .then((j) => { state.session.timeline = Api.parseTimeline(j); })
+            .catch(() => { state.session.timeline = []; state.session.timelineFailed = true; })
+          : null,
+        !state.projects
+          ? Api.fetchPage('/home/projects').then((h) => { state.projects = Api.parseProjects(h); }).catch(() => { state.projects = null; })
+          : null,
+        !state.account && state.userName
+          ? Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`).then((h) => { state.account = Api.parseAccount(h); }).catch(() => { state.account = null; })
+          : null,
+      ].filter(Boolean));
       return;
     }
 
@@ -7791,65 +8132,92 @@ ${Theme.css('#sp')}
       const target = state.profileName || state.userName;
       if (!target) throw new Error(t('state.loggedOut'));
       if (!state.profile) {
-        const html = await Api.fetchPage(`/user/${encodeURIComponent(target)}/profile`);
-        state.profile = Api.parseProfile(html, target);
+        /* 主页常常就是当前页：直接解析活 document，省一次 166KB 重抓；
+           站点 JS 改过 DOM 导致读不出统计（dl 没了）时再回退 fetch。 */
+        const path = `/user/${encodeURIComponent(target)}/profile`;
+        const doc = Api.currentDoc(path);
+        let prof = doc ? Api.parseProfile(doc, target) : null;
+        if (!prof || !Object.keys(prof.stats || {}).length) prof = Api.parseProfile(await Api.fetchPage(path), target);
+        state.profile = prof;
         SP.state = state;   // 供 shell 里取头像
       }
       await machineDetails(state.profile);
-      if (!state.home) {
-        try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
-      }
-      if (!state.projects) {
-        try { state.projects = Api.parseProjects(await Api.fetchPage('/home/projects')); } catch (e) { /* 保持 null */ }
-      }
+      /* 这里原来还取 /home 与 /home/projects：但总览视图一个都不消费
+         （state.home 只有项目视图用，state.projects 只有项目/会话视图用），
+         等于白等 2 个 RTT + 约 78KB。项目视图进来时自己会取。 */
+      return;
     }
 
-    if (view === 'projects' && !state.projects) {
-      state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
+    if (view === 'projects') {
+      if (!state.projects) state.projects = Api.parseProjects(await Api.fetchPage('/home/projects'));
+      /* 顶部全站实时、账户名单（发布者那格）、「我发布的」三件事互不依赖：一次并行发完。
+         「我发布的」吃的是个人主页那张表——看自己总览时它已在 state.profile 里，不用再取。 */
+      await Promise.all([
+        !state.account && state.userName
+          ? Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)
+            .then((h) => { state.account = Api.parseAccount(h); })
+            .catch(() => { state.account = null; })
+          : null,
+        !state.home
+          ? Api.fetchPage('/home')
+            .then((h) => { state.home = Api.parseHome(h); })
+            .catch(() => { state.home = { stats: [], news: [] }; })
+          : null,
+        Views.projState.scope === 'mine' && !state.myProjects
+          ? (async () => {
+            const own = state.userName && state.profileName === state.userName && state.profile
+              ? state.profile
+              : (state.userName
+                ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
+                : null);
+            state.myProjects = (own && own.myProjects) || [];
+          })()
+          : null,
+      ].filter(Boolean));
+      return;
     }
 
-    /* 项目管理页：站点那一页的**副本**当数据源（我们在这一页上，fetch 同源地址拿回服务端渲染的
-       HTML，走 DOMParser 进不了活文档）。解析不出那一页的形状就说清楚、给重试，不画半张脸。 */
+    /* 项目管理页：站点那一页的**副本**当数据源。当前页就是它，所以直接解析活 document；
+       解析不出那一页的形状才回退 fetch，仍然认不出就如实报错、不画半张脸。 */
     if (view === 'project') {
       if (!state.projectId) throw new Error(t('mg.noId'));
       if (!state.mg) {
-        const html = await Api.fetchPage(`/project/${encodeURIComponent(state.projectId)}`);
-        const mg = Api.parseManage(Util.parse(html), state.projectId);
+        const path = `/project/${encodeURIComponent(state.projectId)}`;
+        const doc = Api.currentDoc(path);
+        let mg = doc ? Api.parseManage(doc, state.projectId) : null;
+        if (!mg || !mg.found) mg = Api.parseManage(Util.parse(await Api.fetchPage(path)), state.projectId);
         if (!mg.found) throw new Error(t('mg.noData'));
         state.mg = mg;
       }
-    }
-
-    if (view === 'projects' && !state.account && state.userName) {
-      try { state.account = Api.parseAccount(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/edit`)); }
-      catch (e) { state.account = null; }
-    }
-
-    // 顶部全站实时来自首页：直接落到这页也得取一次
-    if (view === 'projects' && !state.home) {
-      try { state.home = Api.parseHome(await Api.fetchPage('/home')); } catch (e) { state.home = { stats: [], news: [] }; }
-    }
-
-    /* 「我发布的」那档吃的是个人主页那张表（Api.parseMyProjects）。看自己的总览时它已经在
-       state.profile 里了，不用再取；只有"在别人主页上点进项目页"才会多这一趟（有 60 秒缓存）。 */
-    if (view === 'projects' && Views.projState.scope === 'mine' && !state.myProjects) {
-      const own = state.userName && state.profileName === state.userName && state.profile
-        ? state.profile
-        : (state.userName
-          ? Api.parseProfile(await Api.fetchPage(`/user/${encodeURIComponent(state.userName)}/profile`), state.userName)
-          : null);
-      state.myProjects = (own && own.myProjects) || [];
+      return;
     }
 
     if (view === 'ranking' && !state.ranking) {
-      state.ranking = Api.parseRanking(await Api.fetchPage('/ranking/user'));
+      /* 排行榜整页 1.76MB：当前页就是数据源，API 却把刚下载的整页再 fetch 一遍。
+         直接解析活 document；解析不出（站点改版）才回退抓取。 */
+      const path = '/ranking/user';
+      const doc = Api.currentDoc(path);
+      let list = doc ? Api.parseRanking(doc) : null;
+      if (!list || !list.length) list = Api.parseRanking(await Api.fetchPage(path));
+      state.ranking = list;
     }
   }
 
+  /* show() 是异步的：慢请求还没回来时用户可能已经切到别的视图。导航序号保证只有**最新**一次
+     能写 error/loading 并 render —— 否则旧视图的失败会把当前视图盖成「读取失败」，旧视图的
+     成功会把当前视图的骨架提前清掉、闪一下「暂无数据」。 */
+  let navSeq = 0;
   async function show(view, opts) {
+    const seq = ++navSeq;
+    const prev = state.view;
     const viewChanged = state.view !== view;
     state.view = view;
     state.error = null;
+    /* 离开「分析等待」页：站点轮询还开着的话，它会继续往已摘掉的节点里画（结果静默丢失），
+       而且再没有入口回第三步 —— 这里直接停掉。 */
+    if (prev === 'analyse' && view !== 'analyse') stopAnalysePoll();
+    /* 列表页的 3 点菜单属于上一屏：换视图/重取前先清掉，免得回来时"没人点它却开着"。 */
+    Views.projState.menu = null;
 
     if (!opts || !opts.silent) {
       const need = (view === 'overview' && !state.profile)
@@ -7859,18 +8227,27 @@ ${Theme.css('#sp')}
         || (view === 'upload' && !state.uploadHtml)
         /* 账户页原来漏了这一条：首次进入或点刷新时 state.account 还是 null，会先闪一下「暂无数据」。 */
         || (view === 'account' && !state.account)
-        || (view === 'session' && !state.session);
+        || (view === 'session' && !state.session)
+        /* 项目管理页同样漏了：缺数据时先画的是「站点没给这一页的项目数据」空态而不是骨架。 */
+        || (view === 'project' && !state.mg);
       state.loading = need;
       render();
     }
 
     try {
       await ensureData(view);
-      state.error = null;
+      if (seq === navSeq) state.error = null;
     } catch (e) {
-      state.error = (e && e.message) || String(e);
-      if (/401|403|signin/i.test(state.error)) state.error = t('state.loggedOut');
+      if (seq !== navSeq) return;
+      /* 站点把「未登录」做成 302 → /user/signin（fetch 跟随后是 200 登录页）：Api 抛 SIGNED_OUT。
+         另外 401/403 与老消息也按未登录处理。 */
+      if (e && e.code === 'SIGNED_OUT') state.error = t('state.loggedOut');
+      else {
+        state.error = (e && e.message) || String(e);
+        if (/401|403|signin/i.test(state.error)) state.error = t('state.loggedOut');
+      }
     } finally {
+      if (seq !== navSeq) return;
       state.loading = false;
       animOnce = viewChanged || !painted;
       render();
@@ -7899,12 +8276,20 @@ ${Theme.css('#sp')}
     toastTimer = setTimeout(() => { if (el.parentNode) el.remove(); }, 2600);
   }
 
+  /** 写操作失败统一的文案：登录过期（SIGNED_OUT）别把内部错误串直接摆给用户 */
+  const errText = (e) => (e && e.code === 'SIGNED_OUT' ? t('state.loggedOut') : ((e && e.message) || String(e)));
+
   /** 写操作统一收口：回 'OK' 就重取重画，否则原样转述错误 */
+  let submitting = false;   // 防重入：双击「新建密钥」会建出两把
   async function submit(fn, okMsg) {
+    if (submitting) { toast(t('account.saving')); return false; }
+    submitting = true;
     toast(t('account.saving'));
     try {
       const r = await fn();
-      if (r && r !== 'OK') { toast(t('account.failed', { msg: r })); return false; }
+      /* 站点写操作的成功体不止 'OK'（见 20-api.js 的 isOk）：只认 OK 会把调度开关/改邮箱的
+         成功当失败，而且这里 return false 后不 invalidate、不重取 → 勾选状态会回弹。 */
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); return false; }
       Api.invalidate();
       state.account = null;
       state.session = null;
@@ -7914,11 +8299,19 @@ ${Theme.css('#sp')}
          才显示骨架。 */
       state.loading = true;
       await show(state.view, { silent: true });
+      /* 换头像后顶栏那张也要跟着换（否则账户面板是新图、顶栏还是旧的）。
+         show() 已经画完这一轮了，这里补一次 render。 */
+      if (state.account && state.account.avatar && state.account.avatar !== state.myAvatar) {
+        state.myAvatar = state.account.avatar;
+        render();
+      }
       toast(okMsg || t('account.ok'));
       return true;
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
       return false;
+    } finally {
+      submitting = false;
     }
   }
 
@@ -7927,11 +8320,22 @@ ${Theme.css('#sp')}
     return el ? String(el.value || '').trim() : '';
   };
 
+  /** 关 3 点菜单：只做定向 DOM 更新，**不整页重画** —— 菜单开着时点搜索框/筛选/表格任意一处，
+      整页重画会把刚点到的节点换掉（焦点丢、要再点一次、输入和滚动被打断）。 */
+  function closeProjMenu() {
+    if (!Views.projState.menu) return;
+    Views.projState.menu = null;
+    const host = document.getElementById('sp');
+    if (!host) return;
+    host.querySelectorAll('.omenu').forEach((n) => n.remove());
+    host.querySelectorAll('[data-act="owner-menu"][aria-expanded="true"]')
+      .forEach((b) => b.setAttribute('aria-expanded', 'false'));
+  }
+
   function onClick(ev) {
     // 3 点菜单是浮层：点别处先关掉；不 return，该干的事继续干
     if (Views.projState.menu && !ev.target.closest('.omenu') && !ev.target.closest('[data-act="owner-menu"]')) {
-      Views.projState.menu = null;
-      render();
+      closeProjMenu();
     }
 
     const nav = ev.target.closest('[data-nav]');
@@ -7948,6 +8352,24 @@ ${Theme.css('#sp')}
     if (act) {
       const kind = act.dataset.act;
 
+      if (kind === 'ov-right') {
+        /* 总览右侧卡片在「近 30 天概览 / 月度产出」之间切换；选择落盘，随时可以切回来 */
+        const v = act.dataset.v === 'months' ? 'months' : 'recent';
+        Util.store.set('ovRight', v);
+        state.ovRight = v;
+        render();
+        return;
+      }
+
+      if (kind === 'theme-cycle') {
+        /* auto → light → dark 循环；不动设置页的持久化逻辑（Theme.set 就是它用的那个） */
+        const next = THEME_ORDER[(THEME_ORDER.indexOf(state.themePref) + 1) % THEME_ORDER.length] || 'auto';
+        Theme.set(next);
+        syncPrefs();
+        render();
+        return;
+      }
+
       if (kind === 'mode-classic') {
         Util.store.set('uiMode', 'classic');
         location.reload();
@@ -7960,6 +8382,11 @@ ${Theme.css('#sp')}
         state.myProjects = null;
         state.mg = null;
         state.session = null;
+        /* 上传页原来刷新是死按钮：uploadHtml 不清 + #sp-body 的"已接线"标记没删，render() 直接早退。
+           清掉这两样，让 show() 重新取 /getstarted、重画骨架。 */
+        state.uploadHtml = null;
+        const sb = document.getElementById('sp-body');
+        if (sb) delete sb.dataset.spWired;
         // 骨架让内容变短、scrollTop 被夹到 0：画完放回去
         const host = document.getElementById('sp');
         const keepY = host ? host.scrollTop : 0;
@@ -8165,8 +8592,16 @@ ${Theme.css('#sp')}
       Views.projState.filter = 'all';
       Views.projState.limit = 120;
       Views.projState.menu = null;
-      if (Views.projState.scope === 'mine' && !state.myProjects) show('projects', { silent: true });
-      else render();
+      state.error = null;
+      if (Views.projState.scope === 'mine' && !state.myProjects) {
+        /* silent show 不设 loading；这里先画骨架，取数失败时错误态也能顶上来（原来失败会卡在空白/旧错误） */
+        state.loading = true;
+        render();
+        show('projects', { silent: true });
+      } else {
+        state.loading = false;
+        render();
+      }
       return;
     }
 
@@ -8184,6 +8619,20 @@ ${Theme.css('#sp')}
 
     const th = ev.target.closest('#sp-theme [data-v]');
     if (th) { Theme.set(th.dataset.v); syncPrefs(); show(state.view, { silent: true }); return; }
+
+    /* 导航里显不显示「排行榜」：外壳要重建（导航项是 shell 的一部分），保留滚动位置 */
+    const sr = ev.target.closest('#sp-showranking [data-v]');
+    if (sr) {
+      const on = sr.dataset.v === 'on';
+      Util.store.set('showRanking', on);
+      state.showRanking = on;
+      const host = document.getElementById('sp');
+      const y = host ? host.scrollTop : 0;
+      if (host) host.innerHTML = shell();
+      render();
+      if (host) host.scrollTop = y;
+      return;
+    }
 
     // 缩放只改 #sp 自己（applyTheme 写 zoom）
     const sc = ev.target.closest('#sp-scale [data-v]');
@@ -8245,7 +8694,12 @@ ${Theme.css('#sp')}
   /** 复选框只走 change：语义是"状态变了"，不是"被点了一下" */
   function onChange(ev) {
     const sc = ev.target.closest('[data-sched]');
-    if (sc) { submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`)); return; }
+    if (sc) {
+      /* 失败要把勾选拨回服务端那个状态（sponsor-set 早就是这么做的，调度开关漏了） */
+      submit(() => Api.post(`/user/update/scheduler/${sc.dataset.sched}/${sc.checked ? '1' : '0'}`))
+        .then((ok) => { if (!ok) show(state.view, { silent: true }); });
+      return;
+    }
     const mg = ev.target.closest('[data-mg]');
     if (mg) { mgSet(mg.dataset.mg, mg.checked ? mg.dataset.on : mg.dataset.off); return; }
   }
@@ -8276,12 +8730,12 @@ ${Theme.css('#sp')}
     toast(t('account.saving'));
     try {
       const r = await Api.post(url);
-      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); render(); return false; }
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); render(); return false; }
       toast(okMsg || t('account.ok'));
       setTimeout(() => location.reload(), 700);
       return true;
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
       render();
       return false;
     }
@@ -8321,10 +8775,10 @@ ${Theme.css('#sp')}
     try {
       const r = await Api.post(`/project/${id}/remove_no_redirect`);
       /* 站点把 'EMPTY'（一个都不剩了）当成功；它自己那套是跳 /user/profile，我们回项目列表 */
-      if (r && r !== 'OK' && r !== 'EMPTY') { toast(t('account.failed', { msg: r })); return; }
+      if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); return; }
       location.href = '/home/projects';
     } catch (e) {
-      toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+      toast(t('account.failed', { msg: errText(e) }));
     }
   }
 
@@ -8336,10 +8790,11 @@ ${Theme.css('#sp')}
   const aclSeq = {};
   async function aclSearch(kind, term) {
     const path = kind === 'team' ? '/team/list_from_term' : '/user/list_from_term';
-    const res = await fetch(`${path}?term=${encodeURIComponent(term)}`, {
+    /* 走带超时的 fetch：名单补全挂住时不会让输入框一直停在"旧建议"状态 */
+    const res = await SP.Api.fetchWithTimeout(`${path}?term=${encodeURIComponent(term)}`, {
       credentials: 'include',
       headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
-    });
+    }, 10000);
     if (!res.ok) return [];
     let json = null;
     try { json = await res.json(); } catch (e) { return []; }
@@ -8364,12 +8819,14 @@ ${Theme.css('#sp')}
       inp.addEventListener('input', () => {
         delete inp.dataset.pick;                        // 改了字就不再是"选过的那个"
         close();
+        clearTimeout(timer);
+        /* 每次输入都推进序号（包括删到 <3 个字符）：否则更早发出的请求晚到，会把过期建议弹回来 */
+        const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
         const term = inp.value.trim();
         if (term.length < 3) return;
-        clearTimeout(timer);
         timer = setTimeout(async () => {
-          const my = (aclSeq[kind] = (aclSeq[kind] || 0) + 1);
-          const list = await aclSearch(kind, term);
+          let list = [];
+          try { list = await aclSearch(kind, term); } catch (e) { list = []; }
           if (my !== aclSeq[kind]) return;
           sug.textContent = '';
           if (!list.length) { close(); return; }
@@ -8400,6 +8857,8 @@ ${Theme.css('#sp')}
   let inputTimer = null;
   function onInput(ev) {
     if (ev.target.id !== 'sp-q') return;
+    /* 中文输入法组合期间不要重画：整页重画会换掉输入框，候选/拼音被打断（组合结束时还会再来一次 input） */
+    if (ev.isComposing) return;
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
@@ -8450,7 +8909,17 @@ ${Theme.css('#sp')}
 
   window.addEventListener('hashchange', () => {
     const m = location.hash.match(/^#\/(\w+)$/);
-    if (!m || m[1] === state.view) return;
+    /* 按浏览器 Back 回到"没有 hash"时，hash 变空 —— 原来直接 return，画面停在旧视图、
+       地址栏却已经变了。回到这一页本来的视图（boot 里的 pathView）。 */
+    if (!m) {
+      /* 分析等待页不能靠 show() 回来：它首屏一画就锁 dataset.spWired（防重画抹掉站点注入的表单），
+         show('analyse') 会早退、把上一屏留在 #sp-body 里，视图/地址/轮询三者对不上。
+         直接重载这一页最稳（token 重新走一遍）。 */
+      if (pathView === 'analyse') { location.reload(); return; }
+      if (pathView && state.view !== pathView) show(pathView);
+      return;
+    }
+    if (m[1] === state.view) return;
     /* 同 boot：#/upload 只在「新版」档可达。off/raw 档手打它，不该把站点自己那页顶掉 ——
        留在当前视图，并把地址改回去，别让地址栏和界面对不上。 */
     if (m[1] === 'upload' && state.uploadMode !== 'new') {
@@ -8462,7 +8931,7 @@ ${Theme.css('#sp')}
 
   // Esc 关 3 点菜单：键盘用户没有"点外面"这个动作
   window.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Escape' && Views.projState.menu) { Views.projState.menu = null; render(); }
+    if (ev.key === 'Escape' && Views.projState.menu) closeProjMenu();
   });
 
   /* ---- 6. 启动 ---- */

@@ -11,7 +11,11 @@
   const HEAT = (i) => `var(${SHADE[i]})`;
 
   const ICONS = {
-    refresh: '<path d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"/>',
+    /* 16×16 的路径放进 24 的 viewBox 会偏到左上角（刷新按钮"看着不居中"就是这个）：
+       统一 scale(1.5) 折到 24，圆心正好落在中间。 */
+    refresh: '<g transform="scale(1.5)"><path d="M13.65 2.35A7.96 7.96 0 0 0 8 0C3.58 0 0 3.58 0 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 8 14c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L9 7h7V0l-2.35 2.35z"/></g>',
+    sun: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.6M12 19.4V22M2 12h2.6M19.4 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    moon: '<path d="M20.6 14.4A8.7 8.7 0 0 1 9.6 3.4a8.7 8.7 0 1 0 11 11z"/>',
     search: '<path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0A4.5 4.5 0 1 1 14 9.5 4.5 4.5 0 0 1 9.5 14z"/>',
     user: '<path d="M12 12a5 5 0 1 0-5-5 5 5 0 0 0 5 5zm0 2c-3.34 0-10 1.67-10 5v3h20v-3c0-3.33-6.66-5-10-5z"/>',
     gear: '<path d="M19.14 12.94a7.5 7.5 0 0 0 0-1.88l2.03-1.58a.5.5 0 0 0 .12-.62l-1.92-3.32a.5.5 0 0 0-.6-.22l-2.39.96a7.3 7.3 0 0 0-1.62-.94l-.36-2.54a.5.5 0 0 0-.5-.42h-3.84a.5.5 0 0 0-.5.42l-.36 2.54c-.58.24-1.12.55-1.62.94l-2.39-.96a.5.5 0 0 0-.6.22L2.7 8.86a.5.5 0 0 0 .12.62l2.03 1.58a7.5 7.5 0 0 0 0 1.88L2.82 14.52a.5.5 0 0 0-.12.62l1.92 3.32c.12.22.38.3.6.22l2.39-.96c.5.39 1.04.7 1.62.94l.36 2.54c.04.24.25.42.5.42h3.84c.25 0 .46-.18.5-.42l.36-2.54c.58-.24 1.12-.55 1.62-.94l2.39.96c.22.08.48 0 .6-.22l1.92-3.32a.5.5 0 0 0-.12-.62l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 15.6 12 3.6 3.6 0 0 1 12 15.6z"/>',
@@ -30,6 +34,11 @@
     cpu: '<path d="M9 2h2v2H9zm4 0h2v2h-2zM9 19h2v2H9zm4 0h2v2h-2zM2 9h2v2H2zm0 4h2v2H2zm18-4h2v2h-2zm0 4h2v2h-2z"/><path d="M5.5 5.5h13v13h-13zm2 2v9h9v-9z"/>',
     gpu: '<path d="M3 5.5h18a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 17V7A1.5 1.5 0 0 1 3 5.5zm.5 2v9h17v-9z"/><path d="M12 8.6a3.4 3.4 0 1 1-3.4 3.4A3.4 3.4 0 0 1 12 8.6zm0 1.8a1.6 1.6 0 1 0 1.6 1.6A1.6 1.6 0 0 0 12 10.4z"/><path d="M4.5 8.8h3v1.4h-3z"/>',
   };
+  /* 品牌图标：用户给的位图（64×64，深色底，量化到 64 色减小体积）。
+     顶栏 20px、左下角「切回新界面」16px 都用它；替换素材时只改这一条 data URI。 */
+  const LOGO = 'data:image/png;base64,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';
+  const logo = (cls) => `<img class="logo ${cls || ''}" src="${LOGO}" alt="" decoding="async">`;
+
   const icon = (name, cls) =>
     `<svg class="icon ${cls || ''}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">${ICONS[name] || ''}</svg>`;
 
@@ -55,7 +64,7 @@
     const WEEKS = weeks || 53;
     const span = WEEKS * 7;
     const byDate = new Map((daily || []).map((x) => [x.d, x.v]));
-    const today = Util.dkey(new Date());
+    const today = Util.dkeyLocal();   // 本地日：与站点活动日期、streak 口径一致（UTC 在东八区 0–8 点会差一天）
     const start = Util.dshift(today, -(span - 1));
 
     const cells = [];
@@ -232,6 +241,19 @@
     return t - now.getTime() > 864e5 ? mk(now.getFullYear() - 1) : t;
   }
 
+  /** 站点的「相对时间」："9m" / "02h05m" / "3d04h" / "1y20d"（Misc::humanTime 的格式，可补零）。
+      返回毫秒数；认不出（如 "Never"）返回 null。会话页的 Last request (Job) 就是这种。 */
+  function agoMs(raw) {
+    const s = String(raw || '').trim();
+    if (!/^\d/.test(s)) return null;
+    const m = s.match(/^(?:(\d+)y)?(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/);
+    if (!m) return null;
+    const [y, d, h, mi, se] = m.slice(1).map((v) => Number(v || 0));
+    if (!y && !d && !h && !mi && !se && !/\d/.test(s)) return null;
+    return ((((y * 365 + d) * 24 + h) * 60 + mi) * 60 + se) * 1000;
+  }
+  const relOf = (raw) => { const ms = agoMs(raw); return ms == null ? null : Date.now() - ms; };
+
   /** 时长的紧凑写法：3d4h / 2h30m / 19m。**故意不翻译** —— 翻一次要多四组词条，不值。 */
   function agoText(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
@@ -286,7 +308,12 @@
     if (!devChips.length && cdRaw) devChips.push(chip(cdRaw, ''));
     const dev = devChips.length
       ? `<span class="dev"${cdRaw ? ` title="${esc(t('sess.computeRaw', { raw: cdRaw }))}"` : ''}>${devChips.join('')}</span>` : '';
-    const endT = d.running === true ? now : whenOf(val('lastRequestJob'));
+    const lastRaw = val('lastRequestJob');
+    /* Last request (Job) 是**相对时间**（"19m" / "02h05m"），Creation Time 才是绝对时间。
+       停着的机器用「最后一次请求」当结束点，两种格式都认；认不出就不画那条。
+       用显式 null 判断（别用 ||：绝对时间戳理论上可能是 0）。 */
+    const lastAbs = whenOf(lastRaw);
+    const endT = d.running === true ? now : (lastAbs != null ? lastAbs : relOf(lastRaw));
     /* 这一格现在只说**状态**（用户 2026-10-07：被列进"在线机器"本身就等于在运行，写「运行中」
        没有信息量）。三种状态，判据都在站点自己的页面上：
          · 暂停：那两行 note（客户端侧 / 服务端侧，可同时成立）；
@@ -395,6 +422,13 @@
      **按实测像素**渲染。绝不用 preserveAspectRatio="none"：它会把轴标签一起**非等比拉伸**。 */
 
   let chartObs = null;   // 模块级单例：重渲染必须先断开旧的，否则观察器挂在已摘除的节点上
+  let chartResize = null;   // 没有 ResizeObserver 时的 window.resize 兜底监听
+
+  /** 视图卸载/切换时收掉图表观察器（单节点泄漏 + 对 0 宽节点重画）。 */
+  function disposeCharts() {
+    if (chartObs) { chartObs.disconnect(); chartObs = null; }
+    if (chartResize) { window.removeEventListener('resize', chartResize); chartResize = null; }
+  }
 
   function pointsChart(box, series) {
     if (!box || !series || series.length < 2) return;
@@ -476,11 +510,12 @@
     });
 
     draw();
-    if (chartObs) chartObs.disconnect();
+    disposeCharts();
     if (window.ResizeObserver) {
       chartObs = new ResizeObserver(() => window.requestAnimationFrame(draw));
       chartObs.observe(box);
     } else {
+      chartResize = draw;
       window.addEventListener('resize', draw);
     }
   }
@@ -495,6 +530,6 @@
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
-  SP.Charts = { points: pointsChart };
+  SP.UI = { icon, ICONS, logo, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.Charts = { points: pointsChart, dispose: disposeCharts };
 })();

@@ -5,14 +5,82 @@
   const { Util, parse, text } = { Util: SP.Util, parse: SP.Util.parse, text: SP.Util.text };
   const inflight = {};
 
+  /* 站点把「未登录」做成 302 → /user/signin（**不是** 401），而 fetch 会跟随跳转拿到 200 的登录页。
+     只看 res.ok 会把过期登录当成功：写操作假保存、读操作静默空数据。所以认最终 URL。 */
+  function redirectedToSignin(res) {
+    if (!res || !res.redirected || !res.url) return false;
+    try {
+      /* 只看路径，别在整串 URL 上匹配：`/home?next=/user/signin` 这类查询参数会误伤。 */
+      const p = new URL(res.url, location.href).pathname.replace(/\/+$/, '');
+      return p === '/user/signin' || p.startsWith('/user/signin/');
+    } catch (e) { return false; }
+  }
+  function signedOutError(path) {
+    const e = new Error(`${path} → signin`);
+    e.code = 'SIGNED_OUT';
+    return e;
+  }
+
+  /** 解析器既吃 fetch 回来的 HTML 字符串，也吃当前页的活 document（省一次整页抓取）。 */
+  const asDoc = (src) => (typeof src === 'string' ? parse(src) : src);
+
+  /** 活 document 里的「原文」：站点内联 <script> 文本拼接。
+      排除脚本自己那一个 —— grant:none 的管理器可能把产物作为内联 <script> 塞进文档，
+      里面的注释/字符串会污染 `url: '/session/…/timeline'`、`var data` 这类锚点。 */
+  function scriptsSource(doc) {
+    return [...doc.scripts]
+      .filter((s) => !String(s.textContent || '').includes('__SHEEPIT_PLUS__'))
+      .map((s) => s.textContent || '')
+      .join('\n');
+  }
+
+  /* 活 document 只允许**每页消费一次**：首屏省掉重抓；之后（写操作 submit、刷新按钮、
+     暂停/恢复）必须回服务器拿新 DOM —— 否则会把写之前的旧 DOM 再解析一遍，
+     界面看起来"回弹"，还会 toast「已保存」。invalidate 不需要重置它：invalidate 的语义
+     就是"下一次必须走网络"。整页 reload 会重置模块状态，标志自然失效。 */
+  let liveDocUsed = '';
+  function currentDoc(path) {
+    const norm = (p) => String(p || '').replace(/\/+$/, '') || '/';
+    if (norm(location.pathname) !== norm(path)) return null;
+    if (liveDocUsed === norm(path)) return null;
+    liveDocUsed = norm(path);
+    return document;
+  }
+
+  /* 站点写操作的「成功」不止 'OK'（上游 UserController.php）：调度开关回 `Settings changed`、
+     邮箱回一整句 "An email have been sent…"、密码回 `Password successfully changed`。
+     只认 OK 会把成功误报成失败，而且 submit 不重取 → 开关状态回弹。 */
+  const OK_RE = /^(?:ok|empty|settings changed|notification level changed|password successfully changed|an email have been sent\b[^\n]*)$/i;
+  function isOk(r) { return !r || OK_RE.test(String(r).trim()); }
+
   /** 同源抓取（带凭据）+ 缓存 + 并发去重 */
   const cache = new Map();
+
+  /* 请求超时：站点偶发不回包时，没有 abort 就是"骨架永久 + inflight 去重一直复用同一个
+     永不 settle 的 Promise"，刷新页面才能救。15s 够慢网；超时按失败走错误态/降级。 */
+  const FETCH_TIMEOUT = 15000;
+  async function fetchWithTimeout(path, opts, ms = FETCH_TIMEOUT) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    try {
+      return await fetch(path, { ...opts, signal: c.signal });
+    } catch (e) {
+      if (e && e.name === 'AbortError') {
+        const err = new Error(`${path} → 超时（${Math.round(ms / 1000)}s）`);
+        err.code = 'TIMEOUT';
+        throw err;
+      }
+      throw e;
+    } finally { clearTimeout(t); }
+  }
+
   async function fetchPage(path, { ttl = 60000, force = false } = {}) {
     const now = Date.now();
     const hit = cache.get(path);
     if (!force && hit && now - hit.at < ttl) return hit.html;
     return Util.once(inflight, path, async () => {
-      const res = await fetch(path, { credentials: 'include', headers: { 'X-Requested-With': 'fetch' } });
+      const res = await fetchWithTimeout(path, { credentials: 'include', headers: { 'X-Requested-With': 'fetch' } });
+      if (redirectedToSignin(res)) throw signedOutError(path);
       if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
       const html = await res.text();
       cache.set(path, { at: Date.now(), html });
@@ -23,10 +91,11 @@
 
   /** 会话时间线不在 HTML 里，走站点自己的 AJAX 端点；失败抛错，调用方降级 */
   async function fetchJson(path) {
-    const res = await fetch(path, {
+    const res = await fetchWithTimeout(path, {
       credentials: 'include',
       headers: { 'X-Requested-With': 'fetch', Accept: 'application/json' },
     });
+    if (redirectedToSignin(res)) throw signedOutError(path);
     if (!res.ok) throw new Error(`${path} → HTTP ${res.status}`);
     return res.json();
   }
@@ -40,7 +109,10 @@
       opts.headers['Content-Type'] = 'application/x-www-form-urlencoded; charset=UTF-8';
       opts.body = new URLSearchParams(data || {}).toString();
     }
-    const res = await fetch(path, opts);
+    const res = await fetchWithTimeout(path, opts);
+    /* 登录过期时站点把动作也 302 到登录页：跟随之后是 200 + 整页 HTML，
+       下面「>400 字节按成功算」会把它当成功。先认这条。 */
+    if (redirectedToSignin(res)) throw signedOutError(path);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const txt = (await res.text()).trim();
     return txt.length > 400 ? 'OK' : txt;   // 头像接口回的是整页 HTML，按成功算
@@ -58,6 +130,23 @@
       let body = html.slice(s, e + 1).replace(/,\s*\]$/, ']');   // 去尾逗号
       if (keyed) body = body.replace(/([{,])\s*([A-Za-z_$][\w$]*)\s*:/g, '$1"$2":'); // 键加引号
       try { return JSON.parse(body.replace(/'/g, '"')); } catch (err) { /* 落到下一个锚点 */ }
+    }
+    return null;
+  }
+
+  /** 站点把图表数据写在单个内联 <script> 里。活 document 下不能按「热力图 div 的 id」定位：
+      那个 id 不在 script 文本里，锚点会落到插件初始化之后、把数据数组整段切掉。
+      所以按内容认 —— 同脚本里含 `date:` 的 `var data`，且带 CalendarHeatmap / heatmap id。 */
+  function heatmapData(doc) {
+    for (const s of doc.scripts) {
+      const t = s.textContent || '';
+      if (t.includes('__SHEEPIT_PLUS__')) continue;   // 别扫到我们自己的脚本
+      if (!/var\s+data\s*=/.test(t) || !/date\s*:/.test(t)) continue;
+      /* 同脚本还得是热力图那一份：站点以后再加别的含 date: 的图表数组时，
+         只靠 "var data + date:" 会先到先得拿错。 */
+      if (!/CalendarHeatmap|consecutive-render-heatmap/i.test(t)) continue;
+      const raw = extractArray(t, ['data'], true);
+      if (Array.isArray(raw)) return raw;
     }
     return null;
   }
@@ -168,7 +257,7 @@
    *  （站点是两条独立的 {% if %}，各写一行），所以这里把两行都收下来（见下面 info.note 的拼接），
    *  由 40-ui.js 的 pauseKeys() 判成 0/1/2 个状态。 */
   function parseSession(html, id) {
-    const doc = parse(html);
+    const doc = asDoc(html);
     const facts = [];
     const info = {};
 
@@ -236,7 +325,10 @@
       }
     }
 
-    const um = html.match(/url\s*:\s*['"]([^'"]*\/timeline[^'"]*)['"]/);
+    /* 时间线地址写在站点内联 JS 里（`url: '/session/…/timeline'`）。传进来的是活 document 时，
+       把站点各 <script> 的文本拼起来搜 —— 站点脚本改 DOM 也不会改 script 文本。 */
+    const source = typeof html === 'string' ? html : scriptsSource(doc);
+    const um = source.match(/url\s*:\s*['"]([^'"]*\/timeline[^'"]*)['"]/);
     const timelineUrl = Util.safePath(um ? um[1] : `/session/${id || ''}/timeline`);
 
     const projects = [];
@@ -484,7 +576,10 @@
   }
 
   function parseProfile(html, userName) {
-    const doc = parse(html);
+    const doc = asDoc(html);
+    /* 时间线数组与热力图数据写在站点内联 <script> 里。传进来的是活 document 时，
+       用站点脚本的文本当原文扫（站点脚本改 DOM 不改 script 文本）。 */
+    const source = typeof html === 'string' ? html : scriptsSource(doc);
 
     const stats = {};
     const dl = doc.querySelector('dl.dl-horizontal');
@@ -500,15 +595,21 @@
     // 用户名读 <title>：导航栏 logo <h1>SheepIt</h1> 会污染 querySelector('h1')
     const name = (text(doc.querySelector('title')) || userName || '').trim();
 
-    const points = (extractArray(html, 'line_points_timeline') || [])
+    const points = (extractArray(source, 'line_points_timeline') || [])
       .slice(1).map((r) => ({ d: String(r[0]), v: Number(r[1]) })).filter((p) => Number.isFinite(p.v));
 
-    const frames = (extractArray(html, ['line_frames_timeline', 'line_frames_timeline_2']) || [])
+    const frames = (extractArray(source, ['line_frames_timeline', 'line_frames_timeline_2']) || [])
       .slice(1).map((r) => ({ d: String(r[0]), v: Number(r[1]) })).filter((p) => Number.isFinite(p.v));
 
     let activity = [];
-    const anchor = html.indexOf('consecutive-render-heatmap');
-    const raw = extractArray(html.slice(Math.max(0, anchor)), ['data'], true);
+    /* 热力图数组按内容认（含 `date:` 且同脚本有 CalendarHeatmap 的那个 `var data`）。
+       活 document 下不能按 div id 的位置锚点切分（那个 id 不在 script 文本里，锚点会落在
+       数据数组之后）；字符串模式保留原来的锚点回退，站点把数据与初始化拆到两个脚本时还有退路。 */
+    let raw = heatmapData(doc);
+    if (!Array.isArray(raw) && typeof html === 'string') {
+      const anchor = source.indexOf('consecutive-render-heatmap');
+      raw = extractArray(source.slice(Math.max(0, anchor)), ['data'], true);
+    }
     if (Array.isArray(raw)) {
       activity = raw.filter((x) => x && x.date)
         .map((x) => ({ d: String(x.date).slice(0, 10), c: Number(x.count) || 0 }))
@@ -539,7 +640,9 @@
     const key = (dt) => dt.toISOString().slice(0, 10);
     const shift = (d, n) => { const x = new Date(`${d}T00:00:00Z`); x.setUTCDate(x.getUTCDate() + n); return key(x); };
     const set = new Set(activity.map((x) => x.d));
-    const today = key(new Date());
+    /* "今天"必须按**本地日期**取：站点给的活动日期是本地日历日；用 toISOString() 在
+       东八区 00:00–08:00 会算出前一天，连续天数会差一天。 */
+    const today = Util.dkeyLocal();
     const run = (from) => { let n = 0, c = from; while (set.has(c) && n < 5000) { n++; c = shift(c, -1); } return n; };
 
     let best = 0, cur = 0, prev = null;
@@ -581,25 +684,38 @@
     const doc = parse(html);
     const out = [];
 
+    /* 列位置别写死：站点给版主账号会多出 creation_time 等 extras 列（HomeController.php:726-734），
+       硬编码 tds[5] 会把「内存」读成别的列。优先按表头定位，认不出才回退老下标。 */
+    const firstRow = doc.querySelector('tr[data-project_id]');
+    const table = firstRow ? firstRow.closest('table') : doc;
+    const heads = [...(table || doc).querySelectorAll('thead th')].map((th) => text(th).toLowerCase());
+    const col = (re, fallback) => { const i = heads.findIndex((h) => re.test(h)); return i >= 0 ? i : fallback; };
+    const I_NAME = col(/^project$/, 0);
+    const I_OWNER = col(/^owner$/, 1);
+    const I_STATUS = col(/^status$/, 2);
+    const I_DEV = col(/^device/, 4);
+    const I_MEM = col(/^memory/, 5);
+
     for (const tr of doc.querySelectorAll('tr[data-project_id]')) {
       const tds = [...tr.querySelectorAll('td')];
       const id = tr.getAttribute('data-project_id');
-      const name = text(tr.querySelector('.project_link')) || text(tds[0]);
+      const name = text(tr.querySelector('.project_link')) || text(tds[I_NAME]);
 
       // 发布者：第一个有文字的 <a> 才是名字（前一个只有 <img> 头像）
       const links = [...tr.querySelectorAll('td a[href*="/user/"]')];
       const ownerAnchor = links.find((a) => text(a)) || null;
-      const owner = ownerAnchor ? text(ownerAnchor) : (tds[1]?.getAttribute('data-sort') || '');
+      const owner = ownerAnchor ? text(ownerAnchor) : (tds[I_OWNER]?.getAttribute('data-sort') || '');
       // URL 里的用户名才是稳定的键
       const ownerId = (ownerAnchor && (ownerAnchor.getAttribute('href').match(/\/user\/([^/]+)\//) || [])[1]) || '';
       const avatarImg = tr.querySelector('td .avatar-small img') || tr.querySelector('td img.avatar');
       const ownerAvatar = Util.safePath(avatarImg?.getAttribute('data-src') || avatarImg?.getAttribute('src') || '');
 
-      const status = parseStatus(text(tr.querySelector('.status')) || text(tds[2]));
+      const status = parseStatus(text(tr.querySelector('.status')) || text(tds[I_STATUS]));
 
       // 进度：aria-valuenow 是百分比，分数在 .sr-only 里
       const bar = tr.querySelector('.progress-bar');
-      let pct = Number(bar?.getAttribute('aria-valuenow'));
+      const rawPct = bar?.getAttribute('aria-valuenow');
+      let pct = rawPct == null || rawPct === '' ? NaN : Number(rawPct);
       if (!Number.isFinite(pct)) {
         const w = bar?.getAttribute('style')?.match(/width:\s*([\d.]+)%/);
         pct = w ? Number(w[1]) : 0;
@@ -609,8 +725,9 @@
       const total = frac ? Number(frac[2].replace(/,/g, '')) : null;
 
       // 设备：data-sort 是位掩码 CPU=1 / GPU=8（站点 addproject.js 的算法），掩码缺失才回退读 img
-      const devCell = tds[4];
-      const mask = Number(devCell?.getAttribute('data-sort'));
+      const devCell = tds[I_DEV];
+      const rawMask = devCell?.getAttribute('data-sort');
+      const mask = rawMask == null || rawMask === '' ? NaN : Number(rawMask);
       let cpu = false, gpu = false;
       if (Number.isFinite(mask)) {
         cpu = (mask & 1) === 1;
@@ -623,9 +740,10 @@
       }
 
       // 内存：显示文本保留，同时留 KB 原值供排序（文本是 "1.3 G" 这类字面量）
-      const memCell = tds[5];
+      const memCell = tds[I_MEM];
       const memText = text(memCell);
-      const memKb = Number(memCell?.getAttribute('data-sort'));
+      const rawKb = memCell?.getAttribute('data-sort');
+      const memKb = rawKb == null || rawKb === '' ? null : Number(rawKb);
       const mem = (memText.match(/([\d.]+\s*[KMGT]?B)/i) || [memText])[0];
 
       out.push({
@@ -642,7 +760,7 @@
 
   /** 排行榜：用站点自带的 data-sort 原始数值（排行榜按站点原始值排、不按 "1.3 G" 字面量） */
   function parseRanking(html) {
-    const doc = parse(html);
+    const doc = asDoc(html);
     const rows = [...doc.querySelectorAll('table tr')].filter((tr) => tr.querySelector('td'));
     const out = [];
     for (const tr of rows) {
@@ -652,9 +770,16 @@
       const av = tr.querySelector('td .avatar-small img') || tr.querySelector('td img.avatar') || link?.querySelector('img');
       const numOf = (td) => {
         const raw = td.getAttribute('data-sort');
-        const n = Number(raw);
-        if (Number.isFinite(n)) return n;
-        return Number(text(td).replace(/[^\d.]/g, '')) || null;
+        if (raw != null && raw !== '') {
+          const v = Number(raw);
+          if (Number.isFinite(v)) return v;
+        }
+        /* 没有 data-sort 才退到显示文本。注意 "2y244d43m" 这类缩写会被抠成 224443 ——
+           只当排序兜底；榜单每列都带 data-sort 原值（夹具 1658 行 × 4 个），正常走不到这里。 */
+        const txt = text(td).trim();
+        if (!txt || !/\d/.test(txt)) return null;
+        const n = Number(txt.replace(/[^\d.]/g, ''));
+        return Number.isFinite(n) ? n : null;
       };
       out.push({
         rank: text(tds[0]),
@@ -666,14 +791,13 @@
         seconds: numOf(tds[3]),
         points: numOf(tds[4]),
       });
-      if (out.length >= 500) break;
     }
     return out;
   }
 
   /** 账户设置页（/user/<u>/edit）：整页 11 个分区都在 DOM 里（站点用 display 切换），一次抓取够用 */
   function parseAccount(html) {
-    const doc = parse(html);
+    const doc = asDoc(html);
 
     const checked = (id) => {
       const el = doc.getElementById(id);
@@ -808,7 +932,8 @@
   }
 
   SP.Api = {
-    fetchPage, fetchJson, invalidate, cache, post,
+    fetchPage, fetchJson, fetchWithTimeout, invalidate, cache, post,
+    currentDoc, isOk,
     parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
     parseMyProjects, parseManage,
     parseAccount, parseMachines, parseSession, parseTimeline,

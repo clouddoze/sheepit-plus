@@ -1,15 +1,18 @@
 /* ==== 62-chain.js：上传链路的**数据层**（0.2.0）====================================
 
-   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 9b13032c
-   （= 线上资源路径 /media/9b13032c/，就是 getShortVersion()）。行号对着那一版看。
+   契约来自站点源码，不是猜的：上游 GitLab `sheepitrenderfarm/www`，master 65b8c8b2
+   （= 线上资源路径 /media/65b8c8b2/，就是 getShortVersion()）。
+   2026-10-18 复核：相对 9b13032c 只多了 OSL 一项 —— addproject.js 多一个 `osl` 键、
+   HTML.php 多一个 `addproject_osl_<i>` 隐藏项、ProjectController 读 `$request->request->get('osl')`；
+   templates 零改动，上传四步结构与 27 个旧键全部不变。下列行号沿用旧版（偏差 ≤1 行）。
 
-   契约 A 上传（第一步）  HTML.php:2127-2152 → POST /project/internal/upload（multipart）
+   契约 A 上传（第一步）  HTML.php:2128-2153 → POST /project/internal/upload（multipart）
                           字段：addproject_archive（文件）+ UPLOAD_IDENTIFIER（32 位 hex）
                           成功 = 302 → /project/add/<token>；失败 = 200 纯文本原因 或 error 页
    契约 B 等待（第二步）  ProjectController.php:194-221 → GET /project/add_analyse/<token>
                           JSON {"status":"RETRY"|"PROCESSING",analysed,total} 或整段 HTML 碎片
    契约 C 提交（第三步）  addproject.js:1-101 / ProjectController.php:226-448 → POST /project/add_internal
-                          27 键；响应以 "http" 开头 = 成功地址，否则整段是错误说明
+                          28 键（65b8c8b2 起多 osl）；响应以 "http" 开头 = 成功地址，否则整段是错误说明
 
    这一层的纪律：**服务端返回的 HTML 只经 DOMParser 走一遭，永不进活文档**。
    界面用我们自己的 id、我们自己的提交 —— 于是"两份同名控件""站点 JS 抢 DOM"那一整类缺陷
@@ -22,7 +25,7 @@
   const t = SP.t;
 
   /** 核对过的上游版本；站点升级后要重新核对并同时改这里与 docs/REWRITE-0.2.0.md。 */
-  const UPSTREAM = '9b13032c';
+  const UPSTREAM = '65b8c8b2';
 
   const URL_UPLOAD = '/project/internal/upload';
   const URL_SUBMIT = '/project/add_internal';
@@ -84,7 +87,7 @@
   }
 
   /* 我们自己渲染的控件（这些 id 的内容不进"说明文字"）：帧、切块、内存、提交、错误框、隐藏项 */
-  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
+  const OWN_IDS = /^addproject_(animation_(start|end|step)_frame|singleframe_start_frame|split_tiles_number|split_(animation_)?sample_range_value|split_sample_value|animation_split_sample_value|max_ram_optional|submit|submit_div|error_box|content|exe|path|archive|engine|denoising|osl|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)|^checkbox_ad_|^checkbox_advanced_option_/;
 
   /** 把服务端写的**说明文字**（EXR 限制、降噪提示、切块解释、缺文件、驱动警告…）抽出来。
       不抽控件、不抽 label 的 for 目标 —— 那些我们自己画。 */
@@ -126,7 +129,7 @@
     /^token$/, /^public_render$/, /^public_thumbnail$/, /^generate_mp4$/,
     /^compute_method_(cpu|gpu)$/,
     /^addproject_\d+$/, /^addproject_content_\d+$/,
-    /^addproject_(exe|path|archive|engine|denoising|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
+    /^addproject_(exe|path|archive|engine|denoising|osl|color_management|render_on_gpu_headless|use_adaptive_sampling|framerate|output_path|width|height|cycles_samples|samples_pixel|image_extension)_\d+$/,
     /^addproject_(animation_start_frame|animation_end_frame|animation_step_frame|singleframe_start_frame|max_ram_optional)_\d+$/,
     /^addproject_(split_tiles_number|split_animation_sample_range_value|animation_split_sample_value|split_sample_range_value|split_sample_value)_\d+$/,
     /^addproject_(submit|submit_div|error_box)_\d+$/,
@@ -187,7 +190,7 @@
     const rej = cont.querySelector('div.error');
     const hidden = {};
     const readHidden = (key) => str(valOf(cont, 'addproject_' + key + '_' + i));
-    ['exe', 'path', 'archive', 'engine', 'denoising', 'color_management', 'render_on_gpu_headless',
+    ['exe', 'path', 'archive', 'engine', 'denoising', 'osl', 'color_management', 'render_on_gpu_headless',
       'use_adaptive_sampling', 'framerate', 'output_path', 'width', 'height', 'cycles_samples',
       'samples_pixel', 'image_extension'].forEach((k) => { hidden[k] = readHidden(k); });
 
@@ -254,9 +257,9 @@
 
   /* ------------------------------------------------------------- 组提交体 */
 
-  /** 27 键，顺序与站点 addproject.js:57-85 一致（顺序不影响服务端，但方便逐键比对）。 */
+  /** 28 键，顺序与站点 addproject.js:57-85 一致（65b8c8b2 起多 osl；顺序不影响服务端，但方便逐键比对）。 */
   const SUBMIT_KEYS = [
-    'type', 'compute_method', 'executable', 'engine', 'denoising', 'color_management',
+    'type', 'compute_method', 'executable', 'engine', 'denoising', 'osl', 'color_management',
     'render_on_gpu_headless', 'token', 'public_render', 'public_thumbnail', 'generate_mp4',
     'start_frame', 'end_frame', 'step_frame', 'archive', 'max_ram_optional', 'path', 'framerate',
     'output_path', 'width', 'height', 'split_tiles', 'split_samples', 'use_adaptive_sampling',
@@ -269,7 +272,7 @@
   };
 
   /**
-   * model（服务端给的事实）+ ui（用户改的）→ 27 键。
+   * model（服务端给的事实）+ ui（用户改的）→ 28 键。
    * 与站点 doAddProject 的逐键对应写在括号里；**不做任何"顺手修正"**，只做站点做的事：
    *   · 单帧项目：end_frame 恒为 0、step_frame 恒为 1（addproject.js:3-4,20-21）
    *   · 没滑条时 split_samples 发空串（站点那边是 undefined，jQuery 也发 `split_samples=`）
@@ -293,6 +296,7 @@
           executable: key('exe'),
           engine: key('engine'),
           denoising: key('denoising'),
+          osl: key('osl'),
           color_management: key('color_management'),
           render_on_gpu_headless: key('render_on_gpu_headless'),
           token: model.token,
@@ -347,7 +351,7 @@
 
   /** 契约 C：提交。成功体是 `{scheme}://{host}/project/<id>`（ProjectController.php:430）。 */
   async function submit(payload) {
-    const res = await fetch(URL_SUBMIT, {
+    const res = await SP.Api.fetchWithTimeout(URL_SUBMIT, {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
@@ -383,7 +387,7 @@
 
   /** 契约 B：轮询分析状态。 */
   async function analyse(token) {
-    const res = await fetch(analyseUrl(token), {
+    const res = await SP.Api.fetchWithTimeout(analyseUrl(token), {
       credentials: 'include', cache: 'no-store', headers: { 'X-Requested-With': 'XMLHttpRequest' },
     });
     if (!res.ok) return { kind: 'error', message: t('up3x.httpFail', { code: res.status }) };
@@ -509,7 +513,7 @@
   /** 契约 D：估算器。POST /project/estimator（ProjectController.php:925-997）——
       time = 每帧分钟数，count = 帧数，device = `cpu_<id>` 或 `gpu_<id>`（下面那个接口给的 value）。 */
   async function estimator(fields) {
-    const res = await fetch('/project/estimator', {
+    const res = await SP.Api.fetchWithTimeout('/project/estimator', {
       method: 'POST',
       credentials: 'include',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8', 'X-Requested-With': 'XMLHttpRequest' },
@@ -538,7 +542,7 @@
   /** 设备自动补全：GET /device/search?term=（DeviceController.php:45-）→ [{value:'cpu_12',label:'…'}]。
       站点遇到非法字符会回一条 value='#' 的提示，那条不是设备，过滤掉。 */
   async function deviceSearch(term) {
-    const res = await fetch('/device/search?term=' + encodeURIComponent(String(term)), {
+    const res = await SP.Api.fetchWithTimeout('/device/search?term=' + encodeURIComponent(String(term)), {
       credentials: 'include', headers: { 'X-Requested-With': 'XMLHttpRequest', Accept: 'application/json' },
     });
     if (!res.ok) return [];

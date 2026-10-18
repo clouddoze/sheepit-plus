@@ -292,7 +292,8 @@
       clearTimeout(timer);
       timer = setTimeout(async () => {
         const my = ++seq;
-        const list = await SP.Chain.deviceSearch(term);
+        let list = [];
+        try { list = await SP.Chain.deviceSearch(term); } catch (e) { list = []; }
         if (my !== seq) return;
         sug.textContent = '';
         if (!list.length) { closeSug(); return; }
@@ -322,7 +323,10 @@
       if (!(time > 0) || !(count > 0)) { say(t('up1.estNeed'), true); return; }
       btn.disabled = true;
       btn.textContent = t('up1.estimating');
-      const r = await SP.Chain.estimator({ time, count, device: devValue });
+      /* 估算请求失败/超时也要把按钮恢复：fetchWithTimeout 会抛，异常不接住按钮就永久 disabled */
+      let r;
+      try { r = await SP.Chain.estimator({ time, count, device: devValue }); }
+      catch (e) { r = { ok: false, message: (e && e.message) || '' }; }
       btn.disabled = false;
       btn.textContent = t('up1.estGo');
       if (!r.ok) {

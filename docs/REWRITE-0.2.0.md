@@ -2,7 +2,7 @@
 
 > 状态：**设计已核对上游源码，等用户拍板后动手**。
 > 范围（用户 2026-10-07 拍板）：0.2.0 只做「上传 → 等待 → 设置」三步链路；项目管理页留到 0.2.1。
-> 依据：上游 GitLab `sheepitrenderfarm/www`，master `9b13032c`（= 线上指纹），已整仓拉取核对。
+> 依据：上游 GitLab `sheepitrenderfarm/www`。0.2.0 设计对照 `9b13032c`（2026-09-25）；2026-10-18 线上已升到 `65b8c8b2`，逐文件复核差异只有 OSL 一项（`addproject.js` 多 `osl` 键、`HTML.php` 多 `addproject_osl_<i>` 隐藏项、`ProjectController` 读 `osl`；templates 零改动），脚本已按新版补上该键，见 `src/62-chain.js` 头注释。
 
 ---
 
@@ -20,7 +20,7 @@
 | 项 | 事实 | 出处 |
 |---|---|---|
 | 仓库 | GitLab `https://gitlab.com/sheepitrenderfarm`（**不是 GitHub**）；`www` 是站点本体 | group projects API |
-| 版本 | `www` master HEAD = `9b13032c`（2026-09-25）＝线上资源路径 `/media/9b13032c/` ＝ `getShortVersion()` | `HTML.php:1956` |
+| 版本 | 2026-10-18 线上 = `65b8c8b2`（`/media/65b8c8b2/`）；0.2.0 设计当时是 `9b13032c`。两者 templates 无差异，仅新增 OSL（见上） | `HTML.php`、`addproject.js` |
 | 上传页 | **不是** `/project/add`（那是 404），而是 `/getstarted` 最后一段 `<section class="slice color-three">` | `templates/getstarted/getstarted.html.twig:86` → `HTML::printCreateProject()`（`HTML.php:2021`） |
 | 本地快照 | `.tmp/upstream/src/www-<sha>/www/`（templates + src + ajax 脚本，608 文件） | 本次拉取 |
 | 线上样本 | `.tmp/upload-test/live-getstarted.html`（上传表单）、`live-step2.html`（等待页）、`step3-outer.html`（真实抓到的第三步碎片） | 本次抓取，逐个 id 与源码对齐 |

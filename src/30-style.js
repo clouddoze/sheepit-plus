@@ -46,7 +46,8 @@ ${Theme.css('#sp')}
 }
 @supports not (background:color-mix(in srgb,var(--bg),transparent)){#sp .top{background:var(--bg)}}
 #sp .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.3px;flex:none;text-decoration:none}
-#sp .brand .sheep{width:20px;height:20px;flex:none;color:var(--accent)}
+/* 品牌图标是位图（深色底），固定尺寸 + 圆角；别给它上 currentColor（那是给单色 SVG 的） */
+#sp .brand .sheep{width:24px;height:24px;flex:none;border-radius:6px;object-fit:cover;display:block}
 #sp .brand em{
   font-style:normal;font-weight:500;font-size:11px;color:var(--text-3);
   border:1px solid var(--border);border-radius:4px;padding:1px 5px;letter-spacing:.4px;
@@ -60,9 +61,11 @@ ${Theme.css('#sp')}
 #sp nav button[aria-current="page"]{background:var(--surface-2);color:var(--text);font-weight:550}
 #sp nav .navshort{display:none}
 #sp .top .spacer{flex:1}
+/* 右侧控制组：刷新时间 / 主题快速切换 / 刷新 / 原版界面 / 头像（用户 2026-10-18 定序） */
+#sp .topright{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
 #sp .metaline{font-size:12px;color:var(--text-3);white-space:nowrap}
 #sp .who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);min-width:0}
-#sp .who .uname{font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#sp .who .uname{font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .who .ini{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-3);flex:none}
 
@@ -74,8 +77,13 @@ ${Theme.css('#sp')}
 }
 @media (max-width:620px){
   #sp .top{gap:8px}
+  /* 一行摆不下（品牌 + 6 个导航 + 右侧组）：右侧整组换到第二行，别横向溢出。
+     原版本在 390 宽时就已经溢出约 90px，这里顺手修掉。 */
+  #sp .top{flex-wrap:wrap;row-gap:6px}
+  #sp .top .spacer{display:none}
+  #sp .topright{flex:1 1 100%;justify-content:flex-end}
   #sp .brand{font-size:14px}
-  #sp .brand .sheep{width:18px;height:18px}
+  #sp .brand .sheep{width:20px;height:20px;border-radius:5px}
   #sp .brand em{display:none}
   #sp nav{gap:0}
   #sp nav button{padding:6px 7px;font-size:13px}
@@ -111,14 +119,21 @@ ${Theme.css('#sp')}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
 #sp .btn .icon{width:14px;height:14px}
 
-/* ==== 身份条 ==== */
-#sp .identity{display:flex;align-items:center;gap:14px;padding:22px 0 18px;flex-wrap:wrap}
+/* ==== 身份条 ====
+   用户名一行、排名/TOP/团队/注册时间另一行（用户 2026-10-18 拍板）。用户名用正文色，
+   不要和下面那排灰色元信息混成一片。 */
+#sp .identity{display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:22px 0 18px}
+/* 头像与右侧两行文字按**底边**对齐：元信息行的底边正好压在头像下边缘上（用户 2026-10-18） */
+#sp .idmain{display:flex;align-items:flex-end;gap:14px;min-width:0;max-width:100%}
+#sp .idtext{display:flex;flex-direction:column;gap:4px;min-width:0}
 #sp .identity .av,#sp .identity img{
   width:46px;height:46px;flex:none;border-radius:12px;overflow:hidden;
   border:1px solid var(--border);background:var(--surface-2);display:block;
 }
 #sp .identity .av{display:grid;place-items:center;font-size:20px;font-weight:600;color:var(--text-2)}
-#sp .identity h1{margin:0;font-size:20px;font-weight:600;letter-spacing:-.3px}
+#sp .identity h1{margin:0;font-size:20px;line-height:1.15;font-weight:600;letter-spacing:-.3px;color:var(--text);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 两行合计 = 23(h1) + 4(gap) + 19(meta) = 46 = 头像高度，所以底边天然齐平 */
+#sp .identity .meta{max-width:100%}
 #sp .meta{display:flex;align-items:center;gap:0;flex-wrap:wrap;font-size:12.5px;color:var(--text-2)}
 #sp .meta span{padding:0 12px;border-left:1px solid var(--border)}
 #sp .meta span:first-child{padding-left:0;border-left:none}
@@ -247,6 +262,23 @@ ${Theme.css('#sp')}
 #sp .mstat div{flex:1;min-width:0}
 #sp .mstat .k{font-size:11.5px;color:var(--text-3)}
 #sp .mstat .v{font-size:16px;font-weight:600;margin-top:4px;letter-spacing:-.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ==== 渲染效率卡（总览右侧，可与月度产出互换） ==== */
+#sp .effgrid{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  overflow:hidden;background:var(--border);
+}
+#sp .eff{background:var(--surface);padding:12px 14px;min-width:0}
+#sp .eff .k{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sp .eff .v{margin-top:6px;font-size:19px;font-weight:600;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sp .eff .h{margin-top:4px;font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 卡片右上角的「换回…」：phead 里的文字按钮 */
+#sp .phead .subbtn{
+  font:inherit;font-size:12px;color:var(--text-3);background:none;border:none;
+  padding:0;cursor:pointer;white-space:nowrap;text-decoration:none;
+}
+#sp .phead .subbtn:hover{color:var(--accent);text-decoration:underline}
 @media (max-width:560px){
   #sp .months{height:96px}
   #sp .mstat{gap:12px}
@@ -488,8 +520,10 @@ ${Theme.css('#sp')}
   color:var(--text-2);font-size:12px;cursor:pointer;transition:border-color .12s,color .12s;white-space:nowrap;
 }
 #sp .modebtn:hover{border-color:var(--border-strong);color:var(--text)}
-#sp .modebtn .icon{width:13px;height:13px}
-@media (max-width:1000px){#sp .modebtn .txt{display:none}#sp .modebtn{padding:0 7px}}
+/* 按钮内容只有文字（用户 2026-10-18：不要前面的羊图标，文案改成「< 原版界面」）。
+   窄屏换短文案，别退化成空按钮。 */
+#sp .modebtn .txts{display:none}
+@media (max-width:1000px){#sp .modebtn .txt{display:none}#sp .modebtn .txts{display:inline}#sp .modebtn{padding:0 7px}}
 
 /* ==== 账户设置 ==== */
 #sp .acct{max-width:820px}
@@ -1022,6 +1056,7 @@ ${Theme.css('#sp')}
       #sp-mode-pill:hover{transform:translateY(-1px);box-shadow:0 3px 10px rgba(0,0,0,.4), 0 10px 28px rgba(0,0,0,.34)}
       #sp-mode-pill:focus-visible{outline:2px solid #fff;outline-offset:2px}
       #sp-mode-pill svg{width:15px;height:15px;flex:none;fill:#fff}
+      #sp-mode-pill img{width:16px;height:16px;flex:none;border-radius:4px;display:block}
     `;
     (document.head || document.documentElement).appendChild(s);
   };

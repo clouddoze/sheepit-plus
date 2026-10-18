@@ -344,7 +344,7 @@
         '渲染引擎需要受支持，目前支持 Cycles、Eevee 和 Workbench 渲染器。',
 
       'You should keep the render time per frame (or split) under 20 min (on the reference machine). As an example, this scene will be rendered in 20min on the reference machine (i5-9600).There is a list of average power per machine, check out the faq for more info.':
-        '每帧（或每个分块）在基准机器上的渲染时间应控制在 20 分钟以内。例如这个场景在基准机器（i5-9600）上需要 20 分钟。这里有一份<a href="/faq">各机器的平均算力列表</a>，详见 FAQ。',
+        '每帧（或每个分块）在基准机器上的渲染时间应控制在 20 分钟以内。例如<a href="/reference_machine.blend">这个场景</a>在基准机器（i5-9600）上需要 20 分钟。这里有一份<a href="/ranking/machine">各机器的平均算力列表</a>，<a href="/faq#power_rating">详见 FAQ</a>。',
 
       "You can add up to 12,000 tiles at a time. If you divide it into 8x8, your project can be up to 187 frames; if you don't split frames, you will have 1 tile <=> 1 frame.":
         '一次最多可以添加 12,000 个分块。如果按 8x8 拆分，你的项目最多可以有 187 帧；如果不拆分帧，则 1 个分块对应 1 帧。',
