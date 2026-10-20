@@ -32,141 +32,76 @@
 
 ### English（先贴这段）
 
-A new front end for SheepIt Render Farm.
+A modern front end for SheepIt Render Farm.
 
-SheepIt Plus is a userscript. It reads the site's own pages with same-origin requests and renders
-the data in a new interface. It is not a CSS reskin — everything on screen comes from the site.
+SheepIt Plus is a userscript. It reads the site's own pages with same-origin requests and redraws
+them as a new interface — not a CSS reskin.
 
-What it rebuilds
+What it covers
 
-- Overview — `/home` and your profile: stat cards, points and frames curves, a render-activity
-  calendar, connected machines, live site numbers.
-- Projects — `/home/projects`: search, filter, sort; publisher names and avatars visible;
-  a render-priority toggle on each publisher.
-- Ranking — `/ranking/user`: sorted by the values the site gives, so "1.3 G" style abbreviations
-  don't cost precision; your own row is highlighted.
-- Session — `/session/<number>`: one machine's record. 20 machine facts (the render key stays
-  masked), a per-day activity summary with the full log one click away, renderable projects
-  grouped by reason, and pause/resume for that machine.
-- Account settings — `/user/<you>/edit`: scheduler switches, render priority, avatar, e-mail,
-  render keys, two blocklists.
-- Settings — in-app: theme (system / dark / light), interface language, and whether to translate
-  the pages that keep their original layout.
-- Uploading a project — the top bar has an "Upload" entry, with three settings: off (the entry does
-  not appear at all), "original" (the entry opens the site's own upload page in a new tab,
-  untouched), and "new" (the default: the upload card, the analysis wait, and the project-settings
-  step are drawn and submitted by the script, using the values the site's own analyzer returned).
+- Overview: stat cards, points and frames curves, activity calendar, connected machines.
+- Projects and ranking: search, filter, sort; publisher actions (render priority, donate points,
+  blocklist).
+- Session: machine status, per-day activity summary, pause and resume.
+- Account settings: scheduler and lists, donations, avatar, e-mail, render keys.
+- Upload: upload, analysis wait and project settings (the site's own upload page is one setting away).
+- Settings: theme, interface zoom and language; untouched pages get translated copy only.
 
 Privacy
 
-All data comes from pages you could already see, read with same-origin requests. No undocumented
-endpoints, and no requests to third parties. The stylesheet and every chart are self-contained:
-no analytics, no external fonts, no CDN. Your preferences live in `localStorage` under
-`sheepit-plus:*`.
+Everything comes from pages you can already see. No undocumented endpoints, no third-party requests,
+no analytics or external assets. Preferences live in localStorage.
 
-Four things can change anything on the server, and each is a button you press, posting to the same
-endpoint the original page posts to: the forms in Account settings, pause/resume on a session page,
-add/remove in your render priority, and adding a project (the file upload, then the project settings
-you confirm). In the upload flow the script posts the same fields the site's own form posts, to the
-same addresses; it does not invent endpoints. The script makes no scheduling decisions and does not
-touch points or frame accounting.
+Actions that change the server are only the buttons you press, posted to the site's own endpoints:
+account-settings forms, pause/resume, publisher actions, and adding a project. The script makes no
+scheduling decisions and does not touch points or frames accounting.
 
 Prefer the old interface?
 
-There is a one-click "switch to the original interface" in the top bar, and in the original
-interface a small button to come back.
+One click in the top bar switches back; there is a way back to the new interface too. If the site
+changes and a parser stops matching, the script says so and hands that page back to the site.
 
 Requirements
 
-Tampermonkey (Violentmonkey / Greasemonkey also work) and a signed-in SheepIt session — the script
-reads data through your own session. No extra permissions: `@grant none`.
+Tampermonkey / Violentmonkey and a signed-in SheepIt session. No extra permissions: `@grant none`.
 
-Known limitations
-
-- The original CSS/JS still downloads; it is only hidden. A userscript has no network-layer blocking.
-- Pages that are not rebuilt (`/faq`, `/project/*`, `/servers`, …) keep their original layout; text is
-  replaced only where a translation exists. The upload flow is rebuilt in "new" mode (the default);
-  "original" mode opens the site's own page untouched.
-- In "new" mode the project-settings step (engine, frame range, tiles, samples, resolution…) is drawn
-  and submitted by the script from the site's own analysis values. If that form stops matching the
-  upstream version the script was checked against, it says so and hands that page back to the site's
-  own interface — it never renders a half-and-half mixture. The project management page
-  `/project/<id>` keeps the site's own controls, restyled.
-- If the site is redesigned a parser can stop matching. The worst case is one view saying "no data";
-  the site itself is unaffected.
-- The Chinese word list is the most complete; English is the baseline and falls back to the site's
-  own wording.
-- Signed out? The script asks you to sign in on the original site.
-
-This is a third-party interface rebuild, not affiliated with or endorsed by SheepIt Render Farm.
-The name, the sheep and the orange are kept so it stays recognisable as their site.
-
-The code, the interface copy and the docs were written by an AI assistant (DeepSeek Harness) under
-a human's direction and item-by-item review.
-
-MIT licensed. Feedback welcome — tell me which page and what you saw.
+Third-party interface rebuild, not affiliated with SheepIt Render Farm. The name, sheep and orange are
+kept so the site stays recognisable. MIT licensed.
 
 ### 中文（接在后面贴）
 
-给 SheepIt Render Farm 换一套新前端。
+给 SheepIt Render Farm 换一套现代前端。
 
-SheepIt Plus 是一个油猴脚本。它用同源请求读取站点自己的页面，再把数据渲染成新界面 ——
-不是覆盖一层 CSS 的换肤，界面上显示的东西全部来自站点本身。
+SheepIt Plus 是一个油猴脚本：用同源请求读取站点自己的页面，重绘成新界面 —— 不是覆盖一层 CSS 的换肤。
 
-重做了这几处：
+做了什么
 
-- 总览（`/home`、你的个人主页）：统计卡、积分与帧数曲线、渲染活跃日历、已连接的机器、
-  全站实时数据。
-- 项目（`/home/projects`）：可搜索、可筛选、可排序；发布者名字与头像可见；发布者那格
-  带一个渲染优先级开关。
-- 排行榜（`/ranking/user`）：按站点给的原始数值排序，不受 "1.3 G" 这类缩写影响；
-  你自己那行会高亮。
-- 会话页（`/session/<数字>`）：一台机器的档案。机器信息 20 项（渲染密钥默认遮住）、
-  按天的活动汇总与完整日志、可渲染的项目按原因分组；可以在这里暂停或恢复这台机器。
-- 账户设置（`/user/<你>/edit`）：调度开关、渲染优先级、头像、邮箱、渲染密钥、两组黑名单。
-- 设置（应用内）：主题（跟随系统/暗/亮）、界面语言、是否翻译保持原版的页面。
-- 上传项目：顶栏有「上传项目」入口，设置里有三档 —— 关闭（连入口都不出现）、原版（入口点一下＝
-  新标签页打开站点自己那页，我们一点不碰）、新版（**默认**：上传卡片、分析等待、项目设置三步
-  都由脚本自绘并自行提交，用的是站点分析器给的值）。
+- 总览：统计卡、积分与帧数曲线、渲染活跃日历、在线机器。
+- 项目 / 排行榜：搜索、筛选、排序；发布者操作（渲染优先级、捐赠积分、黑名单）。
+- 会话页：机器状态、按天活动汇总、暂停 / 恢复。
+- 账户设置：调度与名单、捐赠积分、头像 / 邮箱 / 渲染密钥。
+- 上传项目：上传 → 分析等待 → 项目设置（设置里可切回站点原版页面）。
+- 设置：主题、界面缩放、语言；未重建的页面只翻译文案。
 
-关于隐私
+隐私
 
-所有数据都来自你本来就能看到的页面，用同源请求读取；不调用未公开的接口，也不向任何第三方
-发请求。样式和图表都是脚本自带的，没有统计代码、外部字体或 CDN。你的偏好存在 `localStorage`
-的 `sheepit-plus:*` 键下。
+所有数据都来自你本来就能看到的页面，用同源请求读取；不调用未公开接口、不向第三方发请求，
+没有统计代码或外部资源。偏好存在 localStorage。
 
-只有四处会改动服务器上的状态，都是你自己点下去的按钮，提交到原站同一个地址：账户设置里的
-表单、会话页的暂停/恢复、项目列表里发布者那格的优先/移出，以及添加项目（文件上传，再到你确认的
-项目设置）。上传链路上脚本发的是站点自己那张表单会发的同一组字段、同一个地址，不自造接口。
-脚本不参与渲染调度，也不碰积分与帧数的计算。
+只有你亲手点的按钮才会改动服务器状态，且都提交到原站同一地址：账户设置表单、会话页暂停 / 恢复、
+项目列表的发布者操作、添加项目。脚本不参与调度，也不碰积分与帧数的计算。
 
 想用回原版
 
-顶栏有一键「切回原版界面」；原版模式下左下角留了一个切回来的入口。
+顶栏一键切换；原版界面里也有切回来的入口。站点改版、解析器认不出时，脚本会明说，
+并把那一页交回站点。
 
 前提
 
-装 Tampermonkey（Violentmonkey / Greasemonkey 也可以），并且在 SheepIt 上已登录 ——
-数据靠你自己的会话读取。不需要额外权限（`@grant none`）。
+Tampermonkey / Violentmonkey，以及已登录的 SheepIt 会话。不需要额外权限（`@grant none`）。
 
-已知限制
-
-- 原站的 CSS/JS 仍会下载，只是被隐藏了；油猴脚本没有扩展那样的网络层拦截能力。
-- 未重建的页面（`/faq`、`/project/*`、`/servers` 等）保持原版界面，只在有译文时替换文案。
-  上传链路只在「新版」档重做（这是默认档）；「原版」档完全不接管，打开的是站点自己那一页。
-- 「新版」档下，项目设置那一步（引擎、帧区间、切块、采样、分辨率…）由脚本按站点分析器给的值
-  自绘并自行提交。万一这张表单与脚本核对过的上游版本对不上，它会明说，并把这一页交回站点自己的
-  界面 —— 不做半新半旧的渲染。项目管理页 `/project/<数字>` 仍是站点自己的控件，只统一了外观。
-- 站点改版可能让某个解析器失效，最坏情况是那一个视图显示「无数据」，不影响站点本身。
-- 中文词表最完整；英文是基准语言，缺失的键回落站点原文。
-- 未登录时会提示你先在原站登录。
-
-这是第三方界面重制，与 SheepIt Render Farm 官方没有隶属或背书关系。保留名称、羊的形象与
-品牌橙，是为了让人一眼认得出这是他们的站点。
-
-代码、界面文案与文档由 AI 助手（DeepSeek Harness）在人的指令与逐项验收下写成。
-
-MIT 许可。有问题欢迎反馈：告诉我哪个页面、你看到了什么。
+第三方界面重制，与 SheepIt Render Farm 官方无隶属关系；保留名称、羊和品牌橙是为了让人认得出
+这是他们的站点。MIT 许可。
 
 ---
 
