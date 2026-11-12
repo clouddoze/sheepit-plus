@@ -1,0 +1,172 @@
+{
+  "handled": [
+    "overview",
+    "overview",
+    "overview",
+    "projects",
+    "ranking",
+    "ranking",
+    "overview",
+    "account",
+    "session",
+    "upload",
+    "analyse",
+    "project"
+  ],
+  "unhandled": [
+    {
+      "path": "/donation",
+      "count": 45
+    },
+    {
+      "path": "/termsofuse",
+      "count": 22
+    },
+    {
+      "path": "/faq",
+      "count": 17
+    },
+    {
+      "path": "/team",
+      "count": 11
+    },
+    {
+      "path": "/forum",
+      "count": 11
+    },
+    {
+      "path": "/servers",
+      "count": 11
+    },
+    {
+      "path": "/team/844",
+      "count": 4
+    },
+    {
+      "path": "/session/past/2154311",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2150789",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2136809",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2150641",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2136520",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2150577",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2136004",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2136518",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2132606",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2132602",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2129076",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2125246",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2123758",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2121903",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2124525",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2121129",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2116229",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2115562",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2115552",
+      "count": 3
+    },
+    {
+      "path": "/session/past/2112554",
+      "count": 3
+    },
+    {
+      "path": "/user/register",
+      "count": 2
+    },
+    {
+      "path": "/home/frames",
+      "count": 2
+    },
+    {
+      "path": "/user/remove",
+      "count": 1
+    },
+    {
+      "path": "/user/lostpassword",
+      "count": 1
+    },
+    {
+      "path": "/project/frames/1224469/interval",
+      "count": 1
+    },
+    {
+      "path": "/ranking/machine",
+      "count": 1
+    },
+    {
+      "path": "/home/machines",
+      "count": 1
+    },
+    {
+      "path": "/news/1786381217",
+      "count": 1
+    },
+    {
+      "path": "/news/1784135430",
+      "count": 1
+    },
+    {
+      "path": "/news/1779036336",
+      "count": 1
+    },
+    {
+      "path": "/news/1698775981",
+      "count": 1
+    }
+  ],
+  "fixtures": 40,
+  "when": "2026-11-12T11:42:21.976Z"
+}

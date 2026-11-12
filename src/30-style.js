@@ -15,6 +15,8 @@ ${Theme.css('#sp')}
   font-size:14px;line-height:1.5;letter-spacing:0;
   -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
 }
+/* 切回原版时只是给 #sp 挂上 hidden（DOM、状态、滚动位置都留着），别让它继续占着屏幕 */
+#sp[hidden]{display:none !important}
 #sp *{box-sizing:border-box;margin:0;padding:0;font-family:inherit;line-height:inherit}
 
 #sp{caret-color:var(--accent);scrollbar-color:var(--border-strong) transparent;scrollbar-width:thin}
@@ -35,16 +37,22 @@ ${Theme.css('#sp')}
 
 #sp .wrap{max-width:1240px;margin:0 auto;padding:0 24px 72px}
 @media (max-width:760px){#sp .wrap{padding:0 16px 56px}}
+@media (max-width:760px){#sp .top{margin:0 -16px;padding:8px 16px}}
 
 /* ==== 顶栏 ==== */
 #sp .top{
   position:sticky;top:0;z-index:20;min-height:56px;
-  display:flex;align-items:center;gap:28px;padding:8px 0;
+  display:flex;align-items:center;gap:20px;padding:8px 0;
   border-bottom:1px solid var(--border);
-  background:color-mix(in srgb,var(--bg) 86%,transparent);
-  backdrop-filter:saturate(1.6) blur(12px);
+  /* 不透明：浅色下 86% 白 + 深色文字会让下面的列表透上来（用户实报「像被割裂」）。
+     毛玻璃靠 backdrop-filter 遮挡不可靠，直接给实色。 */
+  background:var(--bg);
+  /* 往两侧铺满到 .wrap 的 padding 外沿、往下多盖 4px：
+     缩放/高分屏下 sticky 边界会有亚像素缝，下面的表格边框会从那条缝里露出来。 */
+  margin:0 -24px;
+  padding:8px 24px;
+  box-shadow:0 4px 0 var(--bg);
 }
-@supports not (background:color-mix(in srgb,var(--bg),transparent)){#sp .top{background:var(--bg)}}
 #sp .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.3px;flex:none;text-decoration:none}
 /* 品牌图标是位图（深色底），固定尺寸 + 圆角；别给它上 currentColor（那是给单色 SVG 的） */
 #sp .brand .sheep{width:24px;height:24px;flex:none;border-radius:6px;object-fit:cover;display:block}
@@ -64,6 +72,8 @@ ${Theme.css('#sp')}
 /* 右侧控制组：刷新时间 / 主题快速切换 / 刷新 / 原版界面 / 头像（用户 2026-10-18 定序） */
 #sp .topright{display:flex;align-items:center;gap:8px;flex:none;min-width:0}
 #sp .metaline{font-size:12px;color:var(--text-3);white-space:nowrap}
+/* 「更新于 …」是信息不是操作，中等宽度就让位给导航 */
+@media (max-width:1180px){#sp .metaline{display:none}}
 #sp .who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text-2);min-width:0}
 #sp .who .uname{font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
@@ -202,6 +212,22 @@ ${Theme.css('#sp')}
 #sp .phead .spacer{flex:1}
 
 /* ==== 图表 ==== */
+#sp .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media (max-width:900px){#sp .grid2{grid-template-columns:1fr}}
+/* 实况的占比：一条 100% 堆叠条 + 图例（比每项一条横条更直观，也不截断名字） */
+#sp .stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface-3);margin:8px 0 14px}
+#sp .stack i{display:block;height:100%;min-width:2px}
+#sp .stack i + i{box-shadow:inset 1px 0 0 rgba(0,0,0,.18)}
+/* 用 .llegend 而不是 .legend：后者已经被日历热力图的图例占用（横排、居中），同名会互相覆盖。 */
+#sp .llegend{display:flex;flex-direction:column;gap:7px;width:100%}
+#sp .lrow{display:flex;align-items:center;gap:9px;font-size:12.5px}
+#sp .lrow .sw{width:10px;height:10px;border-radius:3px;flex:none}
+#sp .lrow .ln{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+#sp .lrow .lv{flex:none;min-width:54px;text-align:right;color:var(--text)}
+#sp .lrow .lp{flex:none;min-width:40px;text-align:right;color:var(--text-3)}
+/* 「正在渲染 / 在线机器」这排切换离下面的搜索框远一点 */
+#sp #sp-live-tab{margin:10px 0 18px}
+#sp .tbl tbody tr.dim{opacity:.55}
 #sp .chart{position:relative;padding:14px 20px 16px}
 #sp .chart svg{display:block;width:100%;overflow:visible}
 #sp .tip{
@@ -333,10 +359,43 @@ ${Theme.css('#sp')}
 #sp .tbl tbody tr{transition:background .1s}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
+/* 团队详情：固定列宽，成员列吃掉剩余空间（否则积分被推到中间、两边各一大片空） */
+/* 列宽写在 th 上（col 的 width 在 fixed 布局里不稳），表格给显式宽度：
+   否则 width:100% 会把成员列拉到一整屏，积分被推到中间、两边各一大片空。 */
+#sp .tbl-team,#sp .tbl-teams{width:auto;max-width:100%;table-layout:fixed}
+/* 数值列按内容给固定宽度，成员列吃剩余：百分比会让「最后渲染 / 移除成员」
+   这两列各占 200px，中间空出一大截（用户实报"相隔有点远"）。 */
+#sp .tbl-team{width:100%;table-layout:fixed}
+#sp .tbl-team th:nth-child(1){width:64px}
+#sp .tbl-team th:nth-child(2){width:auto}
+#sp .tbl-team th:nth-child(3){width:150px}
+#sp .tbl-team th:nth-child(4){width:180px}
+/* 创建者视角多一列「最后渲染」：它和加入日期一样宽，成员列吃剩余 */
+#sp .tbl-team-5 th:nth-child(5){width:150px}
+/* 六列时第五列（最后渲染）也要给宽度 —— 它不属于 .tbl-team-5，漏了就挤成一团 */
+#sp .tbl-team-6 th:nth-child(5){width:150px}
+/* 再一列「移除成员」：按钮只有 60px，别给它 19% */
+#sp .tbl-team-6 th:nth-child(6){width:88px}
+/* 团队榜：六列固定宽度，队名列吃剩余 */
+#sp .tbl-teams{width:100%}
+#sp .tbl-teams th:nth-child(1){width:7%}
+#sp .tbl-teams th:nth-child(2){width:31%}
+#sp .tbl-teams th:nth-child(3),#sp .tbl-teams th:nth-child(4),#sp .tbl-teams th:nth-child(5){width:16%}
+#sp .tbl-teams th:nth-child(6){width:14%}
+/* 团队榜的「创建团队」表单 */
+/* 导航显隐复用 .seg 的分段控件样式（用户 2026-11-13：风格要和下面一致）；
+   常开项 disabled，但仍按选中态上色。 */
+#sp #sp-navcfg{margin:10px 0 2px}
+#sp #sp-navcfg button[disabled]{cursor:default}
+#sp .teamcreate{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:6px}
+#sp .teamcreate .input{flex:1 1 320px;min-width:0}
 #sp .pn{font-weight:550;color:var(--text);max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .pnwrap{display:flex;align-items:center;gap:7px;min-width:0}
 #sp .pnwrap .pn{flex:0 1 auto;min-width:0}
 #sp .ow{display:flex;align-items:center;gap:8px;color:var(--text-2)}
+/* 排名标签的颜色就是原版那个状态：绿色 = 该成员此刻正在渲染（member.rendering） */
+#sp .rankpill{display:inline-block;min-width:46px;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:600;line-height:1.5;text-align:center;background:var(--surface-3);color:var(--text-3)}
+#sp .rankpill.on{background:var(--positive);color:#fff}
 #sp .ow img{width:20px;height:20px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .ow .ini{
   width:20px;height:20px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);
@@ -649,6 +708,20 @@ ${Theme.css('#sp')}
 #sp .tbl.dense th{padding:0 14px 8px}
 #sp .tbl.dense td{padding:7px 14px}
 #sp .tbl.dense .job{color:var(--text-2)}
+/* 完整日志：事件名左侧一个类型色点，行高压到一行 30px —— 一屏能看 30 条而不是 15 条 */
+#sp .tbl.dense.log td{padding:4px 14px}
+#sp .tbl.dense.log th{padding-bottom:6px}
+#sp .tbl.dense.log .st{position:relative;padding-left:15px}
+#sp .tbl.dense.log .st::before{
+  content:'';position:absolute;left:0;top:50%;width:7px;height:7px;margin-top:-3.5px;
+  border-radius:50%;background:var(--text-3);opacity:.7;
+}
+#sp .tbl.dense.log .st-rendering::before{background:var(--accent);opacity:1}
+#sp .tbl.dense.log .st-validate::before,#sp .tbl.dense.log .st-send::before{background:#3f9d63;opacity:1}
+#sp .tbl.dense.log .st-senderror::before,#sp .tbl.dense.log .st-error::before,#sp .tbl.dense.log .st-kill::before{background:#d9534f;opacity:1}
+#sp .tbl.dense.log .st-request::before{background:var(--text-3);opacity:1}
+/* 作业分组：连续的同一个 job 是一组，奇数组铺极淡底色 —— 组边界一眼可见，又不抢内容 */
+#sp .tbl.dense.log tbody tr.grp > td{background:var(--surface-2)}
 /* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
    → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
    被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
@@ -666,14 +739,15 @@ ${Theme.css('#sp')}
 #sp .acthead{font-size:11.5px;color:var(--text-3);padding-bottom:8px;border-bottom:1px solid var(--border)}
 #sp .actrow{padding-top:9px;padding-bottom:9px;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text-2)}
 #sp .actrow .ad{flex:none;width:64px;color:var(--text)}
-#sp .actrow .ab{flex:1;min-width:28px;height:6px;border-radius:3px;background:var(--surface-3);overflow:hidden}
-#sp .actrow .ab i{display:block;height:100%;background:var(--accent);opacity:.55;border-radius:3px}
+/* 条列已删（用户 2026-11-13：和右边的时长数字重复，还占掉一半宽度）。
+   数值列靠右、其余留白，不需要弹簧列也能对齐。 */
+#sp .actrow .av{margin-left:auto}
 #sp .actrow .av{flex:none;width:62px;text-align:right;color:var(--text)}
 #sp .actrow .an{flex:none;width:44px;text-align:right}
 #sp .actrow .aj,#sp .actrow .af{flex:none;width:44px;text-align:right;color:var(--text-3)}
 #sp .actrow .af.on{color:var(--text-2)}
 #sp .acthead .ad{flex:none;width:64px}
-#sp .acthead .bar{flex:1;min-width:28px}
+#sp .acthead .ad + .h{margin-left:auto}
 #sp .acthead .h{flex:none;width:62px;text-align:right}
 #sp .acthead .h.s{width:44px}
 #sp .tlfoot{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 20px 18px}
@@ -705,228 +779,7 @@ ${Theme.css('#sp')}
   padding:9px 15px;border-radius:var(--r-sm);font-size:12.5px;box-shadow:var(--shadow);z-index:10;
 }
 
-/* ==== 上传页 / 分析等待页：骨架与控件都是我们自绘的（64-step1.js / 68-step3.js）====
-   这一版没有兼容档了：站点那份 HTML 只当数据源，页面上没有搬过来的站点节点。
-   下面 .up-body 那几组规则是给它里面的槽位兜底的（自绘控件落在同一个槽位里）。 */
-
-/* 必须 align-items:start 而不是 stretch：估算结果撑高右卡时，stretch 会把左卡一起拉长（用户实报）。 */
-#sp .up-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start;margin-top:16px}
-#sp .up-col{display:contents}
-#sp .up-grid .panel{min-width:0}
-#sp .up-rules{grid-column:1 / -1}
-@media (max-width:900px){#sp .up-grid{grid-template-columns:minmax(0,1fr)}}
-#sp .up .panel{padding:0}
-#sp .up-body{padding:14px 20px 18px}
-#sp .up-body > :last-child{margin-bottom:0}
-#sp .up-src{font-size:12px;color:var(--text-3);line-height:1.65;margin:12px 20px 18px;padding-top:12px;border-top:1px solid var(--border)}
-
-/* 须知那一列：站点原文的 <li> 被原样克隆进我们的 ul.up1-rules（64-step1.js），这里只管排版。
-   多栏只对块级容器生效：ul 在别处是 flex 列（见下面 .up-body ul），这里要还原成 block。 */
-@media (min-width:820px){
-  #sp .up-rules .up-body ul{display:block;columns:2;column-gap:36px}
-  #sp .up-rules .up-body ul li{break-inside:avoid;margin-bottom:9px}
-}
-@media (min-width:1200px){
-  #sp .up-rules .up-body ul{columns:3}
-}
-
-/* ==== 抹掉原站外观 ==== */
-/* 兼容档（把站点节点搬进卡片）已删，所以下面这一组压制规则**当前没有匹配对象**（页面上只有我们自己造的节点）。
-   留着当级联底座：真要恢复搬节点的路线，它们是必需的；别再往下加同类规则。 */
-#sp .up-body .w-section,#sp .up-body .w-box,#sp .up-body .container,
-#sp .up-body .sign-in-wr,#sp .up-body .blog-post{
-  padding:0;margin:0;background:none;border:none;box-shadow:none;border-radius:0;max-width:none;width:auto;
-}
-#sp .up-body .row{margin:0}
-/* 站点那套栅格也要一起抹掉：搬来的「须知」列是 col-md-6，Bootstrap 给它 float:left +
-   width:50%，内容只占卡片左半边（实测那列 744px，卡片正文 1488px）。.input-group 同类坑已
-   踩三次。（本文件整段 CSS 是一个模板字符串，注释里不能出现反引号。） */
-#sp .up-body [class*="col-md-"],#sp .up-body [class*="col-sm-"],
-#sp .up-body [class*="col-xs-"],#sp .up-body [class*="col-lg-"]{float:none;width:auto;max-width:none;padding:0;margin:0}
-#sp .up-body h4{margin:0 0 10px;font-size:13.5px;font-weight:600;color:var(--text)}
-#sp .up-body p{margin:0 0 14px;font-size:13px;color:var(--text-2);line-height:1.75}
-#sp .up-body ul{margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
-#sp .up-body ul li{position:relative;padding-left:15px;font-size:12.5px;color:var(--text-2);line-height:1.7}
-#sp .up-body ul li::before{content:"";position:absolute;left:0;top:.66em;width:4px;height:4px;border-radius:50%;background:var(--text-3)}
-#sp .up-body strong{color:var(--text);font-weight:600}
-#sp .up-body a{color:var(--accent)}
-
-#sp .up-body input[type=file]{
-  display:block;width:100%;padding:11px 12px;margin:0 0 10px;
-  background:var(--surface-2);border:1px dashed var(--border-strong);border-radius:var(--r-sm);
-  color:var(--text-3);font-size:12.5px;cursor:pointer;transition:border-color .12s,color .12s;
-}
-#sp .up-body input[type=file]:hover{border-color:var(--accent);color:var(--text-2)}
-#sp .up-body input[type=file]::file-selector-button{
-  font:inherit;font-weight:600;margin:0 12px 0 0;padding:6px 12px;border-radius:var(--r-sm);
-  border:1px solid var(--border-strong);background:var(--surface-3);color:var(--text);cursor:pointer;
-}
-#sp .up-body input[type=file]::file-selector-button:hover{border-color:var(--accent);color:var(--accent)}
-
-
-
-#sp .up-body input[type=text],#sp .up-body input.form-control{
-  font:inherit;font-size:13px;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface-2);border:1px solid var(--border);color:var(--text);
-}
-#sp .up-body input[type=text]:focus,#sp .up-body input.form-control:focus{outline:none;border-color:var(--accent)}
-#sp .up-body form.form-inline{display:block;margin:0 0 14px}
-/* ==== 分析等待页 ==== */
-#sp .an-card{padding:0}
-#sp .an-head{display:flex;gap:15px;align-items:flex-start;padding:24px 20px 0}
-#sp .an-head .spin{flex:none;margin-top:2px}
-#sp .an-state{font-size:15px;font-weight:600;color:var(--text)}
-#sp .an-sub{font-size:12.5px;color:var(--text-3);line-height:1.75;margin-top:7px;max-width:640px}
-#sp .an-track{height:6px;margin:18px 20px 0;border-radius:3px;background:var(--surface-2);overflow:hidden}
-#sp .an-track i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .35s ease}
-#sp .an-track.indet i{width:32%;animation:sp-indet 1.15s ease-in-out infinite}
-@keyframes sp-indet{from{margin-left:-32%}to{margin-left:100%}}
-/* 分析完成那张卡片：结果直接接在状态行下面 —— 「新版」自绘进 #sp-an-result（即 .sp-up3，自带内边距）；
-   认不出来时那里放的是一句明说 + 一个「交回站点自己界面」的按钮（见 80-app.js 的 handBackToSite）。 */
-
-/* ---- 控件皮肤：全自绘（0.1.18 起；0.2.0 只有 .sp-up3 这一套）------------------------
-   勾选框、单选框、输入框、下拉箭头一律 appearance:none + 我们自己的画法，颜色走主题变量 ⇒
-   暗色、亮色自动跟随。作用域只剩 #sp .sp-up3：兼容档（把站点表单搬进卡片）已砍掉，
-   站点那些控件不再出现在我们的壳里。 */
-#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):not([type=submit]):not([type=file]):not([type=range]),
-#sp .sp-up3 select{
-  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
-  appearance:none;-webkit-appearance:none;
-}
-#sp .sp-up3 select{
-  padding-right:30px;cursor:pointer;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.4l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 9px center;background-size:11px 11px;
-}
-#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):hover,
-#sp .sp-up3 select:hover{border-color:var(--border-strong)}
-#sp .sp-up3 input:not([type=checkbox]):not([type=radio]):focus,
-#sp .sp-up3 select:focus{border-color:var(--accent)}
-#sp .sp-up3 input:disabled,
-#sp .sp-up3 select:disabled{background:var(--surface-2);color:var(--text-3);cursor:not-allowed}
-#sp .sp-up3 input::placeholder{color:var(--text-3)}
-
-#sp .sp-up3 input[type=checkbox]{
-  appearance:none;-webkit-appearance:none;width:16px;height:16px;flex:0 0 auto;margin:1px 7px 0 0;
-  border:1.5px solid var(--border-strong);border-radius:5px;background:var(--surface);cursor:pointer;
-  transition:background .12s,border-color .12s;
-}
-#sp .sp-up3 input[type=checkbox]:hover{border-color:var(--accent)}
-#sp .sp-up3 input[type=checkbox]:checked{
-  border-color:var(--accent);
-  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.4l3 3 6-6.4' fill='none' stroke='%23fff' stroke-width='2.1' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/13px 13px no-repeat;
-}
-#sp .sp-up3 input[type=radio]{
-  appearance:none;-webkit-appearance:none;width:15px;height:15px;flex:0 0 auto;margin:1px 7px 0 0;
-  border:1.5px solid var(--border-strong);border-radius:50%;background:var(--surface);cursor:pointer;
-  transition:border-color .12s,border-width .12s;
-}
-#sp .sp-up3 input[type=radio]:hover{border-color:var(--accent)}
-#sp .sp-up3 input[type=radio]:checked{border:4.5px solid var(--accent)}
-#sp .sp-up3 input[type=checkbox]:disabled,
-#sp .sp-up3 input[type=radio]:disabled{opacity:.45;cursor:not-allowed}
-
-/* ==== 新版上传 · 第三步的容器（68-step3.js 自绘那一块）====
-   2026-10-07 用户拍板砍掉兼容档之后，这一版不再有"把站点表单搬进来重排"那条路：只服务它的
-   那一整组 up3-* 规则（面板、隐藏项、图标、提示行、提交行的壳）连同类名一起删了 ——
-   清单见 docs/REWRITE-0.2.0.md 的第 8 节。这里只留自绘那一套要用的。 */
-#sp .sp-up3{padding:18px 20px 20px;border-top:1px solid var(--border)}
-
-/* ==== 新版上传 · 第一步（0.2.0 起是 64-step1.js **自绘**的那一块）====
-   拖放区、进度、估算器、须知：页面上没有一个站点节点，站点那份 /getstarted 只当数据源。 */
-#sp .up1-drop{border:1px dashed var(--border-strong);border-radius:var(--r);padding:20px 16px;text-align:center;
-  cursor:pointer;transition:border-color .12s,background .12s}
-#sp .up1-drop:hover,#sp .up1-drop.over{border-color:var(--accent);background:var(--surface-2)}
-#sp .up1-droptitle{font-size:13px;color:var(--text)}
-#sp .up1-dropsub{margin-top:6px;font-size:12px;color:var(--text-3);line-height:1.7}
-/* 上传页的文件框：槽位里本来就有一条 #sp .up-body input[type=file]{display:block;…}（见上）。
-   我们的框在同一个槽位里，所以用更高特异性把它按回"1px 透明"，外观交给 label.filepick。 */
-#sp .up-body .up1-drop input[type=file]{
-  position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;padding:0;margin:0;border:none;background:none;
-}
-/* 文件名现在长在虚线框里，是这一屏的主要反馈对象：用正文墨，别再压成三级墨 */
-#sp .up1-name{margin-top:10px;font-size:12.5px;color:var(--text)}
-#sp .up1-bar{margin-top:12px;height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
-#sp .up1-bar i{display:block;height:100%;width:0;background:var(--accent);border-radius:3px;transition:width .25s ease}
-#sp .up1-pct{margin-top:6px;font-size:12px;color:var(--text-3);font-variant-numeric:tabular-nums}
-#sp .up1-msg{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
-#sp .up1-msg.bad{border-color:var(--accent);color:var(--accent)}
-/* 站点 printError 那块：标题一行 + 正文（"没头像就去账户页传一张"这类可操作指引在正文里） */
-#sp .up1-msg .up1-gate-title{display:block;font-weight:600}
-#sp .up1-msg .up1-gate-body{margin-top:5px}
-/* 投递前的预期管理：紧跟在文件框下面，不藏在下一个页面 */
-#sp .up1-after{margin-top:10px;font-size:12px;color:var(--text-3);line-height:1.65}
-#sp .up1-foot{margin-top:14px;display:flex;justify-content:flex-end;gap:10px}
-#sp .up1-tip{font-size:12px;color:var(--text-3);line-height:1.65;margin:0 0 10px}
-#sp .up1-dev{position:relative}
-#sp .up1-devin{display:block;width:100%}
-#sp .up1-sug{position:absolute;z-index:6;left:0;right:0;top:100%;margin-top:4px;max-height:230px;overflow:auto;
-  background:var(--surface);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow)}
-#sp .up1-sugitem{padding:7px 10px;font-size:12.5px;color:var(--text-2);cursor:pointer}
-#sp .up1-sugitem:hover{background:var(--surface-2);color:var(--text)}
-#sp .up1-estfields{display:flex;flex-wrap:wrap;gap:12px;margin-top:10px}
-#sp .up1-fld{flex:1 1 140px;min-width:0}
-#sp .up1-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
-#sp .up1-fld > input{width:100%}
-#sp .up1-estout{margin-top:14px}
-#sp .up1-cost{font-size:13px;color:var(--text);line-height:1.7}
-#sp .up1-cost b{color:var(--accent);font-weight:600}
-#sp .up1-tbl{margin-top:10px}
-/* 站点的推荐行（label-success → 我们记成 .ok）以前没有任何样式：估算器全部的产出
-   "推荐这么切" 与普通行长得一模一样，等于白算。 */
-#sp .up1-tbl td.ok{color:var(--positive);font-weight:600}
-#sp .up1-tbl tr:has(td.ok) td{background:var(--accent-weak)}
-#sp .up1-rules{margin:0;padding-left:18px;font-size:12.5px;color:var(--text-2);line-height:1.8}
-#sp .up1-rules li + li{margin-top:6px}
-/* 站内自绘的文本输入框（以前只有站点控件，没有通用样式） */
-#sp .up1-devin,#sp .up1-fld > input{
-  font:inherit;font-size:13px;line-height:1.4;padding:8px 10px;border-radius:var(--r-sm);
-  background:var(--surface);border:1px solid var(--border);color:var(--text);max-width:100%;
-}
-#sp .up1-devin:hover,#sp .up1-fld > input:hover{border-color:var(--border-strong)}
-#sp .up1-devin:focus,#sp .up1-fld > input:focus{border-color:var(--accent);outline:none}
-#sp .up1-devin::placeholder,#sp .up1-fld > input::placeholder{color:var(--text-3)}
-
-/* 设置面板里的「上游指纹」小卡（68-step3.js 的 fpRows 画） */
-#sp .fp{margin:14px 0 0;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface-2)}
-#sp .fp .lbl2{font-size:12px;font-weight:600;color:var(--text-2);margin:0 0 8px}
-#sp .fp .hint{margin:0 0 6px}
-#sp .fp .hint:last-child{margin-bottom:0}
 #sp .hint.bad{color:var(--accent)}
-
-/* ==== 项目管理页 /project/<数字>（整页自绘）====
-   数据来自 Api.parseManage(那一页 HTML 的**副本**)，站点节点一个都不进我们的壳 —— 所以这里全是
-   我们自己的类；旧的那套 .sp-manage*（给搬进来的站点节点统一外观用）已随搬节点一起删干净。 */
-#sp .sp-mg-badge{font-size:11px;font-weight:600;padding:1px 7px;border-radius:4px;background:var(--accent-weak);color:var(--accent)}
-#sp .mg-acts{margin:0 0 16px;gap:8px}
-#sp .mg-sum{margin:0;padding:0;list-style:none}
-#sp .mg-sum li{font-size:12.5px;color:var(--text-3);line-height:1.95}
-#sp .mg-sum li::before{content:'·';margin-right:8px;color:var(--border-strong)}
-/* 帧方块：状态色跟站点自己那三个按钮类一致（已完成/进行中/等待中），悬停给 frame/cost/rendertime */
-#sp .mg-tiles{display:flex;gap:8px;flex-wrap:wrap}
-#sp .mg-tiles .tile{width:80px;height:60px;border-radius:4px;overflow:hidden;border:2px solid var(--border);background:var(--surface-2)}
-#sp .mg-tiles .tile img{width:100%;height:100%;object-fit:cover}
-#sp .mg-tiles .tile.done{border-color:var(--text-3)}
-#sp .mg-tiles .tile.progress{border-color:#e0a13a}
-#sp .mg-tiles .tile.waiting{border-color:var(--border-strong)}
-#sp .lg{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--text-3)}
-#sp .lg i{width:11px;height:11px;border-radius:3px;flex:none}
-#sp .lg i.done{background:var(--text-3)}
-#sp .lg i.progress{background:#e0a13a}
-#sp .lg i.waiting{background:var(--surface-3);border:1px solid var(--border-strong)}
-#sp .phead .lg + .lg{margin-left:12px}
-#sp .mg-video{width:100%;max-width:520px;border-radius:var(--r-sm);border:1px solid var(--border);margin-top:12px;display:block}
-/* 名单：一行一个人 + 行内移除；下面输入框 + 建议 + 添加 */
-#sp .alist{display:flex;flex-direction:column}
-#sp .alist .arow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid var(--border)}
-#sp .alist .arow:last-child{border-bottom:none}
-#sp .alist .arow .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .alist .none{font-size:12.5px;color:var(--text-3);padding:6px 0}
-#sp .aadd{display:flex;align-items:flex-start;gap:10px;margin-top:12px;flex-wrap:wrap}
-#sp .aadd .up1-dev{flex:0 1 320px;min-width:0}
-#sp .aadd .input{width:100%}
 
 /* 只有换视图（或刷新）才播：筛选 / 排序 / 显示更多的 render() 不再重放，否则实时状态带
    重新淡入，看起来像整页在重载。开关是 #sp 的 .sp-anim。 */
@@ -1077,7 +930,8 @@ ${Theme.css('#sp')}
     s.textContent = `
       html{background:#0b0d11}
       @media (prefers-color-scheme:light){html{background:#fbfbfc}}
-      body > *:not(#sp){display:none !important}
+      /* 换界面的幕布与导航遮罩也活在 body 下：它们是过渡本身，不能被守卫一起压掉 */
+      body > *:not(#sp):not(#sp-sweep):not(#sp-veil){display:none !important}
       body{overflow:hidden !important;background:transparent !important}
     `;
     (document.head || document.documentElement).appendChild(s);

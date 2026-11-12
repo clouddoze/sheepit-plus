@@ -28,8 +28,12 @@ const FIXTURES = {
   '/home': '_home.html',
   '/index.php': '_home.html',
   '/home/projects': '_home_projects.html',
+  '/home/frames': '_home_frames.html',
+  '/home/machines': '_home_machines.html',
   '/ranking/user': '_ranking_user.html',
   '/ranking': '_ranking_user.html',
+  '/ranking/machine': '_ranking_machine.html',
+  '/team': '_team.html',
   // 上传页（不是上传接口）：把抓下来的 /getstarted 当数据源，验 64-step1 的自绘卡片
   '/getstarted': '_getstarted.html',
 };
@@ -50,12 +54,22 @@ const STUB = `<script>
 })();
 </script>`;
 
-/** 只给内联数据数组用：把夹具里的时间线清空，模拟"还没开始渲染"的新账号 */
+/** 只给内联数据数组用：把夹具里的时间线清空，模拟"还没开始渲染"的新账号。
+ *  0.2.x 的 overview 给"空态"加了 hasStat / machines / sessions 三条判据，只清时间线已经
+ *  不会进空态（2026-11-12 实测：kpi 仍有 3 格）。所以这里把站点统计表三行、机器、会话
+ *  一并清成新账号的样子 —— 这不是改断言，是把"空变体"补成它本来该有的样子。 */
 function emptyVariant(html) {
   return html
     .replace(/var line_points_timeline = \[[\s\S]*?\];/, "var line_points_timeline = [['Time','Points']];")
     .replace(/var line_frames_timeline = \[[\s\S]*?\];/, "var line_frames_timeline = [['Time','Frames']];")
     .replace(/var data = \[[\s\S]*?\];/, 'var data = [];')
+    // 统计表：Frames rendered / Time rendered / Points 是 hasData 的三条数字判据
+    .replace(/<dt>Frames rendered<\/dt><dd>[^<]*<\/dd>/, '<dt>Frames rendered</dt><dd>0</dd>')
+    .replace(/<dt>Time rendered<\/dt><dd>[^<]*<\/dd>/, '<dt>Time rendered</dt><dd>0</dd>')
+    .replace(/<dt>Points<\/dt><dd>[\s\S]*?<\/dd>/, '<dt>Points</dt><dd>0</dd>')
+    // 机器 / 会话：解析器按标题找 box；标题文字一改就"整块不存在"，不必拆 HTML
+    .replace(/<h2>\d+ connected machine[s]?<\/h2>/, '<h2>0 machines</h2>')
+    .replace(/<h2>\d+ last sessions<\/h2>/, '<h2>0 sessions</h2>')
     // 名次与徽章是"夹具里那个账号"的，新账号变体要把它们抹掉（不写死具体名次）
     .replace(/>\d+(?:st|nd|rd|th)</, '>-<')
     .replace(/>top \d+% renderers</, '><');
@@ -124,7 +138,13 @@ const server = createServer((req, res) => {
   // 图片给一张真的会显示出来的占位 —— 否则头像就是一片空白，
   // 截图里分不清"头像没解析出来"和"夹具没有图"。
   if (p.startsWith('/media/')) {
-    if (/\.css$/.test(p)) return send('text/css; charset=utf-8', '/* stub */');
+    /* 样式表：夹具页面自己带着原站的 class，没有 CSS 就只是裸 HTML —— 那看不出"原版界面露出来"
+       到底长什么样。抓过的那几份（.tmp/upload-test/site-css）按文件名直接回放，没抓到的照旧给桩。 */
+    if (/\.css$/.test(p)) {
+      const cssFile = join(ROOT, '.tmp', 'upload-test', 'site-css', p.split('/').pop());
+      if (existsSync(cssFile)) return send('text/css; charset=utf-8', readFileSync(cssFile));
+      return send('text/css; charset=utf-8', '/* stub */');
+    }
     if (/\.(png|jpe?g|gif|svg|webp|ico)$/.test(p)) {
       const letter = (p.split('/').pop() || '?').replace(/\.[a-z]+$/i, '').slice(0, 1).toUpperCase();
       const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">` +
@@ -180,6 +200,9 @@ const server = createServer((req, res) => {
       : (readdirSync(RAW).find((x) => /^_user_.+_profile\.html$/.test(x)) || '_user_profile.html');
   }
   if (!name && /^\/user\/[^/]+\/edit$/.test(p)) name = 'edit.html';
+  // 团队详情（登录态抓的一份：h2 团队名 + 4 列成员表 + 最近项目）
+  if (!name && p === '/team/2542') name = '_team_own.html';   // 测试账号自己创建的团队（有 /team/leave）
+  if (!name && /^\/team\/\d+$/.test(p)) name = '_team_detail.html';
   if (!name) return send('text/plain', `no fixture for ${p}`, 404);
 
   let html = page(name);
