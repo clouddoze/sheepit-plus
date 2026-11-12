@@ -1,0 +1,90 @@
+{
+  "note": "node tools/regress.mjs --update 生成；默认跑只读比对，不写文件。",
+  "when": "2026-11-12T18:39:47.546Z",
+  "artifact": {
+    "bytes": 393855,
+    "comments": 88537,
+    "srcBytes": 393231
+  },
+  "pages": {
+    "overview": {
+      "stats": 8,
+      "points": 37,
+      "activity": 1
+    },
+    "projects": {
+      "projects": 21,
+      "rows": 21
+    },
+    "ranking": {
+      "ranking": 1658,
+      "rows": 100
+    },
+    "session": {
+      "timeline": 761,
+      "actrows": 5
+    },
+    "teams": {
+      "teams": 1616,
+      "rows": 100,
+      "myTeam": true
+    },
+    "team": {
+      "members": 144,
+      "rows": 100,
+      "rendering": 25,
+      "hasLastFrame": false,
+      "hasRemove": false
+    },
+    "teamown": {
+      "members": 2,
+      "hasLastFrame": true,
+      "hasRemove": true,
+      "leave": true,
+      "del": true,
+      "btns": 2
+    },
+    "settings": {
+      "rows": 8,
+      "themeBtns": 3,
+      "ovRows": 5
+    },
+    "live": {
+      "frames": 352,
+      "machines": 468,
+      "kpis": 4,
+      "charts": 2,
+      "drows": 15,
+      "rows": 100
+    },
+    "livemach": {
+      "frames": 352,
+      "machines": 446,
+      "charts": 2
+    },
+    "machrank": {
+      "tab": "machine",
+      "rows": 100,
+      "hasSeg": true
+    },
+    "account": {
+      "acctKeys": 10,
+      "tabBtns": 3,
+      "prioRows": 0,
+      "prioBox": true,
+      "prioNone": true,
+      "hasSort": true,
+      "sortVal": "progress"
+    },
+    "empty": {
+      "empty": true,
+      "kpis": 0,
+      "bodyHasRealFrames": false
+    },
+    "fail": {
+      "errorIncludes": "HTTP 500",
+      "hasRetry": true,
+      "empty": false
+    }
+  }
+}

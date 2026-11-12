@@ -6,11 +6,12 @@
  * 易于在 GreasyFork 上 diff"的同时，让源码仍然分模块可维护。
  *
  * 用法：
- *   node build.mjs            # 输出 dist/sheepit-plus.user.js
- *   node build.mjs --check    # 只做语法与体积校验，不写文件
+ *   node build.mjs                 # 输出 dist/sheepit-plus.user.js
+ *   node build.mjs --check         # 只做语法与体积校验，不写文件
+ *   node build.mjs --out <路径>    # 写到别处（受限环境里 dist 写不进去时用）
  */
 import { readFileSync, writeFileSync, readdirSync, mkdirSync, existsSync, statSync } from 'node:fs';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
 import { countCommentBytes } from './tools/comment-bytes.mjs';
@@ -18,8 +19,14 @@ import { countCommentBytes } from './tools/comment-bytes.mjs';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const SRC = join(HERE, 'src');
 const DIST = join(HERE, 'dist');
-const OUT = join(DIST, 'sheepit-plus.user.js');
 const checkOnly = process.argv.includes('--check');
+/* --out：受限沙箱里子进程写不进仓库（dist 会 EPERM），但系统临时目录可以。
+   产物内容不变，写到哪儿由调用方说 —— 构建仍然是唯一的拼接实现。 */
+const outArg = (() => {
+  const i = process.argv.indexOf('--out');
+  return i > -1 && process.argv[i + 1] ? resolve(HERE, process.argv[i + 1]) : '';
+})();
+const OUT = outArg || join(DIST, 'sheepit-plus.user.js');
 
 // ---- 体积提示（只提示，不拦构建） ----
 // 为什么要有：上一轮把源码注释从 99.7 KB 压到 33.4 KB、产物从 339,846 压到 271,560 字节
@@ -161,7 +168,7 @@ if (commentRatio > BUDGET_COMMENT_RATIO) {
 }
 
 if (!checkOnly) {
-  if (!existsSync(DIST)) mkdirSync(DIST, { recursive: true });
+  if (!outArg && !existsSync(DIST)) mkdirSync(DIST, { recursive: true });
   writeFileSync(OUT, out, 'utf8');
   console.log(`  写入：${OUT}`);
 }

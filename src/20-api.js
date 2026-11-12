@@ -39,13 +39,19 @@
      界面看起来"回弹"，还会 toast「已保存」。invalidate 不需要重置它：invalidate 的语义
      就是"下一次必须走网络"。整页 reload 会重置模块状态，标志自然失效。 */
   let liveDocUsed = '';
+  /* 从原版界面**就地**启动新版时，活 document 已经不可信：页面上可能已经被翻译（状态词、按钮
+     文字都是解析判据），也可能被站点自己的脚本改过。那种情况下宁可多抓一次页面。
+     一旦关掉就不再打开 —— 这一页的 DOM 不会变回原文。 */
+  let liveDocOff = false;
   function currentDoc(path) {
     const norm = (p) => String(p || '').replace(/\/+$/, '') || '/';
+    if (liveDocOff) return null;
     if (norm(location.pathname) !== norm(path)) return null;
     if (liveDocUsed === norm(path)) return null;
     liveDocUsed = norm(path);
     return document;
   }
+  function disableLiveDoc() { liveDocOff = true; }
 
   /* 站点写操作的「成功」不止 'OK'（上游 UserController.php）：调度开关回 `Settings changed`、
      邮箱回一整句 "An email have been sent…"、密码回 `Password successfully changed`。
@@ -431,163 +437,29 @@
        ③ 公开渲染**两种形态**：公开时是可见 checkbox `#project_public_render_checkbox_1`（checked）
           + 一只同名 hidden `#project_public_render_checkbox_value`；私有时 `..._value` 自己就是那只
           可见 checkbox。站点的 onclick 永远读 `..._value`，所以判据看 type 不看 id。 */
-  const MG_ACTION_TITLES = {
-    'see frames': 'frames', 'download frames': 'zip', 'download video': 'video',
-    'resume': 'resume', 'pause': 'pause', 'reset': 'reset', 'remove': 'delete',
-  };
+;
 
-  function parseManage(doc, projectId) {
-    const on = (el) => !!(el && (el.checked === true || el.hasAttribute('checked')));
-    const typeOf = (el) => String((el && el.getAttribute('type')) || '').toLowerCase();
-    const id = String(projectId || '');
-
-    const nameEl = id ? doc.getElementById(`project_job_${id}_path`) : null;
-    const progEl = id ? doc.getElementById(`project_job_${id}_progression`) : null;
-    const stEl = id ? doc.querySelector(`#jobs_of_a_project li[class^="msg_"]`) : null;
-    const stCls = stEl ? ((String(stEl.getAttribute('class') || '').match(/msg_([a-z]+)/i) || [])[1] || '') : '';
-
-    /* ---- 概要 Summary：一串 <li>，最后一条红字是"自动删除日期"（站点给的是整句）。
-       形状两种：`Storage used: 134.8 kB` 是纯文本，`On reference per frame rendertime: <span>0m00s</span>`
-       的是「标签 + span」。拆成 label/value 两段，视图那边才能分别套语言包（见 50-views 的 mgLine）。 ---- */
-    const sumHead = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(text(h).trim()));
-    const sumBox = sumHead ? sumHead.closest('.w-box') || sumHead.parentElement : null;
-    const summary = [];
-    let warn = { label: '', value: '' };
-    const pairOf = (li) => {
-      const span = li.querySelector('span');
-      if (span) {
-        const clone = li.cloneNode(true);
-        const dead = clone.querySelector('span');
-        if (dead) dead.remove();
-        return { label: text(clone).trim(), value: text(span).trim() };
-      }
-      const s = text(li);
-      const m = s.match(/^([^:]+):\s*(.+)$/);
-      return m ? { label: `${m[1]}:`, value: m[2].trim() } : { label: s, value: '' };
-    };
-    if (sumBox) {
-      for (const li of sumBox.querySelectorAll('li')) {
-        const p = pairOf(li);
-        if (!p.label && !p.value) continue;
-        if (li.querySelector('span[style*="red"]') || /automatically deleted/i.test(p.label + p.value)) warn = p;
-        else summary.push(p);
-      }
-    }
-
-    /* ---- 动作行：站点用 title 当唯一文字（图标按钮），按 title 归一成 kind ----
-       `resume` 在"活跃项目太多"时是 disabled 的 <a>（没有 onclick）→ 读出来但标记 disabled。 */
-    const box = id ? doc.getElementById(`project_job_${id}_div_actions`) : null;
-    const actions = [];
-    let canManage = false;
-    for (const a of box ? box.querySelectorAll('a') : []) {
-      const onclick = String(a.getAttribute('onclick') || '');
-      const href = String(a.getAttribute('href') || '');
-      const disabled = a.hasAttribute('disabled') || /\bdisabled\b/.test(String(a.getAttribute('class') || ''));
-      const title = String(a.getAttribute('title') || '').trim();
-      if (/remove_no_redirect/.test(onclick)) { canManage = true; continue; }
-      const partial = onclick.match(/doAskForProjectPartialArchiveFrame\('([^']+)'\)/);
-      if (partial) { actions.push({ kind: 'partial', url: partial[1], title, disabled }); continue; }
-      const act = onclick.match(/projectAction\('[^']*',\s*'([a-z_]+)'\)/);
-      if (act) {
-        const kind = MG_ACTION_TITLES[act[1]] || act[1];
-        actions.push({ kind, title, disabled });
-        continue;
-      }
-      if (!href || href === '#') {
-        /* 站点在"活跃项目太多"时渲染的是一只**没有 onclick、没有链接**的灰按钮，标题里写着原因：
-           `href="#"` + title="Resume is disabled because you have too many active projects"。
-           按 title 认回它并标 disabled —— 否则用户看到的是"这一栏什么都没有"，不知道为什么。 */
-        const low = title.toLowerCase();
-        const key = Object.keys(MG_ACTION_TITLES).find((k) => low.indexOf(k) === 0);
-        if (key) actions.push({ kind: MG_ACTION_TITLES[key], title, disabled: true });
-        continue;
-      }
-      const kind = MG_ACTION_TITLES[title.toLowerCase()] || (/\/frames\//.test(href) ? 'frames' : '');
-      if (kind === 'frames') { actions.push({ kind, url: href, title, disabled }); continue; }
-      /* 下载帧 / 下载视频是 shepherd 上的**绝对 URL**（主机名随项目变），原样留着 */
-      if (/\/zip$/.test(href) || /\/mp4\/final$/.test(href)) actions.push({ kind, url: href, title, disabled });
-    }
-
-    /* ---- 帧方块 + 视频预览：站点把 <img>/<video> 塞在 title 属性或 <source> 里 ---- */
-    const tiles = [];
-    for (const sq of doc.querySelectorAll('.tiles .square')) {
-      const raw = String(sq.getAttribute('title') || '');
-      const src = (/<img\s+src="([^"]+)"/i.exec(raw) || [])[1] || '';
-      if (!src) continue;
-      const cls = String(sq.getAttribute('class') || '');
-      const num = (re) => { const m = raw.match(re); return m ? m[1].trim() : ''; };
-      tiles.push({
-        src,
-        frame: num(/frame:\s*([^<]+)/i),
-        cost: num(/cost:\s*([^<]+)/i),
-        time: num(/rendertime:\s*([^<]+)/i),
-        state: /btn-warning/.test(cls) ? 'progress' : (/btn-neutral/.test(cls) ? 'done' : 'waiting'),
-      });
-    }
-    const videoEl = doc.querySelector('.tiles video source[src]');
-    const video = videoEl ? String(videoEl.getAttribute('src') || '') : '';
-
-    /* ---- 权限 / 渲染者：站点把名单渲染成 <ul><li><a>名字</a></li> ----
-       `#project_acl_team_current` 的链接是 /team/<数字 id>，名字在链接文字里（id 要从 href 抠，
-       加团队时站点发的就是那个数字 id）。公开渲染时站点**不渲染**这两份名单（只有那只 checkbox），
-       所以名单为空 ≠ 没人，视图要按 publicRender 说清。 */
-    const namesOf = (rootId) => {
-      const root = doc.getElementById(rootId);
-      if (!root) return [];
-      return [...root.querySelectorAll('li a')]
-        .map((a) => ({ name: text(a), url: Util.safePath(a.getAttribute('href')), id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '' }))
-        .filter((x) => x.name);
-    };
-    const acl = {
-      managers: namesOf('project_acl_manager_current'),
-      renderers: namesOf('project_acl_renderer_current'),
-      teams: namesOf('project_acl_team_current'),
-      hasManagerPanel: !!doc.getElementById('project_acl_manager_add_form_user'),
-      hasRendererPanel: !!doc.getElementById('project_acl_renderer_add_form_user'),
-      hasTeamPanel: !!doc.getElementById('project_acl_team_add_form_user'),
-    };
-
-    let compute = '';
-    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
-      if (!on(r)) continue;
-      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\([^)]*?'(cpu|gpu)'/);
-      if (m) compute = m[1];
-    }
-    const mp4Box = doc.getElementById('project_generate_mp4_checkbox_1');
-    const pubA = doc.getElementById('project_public_render_checkbox_1');
-    const pubB = doc.getElementById('project_public_render_checkbox_value');
-    const pubEl = typeOf(pubA) === 'checkbox' ? pubA : (typeOf(pubB) === 'checkbox' ? pubB : null);
-
-    return {
-      found: !!(nameEl || box || acl.hasManagerPanel),
-      id,
-      name: nameEl ? text(nameEl) : '',
-      statusText: stEl ? text(stEl) : '',
-      statusCls: stCls.toLowerCase(),
-      progression: progEl ? text(progEl) : '',
-      summary, warn, actions, tiles, video, acl, canManage,
-      compute,
-      mp4: mp4Box ? on(mp4Box) : null,
-      publicRender: pubEl ? on(pubEl) : null,
-      hasCompute: !!compute || !!doc.querySelector('input[name="compute_method"]'),
-      hasMp4: !!mp4Box,
-      hasPublic: !!pubEl,
-    };
-  }
-
-  function parseProfile(html, userName) {
+function parseProfile(html, userName) {
     const doc = asDoc(html);
     /* 时间线数组与热力图数据写在站点内联 <script> 里。传进来的是活 document 时，
        用站点脚本的文本当原文扫（站点脚本改 DOM 不改 script 文本）。 */
     const source = typeof html === 'string' ? html : scriptsSource(doc);
 
     const stats = {};
+    /* Team 那一行是个链接（<dt>Team</dt><dd><a href="/team/<id>">名字</a></dd>）：
+       文字已经进 stats，这里额外把 id 留下来，身份条才能做成能点的团队链接。 */
+    let team = null;
     const dl = doc.querySelector('dl.dl-horizontal');
     if (dl) {
       const kids = [...dl.children];
       for (let i = 0; i < kids.length; i++) {
         if (kids[i].tagName === 'DT' && kids[i + 1] && kids[i + 1].tagName === 'DD') {
-          stats[text(kids[i])] = text(kids[i + 1]);
+          const label = text(kids[i]).trim();
+          stats[label] = text(kids[i + 1]);
+          if (/^team$/i.test(label)) {
+            const a = kids[i + 1].querySelector('a[href*="/team/"]');
+            if (a) team = { id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '', name: text(a).trim() };
+          }
         }
       }
     }
@@ -632,7 +504,7 @@
     // 主页那张表：自己的主页每行带 id 可进 /project/<id>，别人的主页只有名字（见 parseMyProjects）
     const myProjects = parseMyProjects(doc);
 
-    return { name, avatar, badge, status, stats, points, frames, activity, machines, sessions, derived, myProjects };
+    return { name, avatar, badge, status, stats, team, points, frames, activity, machines, sessions, derived, myProjects };
   }
 
   /** 派生：口径与原站 dl 的 "Consecutive render days" 对齐（不含今天） */
@@ -759,6 +631,264 @@
   }
 
   /** 排行榜：用站点自带的 data-sort 原始数值（排行榜按站点原始值排、不按 "1.3 G" 字面量） */
+  /** 全站「正在渲染的帧」（/home/frames）：7 列表——项目 / 帧 / 用户 / 已等 / 预计 / 剩余 / 机器。
+      站点把几百行一次吐出来，没有分页参数；视图层自己截断。 */
+  function parseProcessingFrames(html) {
+    const doc = asDoc(html);
+    const table = [...doc.querySelectorAll('table')].find((t) => /Request time/i.test(text(t)) && /Machine/i.test(text(t)));
+    if (!table) return null;
+    const out = [];
+    for (const tr of table.querySelectorAll('tbody tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 7) continue;
+      const link = tr.querySelector('a[href*="/user/"]');
+      const sortOf = (td) => { const v = Number(td.getAttribute('data-sort')); return Number.isFinite(v) ? v : null; };
+      out.push({
+        project: text(tds[0]).trim(),
+        frame: text(tds[1]).trim(),
+        user: link ? text(link).trim() : text(tds[2]).trim(),
+        userId: link ? ((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
+        waited: text(tds[3]).trim(),
+        eta: text(tds[4]).trim(),
+        remaining: text(tds[5]).trim(),
+        machine: text(tds[6]).trim(),
+        waitedSec: sortOf(tds[3]),
+      });
+    }
+    return out;
+  }
+
+  /** /home/machines 的会话表：活跃（表 0）与暂停/阻塞（表 1）两张，6 列。 */
+  function parseMachineSessions(html) {
+    const doc = asDoc(html);
+    const tables = [...doc.querySelectorAll('table')].filter((t) => /Rendered frames/i.test(text(t)));
+    const rowsOf = (table, active) => {
+      const out = [];
+      if (!table) return out;
+      for (const tr of table.querySelectorAll('tbody tr')) {
+        const tds = [...tr.querySelectorAll('td')];
+        if (tds.length < 6) continue;
+        const link = tr.querySelector('a[href*="/user/"]');
+        const numOf = (td) => { const v = Number(td.getAttribute('data-sort')); return Number.isFinite(v) ? v : null; };
+        out.push({
+          model: text(tds[0]).trim(),
+          memory: text(tds[1]).trim(),
+          frames: text(tds[2]).trim(),
+          heartbeat: text(tds[3]).trim(),
+          elapsed: text(tds[4]).trim(),
+          user: link ? text(link).trim() : text(tds[5]).trim(),
+          userId: link ? ((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
+          framesNum: numOf(tds[2]),
+          active,
+        });
+      }
+      return out;
+    };
+    return { active: rowsOf(tables[0], true), paused: rowsOf(tables[1], false) };
+  }
+
+  /** 站点把图表数据写成内联 \`var name = [...]\`（不是 JSON：键带单引号、数组有尾逗号）。 */
+  function parseChartArrays(html) {
+    /* 内联数组只能从源码字符串里抠：传 Document 时先取回源码。 */
+    const htmlText = typeof html === 'string' ? html : (html && html.documentElement ? html.documentElement.outerHTML : '');
+    const grab = (name) => {
+      const i = htmlText.indexOf('var ' + name);
+      if (i < 0) return [];
+      const eq = htmlText.indexOf('[', i);
+      if (eq < 0) return [];
+      let depth = 0, end = -1;
+      for (let j = eq; j < htmlText.length; j++) {
+        if (htmlText[j] === '[') depth++;
+        else if (htmlText[j] === ']') { depth--; if (depth === 0) { end = j + 1; break; } }
+      }
+      if (end < 0) return [];
+      let raw = htmlText.slice(eq, end).replace(/'/g, '"').replace(/,\s*([\]}])/g, '$1');
+      try {
+        const arr = JSON.parse(raw);
+        return Array.isArray(arr) ? arr.slice(1).map((p) => ({ d: String(p[0]), v: Number(p[1]) || 0 })) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+    return {
+      framesByDay: grab('line_rendered_frames_by_day'),
+      renderDaysByDay: grab('line_time_ordered_per_day'),
+      remainingByHour: grab('line_remaining_frames_public_by_hour'),
+      projectDist: grab('project_distribution'),
+      machinesByHour: grab('sessions_by_hours'),
+      machinesByDay: grab('sessions_by_day'),
+      os: grab('piechart_os'),
+      device: grab('piechart_compute_device'),
+    };
+  }
+
+  /** 团队详情（/team/<id>，要登录）：站点模板给的是 h2 团队名 + h3 总积分 + 4 列成员表 + 最近项目。
+      成员表在 tbody 里（不是 AJAX）；最近项目是 ul.popular 里的 li。 */
+  function parseTeamPage(html) {
+    const doc = asDoc(html);
+    const h2 = [...doc.querySelectorAll('h2')].map((x) => text(x).trim()).filter(Boolean)[0] || '';
+    const h3 = doc.querySelector('h3');
+    const table = [...doc.querySelectorAll('table')].find((tbl) => /points generated/i.test(text(tbl)));
+    const numOf = (td) => {
+      const raw = td.getAttribute('data-sort');
+      if (raw != null && raw !== '') { const v = Number(raw); if (Number.isFinite(v)) return v; }
+      return null;
+    };
+    const members = [];
+    let hasLastFrame = false;
+    let hasRemove = false;
+    if (table) {
+      /* 列数不是固定的：团队创建者看到 6 列（多「Last rendered frame」和「Remove member」），
+         普通成员只有 4 列。按表头文字定位，不按位置硬编码。 */
+      const heads = [...table.querySelectorAll('thead th')].map((th) => text(th).trim().toLowerCase());
+      const colOf = (needle) => heads.findIndex((h) => h.includes(needle));
+      const iUser = Math.max(1, colOf('member'));
+      const iPts = colOf('points');
+      const iJoin = colOf('join');
+      const iLast = colOf('last rendered');
+      const iRemove = colOf('remove');
+      hasLastFrame = iLast >= 0;
+      hasRemove = iRemove >= 0;
+      for (const tr of table.querySelectorAll('tbody tr')) {
+        const tds = [...tr.querySelectorAll('td')];
+        if (tds.length < 2) continue;
+        const cell = (i) => (i >= 0 && tds[i] ? tds[i] : null);
+        /* 头像那个 <a> 里只有 <img>、没有文字：先挑有文字的链接，拿不到再退回第一个 */
+        const links = [...tr.querySelectorAll('a[href*="/user/"]')];
+        const link = links.find((a) => text(a).trim()) || links[0] || null;
+        const av = tr.querySelector('img.avatar, .avatar-small img');
+        const pc = cell(iPts);
+        const jc = cell(iJoin);
+        const lc = cell(iLast);
+        /* 「移除成员」列只在创建者视角存在。按钮形态站点没给样本，所以三种常见载体都认：
+           <a href>、<form action>、onclick="requestReloadOnSuccess('...')"。认不出就留空，
+           渲染层看到空动作就不画按钮 —— 不猜 URL。 */
+        const rc = cell(iRemove);
+        let removeUrl = '';
+        if (rc) {
+          const ra = rc.querySelector('a[href*="/team/"]');
+          const rf = rc.querySelector('form[action]');
+          const rb = rc.querySelector('[onclick*="requestReloadOnSuccess"]');
+          if (ra) removeUrl = String(ra.getAttribute('href'));
+          else if (rf) removeUrl = String(rf.getAttribute('action'));
+          else if (rb) removeUrl = (String(rb.getAttribute('onclick')).match(/requestReloadOnSuccess\('([^']+)'\)/) || [])[1] || '';
+        }
+        members.push({
+          rank: text(tds[0]).trim(),
+          /* 站点模板：member.rendering ? 'label label-success' : 'label label-default'
+             —— 排名标签是绿色 = 这个成员此刻正在渲染（这就是"在线"）。 */
+          rendering: !!tds[0].querySelector('.label-success'),
+          user: link ? text(link).trim() : text(cell(iUser) || tds[1]).trim(),
+          userId: link ? ((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
+          avatar: Util.safePath(av ? (av.getAttribute('data-src') || av.getAttribute('src') || '') : ''),
+          points: pc ? numOf(pc) : null,
+          pointsText: pc ? text(pc).trim() : '',
+          joined: jc ? text(jc).trim() : '',
+          lastFrame: lc ? text(lc).trim() : '',
+          removeUrl,
+        });
+      }
+    }
+    /* 待批的加入申请（只有创建者看得到）：<h3>Join requests</h3> 后面那张表，
+       每行一个申请人 + Accept / Refuse 两个 requestReloadOnSuccess 按钮。 */
+    const requests = [];
+    const reqHead = [...doc.querySelectorAll('h3')].find((x) => /join requests/i.test(text(x)));
+    const reqTable = reqHead && reqHead.parentElement ? reqHead.parentElement.querySelector('table') : null;
+    if (reqTable) {
+      for (const tr of reqTable.querySelectorAll('tr')) {
+        const tds = [...tr.querySelectorAll('td')];
+        if (tds.length < 4) continue;   // 表头行没有 td
+        const link = tr.querySelector('a[href*="/user/"]');
+        const av = tr.querySelector('img');
+        const urls = [...tr.querySelectorAll('[onclick*="requestReloadOnSuccess"]')].map((b) => {
+          const m = String(b.getAttribute('onclick')).match(/requestReloadOnSuccess\('([^']+)'/);
+          return m ? m[1].trim() : '';
+        });
+        requests.push({
+          user: link ? text(link).trim() : text(tds[1]).trim(),
+          userId: link ? ((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
+          avatar: Util.safePath(av ? (av.getAttribute('data-src') || av.getAttribute('src') || '') : ''),
+          time: text(tds[2]).trim(),
+          accept: urls.find((u) => /\/adduser\//.test(u)) || '',
+          refuse: urls.find((u) => /\/refuseuser\//.test(u)) || '',
+        });
+      }
+    }
+
+    const projects = [];
+    const head = [...doc.querySelectorAll('h4')].find((x) => /latest projects/i.test(text(x)));
+    const ul = (head && head.parentElement ? head.parentElement.querySelector('ul.popular') : null) || doc.querySelector('ul.popular');
+    if (ul) for (const li of ul.querySelectorAll('li')) {
+      const p = li.querySelector('p');
+      const link = li.querySelector('a[href*="/user/"]');
+      const av = li.querySelector('img');
+      projects.push({
+        name: p ? text(p).replace(/\s*Sent\s.*$/i, '').trim() : '',
+        owner: link ? ((String(link.getAttribute('href')).match(/\/user\/([^/]+)\/profile/) || [])[1] || '') : '',
+        avatar: Util.safePath(av ? (av.getAttribute('data-src') || av.getAttribute('src') || '') : ''),
+      });
+    }
+    /* 团队动作：站点用 requestReloadOnSuccess(url) 发 POST（common.js），成功回 'OK'。
+       /team/leave = 我在这个团队；/team/<id>/askforjoin = 我还没加入。 */
+    /* 动作地址可能写在 onclick 上，也可能包在内联脚本里（退出团队就是后者：
+       onclick 只写 `return leaveTeam()`）。两处都扫。 */
+    const actions = [];
+    for (const el of doc.querySelectorAll('[onclick]')) {
+      const m = String(el.getAttribute('onclick')).match(/requestReloadOnSuccess\('([^']+)'\)/);
+      if (m) actions.push(m[1]);
+    }
+    for (const sc of doc.querySelectorAll('script:not([src])')) {
+      const txt = sc.textContent || '';
+      for (const m of txt.matchAll(/requestReloadOnSuccess\('([^']+)'\)/g)) actions.push(m[1]);
+    }
+    const leaveUrl = actions.find((u) => /^\/team\/leave$/.test(u)) || '';
+    /* 解散只有创建者看得到（站点把两个按钮一起给她）：/team/leave_them_delete */
+    const deleteUrl = actions.find((u) => /\/leave_them_delete$/.test(u)) || '';
+    const joinUrl = actions.find((u) => /\/askforjoin$/.test(u)) || '';
+    /* 改名/改描述（创建者可见）：<h3>Update name and description</h3> 后面那张表单 */
+    let update = null;
+    const updHead = [...doc.querySelectorAll('h3')].find((x) => /update name and description/i.test(text(x)));
+    const updForm = updHead && updHead.parentElement ? updHead.parentElement.querySelector('form[action*="/update"]') : null;
+    if (updForm) {
+      const nameEl = updForm.querySelector('[name="team_update_name"]');
+      const descEl = updForm.querySelector('[name="team_update_description"]');
+      update = {
+        url: updForm.getAttribute('action') || '',
+        name: nameEl ? String(nameEl.getAttribute('value') || '') : '',
+        description: descEl ? text(descEl).trim() : '',
+      };
+    }
+
+    return { name: h2, pointsText: h3 ? text(h3).trim() : '', members, projects, requests, update, hasLastFrame, hasRemove, leaveUrl, deleteUrl, joinUrl };
+  }
+  /** 团队榜：站点 `/team` 的 6 列表格。积分列带 data-sort 原值（缩写只是显示），
+      所以排序/统计用数值、显示照原文 —— 与 parseRanking 同一口径。
+      团队详情页 /team/<id> 需要登录，未登录时站点只给登录提示；那一页不接管。 */
+  function parseTeams(html) {
+    const doc = asDoc(html);
+    const table = [...doc.querySelectorAll('table')].find((tbl) => /points over 90 days/i.test(text(tbl)));
+    if (!table) return null;
+    const out = [];
+    for (const tr of table.querySelectorAll('tbody tr')) {
+      const tds = [...tr.querySelectorAll('td')];
+      if (tds.length < 6) continue;
+      const link = tr.querySelector('a[href*="/team/"]');
+      const numOf = (td) => {
+        const raw = td.getAttribute('data-sort');
+        if (raw != null && raw !== '') { const v = Number(raw); if (Number.isFinite(v)) return v; }
+        return null;
+      };
+      out.push({
+        rank: text(tds[0]).trim(),
+        id: link ? ((String(link.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '') : '',
+        name: link ? text(link).trim() : text(tds[1]).trim(),
+        p90: numOf(tds[2]), p180: numOf(tds[3]), total: numOf(tds[4]), members: numOf(tds[5]),
+        p90Text: text(tds[2]).trim(), p180Text: text(tds[3]).trim(),
+        totalText: text(tds[4]).trim(), membersText: text(tds[5]).trim(),
+      });
+    }
+    return out;
+  }
   function parseRanking(html) {
     const doc = asDoc(html);
     const rows = [...doc.querySelectorAll('table tr')].filter((tr) => tr.querySelector('td'));
@@ -791,6 +921,61 @@
         seconds: numOf(tds[3]),
         points: numOf(tds[4]),
       });
+    }
+    return out;
+  }
+
+  /* 机器性能榜（/ranking/machine，需登录）：四张独立的表，按 h1 里的锚点分节 ——
+     CPUs / GPUs OPTIX / GPUs HIP / GPUs METAL。站点的列布局：
+       CPU  = Model + Strength(data-sort=power)
+       GPU  = Model + Memory(data-sort=memory_int，"95 GB") + Strength
+     与用户榜同一口径：排序/统计读 data-sort 原值，显示照原文。
+     行上 class="danger" 表示这台机器连在当前账号上 —— 只标"你的"，不改数据形状。
+     admin 会多看一列 Coef、mod 多一列 Reset；所以数值列按**固定位置**取（CPU：model=0,
+     strength=1；GPU：model=0, memory=1, strength=2），不用"最后一列"—— 否则管理员视角下
+     会把 Coef 当成强度。 */
+  const MACHINE_TABLES = [
+    ['cpus', 'cpus', false],
+    ['gpus_optix', 'optix', true],
+    ['gpus_hip', 'hip', true],
+    ['gpus_metal', 'metal', true],
+  ];
+  function parseMachineRanking(html) {
+    const doc = asDoc(html);
+    const out = { cpus: [], optix: [], hip: [], metal: [] };
+    const numOf = (td) => {
+      const raw = td.getAttribute('data-sort');
+      if (raw != null && raw !== '') {
+        const v = Number(raw);
+        if (Number.isFinite(v)) return v;
+      }
+      /* 没有 data-sort 才退到显示文本（"95 GB" / "8040 %"）；站点这个页面每列都带原值，
+         正常走不到这里 —— 与 parseRanking 同一条降级策略。 */
+      const n = Number(text(td).replace(/[^\d.-]/g, ''));
+      return Number.isFinite(n) ? n : null;
+    };
+    for (const [anchor, key, gpu] of MACHINE_TABLES) {
+      const a = doc.querySelector('a[name="' + anchor + '"]') || doc.getElementById(anchor);
+      const table = a ? tableAfter(a.closest('h1,h2,h3,h4,h5') || a) : null;
+      if (!table) continue;
+      for (const tr of table.querySelectorAll('tbody tr')) {
+        const tds = [...tr.querySelectorAll('td')];
+        const powerIdx = gpu ? 2 : 1;
+        if (tds.length < powerIdx + 1) continue;
+        const model = text(tds[0]).trim();
+        if (!model) continue;
+        const row = {
+          model,
+          mine: (' ' + String(tr.className || '') + ' ').indexOf(' danger ') >= 0,
+          power: numOf(tds[powerIdx]),
+          powerText: text(tds[powerIdx]).trim(),
+        };
+        if (gpu) {
+          row.memory = numOf(tds[1]);
+          row.memoryText = text(tds[1]).trim();
+        }
+        out[key].push(row);
+      }
     }
     return out;
   }
@@ -898,7 +1083,19 @@
       }
     }
 
+    /* 我的团队：站点把 Team 放在统计 dl 里（<dt>Team</dt><dd><a href="/team/<id>">名字</a></dd>）。
+       没加入任何团队时那一行不存在 → team = null（不猜）。 */
+    let team = null;
+    for (const dt of doc.querySelectorAll('dt')) {
+      if (!/^team$/i.test(text(dt).trim())) continue;
+      const dd = dt.nextElementSibling;
+      const a = dd ? dd.querySelector('a[href*="/team/"]') : null;
+      if (a) team = { id: (String(a.getAttribute('href')).match(/\/team\/(\d+)/) || [])[1] || '', name: text(a).trim() };
+      break;
+    }
+
     return {
+      team,
       scheduler: {
         mineFirst: checked('scheduler_rendermyprojectfirst'),
         teamFirst: checked('scheduler_rendermyteamsprojectsfirst'),
@@ -933,9 +1130,9 @@
 
   SP.Api = {
     fetchPage, fetchJson, fetchWithTimeout, invalidate, cache, post,
-    currentDoc, isOk,
-    parseProfile, parseHome, parseProjects, parseRanking, parseStatBoxes, detectUser,
-    parseMyProjects, parseManage,
+    currentDoc, disableLiveDoc, isOk,
+    parseProfile, parseHome, parseProjects, parseRanking, parseMachineRanking, parseTeams, parseTeamPage, parseStatBoxes, detectUser,
+    parseMyProjects, parseProcessingFrames, parseMachineSessions, parseChartArrays,
     parseAccount, parseMachines, parseSession, parseTimeline,
     extractArray, computeDerived,
   };

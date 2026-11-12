@@ -430,8 +430,10 @@
     if (chartResize) { window.removeEventListener('resize', chartResize); chartResize = null; }
   }
 
-  function pointsChart(box, series) {
+  function pointsChart(box, series, opts) {
     if (!box || !series || series.length < 2) return;
+    /* 单位跟着调用方走：总览是「积分」，实况是「帧 / 台」——不能写死。 */
+    const unit = opts && opts.unit !== undefined ? opts.unit : t('chart.tipPoints');
     const vals = series.map((p) => p.v);
     const n = vals.length;
     const top = Util.niceTop(Math.max(...vals));
@@ -494,7 +496,7 @@
       cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '.55');
       dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.setAttribute('opacity', '1');
       if (tip) {
-        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b> ${esc(t('chart.tipPoints'))}<i>${esc(series[i].d)}</i>`;
+        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b>${unit ? ' ' + esc(unit) : ''}<i>${esc(series[i].d)}</i>`;
         tip.style.left = (vx / geom.W * 100) + '%';
         tip.style.top = (vy - 10) + 'px';
         tip.style.opacity = '1';

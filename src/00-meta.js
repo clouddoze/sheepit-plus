@@ -2,9 +2,9 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.4
-// @description  给 SheepIt Render Farm 换一套现代前端：仪表盘、项目、排行榜、会话、上传与设置；双语、明暗主题，数据只来自站点页面。
-// @description:en  A modern front end for SheepIt Render Farm: dashboard, projects, ranking, sessions, upload and settings; bilingual, dark/light, all data read from the site's own pages.
+// @version      0.2.5
+// @description  给 SheepIt Render Farm 换一套现代前端：仪表盘、项目、排行榜、团队、实况、会话与设置；明暗主题，数据只来自站点页面。
+// @description:en  A modern front end for SheepIt Render Farm: dashboard, projects, ranking, teams, live farm status, sessions and settings; dark/light, all data read from the site's own pages.
 // @author       clouddoze
 // @match        https://www.sheepit-renderfarm.com/*
 // @exclude      https://www.sheepit-renderfarm.com/forum/*
