@@ -1,0 +1,58 @@
+#AOCI-CODE-VOLUME: 1
+
+===/<repository>/===
+.gitattributes[FC4T]: F:换行与二进制声明：全仓文本统一 LF 存储与检出，图片声明 binary，脚本与 Markdown 显式 eol=lf。 | R:- | A:- | S:注释写的「检出到 Windows 转 CRLF」与实际不符：规则是 eol=lf，全仓一律 LF 检出；照注释改规则会改动全仓行尾。
+.gitignore[FC5T]: F:忽略边界：node_modules、.tmp、.impeccable、.notes、.workbuddy 与 *.bak-* 不入库。 | R:- | A:- | S:.tmp/ 与 .notes/ 被忽略，但 tools 的页面夹具与 PRODUCT.md 就在那里；换机器或清仓后 tools 会明确报缺夹具，这不是脚本坏了。
+AGENTS.md[SG5S]: F:给 Agent 的仓库认知说明：aoci 区块解释索引如何生成与读取，以及语义不得由程序化规则编造。 | R:code:aoci.txt | A:aoci:begin 与 aoci:end 之间的区块 | S:该区块由 aoci 写入与维护，手改会在下次写入被覆盖；要改行为改 aoci 配置或工具说明，不要在这里加长期约定。
+LICENSE[SG2T]: F:MIT 许可证，版权归 clouddoze（2026）。 | R:- | A:- | S:-
+README.md[SU6T]: F:用户文档：安装（油猴管理器、GreasyFork、刷新页面）与能力清单，中英双语各一份。 | R:- | A:@grant none，数据只来自站点页面，不向第三方发送。 | S:@grant none 是权限承诺：新增功能不得引入外部请求或额外权限，否则要同步改这里与发布文案。
+build.mjs[XV8S]: F:构建脚本：把 src/*.js 按文件名顺序拼成一个可安装的油猴单文件，带语法校验与体积/注释占比护栏。 | R:code:src/00-meta.js,code:tools/comment-bytes.mjs | A:拼接顺序即加载顺序；--check 只校验不写盘；--out 改输出路径。 | S:产物是拼出来的，改功能改 src/*.js 不要改 dist；@version 只从 00-meta.js 提取，发版改那里。
+serve-test.mjs[XQ3T]: F:本地静态服务器：把 dist 产物以 127.0.0.1 喂给浏览器做实测，不参与交付。 | R:- | A:createServer、CORS 头、404 分支 | S:CORS 头必须在所有响应分支返回，404 也不例外；缺了它浏览器会把响应变成不透明错误。
+
+===/<repository>/design/===
+sheepit-plus-design.html[SU6L]: F:单文件高保真设计稿：把十个视图与明暗主题固定成可直接打开对照的 HTML，视觉改动先落这里。 | R:code:docs/DESIGN.md | A:九个 section data-view：overview、projects、rank、session、account、upload、analysis、manage、classic | S:它是不进产物的对照稿；CSS 的权威是 30-style.js 与 DESIGN.md，不是这份文件，两边不一致以源码为准。
+
+===/<repository>/docs/===
+ARCH.md[SG7S]: F:项目结构与分层说明：拼接顺序即依赖方向，并记录视图层解耦现状、事件表（kind 与 data-act 的对应）、结构债清单与翻译策略。 | R:code:src/80-app.js | A:分层表、视图层 IIFE 化、事件表、结构债清单、翻译策略 | S:拼接顺序就是加载顺序，只能向下依赖；51–54 已 IIFE 化，跨视图直接引用必须为 0，新增交叉引用等于倒退；事件表新增 kind 必须同时改 80-app 与 data-act，差集由 .tmp/events-scan.mjs 校验；勾选走 data-pick/data-pickall 独立分支，不占 data-act 表。
+AUTONOMY.md[SW5T]: F:自主改进循环：可自主/需拍板/禁止三档判定、每轮流程与逐轮记录。 | R:code:docs/BACKLOG.md | A:规则表、判定口径、每轮流程、记录表 | S:禁止项含改断言、改基线、改 .notes/PRODUCT.md，以及连续两轮改同一文件；越界的一轮只能写 BACKLOG 不动代码。
+BACKLOG.md[SU4T]: F:未接管路径清单（含链接数与判定理由）、已知噪声与历史欠账。 | R:- | A:/donation、/termsofuse、/team、/forum、/user/logout 等条目 | S:-
+CLEANUP-AUDIT.md[SQ5L]: F:一轮完整的废弃代码与可读性审计：结论、逐项候选（依据/建议/风险）、执行日志与验证门。 | R:code:docs/ROADMAP.md | A:A 组高置信清理、B 组待确认、注释体量、执行日志 | S:结论是没有大面积死代码；改写式注释压缩被判定不该做——再压就是删掉防回归依据，会让后人把对的改错。
+DESIGN.md[SU7L]: F:设计系统：品牌橙的三处专用、明暗两套表面色阶、排版层级与组件规则。 | R:code:src/30-style.js | A:Colors、Typography、Layout、Elevation、Components、Do's and Don'ts | S:不要对含功能控件的容器做整块翻译（innerHTML 会删掉文件选择器）；切换页面的开关必须两种状态都挂载；批量层用表头全选 + 工具行（不嵌套卡片）、选中态 surface-3、勾选命中区 44px、行内两步确认，窄屏保持五列横向滚动；总览「我的项目」只放一个关键事实（删除日期优先、其次帧进度），详细字段留在「我发布的」表。
+PUBLISHING.md[SV6L]: F:分发文案包：GreasyFork/OpenUserJS 每个上传字段、正文、截图策略与 metadata 回填记录。 | R:code:src/00-meta.js | A:上传字段表、Additional info 正文、metadata 记录、验证状态 | S:脚本 id 598624；合规声明与 AI 作者身份声明是固定对外表述，发布时不能删；两边都发时 @updateURL 只能指向一边。
+README.md[SG3T]: F:docs 索引：只列当前有效文档，按先读这两份与当前状态分组，并记录已删除文档。 | R:code:docs/ARCH.md | A:分组表、资产、已删除清单 | S:-
+ROADMAP.md[SW5T]: F:路线图：基线数字、按用户任务列的缺口、维护成本最高的三处与优先级排序。 | R:- | A:基线表、缺口、维护成本、优先级、本轮不做 | S:发布形态锁定油猴单文件（@grant none），本文件不讨论换框架、拆服务或上构建链。
+STRATEGY-0.4.md[SW5T]: F:阶段性结论：先用维护还债、不接新功能，含三条硬证据与按 ROI 排序的维护清单。 | R:- | A:三条证据、维护清单、明确不做 | S:每加一个视图就要有对应回归断言；当前 7 个接管视图里 regress 只覆盖 4 个，欠 3 条。
+SWITCH-0LATENCY.md[SP5M]: F:把新版与原版切换压到一帧的方案与实测：拆解 600ms 的成本构成，给出 playInstant 实现与证据索引。 | R:code:src/72-sweep.js | A:延迟拆解、playInstant、风险清单、落地面 | S:按函数名（toClassic、hideModern、revealModern、play）检索，不要按行号——并行任务会让行号漂移。
+
+===/<repository>/src/===
+00-meta.js[FV8T]: F:用户脚本头与 metadata：@match、@exclude、@run-at、@grant、版本与更新地址。 | R:- | A:@name、@version、@match、@grant 各行 | S:@namespace 定死后不可改，@version 只能往上走；@grant none 是全脚本权限承诺，改它等于改分发形态。
+10-core.js[CG9L]: F:最底层基础：通用工具（DOM、转义、存储、格式化）、语言包注册表与主题 token。 | R:code:src/12-lang-zh.js | A:Util、DICT、SITE、TOKENS、Theme、I18n | S:拼接顺序的第一个模块，不能依赖任何其他模块；全局命名空间只有 window.__SHEEPIT_PLUS__；新增文案要中英两份 DICT 同时登记，check-keys 只校验键存在、不校验另一种语言是否漏写；项目批量删除的 proj.* 与总览/项目页共用的 my.meta.*（running/next/deleted）两处都加。
+12-lang-zh.js[LL6T]: F:中文语言包，只做日期本地化（两种站点日期形状转中文），不翻译原版页面文案。 | R:code:src/10-core.js | A:MONTH_ZH、monthOf、farmDate | S:原版页的逐条文案翻译已在 2026-11-13 移除，别再加回来——维护成本压不住且覆盖不全。
+20-api.js[IN9L]: F:抓取与解析层：把站点页面与 AJAX 结果变成结构化数据，含 inflight 去重、15 秒超时、登录失效识别与 manage 页副标题事实。 | R:code:src/10-core.js | A:fetchPage、cache、parseProfile、parseProjects、parseProjectManage、parseSession | S:站点未登录是 302 跳 /user/signin 而不是 401，fetch 会跟随跳转拿到 200 登录页；只看 res.ok 会把过期登录当成功，必须认最终 URL；manage 页 Summary 的自动删除行没有标签前缀，帧进度在 li#project_job_<id>_progression，计算方式要读 radio 的 onclick。
+30-style.js[CU7L]: F:整份 CSS：以模板字符串定义骨架、顶栏、指标带、图表、表格与各视图专属样式。 | R:code:src/10-core.js | A:SP.CSS、#sp 骨架、各区块样式段 | S:一次性以 document-start 注入；#sp 的 z-index 是 2147483000，扫光幕布必须更高（2147483500），改层级要同时改两处；项目表列宽按 class 定，560px 用 min-width:680 让五列一起横向滚，选中行 surface-3、勾选命中区 44px、批量条是工具行不是卡片；总览 .meta 11.5px 省略、sechead 高度恒定。
+40-ui.js[CU8L]: F:组件层：把数据渲染成 HTML 字符串（头像、图标、KPI、热力图、表格、空态）与命令式图表。 | R:code:src/10-core.js | A:ICONS、LOGO、avatar、kpis、heatmap、Charts | S:组件返回 HTML 字符串、由调用方 innerHTML 注入，所有插值必须过 Util.esc，否则站点数据能注入页面。
+45-view-kit.js[CG6S]: F:视图层公共小件：esc、fmt、foot、分页、日序列、状态与排名解析、导航项。 | R:code:src/10-core.js | A:foot、dailySeries、statOf、rankOf、NAV_ITEMS | S:51–54 仍通过 50 的作用域拿到这些名字，改签名要同时改 50 顶部的解构，否则运行期才报未定义。
+50-views-overview.js[AA7M]: F:总览视图：我的项目面板（行内关键事实与标题汇总）、统计卡、积分与帧数曲线、渲染日历与在线机器。 | R:code:src/45-view-kit.js | A:myPanel、OV_BLOCKS、overview、ovRow、metaKeyFact、panelSummary | S:站点 Connected as 那一格客户端状态是故意不画的，别加回来——它只会和在线机器重复且容易误读；总览「我的项目」行内只放一个关键事实（autoDelete 短日期优先，其次 done/total），其余进 title；标题旁只放渲染中数量与最近删除日期；meta 由 80 异步补前 5 个，失败不占位。
+51-views-projects.js[AB7M]: F:项目列表视图：全站可排序列注册表，以及「我发布的」档的搜索/筛选/排序、表头全选、多选与批量删除入口（两种空态分支）。 | R:code:src/45-view-kit.js | A:P_SORTS、M_SORTS、sortCmp、projState、mineRows、mineMetaLine | S:51 是独立 IIFE，借不到 50 的局部函数（myName/myStatus 曾因此崩溃），公共件只从 SP.VK 取；排序偏好存 projSort；空态分「一个都没有」与「筛选无匹配」；picked 只在内存，切筛选/搜索/范围清空，全选只覆盖已渲染且有 id 的行；副标题只用 manage 的 compute/RAM/帧/自动删除，缺 meta 不渲染；发布者操作依赖登录态。
+52-views-ranking.js[AU6M]: F:排行榜与团队：用户榜、按 CPU 与 GPU 分数段的机器榜、团队榜与团队详情。 | R:code:src/45-view-kit.js | A:rankState、usersRank、MACH_SECTS、teams、teamDetail | S:重复注入时若 SP.Views.rankState 已存在必须提前 return，否则同一页会挂两遍事件委托。
+53-views-session.js[AU6L]: F:会话页：一台机器的信息、可渲染项目、按天活动汇总、暂停与恢复、按作业分组的日志。 | R:code:src/45-view-kit.js | A:sessState、valueHuman、typeLabel、session | S:机器信息、项目列表与时间线是三路数据，任何一路失败只让那一块说没有数据，其余照常显示。
+54-views-account.js[AI7L]: F:设置与账户：界面语言主题等设置项、账户资料、密码、通知级别与优先级列表。 | R:code:src/20-api.js | A:settings、account、userList、acctState | S:这里的写操作（密码、通知、优先级）走站点表单，必须有登录态并用站点自己的成功文案判定，不能只看 HTTP 200。
+55-views-live.js[AA6M]: F:实况页：把 frames 与 machines 合成一页，含指标带、双折线趋势、构成条与两张明细表。 | R:code:src/40-ui.js | A:liveState、stackBar、distPanel、pairPanel、live | S:图表数据是页面内联的 var name = [...] 由 20-api 抠出来的，站点改内联写法这里会静默空图而不报错。
+72-sweep.js[CU6T]: F:两套界面之间的扫光切换：play 在幕布盖满时换界面，veil 在真要导航时先盖一层。 | R:code:src/80-app.js | A:veil、veilThen、ensureStyle、Z | S:幕布 z-index 必须高于 #sp（2147483500 对 2147483000）；prefers-reduced-motion 下不演动效，直接换。
+80-app.js[AA9L]: F:应用层：接管判定与路由、界面模式切换、全局事件委托（含项目多选、两步确认与串行批量删除）、启动以及与原始界面的往返。 | R:code:src/72-sweep.js,code:src/50-views-overview.js,code:src/51-views-projects.js | A:viewForPath、startModern、mountModePill、toClassic、SP.app、deleteProjects | S:同一页只装一次（SP.appStarted）；接管表是 12 条路径模式映射 8 个视图，新增视图要同时改这里与 30-style；删除串行 POST，SIGNED_OUT 中止剩余，支持停止并统计未处理，成功项同步三处 state，两步确认不用 window.confirm，删除中挂 beforeunload 并拦导航；manage 元数据用 fillMetaFor 补，只补前 N、并发 3、失败静默、alive 判断后才 render，总览每次进入可重试。
+
+===/<repository>/tools/===
+10-core.preview.js[XQ4L]: F:开发用的 10-core 预览副本：在不动 src 的前提下试验核心工具与主题改动。 | R:code:src/10-core.js | A:与 src/10-core.js 同构的 Util、DICT、TOKENS | S:它是 src/10-core.js 的副本，核心一改这里就过期；只用于试验，不能当第二份真源。
+README.md[SQ4T]: F:tools 目录说明：哪些脚本只在开发验收时用、各自作用，以及没有夹具时的预期表现。 | R:- | A:文件作用表 | S:这些脚本不会被打进 dist 产物；没有夹具时它们会明确报缺文件，这是预期行为不是缺陷。
+capture-server.mjs[XQ4T]: F:抓夹具服务器：让作者已登录的页面把 HTML POST 到本地落盘，供后续回放与解析校验。 | R:- | A:createServer、OUT 默认 .tmp/fixtures/raw、文件名清洗 | S:输出目录在 .gitignore 里（.tmp/），换机器就没有夹具；它靠作者自己的登录态抓页面，不是通用抓取器。
+check-keys.mjs[XQ5T]: F:词条体检：扫 src 里所有 t 的字面量键，确认 10-core 的 DICT 都有对应项，缺失时退出码 1。 | R:code:src/10-core.js | A:core 读取、missing 集合、退出码 | S:只认字面量键，动态拼出来的键查不到；曾因词条被删而页面直接显示键名。
+comment-bytes.mjs[XQ3T]: F:精确统计注释占用字节：带字符串、模板串与正则感知，避免把 accept="image/*" 误判为块注释起点。 | R:code:build.mjs | A:countCommentBytes、带感知的扫描器 | S:朴素扫描会把注释字节虚报约 10KB，build.mjs 的注释护栏依赖这份精确口径。
+coverage-baseline.json[XQ4S]: F:覆盖率基线快照：记录各路径被引用次数与测量时间，供 coverage.mjs 比对升降。 | R:code:tools/coverage.mjs | A:handled 数组、when 时间戳 | S:只由 coverage.mjs --update 生成，手改会让下次比对把人工值当成基线。
+coverage.mjs[XQ5T]: F:覆盖率观察：统计接管面与未接管路径的链接数排行，并与基线比对。 | R:code:tools/coverage-baseline.json | A:接管清单、链接数统计、--update | S:接管清单必须与 src/80-app.js 的 viewForPath 同步；链接数来自 .tmp 夹具，缺夹具时只打印接管面。
+harness.mjs[XQ7M]: F:夹具服务器：把抓下来的真实页面当站点回放，顶掉外链脚本与 jQuery 等桩，支持故障注入与空态变体。 | R:code:tools/rig.mjs | A:静态回放、脚本桩、?fail=1、?variant=empty、取景页 | S:站点 37 个外链脚本以空 JS 顶掉，控制台剩下的错误就一定是自己的；夹具缺失时明确报错而不是静默空页。
+inspect.mjs[XQ5S]: F:交叉校验：直接读夹具算出站点自己报告的数字，供与界面渲染结果逐项对照。 | R:code:tools/harness.mjs | A:夹具解析、计数、时间线区间 | S:它绕过浏览器直接读 HTML，因此能证明界面显示的数字来自站点，而不是脚本自己算的。
+regress-baseline.json[XQ4T]: F:回归基线：记录产物字节、注释字节与各页面数据摘要，供 regress.mjs 只读比对。 | R:code:tools/regress.mjs | A:artifact 段、pages 段、when | S:只由 regress.mjs --update 写入；手改等于改断言的期望值。
+regress.mjs[XQ8M]: F:回归门：静态账、页面数据与空态错误态三类检查，比对基线并以非零退出码报告失败。 | R:code:tools/rig.mjs,code:tools/regress-baseline.json | A:静态账、页面测量、空态与故障态、--update | S:--update 是唯一写路径，默认只读比对；页面数据由 harness 回放夹具，缺夹具时结果不代表站点现状。
+rig.mjs[XQ6S]: F:验收执行层：起 harness 与无头 Chromium，经 CDP 逐页测量从导航到数据就绪的耗时。 | R:code:tools/harness.mjs | A:CDP、measurePage、视口与超时 | S:从 .tmp 迁入后逻辑未改，唯一新增是 measurePage 的可选 extraExpr；改测量口径要同时调 regress 的判据。
+stitch.py[XQ3T]: F:截图拼接：把整页分片按顺序纵向拼回一张，并处理 #sp 粘性顶栏的重复与末屏重叠。 | R:- | A:简单拼接、分片模式（css-w、dpr、y、sticky） | S:#sp 顶栏是 sticky，直接拼会在每屏顶部重复它；y 偏移必须与截图时一致。
+strip-dead.mjs[XQ5M]: F:按死键清单删除 src/10-core.js 里中英两份 DICT 条目，默认只预演打印计划不写文件。 | R:code:src/10-core.js | A:死键解析、DICT 块定位、--write、预览输出 | S:没有 --write 时不改任何文件；它只动 DICT 块，越界就该停下——删错键会让页面直接显示键名。

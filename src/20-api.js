@@ -1128,12 +1128,62 @@ function parseProfile(html, userName) {
     return { signedIn, userName: m ? decodeURIComponent(m[1]) : null, avatar };
   }
 
+  /** /project/<id> 管理页的**副标题事实**（owner 可读的那一页）：Summary 列表、
+      Compute method、公开渲染、帧进度。只挑能挂一行副标题的字段，缺项给 '' / null。
+      站点结构见上游 manage.html.twig + HTML.php：Summary 是 <h2> + <ul><li>标签: 值</li>，
+      计算方式写在两只 radio 的 onclick 里（'cpu' / 'gpu'），帧进度是 li#project_job_<id>_progression。 */
+  function parseProjectManage(html) {
+    const doc = asDoc(html);
+    const textOf = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
+    const out = {
+      storage: '', ram: '', duration: '', perFrame: '', autoDelete: '',
+      compute: '', publicRender: null, done: null, total: null,
+    };
+
+    const head = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(textOf(h)));
+    const list = head && head.parentElement ? head.parentElement.querySelector('ul') : null;
+    for (const li of (list ? list.querySelectorAll('li') : [])) {
+      const raw = textOf(li);
+      /* 「自动删除」那一行没有「标签:」前缀，是 <li><span style="color:red">…</span></li> */
+      const auto = raw.match(/automatically deleted on\s+(.+)$/i);
+      if (auto) { out.autoDelete = auto[1].trim(); continue; }
+      const kv = raw.match(/^([^:]+):\s*(.+)$/);
+      if (!kv) continue;
+      const key = kv[1].toLowerCase();
+      const val = kv[2].trim();
+      if (/storage used/.test(key)) out.storage = val;
+      else if (/^ram usage/.test(key)) out.ram = val;
+      else if (/real duration/.test(key)) out.duration = val;
+      else if (/per frame rendertime/.test(key)) out.perFrame = val;
+    }
+
+    /* 计算方式：两只 radio，onclick 里写死 'cpu' / 'gpu'；两只都 checked 才算 CPU+GPU */
+    const on = [];
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!r.hasAttribute('checked')) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\(\s*[^,]+,\s*['"](cpu|gpu)['"]/i);
+      if (m) on.push(m[1].toLowerCase());
+    }
+    out.compute = on.includes('cpu') && on.includes('gpu') ? 'both' : on.includes('gpu') ? 'gpu' : on.includes('cpu') ? 'cpu' : '';
+
+    /* 公开渲染：公开时可见 checkbox ..._1 是 checked；私有时 ..._value 那只才是可见 checkbox。
+       判据只认 HTML 的 checked 属性（站点的初始状态），不猜谁可见。 */
+    const pub = doc.getElementById('project_public_render_checkbox_1');
+    out.publicRender = pub ? pub.hasAttribute('checked') : null;
+
+    /* 帧进度：li#project_job_<项目 id>_progression 的「2/2」 */
+    const prog = [...doc.querySelectorAll('li[id]')].find((li) => /^project_job_\d+_progression$/.test(li.id));
+    const pm = prog ? textOf(prog).match(/^(\d+)\s*\/\s*(\d+)$/) : null;
+    if (pm) { out.done = Number(pm[1]); out.total = Number(pm[2]); }
+    return out;
+  }
+
   SP.Api = {
     fetchPage, fetchJson, fetchWithTimeout, invalidate, cache, post,
     currentDoc, disableLiveDoc, isOk,
     parseProfile, parseHome, parseProjects, parseRanking, parseMachineRanking, parseTeams, parseTeamPage, parseStatBoxes, detectUser,
     parseMyProjects, parseProcessingFrames, parseMachineSessions, parseChartArrays,
     parseAccount, parseMachines, parseSession, parseTimeline,
-    extractArray, computeDerived,
+    extractArray, computeDerived, parseProjectManage,
   };
 })();

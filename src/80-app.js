@@ -372,6 +372,8 @@
     Views.mount(body, state);      // 面积图要按实测像素渲染
     host.scrollTop = scrollY;
     paintMeta();
+    /* 表头全选 / 批量条 / 行勾选的状态必须跟着新 DOM 一起落定（render 不负责这些派生状态） */
+    syncPicks();
   }
 
   function paintMeta() {
@@ -456,6 +458,13 @@
       /* 这里原来还取 /home 与 /home/projects：但总览视图一个都不消费
          （state.home 只有项目视图用，state.projects 只有项目/会话视图用），
          等于白等 2 个 RTT + 约 78KB。项目视图进来时自己会取。 */
+      /* 总览「我的项目」行内要一个关键事实（自动删除日期 / 帧进度）：只补前 5 个、不阻塞首屏。
+         放在分支末尾 = **每次进总览都尝试补**：首轮失败或中途切走（alive 为假）后，
+         下次回来会重试；fillMetaFor 内部的 !p.meta 过滤保证已成功的不重复抓。 */
+      const prof = state.profile;
+      if (prof && state.profileName === state.userName && (prof.myProjects || []).some((x) => x && x.id && !x.meta)) {
+        fillMetaFor(prof.myProjects, 5, () => state.view === 'overview' && state.profile === prof);
+      }
       return;
     }
 
@@ -485,6 +494,8 @@
           })()
           : null,
       ].filter(Boolean));
+      /* 「我发布的」副标题：manage 页的事实异步补，不阻塞首屏；已有 meta 的不会重复抓。 */
+      if (state.myProjects && state.myProjects.some((p) => p && p.id && !p.meta)) fillProjectMeta();
       return;
     }
 
@@ -618,6 +629,9 @@
     if (!el) {
       el = document.createElement('div');
       el.className = 'toast';
+      /* 写操作的结果必须被读屏念出来：toast 是唯一的提示出口 */
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
       host.appendChild(el);
     }
     el.textContent = msg;
@@ -669,6 +683,252 @@
     return el ? String(el.value || '').trim() : '';
   };
 
+  /* ---- 「我发布的」多选与删除 ---- */
+
+  /** 删除进行中 / 已请求停止。**必须防重入**：串行删除期间再点一次会并发打同一端点。 */
+  let deletingProjects = false;
+  let deletingStop = false;
+  /** 批量确认态的自动退回计时器（4 秒无操作退出确认，别一直停在"确认删除"上）。 */
+  let confirmTimer = null;
+  /** Shift 连选的锚点：最后一次点击的行 id。 */
+  let lastPickId = '';
+
+  function bulkEls() {
+    const bar = document.getElementById('sp-bulk');
+    if (!bar) return null;
+    return {
+      bar,
+      text: bar.querySelector('.btext'),
+      del: bar.querySelector('[data-act="proj-del-picked"]'),
+      none: bar.querySelector('[data-act="proj-picknone"]'),
+      ok: bar.querySelector('[data-act="proj-del-confirm"]'),
+      back: bar.querySelector('[data-act="proj-del-back"]'),
+      stop: bar.querySelector('[data-act="proj-del-stop"]'),
+    };
+  }
+
+  /** 批量条是**固定结构**：这里只改 textContent / hidden / disabled，不重建 innerHTML。
+      重建会丢焦点（键盘用户刚 Tab 到「确认删除」，一次重画就回到 body），读屏也会重复播报。
+      形态由 deletingProjects / Views.projState.confirm / picked 长度三者决定。 */
+  function paintBulk(busy) {
+    const host = document.getElementById('sp');
+    if (host) {
+      const off = deletingProjects;
+      host.querySelectorAll('#sp .tbl-mine [data-pick]').forEach((cb) => { cb.disabled = off; });
+      const allBox = host.querySelector('#sp-pickall');
+      if (allBox) allBox.disabled = off;
+      host.querySelectorAll('#sp .tbl-mine .c-act .btn').forEach((b) => {
+        if (b.tagName === 'BUTTON') b.disabled = off;
+        else { b.setAttribute('aria-disabled', off ? 'true' : 'false'); b.style.pointerEvents = off ? 'none' : ''; }
+      });
+    }
+    const e = bulkEls();
+    if (!e) return;
+    const picked = Views.projState.picked || [];
+    const n = picked.length;
+    const confirming = !deletingProjects && !!Views.projState.confirm && n > 0;
+    /* 容器常驻在 sechead 右侧：未选中时它就是「匹配 n / 共 total」那段文字，不占新行、不推表头。 */
+    e.bar.hidden = false;
+    if (deletingProjects) {
+      const i = busy && busy.i ? busy.i : 1;
+      const total = busy && busy.n ? busy.n : n;
+      e.text.textContent = t('proj.delRunning', { i, n: total });
+    } else if (confirming) e.text.textContent = t('proj.delPickedConfirm', { n });
+    else if (n > 0) e.text.textContent = t('proj.picked', { n });
+    else {
+      const rowsInfo = Views.mineRows(state);
+      e.text.textContent = t('proj.match', { n: rowsInfo.rows.length, total: rowsInfo.all.length });
+    }
+    /* 只播报开始与结束：第 1 项用 polite 念一次，之后关掉逐项播报；结果交给 toast（role=status）。 */
+    e.text.setAttribute('aria-live', deletingProjects && busy && busy.i > 1 ? 'off' : 'polite');
+    e.del.hidden = deletingProjects || confirming || n === 0;
+    e.none.hidden = deletingProjects || confirming || n === 0;
+    e.ok.hidden = !confirming;
+    e.back.hidden = !confirming;
+    e.stop.hidden = !deletingProjects;
+    e.stop.disabled = deletingStop;
+    e.del.disabled = deletingProjects;
+    e.none.disabled = deletingProjects;
+  }
+
+  function exitConfirm() {
+    clearTimeout(confirmTimer);
+    confirmTimer = null;
+    if (!Views.projState.confirm) return;
+    Views.projState.confirm = false;
+    paintBulk();
+  }
+
+  /** 进入批量确认态：第一次点「删除所选」只走到这里，4 秒无操作自动退回。 */
+  function enterConfirm() {
+    if (deletingProjects) return;
+    if (!(Views.projState.picked || []).length) return;
+    Views.projState.confirm = true;
+    paintBulk();
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { confirmTimer = null; exitConfirm(); }, 4000);
+    const e = bulkEls();
+    /* 默认焦点给「返回」：确认删除不能靠一次误触 Enter 完成 */
+    if (e && e.back && !e.back.hidden) { try { e.back.focus(); } catch (err) { /* 焦点拿不到不影响功能 */ } }
+  }
+
+  /** 勾选态的定向同步：行 class、行 checkbox、表头全选（含 indeterminate）、批量条。
+      整页重画会换掉用户刚点到的节点（焦点丢、滚动被拉回），所以只动该动的这几处。 */
+  function syncPicks() {
+    const host = document.getElementById('sp');
+    const picked = new Set(Views.projState.picked || []);
+    if (host) {
+      host.querySelectorAll('#sp .tbl-mine tr[data-project]').forEach((tr) => {
+        const id = tr.dataset.project;
+        if (!id) return;
+        const on = picked.has(id);
+        tr.classList.toggle('picked', on);
+        const cb = tr.querySelector('[data-pick]');
+        if (cb) cb.checked = on;
+      });
+      const all = host.querySelector('#sp-pickall');
+      if (all) {
+        const visible = Views.mineVisibleIds(state);
+        const n = visible.filter((id) => picked.has(id)).length;
+        all.checked = n > 0 && n === visible.length;
+        all.indeterminate = n > 0 && n < visible.length;
+      }
+    }
+    paintBulk();
+  }
+
+  /** 删除中拦刷新/关页：串行 POST 丢在半路，用户不知道删到哪了。 */
+  function blockUnload(ev) {
+    if (!deletingProjects) return;
+    ev.preventDefault();
+    ev.returnValue = '';   // Chrome 需要它才会弹确认
+    return '';
+  }
+  function watchUnload(on) {
+    if (on) window.addEventListener('beforeunload', blockUnload);
+    else window.removeEventListener('beforeunload', blockUnload);
+  }
+
+  /** 删除结束后把焦点还回表头全选（没有就搜索框）：焦点留在被删掉的按钮上会掉到 body。 */
+  function focusAfterDelete() {
+    const el = document.getElementById('sp-pickall') || document.getElementById('sp-q');
+    if (!el || !el.isConnected) return;
+    try { el.focus(); } catch (e) { /* 焦点拿不到不影响功能 */ }
+  }
+
+  /** 给列表里还没有 meta 的前 limit 个项目异步抓 manage 页（并发 3、失败静默跳过）。
+      抓完只有 alive() 仍为真才重画（用户可能已经切走）；全部失败不重画 —— 列表本身没变化。
+      项目页与总览共用这一份：两处显示的事实口径必须同一套解析。 */
+  async function fillMetaFor(list, limit, alive) {
+    const items = (list || []).filter((p) => p && p.id && !p.meta).slice(0, limit);
+    if (!items.length) return;
+    let cursor = 0;
+    const worker = async () => {
+      for (;;) {
+        const i = cursor++;
+        if (i >= items.length) return;
+        const p = items[i];
+        try {
+          p.meta = Api.parseProjectManage(await Api.fetchPage('/project/' + encodeURIComponent(String(p.id))));
+        } catch (e) { /* 拿不到就不显示这一项，不影响列表本身 */ }
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    const changed = items.some((p) => !!p.meta);
+    if (changed && (!alive || alive())) render();
+  }
+
+  /** 「我发布的」副标题：只补前 30 个，切走再回来因为 meta 已存在而跳过。 */
+  function fillProjectMeta() {
+    return fillMetaFor(state.myProjects, 30, () => state.view === 'projects' && Views.projState.scope === 'mine');
+  }
+
+  /** 把删掉的项目从三份内存数据里摘掉：
+      - state.myProjects：项目页「我发布的」直接读它（懒加载判据也看它是不是 null）
+      - state.profile.myProjects：看的是自己主页时才与上面那份同源（总览的「我的项目」读它）
+      - state.projects：全站列表（切回「全部」时不该还看见已删的项目）
+      两份 myProjects 设为**同一个新数组**，否则一处删了另一处还留着。 */
+  function dropProjects(ids) {
+    const gone = new Set((ids || []).map(String));
+    const keep = (arr) => (arr || []).filter((x) => !gone.has(String(x && x.id)));
+    const next = keep(state.myProjects);
+    state.myProjects = next;
+    if (state.profile && state.profileName === state.userName) state.profile.myProjects = next;
+    if (state.projects) state.projects = keep(state.projects);
+  }
+
+  /** 串行删除：站点一个项目一发 POST（没有批量端点，批量 = 我们自己串起来）。
+      Api.post 的结果按 isOk 判成功；失败记下继续下一项；SIGNED_OUT 立刻中止剩余项；
+      「停止」置位后不再发下一项，剩下的算"未处理"。结束后 invalidate → 摘数据 →
+      失败/未处理项写回选中（只批量入口）→ render → 焦点回表头 → toast 汇总。 */
+  async function deleteProjects(ids, opts) {
+    if (deletingProjects) { toast(t('account.saving')); return false; }
+    const single = !!(opts && opts.single);
+    /* id 要拼进 URL：只收纯数字，别的字符直接忽略（不把用户数据当命令发出去） */
+    const list = (ids || []).map((x) => String(x)).filter((x) => /^\d+$/.test(x));
+    if (!list.length) return false;
+    deletingProjects = true;
+    deletingStop = false;
+    watchUnload(true);
+    const n = list.length;
+    const ok = [];
+    const failed = [];
+    const unprocessed = [];
+    let msg = '';
+    let signedOut = false;
+    try {
+      for (let i = 0; i < n; i++) {
+        /* 用户点了「停止」：剩下的项不再发，原样留在选中里，toast 报"未处理 k 个" */
+        if (deletingStop) { for (let j = i; j < n; j++) unprocessed.push(list[j]); break; }
+        const id = list[i];
+        paintBulk({ i: i + 1, n });   // 每项开始前先把进度说出来
+        try {
+          const r = await Api.post('/project/' + id + '/remove_no_redirect');
+          if (Api.isOk(r)) { ok.push(id); continue; }
+          failed.push(id);
+          if (!msg) msg = String(r);
+        } catch (e) {
+          if (e && e.code === 'SIGNED_OUT') {
+            /* 登录失效：剩下的项不必再发，全部留在选中里等用户重新登录 */
+            signedOut = true;
+            for (let j = i; j < n; j++) failed.push(list[j]);
+            break;
+          }
+          failed.push(id);
+          if (!msg) msg = errText(e);
+        }
+      }
+    } finally {
+      deletingProjects = false;
+      deletingStop = false;
+      watchUnload(false);
+      clearTimeout(confirmTimer);
+      confirmTimer = null;
+      Views.projState.confirm = false;
+    }
+    Api.invalidate();
+    if (ok.length) dropProjects(ok);
+    /* 收尾：成功项与本次目标移出选中；非数字 id 顺手清掉（它不是可删的项目，
+       留着只会让下一次批量再忽略一遍）；其它没参与的勾选保持原样。
+       失败项 / 未处理项只有**批量入口**才写回选中（行还在，可原地重试）—— 行内单删的
+       用户本来没勾这一行，失败后把它勾上会让批量条凭空跳出「已选 1 项」，那是状态噪声。 */
+    const okSet = new Set(ok);
+    const target = new Set(list);
+    const rest = (Views.projState.picked || []).filter((x) => {
+      const id = String(x);
+      return /^\d+$/.test(id) && !target.has(id) && !okSet.has(id);
+    });
+    Views.projState.picked = single ? [...new Set(rest)] : [...new Set(rest.concat(failed, unprocessed))];
+    render();   // DOM 行消失、计数与「匹配 n / 共 total」由数据重算
+    focusAfterDelete();
+    if (signedOut) { toast(t('state.loggedOut')); return false; }
+    if (unprocessed.length) { toast(t('proj.delStopped', { n: ok.length, m: failed.length, k: unprocessed.length })); return false; }
+    if (!failed.length) { toast(t('proj.delOk', { n: ok.length })); return true; }
+    if (single) { toast(t('account.failed', { msg: msg || String(failed.length) })); return false; }
+    toast(t('proj.delPartial', { n: ok.length, m: failed.length }));
+    return false;
+  }
+
   /** 关 3 点菜单：只做定向 DOM 更新，**不整页重画** —— 菜单开着时点搜索框/筛选/表格任意一处，
       整页重画会把刚点到的节点换掉（焦点丢、要再点一次、输入和滚动被打断）。 */
   function closeProjMenu() {
@@ -689,9 +949,50 @@
 
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
+      /* 删除中不许跳走：串行 POST 还在发，换页会让"删到哪了"完全断掉 */
+      if (deletingProjects) { toast(t('account.saving')); return; }
       /* 上传三步交还站点：入口就是新标签页打开站点自己的 /getstarted，我们不接管那一页。 */
       if (nav.dataset.nav === 'upload') { window.open('/getstarted', '_blank', 'noopener'); return; }
       go(nav.dataset.nav); return;
+    }
+
+    /* 「我发布的」表头全选：独立分支、在 data-pick 之前判断（表头 label 也会触发 input 的 click）。 */
+    const pickAll = ev.target.closest('[data-pickall]');
+    if (pickAll) {
+      Views.projState.picked = pickAll.checked ? Views.mineVisibleIds(state) : [];
+      lastPickId = '';
+      syncPicks();
+      return;
+    }
+
+    /* 「我发布的」行勾选：只更新 Views.projState.picked 与那几处 DOM，绝不整页 render。
+       Shift+点击按当前可见行序把区间一起选中/取消（锚点是上一次点的行）。 */
+    const pick = ev.target.closest('[data-pick]');
+    if (pick) {
+      const id = String(pick.dataset.pick || '');
+      if (!id) return;
+      const set = new Set(Views.projState.picked || []);
+      if (ev.shiftKey && lastPickId && lastPickId !== id) {
+        const visible = Views.mineVisibleIds(state);
+        const a = visible.indexOf(lastPickId);
+        const b = visible.indexOf(id);
+        if (a >= 0 && b >= 0) {
+          const lo = Math.min(a, b);
+          const hi = Math.max(a, b);
+          for (let i = lo; i <= hi; i++) {
+            if (pick.checked) set.add(visible[i]); else set.delete(visible[i]);
+          }
+          Views.projState.picked = [...set];
+          lastPickId = id;
+          syncPicks();
+          return;
+        }
+      }
+      if (pick.checked) set.add(id); else set.delete(id);
+      Views.projState.picked = [...set];
+      lastPickId = id;
+      syncPicks();
+      return;
     }
 
     const act = ev.target.closest('[data-act]');
@@ -734,6 +1035,59 @@
           const h2 = document.getElementById('sp');
           if (h2 && keepY) h2.scrollTop = keepY;
         });
+        return;
+      }
+
+      // ---- 我发布的：行内两步确认 / 批量两步确认 / 取消选择 / 停止 / 清除筛选 ----
+      if (kind === 'proj-del') {
+        const id = String(act.dataset.id || '');
+        const name = act.dataset.name || '';
+        if (!/^\d+$/.test(id)) return;
+        /* 两步确认：第一次点击把按钮变成「确认删除」（3 秒复原），第二次才真删。
+           不用 window.confirm：它挡住整页、和批量条/键盘流程都打架，还不可样式化。 */
+        if (act.dataset.armed !== '1') {
+          act.dataset.armed = '1';
+          act.dataset.label = act.textContent;
+          act.textContent = t('proj.delConfirmInline');
+          act.setAttribute('aria-label', t('proj.delConfirmInline') + (name ? ' ' + name : ''));
+          setTimeout(() => {
+            if (!act.isConnected || act.dataset.armed !== '1') return;
+            act.dataset.armed = '0';
+            act.textContent = act.dataset.label || t('proj.del');
+            act.removeAttribute('aria-label');
+          }, 3000);
+          return;
+        }
+        act.dataset.armed = '0';
+        deleteProjects([id], { single: true });
+        return;
+      }
+      if (kind === 'proj-del-picked') { enterConfirm(); return; }
+      if (kind === 'proj-del-back') { exitConfirm(); return; }
+      if (kind === 'proj-del-confirm') {
+        if (!Views.projState.confirm) return;
+        const ids = (Views.projState.picked || []).slice();
+        exitConfirm();   // 先退出确认态，再开始删除（进度由 deleteProjects 接管）
+        deleteProjects(ids);
+        return;
+      }
+      if (kind === 'proj-del-stop') {
+        if (!deletingProjects || deletingStop) return;
+        deletingStop = true;
+        act.disabled = true;   // 当前项返回前先按掉，避免连点
+        return;
+      }
+      if (kind === 'proj-picknone') {
+        if (Views.projState.confirm) exitConfirm();
+        Views.projState.picked = [];
+        lastPickId = '';
+        syncPicks();
+        return;
+      }
+      if (kind === 'proj-clear-filters') {
+        Views.projState.q = '';
+        Views.projState.filter = 'all';
+        render();
         return;
       }
 
@@ -952,7 +1306,13 @@
     }
 
     const f = ev.target.closest('#sp-filter [data-f]');
-    if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+    if (f) {
+      Views.projState.filter = f.dataset.f;
+      Views.projState.picked = [];   // 筛选变了，原来选中的行可能已经不在表里
+      Views.projState.confirm = false;
+      render();
+      return;
+    }
 
     /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
     const sScope = ev.target.closest('#sp-scope [data-s]');
@@ -963,6 +1323,8 @@
       Views.projState.filter = 'all';
       Views.projState.limit = 120;
       Views.projState.menu = null;
+      Views.projState.picked = [];   // 换数据源 = 换选中集（这些 id 在另一张表上未必存在）
+      Views.projState.confirm = false;
       state.error = null;
       if (Views.projState.scope === 'mine' && !state.myProjects) {
         /* silent show 不设 loading；这里先画骨架，取数失败时错误态也能顶上来（原来失败会卡在空白/旧错误） */
@@ -1092,6 +1454,8 @@
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
+      Views.projState.picked = [];   // 搜索词变了同理：选中项可能已经看不见
+      Views.projState.confirm = false;
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
@@ -1124,6 +1488,8 @@
   }
 
   function go(view) {
+    /* 删除中不许换页（导航点击、应用内跳转都走这里）：串行 POST 丢在半路会说不清删到哪 */
+    if (deletingProjects) { toast(t('account.saving')); return; }
     const want = pageFor(view);
     if (want && want !== location.pathname) {
       /* 主页那一族带上 hash（地址里能看出落在哪个视图）；账户设置**不带** ——
