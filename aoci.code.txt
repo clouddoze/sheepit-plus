@@ -18,14 +18,14 @@ AUTONOMY.md[SW5T]: F:自主改进循环：可自主/需拍板/禁止三档判定
 BACKLOG.md[SU4T]: F:未接管路径清单（含链接数与判定理由）、已知噪声与历史欠账。 | R:- | A:/donation、/termsofuse、/team、/forum、/user/logout 等条目 | S:-
 CLEANUP-AUDIT.md[SQ5L]: F:一轮完整的废弃代码与可读性审计：结论、逐项候选（依据/建议/风险）、执行日志与验证门。 | R:code:docs/ROADMAP.md | A:A 组高置信清理、B 组待确认、注释体量、执行日志 | S:结论是没有大面积死代码；改写式注释压缩被判定不该做——再压就是删掉防回归依据，会让后人把对的改错。
 DESIGN.md[SU7L]: F:设计系统：品牌橙的三处专用、明暗两套表面色阶、排版层级与组件规则。 | R:code:src/30-style.js | A:Colors、Typography、Layout、Elevation、Components、Do's and Don'ts | S:不要对含功能控件的容器做整块翻译（innerHTML 会删掉文件选择器）；切换页面的开关必须两种状态都挂载；批量层用表头全选 + 工具行（不嵌套卡片）、选中态 surface-3、勾选命中区 44px、行内两步确认，窄屏保持五列横向滚动；总览「我的项目」只放一个关键事实（删除日期优先、其次帧进度），详细字段留在「我发布的」表。
-PUBLISHING.md[SV6L]: F:分发文案包：GreasyFork/OpenUserJS 每个上传字段、正文、截图策略与 metadata 回填记录。 | R:code:src/00-meta.js | A:上传字段表、Additional info 正文、metadata 记录、验证状态 | S:脚本 id 598624；合规声明与 AI 作者身份声明是固定对外表述，发布时不能删；两边都发时 @updateURL 只能指向一边。
+PUBLISHING.md[SV6L]: F:分发文案包：GreasyFork/OpenUserJS 上传字段、正文、截图策略、metadata 回填记录与发布结果/线上哈希校验。 | R:code:src/00-meta.js | A:上传字段表、Additional info 正文、metadata 记录、发布结果、验证状态 | S:脚本 id 598624；合规声明与 AI 作者身份声明是固定对外表述，发布时不能删；两边都发时 @updateURL 只能指向一边；发布成功以脚本页版本号为准，原始产物用 @downloadURL 取（/code 是带高亮的 HTML 页），去掉站点改写的 @updateURL/@downloadURL 两行后与本地比哈希；更新日志发布时可能漏填，版本页能编辑就补。
 README.md[SG3T]: F:docs 索引：只列当前有效文档，按先读这两份与当前状态分组，并记录已删除文档。 | R:code:docs/ARCH.md | A:分组表、资产、已删除清单 | S:-
 ROADMAP.md[SW5T]: F:路线图：基线数字、按用户任务列的缺口、维护成本最高的三处与优先级排序。 | R:- | A:基线表、缺口、维护成本、优先级、本轮不做 | S:发布形态锁定油猴单文件（@grant none），本文件不讨论换框架、拆服务或上构建链。
 STRATEGY-0.4.md[SW5T]: F:阶段性结论：先用维护还债、不接新功能，含三条硬证据与按 ROI 排序的维护清单。 | R:- | A:三条证据、维护清单、明确不做 | S:每加一个视图就要有对应回归断言；当前 7 个接管视图里 regress 只覆盖 4 个，欠 3 条。
 SWITCH-0LATENCY.md[SP5M]: F:把新版与原版切换压到一帧的方案与实测：拆解 600ms 的成本构成，给出 playInstant 实现与证据索引。 | R:code:src/72-sweep.js | A:延迟拆解、playInstant、风险清单、落地面 | S:按函数名（toClassic、hideModern、revealModern、play）检索，不要按行号——并行任务会让行号漂移。
 
 ===/<repository>/src/===
-00-meta.js[FV8T]: F:用户脚本头与 metadata：@match、@exclude、@run-at、@grant、版本与更新地址。 | R:- | A:@name、@version、@match、@grant 各行 | S:@namespace 定死后不可改，@version 只能往上走；@grant none 是全脚本权限承诺，改它等于改分发形态。
+00-meta.js[FV8T]: F:用户脚本头与 metadata：@match、@exclude、@run-at、@grant、版本与更新地址。 | R:- | A:@name、@version、@match、@grant 各行 | S:@namespace 定死后不可改，@version 只能往上走；@grant none 是全脚本权限承诺，改它等于改分发形态；发版改 @version 后必须 build + make-stage，stage 与 src 版本不一致会中止。
 10-core.js[CG9L]: F:最底层基础：通用工具（DOM、转义、存储、格式化）、语言包注册表与主题 token。 | R:code:src/12-lang-zh.js | A:Util、DICT、SITE、TOKENS、Theme、I18n | S:拼接顺序的第一个模块，不能依赖任何其他模块；全局命名空间只有 window.__SHEEPIT_PLUS__；新增文案要中英两份 DICT 同时登记，check-keys 只校验键存在、不校验另一种语言是否漏写；项目批量删除的 proj.* 与总览/项目页共用的 my.meta.*（running/next/deleted）两处都加。
 12-lang-zh.js[LL6T]: F:中文语言包，只做日期本地化（两种站点日期形状转中文），不翻译原版页面文案。 | R:code:src/10-core.js | A:MONTH_ZH、monthOf、farmDate | S:原版页的逐条文案翻译已在 2026-11-13 移除，别再加回来——维护成本压不住且覆盖不全。
 20-api.js[IN9L]: F:抓取与解析层：把站点页面与 AJAX 结果变成结构化数据，含 inflight 去重、15 秒超时、登录失效识别与 manage 页副标题事实。 | R:code:src/10-core.js | A:fetchPage、cache、parseProfile、parseProjects、parseProjectManage、parseSession | S:站点未登录是 302 跳 /user/signin 而不是 401，fetch 会跟随跳转拿到 200 登录页；只看 res.ok 会把过期登录当成功，必须认最终 URL；manage 页 Summary 的自动删除行没有标签前缀，帧进度在 li#project_job_<id>_progression，计算方式要读 radio 的 onclick。
