@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.5
+// @version      0.2.6
 // @description  给 SheepIt Render Farm 换一套现代前端：仪表盘、项目、排行榜、团队、实况、会话与设置；明暗主题，数据只来自站点页面。
 // @description:en  A modern front end for SheepIt Render Farm: dashboard, projects, ranking, teams, live farm status, sessions and settings; dark/light, all data read from the site's own pages.
 // @author       clouddoze
@@ -19,7 +19,7 @@
 
 /* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
 
-/* sheepit-plus v0.2.5 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
+/* sheepit-plus v0.2.6 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -262,11 +262,26 @@
       /* 「我发布的」：数据来自个人主页那张表，没有设备/内存可筛，所以那一档只放状态筛 */
       'proj.scope.all': '全部', 'proj.scope.mine': '我发布的',
       'proj.searchMine': '搜索我发布的…', 'proj.col.manage': '操作',
+      /* 「我发布的」多选 + 批量删除（只在这张表上；全站列表不做删除） */
+      'proj.pick': '选择', 'proj.pickAll': '选择本页全部', 'proj.pickNone': '取消选择',
+      'proj.picked': '已选 {n} 项', 'proj.del': '删除',
+      'proj.delConfirm': '删除「{name}」？不可撤销：项目与已渲染的帧会一起消失。',
+      'proj.delConfirmInline': '确认删除', 'proj.back': '返回',
+      'proj.delPicked': '删除所选',
+      'proj.delPickedConfirm': '删除选中的 {n} 个项目？不可撤销：项目与已渲染的帧会一起消失。',
+      'proj.delRunning': '正在删除 {i}/{n}…', 'proj.delStop': '停止',
+      'proj.delOk': '已删除 {n} 个项目', 'proj.delPartial': '已删除 {n} 个，{m} 个失败',
+      'proj.delStopped': '已停止：成功 {n}，失败 {m}，未处理 {k}',
+      'proj.match': '匹配 {n} / 共 {total}', 'proj.clearFilters': '清除筛选',
+      'proj.frameUnit': '帧',
       'proj.status.finished': '已完成', 'proj.status.blocked': '已被站点封禁',
       'my.title': '我的项目', 'my.count': '共 {n} 个', 'my.all': '看全部',
       'my.open': '项目设置',
       'my.empty': '你还没有发布过项目',
       'my.emptyCta': '上传一个项目',
+      /* 总览「我的项目」标题旁的汇总（渲染中数量 / 最近自动删除日期） */
+      'my.meta.running': '{n} 个渲染中', 'my.meta.next': '最近 {date} 自动删除',
+      'my.meta.deleted': '自动删除 {date}',
       'list.more': '显示更多', 'list.shown': '已显示 {n} / {total}',
       'mode.toClassic': '原版界面', 'mode.toClassicShort': '原版',
       // pill 上写**动作**不是状态：写状态读起来像标签不像按钮。
@@ -554,11 +569,25 @@
       'proj.empty': 'No matching projects', 'proj.showing': 'Showing {n} / {total}',
       'proj.scope.all': 'All', 'proj.scope.mine': 'Published by me',
       'proj.searchMine': 'Search my projects…', 'proj.col.manage': 'Action',
+      /* Multi-select + batch delete on the "published by me" table only */
+      'proj.pick': 'Select', 'proj.pickAll': 'Select all on this page', 'proj.pickNone': 'Clear selection',
+      'proj.picked': '{n} selected', 'proj.del': 'Delete',
+      'proj.delConfirm': 'Delete "{name}"? This cannot be undone: the project and its rendered frames are removed.',
+      'proj.delConfirmInline': 'Confirm delete', 'proj.back': 'Back',
+      'proj.delPicked': 'Delete selected',
+      'proj.delPickedConfirm': 'Delete the {n} selected projects? This cannot be undone: the projects and their rendered frames are removed.',
+      'proj.delRunning': 'Deleting {i}/{n}\u2026', 'proj.delStop': 'Stop',
+      'proj.delOk': 'Deleted {n} projects', 'proj.delPartial': 'Deleted {n}; {m} failed',
+      'proj.delStopped': 'Stopped: {n} deleted, {m} failed, {k} not processed',
+      'proj.match': '{n} matching / {total} total', 'proj.clearFilters': 'Clear filters',
+      'proj.frameUnit': 'frames',
       'proj.status.finished': 'Rendered', 'proj.status.blocked': 'Blocked by the site',
       'my.title': 'My projects', 'my.count': '{n} in total', 'my.all': 'See all',
       'my.open': 'Project settings',
       'my.empty': 'You have not published a project yet',
       'my.emptyCta': 'Upload a project',
+      'my.meta.running': '{n} rendering', 'my.meta.next': 'next auto-delete {date}',
+      'my.meta.deleted': 'auto-delete {date}',
       'list.more': 'Show more', 'list.shown': 'Showing {n} / {total}',
       'mode.toClassic': 'Classic UI', 'mode.toClassicShort': 'Classic',
       'mode.classicHint': 'Switch to new UI', 'mode.classicTip': 'Return to the SheepIt Plus interface',
@@ -2062,13 +2091,63 @@ function parseProfile(html, userName) {
     return { signedIn, userName: m ? decodeURIComponent(m[1]) : null, avatar };
   }
 
+  /** /project/<id> 管理页的**副标题事实**（owner 可读的那一页）：Summary 列表、
+      Compute method、公开渲染、帧进度。只挑能挂一行副标题的字段，缺项给 '' / null。
+      站点结构见上游 manage.html.twig + HTML.php：Summary 是 <h2> + <ul><li>标签: 值</li>，
+      计算方式写在两只 radio 的 onclick 里（'cpu' / 'gpu'），帧进度是 li#project_job_<id>_progression。 */
+  function parseProjectManage(html) {
+    const doc = asDoc(html);
+    const textOf = (el) => (el ? String(el.textContent || '').replace(/\s+/g, ' ').trim() : '');
+    const out = {
+      storage: '', ram: '', duration: '', perFrame: '', autoDelete: '',
+      compute: '', publicRender: null, done: null, total: null,
+    };
+
+    const head = [...doc.querySelectorAll('h2')].find((h) => /^summary$/i.test(textOf(h)));
+    const list = head && head.parentElement ? head.parentElement.querySelector('ul') : null;
+    for (const li of (list ? list.querySelectorAll('li') : [])) {
+      const raw = textOf(li);
+      /* 「自动删除」那一行没有「标签:」前缀，是 <li><span style="color:red">…</span></li> */
+      const auto = raw.match(/automatically deleted on\s+(.+)$/i);
+      if (auto) { out.autoDelete = auto[1].trim(); continue; }
+      const kv = raw.match(/^([^:]+):\s*(.+)$/);
+      if (!kv) continue;
+      const key = kv[1].toLowerCase();
+      const val = kv[2].trim();
+      if (/storage used/.test(key)) out.storage = val;
+      else if (/^ram usage/.test(key)) out.ram = val;
+      else if (/real duration/.test(key)) out.duration = val;
+      else if (/per frame rendertime/.test(key)) out.perFrame = val;
+    }
+
+    /* 计算方式：两只 radio，onclick 里写死 'cpu' / 'gpu'；两只都 checked 才算 CPU+GPU */
+    const on = [];
+    for (const r of doc.querySelectorAll('input[name="compute_method"]')) {
+      if (!r.hasAttribute('checked')) continue;
+      const m = String(r.getAttribute('onclick') || '').match(/doModifyComputeMethod\(\s*[^,]+,\s*['"](cpu|gpu)['"]/i);
+      if (m) on.push(m[1].toLowerCase());
+    }
+    out.compute = on.includes('cpu') && on.includes('gpu') ? 'both' : on.includes('gpu') ? 'gpu' : on.includes('cpu') ? 'cpu' : '';
+
+    /* 公开渲染：公开时可见 checkbox ..._1 是 checked；私有时 ..._value 那只才是可见 checkbox。
+       判据只认 HTML 的 checked 属性（站点的初始状态），不猜谁可见。 */
+    const pub = doc.getElementById('project_public_render_checkbox_1');
+    out.publicRender = pub ? pub.hasAttribute('checked') : null;
+
+    /* 帧进度：li#project_job_<项目 id>_progression 的「2/2」 */
+    const prog = [...doc.querySelectorAll('li[id]')].find((li) => /^project_job_\d+_progression$/.test(li.id));
+    const pm = prog ? textOf(prog).match(/^(\d+)\s*\/\s*(\d+)$/) : null;
+    if (pm) { out.done = Number(pm[1]); out.total = Number(pm[2]); }
+    return out;
+  }
+
   SP.Api = {
     fetchPage, fetchJson, fetchWithTimeout, invalidate, cache, post,
     currentDoc, disableLiveDoc, isOk,
     parseProfile, parseHome, parseProjects, parseRanking, parseMachineRanking, parseTeams, parseTeamPage, parseStatBoxes, detectUser,
     parseMyProjects, parseProcessingFrames, parseMachineSessions, parseChartArrays,
     parseAccount, parseMachines, parseSession, parseTimeline,
-    extractArray, computeDerived,
+    extractArray, computeDerived, parseProjectManage,
   };
 })();
 
@@ -2112,7 +2191,6 @@ ${Theme.css('#sp')}
 
 #sp .wrap{max-width:1240px;margin:0 auto;padding:0 24px 72px}
 @media (max-width:760px){#sp .wrap{padding:0 16px 56px}}
-@media (max-width:760px){#sp .top{margin:0 -16px;padding:8px 16px}}
 
 /* ==== 顶栏 ==== */
 #sp .top{
@@ -2128,6 +2206,9 @@ ${Theme.css('#sp')}
   padding:8px 24px;
   box-shadow:0 4px 0 var(--bg);
 }
+/* 窄屏顶栏铺满视口（覆盖上面的 -24/+24）：这条必须写在 .top 基础规则**之后**，
+   否则被基础规则的 margin/padding 盖掉 —— 390px 下顶栏会顶出视口、出现横向滚动条。 */
+@media (max-width:760px){#sp .top{margin:0 -16px;padding:8px 16px}}
 #sp .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.3px;flex:none;text-decoration:none}
 /* 品牌图标是位图（深色底），固定尺寸 + 圆角；别给它上 currentColor（那是给单色 SVG 的） */
 #sp .brand .sheep{width:24px;height:24px;flex:none;border-radius:6px;object-fit:cover;display:block}
@@ -2415,6 +2496,8 @@ ${Theme.css('#sp')}
 
 /* ==== 表格 ==== */
 #sp .tablewrap{overflow-x:auto}
+/* 横向滚动的表格要能被键盘滚：wrapper 拿 tabindex=0，焦点环说明"这一块可以滚" */
+#sp .tablewrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #sp .tbl{width:100%;border-collapse:collapse;font-size:13px}
 #sp .tbl th{
   text-align:left;font-size:11.5px;font-weight:500;color:var(--text-3);
@@ -2565,7 +2648,9 @@ ${Theme.css('#sp')}
 #sp .seg button{padding:5px 11px;border-radius:var(--r-sm);font-size:12.5px;color:var(--text-2)}
 #sp .seg button:hover{color:var(--text)}
 #sp .seg button[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent);font-weight:600}
-#sp .sechead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:26px 0 12px}
+/* 高度恒定：批量操作常驻在右侧（未选中时只是「匹配 n / 共 total」文字），
+   选中/确认/删除中都不该把它顶高一行 —— 否则点一下勾选，整张表就往下跳。 */
+#sp .sechead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:30px;margin:26px 0 12px}
 #sp .sechead h2{font-size:15px;color:var(--text)}
 #sp .sechead .sub{font-size:12px;color:var(--text-3)}
 #sp .sechead .spacer{flex:1}
@@ -2635,16 +2720,48 @@ ${Theme.css('#sp')}
 #sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .myproj .nm a{color:var(--text);text-decoration:none}
 #sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
-/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
-#sp .st.bad{color:var(--accent)}
+/* 总览行内只放一个关键事实（自动删除日期 / 帧进度）：11.5px 单行省略，不撑高桌面行 */
+#sp .myproj .mp .meta{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+/* 标题旁的一句汇总：渲染中数量 · 最近自动删除日期 */
+#sp .phead .meta-sub{font-size:12px;color:var(--text-3);white-space:nowrap}
+/* 「已被站点封禁」是状态不是警报：保持中性墨色，只加粗一点来区分。
+   强调色只留给"你"和主操作，不给状态词上色（用户 2026-11-21 评审：红色误读成错误）。 */
+#sp .st.bad{color:var(--text-2);font-weight:550}
 #sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
 #sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
-/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行。
+   列宽一律按 class 定（c-pick / c-status / c-prog / c-act），不再用 nth-child ——
+   行首是勾选列，按序号定宽会把整张表错位一列。 */
 #sp .tbl-mine{min-width:0}
-#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
-/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
-   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
-@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+#sp .tbl-mine .c-pick{width:34px;padding:0 0 0 14px}
+/* 勾选命中区是整个 44px 高的格子（label 包住 input），不是那个 14px 小方块 ——
+   鼠标/触屏都不用瞄准。表头同一套，所以行高稳定在 44 上下。 */
+#sp .tbl-mine .c-pick label{display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer}
+/* 44px 命中区只给行内单元格；表头 label 不撑高（否则 th 被顶高、勾选框与相邻表头文字错位） */
+#sp .tbl-mine thead .c-pick label{min-height:0;height:100%}
+/* 表头 c-pick 也要和其它 th 一样的 bottom padding：padding 不同 → cell 内容区高度不同，
+   垂直居中后勾选框会比表头文字低半个 padding（实测 5px）。 */
+#sp .tbl-mine thead .c-pick{padding-bottom:10px}
+#sp .tbl-mine th{vertical-align:middle}
+#sp .tbl-mine .c-status{width:110px}
+#sp .tbl-mine .c-prog{width:200px}
+#sp .tbl-mine .c-act{width:170px;text-align:right;white-space:nowrap}
+#sp .tbl-mine .c-act .btn{margin-left:6px}
+#sp .tbl-mine input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
+/* 选中行比 hover 深一档：hover 是 surface-2，选中必须能被区分出来，否则移开鼠标就找不到选中的行 */
+#sp .tbl-mine tr.picked{background:var(--surface-3)}
+/* 项目名下的副标题（manage 页的事实）：12px 单行省略，没有数据时整行不存在，不占位 */
+#sp .tbl-mine .pmeta{font-size:12px;color:var(--text-3);line-height:1.5;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 批量操作常驻在 sechead 右侧：未选中时它只是「匹配 n / 共 total」那段文字，选中后才长出按钮。
+   容器一直占位，表格表头不会因为批量条出现/消失而上下跳。 */
+#sp .sechead #sp-bulk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+/* .bulkbar 里的按钮有 .btn 的 display:inline-flex，会盖掉浏览器对 [hidden] 的默认 display:none ——
+   不单独兜这两条，"该藏的按钮"会一直显示在行上。 */
+#sp .bulkbar[hidden]{display:none}
+#sp .bulkbar [hidden]{display:none}
+/* 窄屏五列一起横向滚动，不隐藏进度列：表格给足列宽下限（34+110+200+170+项目名 ≥160），
+   让 .tablewrap（overflow-x:auto + tabindex）滚，而不是把项目名压成每行一两个字。 */
+@media (max-width:560px){#sp .tbl-mine{min-width:680px} #sp .bulkbar{flex-wrap:wrap} #sp .tbl-mine .c-act{white-space:normal} #sp .tbl-mine .c-act .btn{display:inline-block;margin:2px 6px 2px 0}}
 @media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
 /* ==== 顶栏模式开关 ==== */
@@ -3708,6 +3825,65 @@ ${Theme.css('#sp')}
 
   const MY_SHOW = 5;
 
+  /* ==== 总览行内的「一个关键事实」 ====
+     数据来自 /project/<id> 管理页（80-app 的 fillMetaFor 挂到 p.meta）。总览行只放**一个**
+     事实：优先自动删除日期（压成「20 Oct」），其次是帧进度；完整事实放整行 title，不铺开。
+     拼接口径与项目页「我发布的」副标题一致（compute · RAM · 帧 · 删除），两处说法不打架。 */
+
+  const MONS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+
+  /** '20th Oct 06:10' → { key: 1020, short: '20 Oct' }；认不出来给 null */
+  function parseDelDate(raw) {
+    const m = String(raw || '').match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3})/);
+    if (!m) return null;
+    const mon = MONS[m[2].toLowerCase()];
+    if (!mon) return null;
+    const day = Number(m[1]);
+    return { key: mon * 100 + day, short: `${day} ${m[2]}` };
+  }
+
+  /** 完整事实（与 51 的 mineMetaLine 同一口径），用于整行 title */
+  function metaFacts(p) {
+    const m = p && p.meta;
+    if (!m) return '';
+    const cpu = t('proj.cpu');
+    const gpu = t('proj.gpu');
+    const compute = m.compute === 'both' ? `${cpu}+${gpu}` : m.compute === 'gpu' ? gpu : m.compute === 'cpu' ? cpu : '';
+    const parts = [];
+    if (compute) parts.push(compute);
+    if (m.ram) parts.push(`${m.ram} RAM`);
+    if (m.done !== null && m.done !== undefined && m.total) parts.push(`${m.done}/${m.total} ${t('proj.frameUnit')}`);
+    if (m.autoDelete) parts.push(`${m.autoDelete} ${t('proj.del')}`);
+    return parts.join(' · ');
+  }
+
+  /** 行内那一个关键事实：自动删除日期优先，其次帧进度；都没有返回 null（不占位） */
+  function metaKeyFact(p) {
+    const m = p && p.meta;
+    if (!m) return null;
+    const d = parseDelDate(m.autoDelete);
+    if (d) return { text: d.short, title: t('my.meta.deleted', { date: m.autoDelete }) };
+    if (m.done !== null && m.done !== undefined && m.total) {
+      return { text: `${m.done}/${m.total} ${t('proj.frameUnit')}`, title: metaFacts(p) };
+    }
+    return null;
+  }
+
+  /** 标题旁汇总：全部 rows（不只前 5）里的渲染中数量 + 最近自动删除日期 */
+  function panelSummary(rows) {
+    const running = rows.filter((x) => x && x.statusKind === 'rendering').length;
+    let best = null;
+    for (const x of rows) {
+      const d = parseDelDate(x && x.meta && x.meta.autoDelete);
+      if (!d) continue;
+      if (!best || d.key < best.key) best = d;
+    }
+    const bits = [];
+    if (running) bits.push(t('my.meta.running', { n: running }));
+    if (best) bits.push(t('my.meta.next', { date: best.short }));
+    return bits.join(' · ');
+  }
+
   /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
    *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
    *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
@@ -3715,17 +3891,24 @@ ${Theme.css('#sp')}
     if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
     const rows = (p && p.myProjects) || [];
     if (!rows.length) return '';
+    const summary = panelSummary(rows);
 
-    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+    const list = rows.slice(0, MY_SHOW).map((x) => {
+      const fact = metaKeyFact(x);
+      const full = metaFacts(x);
+      return `<div class="mp"${full ? ` title="${esc(full)}"` : ''}>
         <span class="nm">${myName(x)}</span>
+        ${fact ? `<span class="meta" title="${esc(fact.title)}">${esc(fact.text)}</span>` : ''}
         ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
         <span class="st">${esc(myStatus(x))}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     return `<div class="panel" style="margin-top:16px">
       <div class="phead">
         <h2>${esc(t('my.title'))}</h2>
         <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        ${summary ? `<span class="sub meta-sub">${esc(summary)}</span>` : ''}
         <span class="spacer"></span>
         <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
       </div>
@@ -4043,7 +4226,10 @@ ${Theme.css('#sp')}
   };
   const SORT_PREF = 'projSort';
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+  /* picked：「我发布的」勾选的项目 id（字符串数组，仅内存，不落盘）。
+     刷新/换视图就没了 —— 选中集是"这一屏要删的一批"，不是用户偏好。
+     confirm：批量删除两步确认的第一阶段（只由 80-app 改；渲染时据此决定批量条形态）。 */
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '', picked: [], confirm: false };
 
   /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
      存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
@@ -4189,45 +4375,132 @@ ${Theme.css('#sp')}
   const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
     .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
 
-  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
-     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
-  function mineProjects(state) {
-    const all = state.myProjects || [];
+  /* ---- 「我发布的」那张表 ---- */
+
+  /** 状态与名字的显示口径与 50 的总览小列表一致，但 51 是独立 IIFE、借不到那边的局部函数：
+      不在这里定义，这张表只要有行就会 ReferenceError（空态不执行，所以一直没暴露）。 */
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+  /** 状态列只说状态：百分比归「进度」列（与全站表同构），两边都说一遍数字是重复信息。 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    return key ? t(key) : (x.status || '—');
+  }
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  /** 筛选档位：按钮与过滤判据共用一份，档位改了只改一处。 */
+  const mineFilterOpts = () => [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+    ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+
+  /** 「我发布的」**唯一**的搜索 + 筛选 + 排序实现：渲染与「全选」都走这里。
+      两边各写一份的话，"全选选中了谁"和"屏幕上画了谁"迟早对不上 —— 而这是要删数据的操作。 */
+  function mineRows(state) {
+    const all = (state && state.myProjects) || [];
     const q = projState.q.trim().toLowerCase();
-    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
-      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
-    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
-    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+    let rows = all.filter((x) => !q || String(x.name || '').toLowerCase().includes(q));
+    if (mineFilterOpts().some(([k]) => k === projState.filter) && projState.filter !== 'all') {
       rows = rows.filter((x) => x.statusKind === projState.filter);
     }
 
     /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
     const cmp = sortCmp(M_SORTS, projState.msort);
     if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    return { all, rows };
+  }
 
-    const th = (key, label, span) => {
+  /** 全选只覆盖**当前渲染出来的行**（slice(0, limit)）：没画在屏幕上的项目
+      不能被"全选"带进删除名单。没有 id 的行不能删，直接不进名单。 */
+  function mineVisibleIds(state) {
+    return mineRows(state).rows.slice(0, projState.limit)
+      .map((x) => (x && x.id ? String(x.id) : '')).filter(Boolean);
+  }
+
+  /** manage 页里的事实拼成一行副标题：计算方式 · RAM · 帧进度 · 自动删除日期。
+      只拼存在的字段；没有 meta（没抓到 / 没权限）就整行不出 —— 不占位、不撑高行。
+      站点只给英文日期字符串，I18n 没有对应格式化就原样显示，不编翻译。 */
+  function mineMetaLine(p) {
+    const m = p && p.meta;
+    if (!m) return '';
+    const cpu = t('proj.cpu');
+    const gpu = t('proj.gpu');
+    const compute = m.compute === 'both' ? `${cpu}+${gpu}` : m.compute === 'gpu' ? gpu : m.compute === 'cpu' ? cpu : '';
+    const parts = [];
+    if (compute) parts.push(compute);
+    if (m.ram) parts.push(`${m.ram} RAM`);
+    if (m.done !== null && m.done !== undefined && m.total) parts.push(`${m.done}/${m.total} ${t('proj.frameUnit')}`);
+    if (m.autoDelete) parts.push(`${m.autoDelete} ${t('proj.del')}`);
+    if (!parts.length) return '';
+    const line = parts.join(' · ');
+    return `<div class="pmeta" title="${esc(line)}">${esc(line)}</div>`;
+  }
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表。
+      五列：勾选 / 项目 / 状态 / 进度 / 操作；删除有行内与批量两条入口，都是两步确认。 */
+  function mineProjects(state) {
+    const { all, rows } = mineRows(state);
+    const opts = mineFilterOpts();
+    const shown = rows.slice(0, projState.limit);
+    const picked = new Set(projState.picked || []);
+    /* 没有 id 的行（别人的主页、解析失败）不能删：不画 checkbox，也不画行内删除按钮 */
+    const idOf = (x) => (x && x.id ? String(x.id) : '');
+
+    const th = (key, label, cls) => {
       const on = projState.msort === key;
-      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      return `<th class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
     };
 
-    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
-        <td><div class="pn">${myName(x)}</div></td>
-        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
-          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
-        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
-        <td class="r">${x.id
-    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
-    : '<span class="st">—</span>'}</td>
-      </tr>`).join('')
-      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+    /* 空态两种，别混成一句「你还没有发布过项目」：
+       ① 一个项目都没有 → 上传入口（accent 主按钮）；
+       ② 有项目但搜索/筛选没匹配 → 「没有匹配的项目」+ 次级「清除筛选」；
+          表头与表格框留着，否则整块消失会让人分不清"是筛没了"还是"真没有"。 */
+    const emptyRow = all.length === 0
+      ? `<tr><td colspan="5"><div class="state" style="padding:40px 12px">
             <div class="small">${esc(t('my.empty'))}</div>
             <a class="btn primary" href="/getstarted" target="_blank" rel="noopener" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>
+          </div></td></tr>`
+      : `<tr><td colspan="5"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('proj.empty'))}</div>
+            <button class="btn" data-act="proj-clear-filters" style="margin-top:12px">${esc(t('proj.clearFilters'))}</button>
           </div></td></tr>`;
 
+    const body = shown.map((x) => {
+      const id = idOf(x);
+      const on = !!id && picked.has(id);
+      const pct = x.pct;
+      return `<tr data-project="${esc(id)}"${on ? ' class="picked"' : ''}>
+        <td class="c-pick">${id
+    ? `<label class="pickbox"><input type="checkbox" data-pick="${esc(id)}" aria-label="${esc(t('proj.pick') + ' ' + x.name)}"${on ? ' checked' : ''}></label>`
+    : ''}</td>
+        <td><div class="pn">${myName(x)}</div>${mineMetaLine(x)}</td>
+        <td class="c-status"><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td class="c-prog">${pct === null || pct === undefined ? '<span class="st">—</span>'
+    : `<div class="pwrap">${UI.progress(pct, `${pct}%`)}<span class="frac num">${pct}%</span></div>`}</td>
+        <td class="c-act">${id
+    ? `<a class="btn sm" href="/project/${esc(id)}" target="_self">${esc(t('my.open'))}</a>`
+      + `<button class="btn sm" data-act="proj-del" data-id="${esc(id)}" data-name="${esc(x.name)}">${esc(t('proj.del'))}</button>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`;
+    }).join('') || emptyRow;
+
+    /* 批量操作常驻在 sechead 右侧（不是表格上方另起一行）：未选中时它只是
+       「匹配 n / 共 total」那段文字，选中后才长出按钮 —— 表头因此不会因为批量条出现/消失而上下跳。 */
     return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
         <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
         <span class="spacer"></span>
-        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+        <div class="bulkbar" id="sp-bulk">
+          <span class="btext" role="status" aria-live="polite">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span>
+          <button class="btn sm" data-act="proj-del-picked" hidden>${esc(t('proj.delPicked'))}</button>
+          <button class="btn sm" data-act="proj-picknone" hidden>${esc(t('proj.pickNone'))}</button>
+          <button class="btn sm" data-act="proj-del-confirm" hidden>${esc(t('proj.delConfirmInline'))}</button>
+          <button class="btn sm" data-act="proj-del-back" hidden>${esc(t('proj.back'))}</button>
+          <button class="btn sm" data-act="proj-del-stop" hidden>${esc(t('proj.delStop'))}</button>
+        </div></div>
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -4237,12 +4510,16 @@ ${Theme.css('#sp')}
     `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-mine">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-mine">
+          <colgroup>
+            <col class="c-pick"><col><col class="c-status"><col class="c-prog"><col class="c-act">
+          </colgroup>
           <thead><tr>
+            <th class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
             ${th('name', t('proj.col.project'))}
-            <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'))}
-            <th class="r">${esc(t('proj.col.manage'))}</th>
+            <th class="c-status">${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'), 'c-prog')}
+            <th class="c-act">${esc(t('proj.col.manage'))}</th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>
@@ -4292,7 +4569,7 @@ ${Theme.css('#sp')}
     return farmRow + `<div class="sechead"><h2>${esc(t('proj.title'))}</h2>
         <span class="sub">${esc(t('proj.count', { n: all.length }))}</span>
         <span class="spacer"></span>
-        <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+        <span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -4331,6 +4608,7 @@ ${Theme.css('#sp')}
     projects, projState, P_SORTS, M_SORTS,
     saveSort, setSortPref, setDirPref, sortCmp,
     moreRow, statusLabel, ownerActions, ownerCell, ownerMenu, listsOf, pcell, projectRow, scopeSeg, mineProjects,
+    mineRows, mineVisibleIds,
   });
 })();
 
@@ -6277,6 +6555,8 @@ function typeLabel(raw) {
     Views.mount(body, state);      // 面积图要按实测像素渲染
     host.scrollTop = scrollY;
     paintMeta();
+    /* 表头全选 / 批量条 / 行勾选的状态必须跟着新 DOM 一起落定（render 不负责这些派生状态） */
+    syncPicks();
   }
 
   function paintMeta() {
@@ -6361,6 +6641,13 @@ function typeLabel(raw) {
       /* 这里原来还取 /home 与 /home/projects：但总览视图一个都不消费
          （state.home 只有项目视图用，state.projects 只有项目/会话视图用），
          等于白等 2 个 RTT + 约 78KB。项目视图进来时自己会取。 */
+      /* 总览「我的项目」行内要一个关键事实（自动删除日期 / 帧进度）：只补前 5 个、不阻塞首屏。
+         放在分支末尾 = **每次进总览都尝试补**：首轮失败或中途切走（alive 为假）后，
+         下次回来会重试；fillMetaFor 内部的 !p.meta 过滤保证已成功的不重复抓。 */
+      const prof = state.profile;
+      if (prof && state.profileName === state.userName && (prof.myProjects || []).some((x) => x && x.id && !x.meta)) {
+        fillMetaFor(prof.myProjects, 5, () => state.view === 'overview' && state.profile === prof);
+      }
       return;
     }
 
@@ -6390,6 +6677,8 @@ function typeLabel(raw) {
           })()
           : null,
       ].filter(Boolean));
+      /* 「我发布的」副标题：manage 页的事实异步补，不阻塞首屏；已有 meta 的不会重复抓。 */
+      if (state.myProjects && state.myProjects.some((p) => p && p.id && !p.meta)) fillProjectMeta();
       return;
     }
 
@@ -6523,6 +6812,9 @@ function typeLabel(raw) {
     if (!el) {
       el = document.createElement('div');
       el.className = 'toast';
+      /* 写操作的结果必须被读屏念出来：toast 是唯一的提示出口 */
+      el.setAttribute('role', 'status');
+      el.setAttribute('aria-live', 'polite');
       host.appendChild(el);
     }
     el.textContent = msg;
@@ -6574,6 +6866,252 @@ function typeLabel(raw) {
     return el ? String(el.value || '').trim() : '';
   };
 
+  /* ---- 「我发布的」多选与删除 ---- */
+
+  /** 删除进行中 / 已请求停止。**必须防重入**：串行删除期间再点一次会并发打同一端点。 */
+  let deletingProjects = false;
+  let deletingStop = false;
+  /** 批量确认态的自动退回计时器（4 秒无操作退出确认，别一直停在"确认删除"上）。 */
+  let confirmTimer = null;
+  /** Shift 连选的锚点：最后一次点击的行 id。 */
+  let lastPickId = '';
+
+  function bulkEls() {
+    const bar = document.getElementById('sp-bulk');
+    if (!bar) return null;
+    return {
+      bar,
+      text: bar.querySelector('.btext'),
+      del: bar.querySelector('[data-act="proj-del-picked"]'),
+      none: bar.querySelector('[data-act="proj-picknone"]'),
+      ok: bar.querySelector('[data-act="proj-del-confirm"]'),
+      back: bar.querySelector('[data-act="proj-del-back"]'),
+      stop: bar.querySelector('[data-act="proj-del-stop"]'),
+    };
+  }
+
+  /** 批量条是**固定结构**：这里只改 textContent / hidden / disabled，不重建 innerHTML。
+      重建会丢焦点（键盘用户刚 Tab 到「确认删除」，一次重画就回到 body），读屏也会重复播报。
+      形态由 deletingProjects / Views.projState.confirm / picked 长度三者决定。 */
+  function paintBulk(busy) {
+    const host = document.getElementById('sp');
+    if (host) {
+      const off = deletingProjects;
+      host.querySelectorAll('#sp .tbl-mine [data-pick]').forEach((cb) => { cb.disabled = off; });
+      const allBox = host.querySelector('#sp-pickall');
+      if (allBox) allBox.disabled = off;
+      host.querySelectorAll('#sp .tbl-mine .c-act .btn').forEach((b) => {
+        if (b.tagName === 'BUTTON') b.disabled = off;
+        else { b.setAttribute('aria-disabled', off ? 'true' : 'false'); b.style.pointerEvents = off ? 'none' : ''; }
+      });
+    }
+    const e = bulkEls();
+    if (!e) return;
+    const picked = Views.projState.picked || [];
+    const n = picked.length;
+    const confirming = !deletingProjects && !!Views.projState.confirm && n > 0;
+    /* 容器常驻在 sechead 右侧：未选中时它就是「匹配 n / 共 total」那段文字，不占新行、不推表头。 */
+    e.bar.hidden = false;
+    if (deletingProjects) {
+      const i = busy && busy.i ? busy.i : 1;
+      const total = busy && busy.n ? busy.n : n;
+      e.text.textContent = t('proj.delRunning', { i, n: total });
+    } else if (confirming) e.text.textContent = t('proj.delPickedConfirm', { n });
+    else if (n > 0) e.text.textContent = t('proj.picked', { n });
+    else {
+      const rowsInfo = Views.mineRows(state);
+      e.text.textContent = t('proj.match', { n: rowsInfo.rows.length, total: rowsInfo.all.length });
+    }
+    /* 只播报开始与结束：第 1 项用 polite 念一次，之后关掉逐项播报；结果交给 toast（role=status）。 */
+    e.text.setAttribute('aria-live', deletingProjects && busy && busy.i > 1 ? 'off' : 'polite');
+    e.del.hidden = deletingProjects || confirming || n === 0;
+    e.none.hidden = deletingProjects || confirming || n === 0;
+    e.ok.hidden = !confirming;
+    e.back.hidden = !confirming;
+    e.stop.hidden = !deletingProjects;
+    e.stop.disabled = deletingStop;
+    e.del.disabled = deletingProjects;
+    e.none.disabled = deletingProjects;
+  }
+
+  function exitConfirm() {
+    clearTimeout(confirmTimer);
+    confirmTimer = null;
+    if (!Views.projState.confirm) return;
+    Views.projState.confirm = false;
+    paintBulk();
+  }
+
+  /** 进入批量确认态：第一次点「删除所选」只走到这里，4 秒无操作自动退回。 */
+  function enterConfirm() {
+    if (deletingProjects) return;
+    if (!(Views.projState.picked || []).length) return;
+    Views.projState.confirm = true;
+    paintBulk();
+    clearTimeout(confirmTimer);
+    confirmTimer = setTimeout(() => { confirmTimer = null; exitConfirm(); }, 4000);
+    const e = bulkEls();
+    /* 默认焦点给「返回」：确认删除不能靠一次误触 Enter 完成 */
+    if (e && e.back && !e.back.hidden) { try { e.back.focus(); } catch (err) { /* 焦点拿不到不影响功能 */ } }
+  }
+
+  /** 勾选态的定向同步：行 class、行 checkbox、表头全选（含 indeterminate）、批量条。
+      整页重画会换掉用户刚点到的节点（焦点丢、滚动被拉回），所以只动该动的这几处。 */
+  function syncPicks() {
+    const host = document.getElementById('sp');
+    const picked = new Set(Views.projState.picked || []);
+    if (host) {
+      host.querySelectorAll('#sp .tbl-mine tr[data-project]').forEach((tr) => {
+        const id = tr.dataset.project;
+        if (!id) return;
+        const on = picked.has(id);
+        tr.classList.toggle('picked', on);
+        const cb = tr.querySelector('[data-pick]');
+        if (cb) cb.checked = on;
+      });
+      const all = host.querySelector('#sp-pickall');
+      if (all) {
+        const visible = Views.mineVisibleIds(state);
+        const n = visible.filter((id) => picked.has(id)).length;
+        all.checked = n > 0 && n === visible.length;
+        all.indeterminate = n > 0 && n < visible.length;
+      }
+    }
+    paintBulk();
+  }
+
+  /** 删除中拦刷新/关页：串行 POST 丢在半路，用户不知道删到哪了。 */
+  function blockUnload(ev) {
+    if (!deletingProjects) return;
+    ev.preventDefault();
+    ev.returnValue = '';   // Chrome 需要它才会弹确认
+    return '';
+  }
+  function watchUnload(on) {
+    if (on) window.addEventListener('beforeunload', blockUnload);
+    else window.removeEventListener('beforeunload', blockUnload);
+  }
+
+  /** 删除结束后把焦点还回表头全选（没有就搜索框）：焦点留在被删掉的按钮上会掉到 body。 */
+  function focusAfterDelete() {
+    const el = document.getElementById('sp-pickall') || document.getElementById('sp-q');
+    if (!el || !el.isConnected) return;
+    try { el.focus(); } catch (e) { /* 焦点拿不到不影响功能 */ }
+  }
+
+  /** 给列表里还没有 meta 的前 limit 个项目异步抓 manage 页（并发 3、失败静默跳过）。
+      抓完只有 alive() 仍为真才重画（用户可能已经切走）；全部失败不重画 —— 列表本身没变化。
+      项目页与总览共用这一份：两处显示的事实口径必须同一套解析。 */
+  async function fillMetaFor(list, limit, alive) {
+    const items = (list || []).filter((p) => p && p.id && !p.meta).slice(0, limit);
+    if (!items.length) return;
+    let cursor = 0;
+    const worker = async () => {
+      for (;;) {
+        const i = cursor++;
+        if (i >= items.length) return;
+        const p = items[i];
+        try {
+          p.meta = Api.parseProjectManage(await Api.fetchPage('/project/' + encodeURIComponent(String(p.id))));
+        } catch (e) { /* 拿不到就不显示这一项，不影响列表本身 */ }
+      }
+    };
+    await Promise.all([worker(), worker(), worker()]);
+    const changed = items.some((p) => !!p.meta);
+    if (changed && (!alive || alive())) render();
+  }
+
+  /** 「我发布的」副标题：只补前 30 个，切走再回来因为 meta 已存在而跳过。 */
+  function fillProjectMeta() {
+    return fillMetaFor(state.myProjects, 30, () => state.view === 'projects' && Views.projState.scope === 'mine');
+  }
+
+  /** 把删掉的项目从三份内存数据里摘掉：
+      - state.myProjects：项目页「我发布的」直接读它（懒加载判据也看它是不是 null）
+      - state.profile.myProjects：看的是自己主页时才与上面那份同源（总览的「我的项目」读它）
+      - state.projects：全站列表（切回「全部」时不该还看见已删的项目）
+      两份 myProjects 设为**同一个新数组**，否则一处删了另一处还留着。 */
+  function dropProjects(ids) {
+    const gone = new Set((ids || []).map(String));
+    const keep = (arr) => (arr || []).filter((x) => !gone.has(String(x && x.id)));
+    const next = keep(state.myProjects);
+    state.myProjects = next;
+    if (state.profile && state.profileName === state.userName) state.profile.myProjects = next;
+    if (state.projects) state.projects = keep(state.projects);
+  }
+
+  /** 串行删除：站点一个项目一发 POST（没有批量端点，批量 = 我们自己串起来）。
+      Api.post 的结果按 isOk 判成功；失败记下继续下一项；SIGNED_OUT 立刻中止剩余项；
+      「停止」置位后不再发下一项，剩下的算"未处理"。结束后 invalidate → 摘数据 →
+      失败/未处理项写回选中（只批量入口）→ render → 焦点回表头 → toast 汇总。 */
+  async function deleteProjects(ids, opts) {
+    if (deletingProjects) { toast(t('account.saving')); return false; }
+    const single = !!(opts && opts.single);
+    /* id 要拼进 URL：只收纯数字，别的字符直接忽略（不把用户数据当命令发出去） */
+    const list = (ids || []).map((x) => String(x)).filter((x) => /^\d+$/.test(x));
+    if (!list.length) return false;
+    deletingProjects = true;
+    deletingStop = false;
+    watchUnload(true);
+    const n = list.length;
+    const ok = [];
+    const failed = [];
+    const unprocessed = [];
+    let msg = '';
+    let signedOut = false;
+    try {
+      for (let i = 0; i < n; i++) {
+        /* 用户点了「停止」：剩下的项不再发，原样留在选中里，toast 报"未处理 k 个" */
+        if (deletingStop) { for (let j = i; j < n; j++) unprocessed.push(list[j]); break; }
+        const id = list[i];
+        paintBulk({ i: i + 1, n });   // 每项开始前先把进度说出来
+        try {
+          const r = await Api.post('/project/' + id + '/remove_no_redirect');
+          if (Api.isOk(r)) { ok.push(id); continue; }
+          failed.push(id);
+          if (!msg) msg = String(r);
+        } catch (e) {
+          if (e && e.code === 'SIGNED_OUT') {
+            /* 登录失效：剩下的项不必再发，全部留在选中里等用户重新登录 */
+            signedOut = true;
+            for (let j = i; j < n; j++) failed.push(list[j]);
+            break;
+          }
+          failed.push(id);
+          if (!msg) msg = errText(e);
+        }
+      }
+    } finally {
+      deletingProjects = false;
+      deletingStop = false;
+      watchUnload(false);
+      clearTimeout(confirmTimer);
+      confirmTimer = null;
+      Views.projState.confirm = false;
+    }
+    Api.invalidate();
+    if (ok.length) dropProjects(ok);
+    /* 收尾：成功项与本次目标移出选中；非数字 id 顺手清掉（它不是可删的项目，
+       留着只会让下一次批量再忽略一遍）；其它没参与的勾选保持原样。
+       失败项 / 未处理项只有**批量入口**才写回选中（行还在，可原地重试）—— 行内单删的
+       用户本来没勾这一行，失败后把它勾上会让批量条凭空跳出「已选 1 项」，那是状态噪声。 */
+    const okSet = new Set(ok);
+    const target = new Set(list);
+    const rest = (Views.projState.picked || []).filter((x) => {
+      const id = String(x);
+      return /^\d+$/.test(id) && !target.has(id) && !okSet.has(id);
+    });
+    Views.projState.picked = single ? [...new Set(rest)] : [...new Set(rest.concat(failed, unprocessed))];
+    render();   // DOM 行消失、计数与「匹配 n / 共 total」由数据重算
+    focusAfterDelete();
+    if (signedOut) { toast(t('state.loggedOut')); return false; }
+    if (unprocessed.length) { toast(t('proj.delStopped', { n: ok.length, m: failed.length, k: unprocessed.length })); return false; }
+    if (!failed.length) { toast(t('proj.delOk', { n: ok.length })); return true; }
+    if (single) { toast(t('account.failed', { msg: msg || String(failed.length) })); return false; }
+    toast(t('proj.delPartial', { n: ok.length, m: failed.length }));
+    return false;
+  }
+
   /** 关 3 点菜单：只做定向 DOM 更新，**不整页重画** —— 菜单开着时点搜索框/筛选/表格任意一处，
       整页重画会把刚点到的节点换掉（焦点丢、要再点一次、输入和滚动被打断）。 */
   function closeProjMenu() {
@@ -6594,9 +7132,50 @@ function typeLabel(raw) {
 
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
+      /* 删除中不许跳走：串行 POST 还在发，换页会让"删到哪了"完全断掉 */
+      if (deletingProjects) { toast(t('account.saving')); return; }
       /* 上传三步交还站点：入口就是新标签页打开站点自己的 /getstarted，我们不接管那一页。 */
       if (nav.dataset.nav === 'upload') { window.open('/getstarted', '_blank', 'noopener'); return; }
       go(nav.dataset.nav); return;
+    }
+
+    /* 「我发布的」表头全选：独立分支、在 data-pick 之前判断（表头 label 也会触发 input 的 click）。 */
+    const pickAll = ev.target.closest('[data-pickall]');
+    if (pickAll) {
+      Views.projState.picked = pickAll.checked ? Views.mineVisibleIds(state) : [];
+      lastPickId = '';
+      syncPicks();
+      return;
+    }
+
+    /* 「我发布的」行勾选：只更新 Views.projState.picked 与那几处 DOM，绝不整页 render。
+       Shift+点击按当前可见行序把区间一起选中/取消（锚点是上一次点的行）。 */
+    const pick = ev.target.closest('[data-pick]');
+    if (pick) {
+      const id = String(pick.dataset.pick || '');
+      if (!id) return;
+      const set = new Set(Views.projState.picked || []);
+      if (ev.shiftKey && lastPickId && lastPickId !== id) {
+        const visible = Views.mineVisibleIds(state);
+        const a = visible.indexOf(lastPickId);
+        const b = visible.indexOf(id);
+        if (a >= 0 && b >= 0) {
+          const lo = Math.min(a, b);
+          const hi = Math.max(a, b);
+          for (let i = lo; i <= hi; i++) {
+            if (pick.checked) set.add(visible[i]); else set.delete(visible[i]);
+          }
+          Views.projState.picked = [...set];
+          lastPickId = id;
+          syncPicks();
+          return;
+        }
+      }
+      if (pick.checked) set.add(id); else set.delete(id);
+      Views.projState.picked = [...set];
+      lastPickId = id;
+      syncPicks();
+      return;
     }
 
     const act = ev.target.closest('[data-act]');
@@ -6639,6 +7218,59 @@ function typeLabel(raw) {
           const h2 = document.getElementById('sp');
           if (h2 && keepY) h2.scrollTop = keepY;
         });
+        return;
+      }
+
+      // ---- 我发布的：行内两步确认 / 批量两步确认 / 取消选择 / 停止 / 清除筛选 ----
+      if (kind === 'proj-del') {
+        const id = String(act.dataset.id || '');
+        const name = act.dataset.name || '';
+        if (!/^\d+$/.test(id)) return;
+        /* 两步确认：第一次点击把按钮变成「确认删除」（3 秒复原），第二次才真删。
+           不用 window.confirm：它挡住整页、和批量条/键盘流程都打架，还不可样式化。 */
+        if (act.dataset.armed !== '1') {
+          act.dataset.armed = '1';
+          act.dataset.label = act.textContent;
+          act.textContent = t('proj.delConfirmInline');
+          act.setAttribute('aria-label', t('proj.delConfirmInline') + (name ? ' ' + name : ''));
+          setTimeout(() => {
+            if (!act.isConnected || act.dataset.armed !== '1') return;
+            act.dataset.armed = '0';
+            act.textContent = act.dataset.label || t('proj.del');
+            act.removeAttribute('aria-label');
+          }, 3000);
+          return;
+        }
+        act.dataset.armed = '0';
+        deleteProjects([id], { single: true });
+        return;
+      }
+      if (kind === 'proj-del-picked') { enterConfirm(); return; }
+      if (kind === 'proj-del-back') { exitConfirm(); return; }
+      if (kind === 'proj-del-confirm') {
+        if (!Views.projState.confirm) return;
+        const ids = (Views.projState.picked || []).slice();
+        exitConfirm();   // 先退出确认态，再开始删除（进度由 deleteProjects 接管）
+        deleteProjects(ids);
+        return;
+      }
+      if (kind === 'proj-del-stop') {
+        if (!deletingProjects || deletingStop) return;
+        deletingStop = true;
+        act.disabled = true;   // 当前项返回前先按掉，避免连点
+        return;
+      }
+      if (kind === 'proj-picknone') {
+        if (Views.projState.confirm) exitConfirm();
+        Views.projState.picked = [];
+        lastPickId = '';
+        syncPicks();
+        return;
+      }
+      if (kind === 'proj-clear-filters') {
+        Views.projState.q = '';
+        Views.projState.filter = 'all';
+        render();
         return;
       }
 
@@ -6857,7 +7489,13 @@ function typeLabel(raw) {
     }
 
     const f = ev.target.closest('#sp-filter [data-f]');
-    if (f) { Views.projState.filter = f.dataset.f; render(); return; }
+    if (f) {
+      Views.projState.filter = f.dataset.f;
+      Views.projState.picked = [];   // 筛选变了，原来选中的行可能已经不在表里
+      Views.projState.confirm = false;
+      render();
+      return;
+    }
 
     /* 范围切换：换的是数据源（全站列表 ↔ 个人主页那张表），第一次进「我发布的」要取一次数 */
     const sScope = ev.target.closest('#sp-scope [data-s]');
@@ -6868,6 +7506,8 @@ function typeLabel(raw) {
       Views.projState.filter = 'all';
       Views.projState.limit = 120;
       Views.projState.menu = null;
+      Views.projState.picked = [];   // 换数据源 = 换选中集（这些 id 在另一张表上未必存在）
+      Views.projState.confirm = false;
       state.error = null;
       if (Views.projState.scope === 'mine' && !state.myProjects) {
         /* silent show 不设 loading；这里先画骨架，取数失败时错误态也能顶上来（原来失败会卡在空白/旧错误） */
@@ -6997,6 +7637,8 @@ function typeLabel(raw) {
     Views.projState.q = ev.target.value;
     clearTimeout(inputTimer);
     inputTimer = setTimeout(() => {
+      Views.projState.picked = [];   // 搜索词变了同理：选中项可能已经看不见
+      Views.projState.confirm = false;
       const pos = ev.target.selectionStart;
       render();
       const again = document.getElementById('sp-q');
@@ -7029,6 +7671,8 @@ function typeLabel(raw) {
   }
 
   function go(view) {
+    /* 删除中不许换页（导航点击、应用内跳转都走这里）：串行 POST 丢在半路会说不清删到哪 */
+    if (deletingProjects) { toast(t('account.saving')); return; }
     const want = pageFor(view);
     if (want && want !== location.pathname) {
       /* 主页那一族带上 hash（地址里能看出落在哪个视图）；账户设置**不带** ——

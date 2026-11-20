@@ -26,7 +26,10 @@
   };
   const SORT_PREF = 'projSort';
 
-  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '' };
+  /* picked：「我发布的」勾选的项目 id（字符串数组，仅内存，不落盘）。
+     刷新/换视图就没了 —— 选中集是"这一屏要删的一批"，不是用户偏好。
+     confirm：批量删除两步确认的第一阶段（只由 80-app 改；渲染时据此决定批量条形态）。 */
+  const projState = { q: '', filter: 'all', sort: 'progress', dir: 'desc', limit: 120, menu: null, scope: 'all', msort: '', picked: [], confirm: false };
 
   /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
      存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
@@ -172,45 +175,132 @@
   const scopeSeg = () => `<div class="seg" id="sp-scope">${[['all', t('proj.scope.all')], ['mine', t('proj.scope.mine')]]
     .map(([k, label]) => `<button data-s="${k}" aria-pressed="${projState.scope === k}">${esc(label)}</button>`).join('')}</div>`;
 
-  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
-     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表，只画四列。 */
-  function mineProjects(state) {
-    const all = state.myProjects || [];
+  /* ---- 「我发布的」那张表 ---- */
+
+  /** 状态与名字的显示口径与 50 的总览小列表一致，但 51 是独立 IIFE、借不到那边的局部函数：
+      不在这里定义，这张表只要有行就会 ReferenceError（空态不执行，所以一直没暴露）。 */
+  const MY_KIND_KEY = {
+    rendering: 'proj.status.rendering', waiting: 'proj.status.waiting',
+    paused: 'proj.status.paused', finished: 'proj.status.finished',
+  };
+  /** 状态列只说状态：百分比归「进度」列（与全站表同构），两边都说一遍数字是重复信息。 */
+  function myStatus(x) {
+    const key = MY_KIND_KEY[x.statusKind];
+    return key ? t(key) : (x.status || '—');
+  }
+  const myName = (x) => (x.id
+    ? `<a href="/project/${esc(x.id)}" target="_self">${esc(x.name)}</a>`
+    : `<span>${esc(x.name)}</span>`);
+
+  /** 筛选档位：按钮与过滤判据共用一份，档位改了只改一处。 */
+  const mineFilterOpts = () => [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
+    ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
+
+  /** 「我发布的」**唯一**的搜索 + 筛选 + 排序实现：渲染与「全选」都走这里。
+      两边各写一份的话，"全选选中了谁"和"屏幕上画了谁"迟早对不上 —— 而这是要删数据的操作。 */
+  function mineRows(state) {
+    const all = (state && state.myProjects) || [];
     const q = projState.q.trim().toLowerCase();
-    const opts = [['all', t('proj.all')], ['rendering', t('proj.status.rendering')],
-      ['waiting', t('proj.status.waiting')], ['finished', t('proj.status.finished')]];
-    let rows = all.filter((x) => !q || x.name.toLowerCase().includes(q));
-    if (opts.some(([k]) => k === projState.filter) && projState.filter !== 'all') {
+    let rows = all.filter((x) => !q || String(x.name || '').toLowerCase().includes(q));
+    if (mineFilterOpts().some(([k]) => k === projState.filter) && projState.filter !== 'all') {
       rows = rows.filter((x) => x.statusKind === projState.filter);
     }
 
     /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
     const cmp = sortCmp(M_SORTS, projState.msort);
     if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    return { all, rows };
+  }
 
-    const th = (key, label, span) => {
+  /** 全选只覆盖**当前渲染出来的行**（slice(0, limit)）：没画在屏幕上的项目
+      不能被"全选"带进删除名单。没有 id 的行不能删，直接不进名单。 */
+  function mineVisibleIds(state) {
+    return mineRows(state).rows.slice(0, projState.limit)
+      .map((x) => (x && x.id ? String(x.id) : '')).filter(Boolean);
+  }
+
+  /** manage 页里的事实拼成一行副标题：计算方式 · RAM · 帧进度 · 自动删除日期。
+      只拼存在的字段；没有 meta（没抓到 / 没权限）就整行不出 —— 不占位、不撑高行。
+      站点只给英文日期字符串，I18n 没有对应格式化就原样显示，不编翻译。 */
+  function mineMetaLine(p) {
+    const m = p && p.meta;
+    if (!m) return '';
+    const cpu = t('proj.cpu');
+    const gpu = t('proj.gpu');
+    const compute = m.compute === 'both' ? `${cpu}+${gpu}` : m.compute === 'gpu' ? gpu : m.compute === 'cpu' ? cpu : '';
+    const parts = [];
+    if (compute) parts.push(compute);
+    if (m.ram) parts.push(`${m.ram} RAM`);
+    if (m.done !== null && m.done !== undefined && m.total) parts.push(`${m.done}/${m.total} ${t('proj.frameUnit')}`);
+    if (m.autoDelete) parts.push(`${m.autoDelete} ${t('proj.del')}`);
+    if (!parts.length) return '';
+    const line = parts.join(' · ');
+    return `<div class="pmeta" title="${esc(line)}">${esc(line)}</div>`;
+  }
+
+  /** 「我发布的」：只有个人主页那张表给得出的字段（名字 / 状态 / 百分比），
+     设备、内存、发布者站点没给 —— 所以不复用全站那张七列表。
+      五列：勾选 / 项目 / 状态 / 进度 / 操作；删除有行内与批量两条入口，都是两步确认。 */
+  function mineProjects(state) {
+    const { all, rows } = mineRows(state);
+    const opts = mineFilterOpts();
+    const shown = rows.slice(0, projState.limit);
+    const picked = new Set(projState.picked || []);
+    /* 没有 id 的行（别人的主页、解析失败）不能删：不画 checkbox，也不画行内删除按钮 */
+    const idOf = (x) => (x && x.id ? String(x.id) : '');
+
+    const th = (key, label, cls) => {
       const on = projState.msort === key;
-      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      return `<th class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
     };
 
-    const body = rows.slice(0, projState.limit).map((x) => `<tr data-project="${esc(x.id)}">
-        <td><div class="pn">${myName(x)}</div></td>
-        <td><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
-          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
-        <td>${x.pct === null || x.pct === undefined ? '<span class="st">—</span>' : UI.progress(x.pct, `${x.pct}%`)}</td>
-        <td class="r">${x.id
-    ? `<a class="btn sm" href="/project/${esc(x.id)}" target="_self">${esc(t('my.open'))}</a>`
-    : '<span class="st">—</span>'}</td>
-      </tr>`).join('')
-      || `<tr><td colspan="4"><div class="state" style="padding:40px 12px">
+    /* 空态两种，别混成一句「你还没有发布过项目」：
+       ① 一个项目都没有 → 上传入口（accent 主按钮）；
+       ② 有项目但搜索/筛选没匹配 → 「没有匹配的项目」+ 次级「清除筛选」；
+          表头与表格框留着，否则整块消失会让人分不清"是筛没了"还是"真没有"。 */
+    const emptyRow = all.length === 0
+      ? `<tr><td colspan="5"><div class="state" style="padding:40px 12px">
             <div class="small">${esc(t('my.empty'))}</div>
             <a class="btn primary" href="/getstarted" target="_blank" rel="noopener" style="margin-top:12px">${esc(t('my.emptyCta'))}</a>
+          </div></td></tr>`
+      : `<tr><td colspan="5"><div class="state" style="padding:40px 12px">
+            <div class="small">${esc(t('proj.empty'))}</div>
+            <button class="btn" data-act="proj-clear-filters" style="margin-top:12px">${esc(t('proj.clearFilters'))}</button>
           </div></td></tr>`;
 
+    const body = shown.map((x) => {
+      const id = idOf(x);
+      const on = !!id && picked.has(id);
+      const pct = x.pct;
+      return `<tr data-project="${esc(id)}"${on ? ' class="picked"' : ''}>
+        <td class="c-pick">${id
+    ? `<label class="pickbox"><input type="checkbox" data-pick="${esc(id)}" aria-label="${esc(t('proj.pick') + ' ' + x.name)}"${on ? ' checked' : ''}></label>`
+    : ''}</td>
+        <td><div class="pn">${myName(x)}</div>${mineMetaLine(x)}</td>
+        <td class="c-status"><span class="st ${esc(x.statusKind)}">${esc(myStatus(x))}</span>
+          ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}</td>
+        <td class="c-prog">${pct === null || pct === undefined ? '<span class="st">—</span>'
+    : `<div class="pwrap">${UI.progress(pct, `${pct}%`)}<span class="frac num">${pct}%</span></div>`}</td>
+        <td class="c-act">${id
+    ? `<a class="btn sm" href="/project/${esc(id)}" target="_self">${esc(t('my.open'))}</a>`
+      + `<button class="btn sm" data-act="proj-del" data-id="${esc(id)}" data-name="${esc(x.name)}">${esc(t('proj.del'))}</button>`
+    : '<span class="st">—</span>'}</td>
+      </tr>`;
+    }).join('') || emptyRow;
+
+    /* 批量操作常驻在 sechead 右侧（不是表格上方另起一行）：未选中时它只是
+       「匹配 n / 共 total」那段文字，选中后才长出按钮 —— 表头因此不会因为批量条出现/消失而上下跳。 */
     return `<div class="sechead"><h2>${esc(t('my.title'))}</h2>
         <span class="sub num">${esc(t('my.count', { n: all.length }))}</span>
         <span class="spacer"></span>
-        <span class="sub">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+        <div class="bulkbar" id="sp-bulk">
+          <span class="btext" role="status" aria-live="polite">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span>
+          <button class="btn sm" data-act="proj-del-picked" hidden>${esc(t('proj.delPicked'))}</button>
+          <button class="btn sm" data-act="proj-picknone" hidden>${esc(t('proj.pickNone'))}</button>
+          <button class="btn sm" data-act="proj-del-confirm" hidden>${esc(t('proj.delConfirmInline'))}</button>
+          <button class="btn sm" data-act="proj-del-back" hidden>${esc(t('proj.back'))}</button>
+          <button class="btn sm" data-act="proj-del-stop" hidden>${esc(t('proj.delStop'))}</button>
+        </div></div>
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -220,12 +310,16 @@
     `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-mine">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-mine">
+          <colgroup>
+            <col class="c-pick"><col><col class="c-status"><col class="c-prog"><col class="c-act">
+          </colgroup>
           <thead><tr>
+            <th class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
             ${th('name', t('proj.col.project'))}
-            <th>${esc(t('proj.col.status'))}</th>
-            ${th('progress', t('proj.col.progress'))}
-            <th class="r">${esc(t('proj.col.manage'))}</th>
+            <th class="c-status">${esc(t('proj.col.status'))}</th>
+            ${th('progress', t('proj.col.progress'), 'c-prog')}
+            <th class="c-act">${esc(t('proj.col.manage'))}</th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>
@@ -275,7 +369,7 @@
     return farmRow + `<div class="sechead"><h2>${esc(t('proj.title'))}</h2>
         <span class="sub">${esc(t('proj.count', { n: all.length }))}</span>
         <span class="spacer"></span>
-        <span class="sub num">${esc(t('proj.showing', { n: rows.length, total: all.length }))}</span></div>
+        <span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span></div>
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -314,5 +408,6 @@
     projects, projState, P_SORTS, M_SORTS,
     saveSort, setSortPref, setDirPref, sortCmp,
     moreRow, statusLabel, ownerActions, ownerCell, ownerMenu, listsOf, pcell, projectRow, scopeSeg, mineProjects,
+    mineRows, mineVisibleIds,
   });
 })();

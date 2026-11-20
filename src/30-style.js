@@ -37,7 +37,6 @@ ${Theme.css('#sp')}
 
 #sp .wrap{max-width:1240px;margin:0 auto;padding:0 24px 72px}
 @media (max-width:760px){#sp .wrap{padding:0 16px 56px}}
-@media (max-width:760px){#sp .top{margin:0 -16px;padding:8px 16px}}
 
 /* ==== 顶栏 ==== */
 #sp .top{
@@ -53,6 +52,9 @@ ${Theme.css('#sp')}
   padding:8px 24px;
   box-shadow:0 4px 0 var(--bg);
 }
+/* 窄屏顶栏铺满视口（覆盖上面的 -24/+24）：这条必须写在 .top 基础规则**之后**，
+   否则被基础规则的 margin/padding 盖掉 —— 390px 下顶栏会顶出视口、出现横向滚动条。 */
+@media (max-width:760px){#sp .top{margin:0 -16px;padding:8px 16px}}
 #sp .brand{display:flex;align-items:center;gap:8px;font-weight:700;font-size:15px;letter-spacing:-.3px;flex:none;text-decoration:none}
 /* 品牌图标是位图（深色底），固定尺寸 + 圆角；别给它上 currentColor（那是给单色 SVG 的） */
 #sp .brand .sheep{width:24px;height:24px;flex:none;border-radius:6px;object-fit:cover;display:block}
@@ -340,6 +342,8 @@ ${Theme.css('#sp')}
 
 /* ==== 表格 ==== */
 #sp .tablewrap{overflow-x:auto}
+/* 横向滚动的表格要能被键盘滚：wrapper 拿 tabindex=0，焦点环说明"这一块可以滚" */
+#sp .tablewrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #sp .tbl{width:100%;border-collapse:collapse;font-size:13px}
 #sp .tbl th{
   text-align:left;font-size:11.5px;font-weight:500;color:var(--text-3);
@@ -490,7 +494,9 @@ ${Theme.css('#sp')}
 #sp .seg button{padding:5px 11px;border-radius:var(--r-sm);font-size:12.5px;color:var(--text-2)}
 #sp .seg button:hover{color:var(--text)}
 #sp .seg button[aria-pressed="true"]{background:var(--accent-weak);color:var(--accent);font-weight:600}
-#sp .sechead{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin:26px 0 12px}
+/* 高度恒定：批量操作常驻在右侧（未选中时只是「匹配 n / 共 total」文字），
+   选中/确认/删除中都不该把它顶高一行 —— 否则点一下勾选，整张表就往下跳。 */
+#sp .sechead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;min-height:30px;margin:26px 0 12px}
 #sp .sechead h2{font-size:15px;color:var(--text)}
 #sp .sechead .sub{font-size:12px;color:var(--text-3)}
 #sp .sechead .spacer{flex:1}
@@ -560,16 +566,48 @@ ${Theme.css('#sp')}
 #sp .myproj .nm{flex:1;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .myproj .nm a{color:var(--text);text-decoration:none}
 #sp .myproj .nm a:hover{color:var(--accent);text-decoration:underline}
-/* 只有 "已被站点封禁" 这一条用强调色：其余状态与项目表一致，保持中性 */
-#sp .st.bad{color:var(--accent)}
+/* 总览行内只放一个关键事实（自动删除日期 / 帧进度）：11.5px 单行省略，不撑高桌面行 */
+#sp .myproj .mp .meta{font-size:11.5px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px}
+/* 标题旁的一句汇总：渲染中数量 · 最近自动删除日期 */
+#sp .phead .meta-sub{font-size:12px;color:var(--text-3);white-space:nowrap}
+/* 「已被站点封禁」是状态不是警报：保持中性墨色，只加粗一点来区分。
+   强调色只留给"你"和主操作，不给状态词上色（用户 2026-11-21 评审：红色误读成错误）。 */
+#sp .st.bad{color:var(--text-2);font-weight:550}
 #sp .phead a.sub{color:var(--text-3);text-decoration:none;white-space:nowrap}
 #sp .phead a.sub:hover{color:var(--accent);text-decoration:underline}
-/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行 */
+/* 我发布的这张表没有设备/内存列，不必撑到 .tbl 的 660px 下限；进度列给条子留够就行。
+   列宽一律按 class 定（c-pick / c-status / c-prog / c-act），不再用 nth-child ——
+   行首是勾选列，按序号定宽会把整张表错位一列。 */
 #sp .tbl-mine{min-width:0}
-#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){width:200px}
-/* 窄屏砍掉进度列：条子固定占 200px，加上名字（最宽 220px）状态与操作按钮会超出容器，
-   「操作」被挤进横向滚动区外。渲染中/等待中的百分比本来就在状态文案里，砍了不丢信息。 */
-@media (max-width:760px){#sp .tbl-mine th:nth-child(3),#sp .tbl-mine td:nth-child(3){display:none}}
+#sp .tbl-mine .c-pick{width:34px;padding:0 0 0 14px}
+/* 勾选命中区是整个 44px 高的格子（label 包住 input），不是那个 14px 小方块 ——
+   鼠标/触屏都不用瞄准。表头同一套，所以行高稳定在 44 上下。 */
+#sp .tbl-mine .c-pick label{display:flex;align-items:center;justify-content:center;min-height:44px;cursor:pointer}
+/* 44px 命中区只给行内单元格；表头 label 不撑高（否则 th 被顶高、勾选框与相邻表头文字错位） */
+#sp .tbl-mine thead .c-pick label{min-height:0;height:100%}
+/* 表头 c-pick 也要和其它 th 一样的 bottom padding：padding 不同 → cell 内容区高度不同，
+   垂直居中后勾选框会比表头文字低半个 padding（实测 5px）。 */
+#sp .tbl-mine thead .c-pick{padding-bottom:10px}
+#sp .tbl-mine th{vertical-align:middle}
+#sp .tbl-mine .c-status{width:110px}
+#sp .tbl-mine .c-prog{width:200px}
+#sp .tbl-mine .c-act{width:170px;text-align:right;white-space:nowrap}
+#sp .tbl-mine .c-act .btn{margin-left:6px}
+#sp .tbl-mine input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent);cursor:pointer;vertical-align:middle}
+/* 选中行比 hover 深一档：hover 是 surface-2，选中必须能被区分出来，否则移开鼠标就找不到选中的行 */
+#sp .tbl-mine tr.picked{background:var(--surface-3)}
+/* 项目名下的副标题（manage 页的事实）：12px 单行省略，没有数据时整行不存在，不占位 */
+#sp .tbl-mine .pmeta{font-size:12px;color:var(--text-3);line-height:1.5;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 批量操作常驻在 sechead 右侧：未选中时它只是「匹配 n / 共 total」那段文字，选中后才长出按钮。
+   容器一直占位，表格表头不会因为批量条出现/消失而上下跳。 */
+#sp .sechead #sp-bulk{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-2)}
+/* .bulkbar 里的按钮有 .btn 的 display:inline-flex，会盖掉浏览器对 [hidden] 的默认 display:none ——
+   不单独兜这两条，"该藏的按钮"会一直显示在行上。 */
+#sp .bulkbar[hidden]{display:none}
+#sp .bulkbar [hidden]{display:none}
+/* 窄屏五列一起横向滚动，不隐藏进度列：表格给足列宽下限（34+110+200+170+项目名 ≥160），
+   让 .tablewrap（overflow-x:auto + tabindex）滚，而不是把项目名压成每行一两个字。 */
+@media (max-width:560px){#sp .tbl-mine{min-width:680px} #sp .bulkbar{flex-wrap:wrap} #sp .tbl-mine .c-act{white-space:normal} #sp .tbl-mine .c-act .btn{display:inline-block;margin:2px 6px 2px 0}}
 @media (max-width:560px){#sp .myproj .mp{flex-wrap:wrap;gap:6px 10px;padding:11px 16px}}
 
 /* ==== 顶栏模式开关 ==== */

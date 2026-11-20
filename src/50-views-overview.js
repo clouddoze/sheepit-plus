@@ -32,6 +32,65 @@
 
   const MY_SHOW = 5;
 
+  /* ==== 总览行内的「一个关键事实」 ====
+     数据来自 /project/<id> 管理页（80-app 的 fillMetaFor 挂到 p.meta）。总览行只放**一个**
+     事实：优先自动删除日期（压成「20 Oct」），其次是帧进度；完整事实放整行 title，不铺开。
+     拼接口径与项目页「我发布的」副标题一致（compute · RAM · 帧 · 删除），两处说法不打架。 */
+
+  const MONS = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+
+  /** '20th Oct 06:10' → { key: 1020, short: '20 Oct' }；认不出来给 null */
+  function parseDelDate(raw) {
+    const m = String(raw || '').match(/^(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3})/);
+    if (!m) return null;
+    const mon = MONS[m[2].toLowerCase()];
+    if (!mon) return null;
+    const day = Number(m[1]);
+    return { key: mon * 100 + day, short: `${day} ${m[2]}` };
+  }
+
+  /** 完整事实（与 51 的 mineMetaLine 同一口径），用于整行 title */
+  function metaFacts(p) {
+    const m = p && p.meta;
+    if (!m) return '';
+    const cpu = t('proj.cpu');
+    const gpu = t('proj.gpu');
+    const compute = m.compute === 'both' ? `${cpu}+${gpu}` : m.compute === 'gpu' ? gpu : m.compute === 'cpu' ? cpu : '';
+    const parts = [];
+    if (compute) parts.push(compute);
+    if (m.ram) parts.push(`${m.ram} RAM`);
+    if (m.done !== null && m.done !== undefined && m.total) parts.push(`${m.done}/${m.total} ${t('proj.frameUnit')}`);
+    if (m.autoDelete) parts.push(`${m.autoDelete} ${t('proj.del')}`);
+    return parts.join(' · ');
+  }
+
+  /** 行内那一个关键事实：自动删除日期优先，其次帧进度；都没有返回 null（不占位） */
+  function metaKeyFact(p) {
+    const m = p && p.meta;
+    if (!m) return null;
+    const d = parseDelDate(m.autoDelete);
+    if (d) return { text: d.short, title: t('my.meta.deleted', { date: m.autoDelete }) };
+    if (m.done !== null && m.done !== undefined && m.total) {
+      return { text: `${m.done}/${m.total} ${t('proj.frameUnit')}`, title: metaFacts(p) };
+    }
+    return null;
+  }
+
+  /** 标题旁汇总：全部 rows（不只前 5）里的渲染中数量 + 最近自动删除日期 */
+  function panelSummary(rows) {
+    const running = rows.filter((x) => x && x.statusKind === 'rendering').length;
+    let best = null;
+    for (const x of rows) {
+      const d = parseDelDate(x && x.meta && x.meta.autoDelete);
+      if (!d) continue;
+      if (!best || d.key < best.key) best = d;
+    }
+    const bits = [];
+    if (running) bits.push(t('my.meta.running', { n: running }));
+    if (best) bits.push(t('my.meta.next', { date: best.short }));
+    return bits.join(' · ');
+  }
+
   /** 总览的「我的项目」区块。两条边界（用户 2026-10-07 拍板）：
    *  ① 一个项目都没有 → **整块不画**（不摆一块空态占首屏；去上传页的入口在项目页那一档里）；
    *  ② 不是自己的主页 → 不画（那张表没有 id，点不进管理页）。 */
@@ -39,17 +98,24 @@
     if (!state.userName || (state.profileName && state.profileName !== state.userName)) return '';
     const rows = (p && p.myProjects) || [];
     if (!rows.length) return '';
+    const summary = panelSummary(rows);
 
-    const list = rows.slice(0, MY_SHOW).map((x) => `<div class="mp">
+    const list = rows.slice(0, MY_SHOW).map((x) => {
+      const fact = metaKeyFact(x);
+      const full = metaFacts(x);
+      return `<div class="mp"${full ? ` title="${esc(full)}"` : ''}>
         <span class="nm">${myName(x)}</span>
+        ${fact ? `<span class="meta" title="${esc(fact.title)}">${esc(fact.text)}</span>` : ''}
         ${x.blocked ? `<span class="st bad">${esc(t('proj.status.blocked'))}</span>` : ''}
         <span class="st">${esc(myStatus(x))}</span>
-      </div>`).join('');
+      </div>`;
+    }).join('');
 
     return `<div class="panel" style="margin-top:16px">
       <div class="phead">
         <h2>${esc(t('my.title'))}</h2>
         <span class="sub num">${esc(t('my.count', { n: rows.length }))}</span>
+        ${summary ? `<span class="sub meta-sub">${esc(summary)}</span>` : ''}
         <span class="spacer"></span>
         <a class="sub" href="#/projects" data-scope="mine">${esc(t('my.all'))}</a>
       </div>

@@ -85,7 +85,7 @@ node -e "const fs=require('fs');const a=fs.readFileSync('src/51-views-projects.j
 事件处理函数要读 `state`、调 `render()` / `show()` / `go()`，拆出去要么传十个引用，要么把闭包变成全局——
 可读性不会更好。所以这里用**一张表**降低理解成本，而不是用文件数量。
 
-所有点击都走 `onClick` 里的一次 `kind` 分派（22 个分支）：
+所有点击都走 `onClick` 里的一次 `kind` 分派（30 个分支）。勾选类交互例外：表头全选与行勾选走 `data-pickall` / `data-pick` 的独立分支，在 `kind` 分派**之前**判断（它们只改内存选中集与几处 DOM，不整页重画）：
 
 | 分组 | kind | 做什么 |
 |---|---|---|
@@ -98,6 +98,13 @@ node -e "const fs=require('fs');const a=fs.readFileSync('src/51-views-projects.j
 | 写操作 | `team-act` `team-create` | 团队：退出/解散/申请/移除、创建（**二级确认**） |
 | 视图交互 | `sess-run` | 会话页暂停/恢复 |
 | 视图交互 | `sess-log` `reveal-key` | 日志折叠、密钥显隐（纯本地） |
+| 写操作 | `proj-del` | 「我发布的」行内删除：两步确认（按钮 arm 3 秒）后发一次 `/project/<id>/remove_no_redirect` |
+| 写操作 | `proj-del-picked` | 「我发布的」批量删除第一步：进入确认态（4 秒无操作自动退回） |
+| 写操作 | `proj-del-confirm` | 「我发布的」批量删除第二步：确认后逐项串行 POST（过程中可停止） |
+| 写操作 | `proj-del-back` | 退出批量确认态，不删任何项目 |
+| 写操作 | `proj-del-stop` | 删除中请求停止：当前项完成后不再发剩余项，未处理的保留选中 |
+| 视图交互 | `proj-picknone` | 「我发布的」清空选中（只改 DOM 与内存选中集，不整页 render） |
+| 视图交互 | `proj-clear-filters` | 搜索/筛选空态的「清除筛选」：q 清空 + filter=all 后重画 |
 
 **校验方式**：扫 `data-act="..."` 的取值集合，与 `kind === '...'` 的集合做差。
 
@@ -105,7 +112,7 @@ node -e "const fs=require('fs');const a=fs.readFileSync('src/51-views-projects.j
 node -e "…"   # 见 .tmp/events-scan.mjs 的写法：差集必须为空
 ```
 
-当前：14 个 `data-act` 全部有处理分支，无孤儿。
+当前：22 个 `data-act` 全部有处理分支，无孤儿。
 
 ## 6. 已知结构债（按危险程度）
 
