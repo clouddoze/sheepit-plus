@@ -43,7 +43,7 @@ node tools/mwg.mjs legacy-scan src --json
 - 不做「一律 polyfill」：缺特性时退到浏览器/站点原生行为，不拿包体积和攻击面去换。
 - 动效一律遵守 `prefers-reduced-motion`；主题跟随 `prefers-color-scheme`。
 
-## 4. 本轮落地清单
+## 4. 已落地清单（0.2.7–0.2.10）
 
 | 用例 | guide id | 落点 | 避免了什么 |
 |---|---|---|---|

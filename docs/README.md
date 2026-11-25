@@ -1,6 +1,6 @@
 # docs 索引
 
-> 只列**当前有效**的文档。历史文档已删除（git 历史里仍可查），不再维护。
+> 只列**当前有效**的文档。历史文档已删除，不再维护；旧提交已压缩，不再保留。
 
 ## 先读这两份
 
@@ -14,7 +14,6 @@
 | 文档 | 内容 |
 |---|---|
 | [MODERN-WEB.md](MODERN-WEB.md) | 现代 Web 基线：modern-web-guidance 用法、浏览器支持策略、落地清单 |
-| [AUTONOMY.md](AUTONOMY.md) | 自主循环规则 |
 | [BACKLOG.md](BACKLOG.md) | 未接管路径与待拍板项 |
 
 ## 资产
@@ -24,7 +23,7 @@
 | [DESIGN.md](DESIGN.md) | 设计系统（视觉方向、token、组件规则） |
 | [PUBLISHING.md](PUBLISHING.md) | 发布流程与版本记录 |
 
-## 已删除（git 历史可查）
+## 已删除（不维护）
 
 | 文档 | 为什么删 |
 |---|---|
