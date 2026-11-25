@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.9
+// @version      0.2.10
 // @description  给 SheepIt Render Farm 换一套现代前端：仪表盘、项目、排行榜、团队、实况、会话与设置；明暗主题，数据只来自站点页面。
 // @description:en  A modern front end for SheepIt Render Farm: dashboard, projects, ranking, teams, live farm status, sessions and settings; dark/light, all data read from the site's own pages.
 // @author       clouddoze
@@ -199,7 +199,7 @@
       'top.refresh': '刷新', 'top.updated': '更新于',
       'top.account': '账户设置', 'top.logout': '退出登录', 'nav.more': '更多',
       'top.themeCycle': '主题：{cur}（点击切换）',
-      'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
+      'hero.rank': '排名', 'hero.rankNone': '暂无排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
       'stat.streak': '当前连续', 'stat.days': '天',
       'stat.streakHint': '历史最长 {best} 天',
@@ -207,6 +207,7 @@
       'badge.top-10-renderers': 'TOP 10% 渲染者',
       'stat.avgPeak': '历史日均 {avg} 帧 · 历史峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
+      'stat.rankNone': '暂无排名 · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
       'stat.created': '建的项目', 'stat.createdHint': '你上传的任务数',
       'stat.ordered': '订的帧', 'stat.orderedHint': '为你自己的项目下单的帧数',
@@ -506,13 +507,14 @@
       'top.refresh': 'Refresh', 'top.updated': 'Updated',
       'top.account': 'Account settings', 'top.logout': 'Log out', 'nav.more': 'More',
       'top.themeCycle': 'Theme: {cur} (click to cycle)',
-      'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
+      'hero.rank': 'Rank', 'hero.rankNone': 'No rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
       'stat.streak': 'Current streak', 'stat.days': 'days',
       'stat.streakHint': 'Best {best}d',
       'badge.top-10-renderers': 'TOP 10% RENDERERS',
       'stat.avgPeak': 'Lifetime avg {avg}/day · peak {peak}',
       'stat.rankWindow': 'Site rank {rank} · 30-day rolling',
+      'stat.rankNone': 'No rank · 30-day rolling',
       'stat.daysEquiv': '≈ {days} machine-days',
       'stat.created': 'Projects created', 'stat.createdHint': 'Tasks you uploaded',
       'stat.ordered': 'Frames ordered', 'stat.orderedHint': 'Frames you ordered for your own projects',
@@ -3820,10 +3822,16 @@ ${Theme.css('#sp')}
   /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
   const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
 
+  /* 站点 Rank 只有两种形态：名次本体（"718th" / "1,123rd"），或一句说明
+     （"Has not rendered anything for at least 31 days"）。上游排名计算出过 bug
+     （2026-11：有积分的账号也拿到这句），旧实现把非数字全抹掉，会把那句里的
+     31 当成第 31 名。所以只认「数字 + 可选序数后缀」，其余一律视为没有排名。 */
+  const RANK_RE = /^(\d{1,3}(?:,\d{3})*|\d+)\s*(?:st|nd|rd|th)?$/i;
   const rankOf = (st) => {
-    const raw = statOf(st, ['Rank']);
-    const digits = String(raw).replace(/[^\d]/g, '');
-    return digits || '';
+    const m = String(statOf(st, ['Rank'])).trim().match(RANK_RE);
+    if (!m) return '';
+    const n = m[1].replace(/,/g, '');
+    return /^0+$/.test(n) ? '' : n;
   };
 
   const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
@@ -4139,6 +4147,9 @@ ${Theme.css('#sp')}
        在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
+    /* 站点不给名次（未上榜，或上游排名计算出 bug 回一句 "Has not rendered anything…"）：
+       如实说没有排名，不留空、也不把句子里的数字当名次。 */
+    else bits.push(`<span>${esc(t('hero.rankNone'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (teamText) bits.push(`<span>${teamHref ? `<a href="${esc(teamHref)}" target="_self"><b>${esc(teamText.toUpperCase())}</b></a>` : `<b>${esc(teamText.toUpperCase())}</b>`} ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(UI.dateLabel(joined, { year: true }))}</b></span>`);
@@ -4202,7 +4213,7 @@ ${Theme.css('#sp')}
       {
         k: t('stat.points'),
         v: points ? Util.statNum(points) : '—',
-        d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
+        d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : t('stat.rankNone'),
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
       /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */

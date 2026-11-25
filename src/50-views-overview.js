@@ -219,6 +219,9 @@
        在线机器那块已经逐台说清"等待任务 / 渲染中 / 暂停"，这里再来一格只会重复且容易误读。 */
     const bits = [];
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
+    /* 站点不给名次（未上榜，或上游排名计算出 bug 回一句 "Has not rendered anything…"）：
+       如实说没有排名，不留空、也不把句子里的数字当名次。 */
+    else bits.push(`<span>${esc(t('hero.rankNone'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (teamText) bits.push(`<span>${teamHref ? `<a href="${esc(teamHref)}" target="_self"><b>${esc(teamText.toUpperCase())}</b></a>` : `<b>${esc(teamText.toUpperCase())}</b>`} ${esc(t('hero.team'))}</span>`);
     if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(UI.dateLabel(joined, { year: true }))}</b></span>`);
@@ -282,7 +285,7 @@
       {
         k: t('stat.points'),
         v: points ? Util.statNum(points) : '—',
-        d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : '',
+        d: rank ? t('stat.rankWindow', { rank: `<span class="num">${esc(rank)}</span>` }) : t('stat.rankNone'),
       },
       { k: t('stat.time'), v: Util.renderTime(rawTime), d: days ? t('stat.daysEquiv', { days: fmt(days) }) : '' },
       /* 连续天数是从产出日历算出来的：站点没给日历就整格不画（否则会给新账号摆一个"连续 0 天"） */

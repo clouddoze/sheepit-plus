@@ -42,10 +42,16 @@
   /* "42" / "20,062" / "1h 20m" → 数字；空/认不出 → 0。只用来判断"有没有真实数字"。 */
   const asCount = (v) => Number(String(v === null || v === undefined ? '' : v).replace(/[^\d.]/g, '')) || 0;
 
+  /* 站点 Rank 只有两种形态：名次本体（"718th" / "1,123rd"），或一句说明
+     （"Has not rendered anything for at least 31 days"）。上游排名计算出过 bug
+     （2026-11：有积分的账号也拿到这句），旧实现把非数字全抹掉，会把那句里的
+     31 当成第 31 名。所以只认「数字 + 可选序数后缀」，其余一律视为没有排名。 */
+  const RANK_RE = /^(\d{1,3}(?:,\d{3})*|\d+)\s*(?:st|nd|rd|th)?$/i;
   const rankOf = (st) => {
-    const raw = statOf(st, ['Rank']);
-    const digits = String(raw).replace(/[^\d]/g, '');
-    return digits || '';
+    const m = String(statOf(st, ['Rank'])).trim().match(RANK_RE);
+    if (!m) return '';
+    const n = m[1].replace(/,/g, '');
+    return /^0+$/.test(n) ? '' : n;
   };
 
   const MONTHS = { january: 1, february: 2, march: 3, april: 4, may: 5, june: 6, july: 7, august: 8, september: 9, october: 10, november: 11, december: 12 };
