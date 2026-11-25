@@ -1,10 +1,11 @@
 {
   "note": "node tools/regress.mjs --update 生成；默认跑只读比对，不写文件。",
-  "when": "2026-11-12T18:39:47.546Z",
+  "when": "2026-11-25T04:51:33.949Z",
   "artifact": {
-    "bytes": 393855,
-    "comments": 88537,
-    "srcBytes": 393231
+    "bytes": 451753,
+    "comments": 108774,
+    "srcBytes": 451215,
+    "literalCalls": 0
   },
   "pages": {
     "overview": {
@@ -54,7 +55,7 @@
       "machines": 468,
       "kpis": 4,
       "charts": 2,
-      "drows": 15,
+      "drows": 11,
       "rows": 100
     },
     "livemach": {

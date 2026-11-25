@@ -110,7 +110,7 @@ const CASES = [
 ];
 
 const EQUAL = [
-  'artifact.bytes', 'artifact.comments', 'artifact.srcBytes',
+  'artifact.bytes', 'artifact.comments', 'artifact.srcBytes', 'artifact.literalCalls',
   'pages.overview.stats', 'pages.overview.points', 'pages.overview.activity',
   'pages.projects.projects', 'pages.projects.rows',
   'pages.ranking.ranking', 'pages.ranking.rows',
@@ -139,7 +139,11 @@ function staticFacts() {
   /* 口径与 build.mjs 一致：30-style.js 的模板串里装的是 CSS，要按 CSS 口径剥注释 */
   const comments = files.reduce((n, f) => n
     + countCommentBytes(readFileSync(join(SRC, f), 'utf8'), { stripTemplate: f === '30-style.js' }).commentBytes, 0);
-  return { bytes: statSync(DIST).size, comments, srcBytes };
+  /* 空态行必须是函数调用；写成 `emptyRow(...)` 字面量会原样渲染给用户（2026-11-23 线上实报）。
+     这里只数反引号紧跟 emptyRow( 的形态，定义处 const emptyRow = (...) 不会命中。 */
+  const literalCalls = files.reduce((n, f) => n
+    + (readFileSync(join(SRC, f), 'utf8').match(/`emptyRow\(/g) || []).length, 0);
+  return { bytes: statSync(DIST).size, comments, srcBytes, literalCalls };
 }
 
 /* 空态设 spvariant、失败态设 spfail，都是 harness 的 cookie 注入；切场景前在页面里清掉。

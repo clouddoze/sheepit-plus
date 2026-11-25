@@ -2,7 +2,7 @@
 // @name         SheepIt Plus · 渲染农场界面重制
 // @name:en      SheepIt Plus · Renderfarm UI Rebuild
 // @namespace    https://github.com/clouddoze
-// @version      0.2.6
+// @version      0.2.9
 // @description  给 SheepIt Render Farm 换一套现代前端：仪表盘、项目、排行榜、团队、实况、会话与设置；明暗主题，数据只来自站点页面。
 // @description:en  A modern front end for SheepIt Render Farm: dashboard, projects, ranking, teams, live farm status, sessions and settings; dark/light, all data read from the site's own pages.
 // @author       clouddoze
@@ -16,10 +16,6 @@
 // @updateURL    https://update.greasyfork.org/scripts/598624/SheepIt%20Plus%20%C2%B7%20%E6%B8%B2%E6%9F%93%E5%86%9C%E5%9C%BA%E7%95%8C%E9%9D%A2%E9%87%8D%E5%88%B6.meta.js
 // @downloadURL  https://update.greasyfork.org/scripts/598624/SheepIt%20Plus%20%C2%B7%20%E6%B8%B2%E6%9F%93%E5%86%9C%E5%9C%BA%E7%95%8C%E9%9D%A2%E9%87%8D%E5%88%B6.user.js
 // ==/UserScript==
-
-/* @namespace 定死后不可再改；@version 只能往上走；回填与发版流程见 docs/PUBLISHING.md「四」。 */
-
-/* sheepit-plus v0.2.6 — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */
 
 /* ===== src/10-core.js ===== */
 /* ==== 10-core.js：工具 / 语言包注册表 / 主题 token ==== */
@@ -201,6 +197,7 @@
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
       'nav.rankingShort': '排行', 'nav.accountShort': '账户',
       'top.refresh': '刷新', 'top.updated': '更新于',
+      'top.account': '账户设置', 'top.logout': '退出登录', 'nav.more': '更多',
       'top.themeCycle': '主题：{cur}（点击切换）',
       'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
@@ -208,7 +205,6 @@
       'stat.streakHint': '历史最长 {best} 天',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
       'stat.avgPeak': '历史日均 {avg} 帧 · 历史峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
@@ -386,6 +382,11 @@
       'live.trend.machines': '机器在线', 'live.trend.machinesSub': '每天连上来的机器数（近 4 个月）',
       'live.dist.projects': '项目分布', 'live.dist.projectsSub': '正在渲染的帧按项目聚合，前 8 名',
       'live.dist.os': '系统', 'live.dist.osSub': '在线机器的操作系统',
+      'live.dist.vendor': '硬件厂商', 'live.dist.vendorSub': '在线机器的型号归属（CPU / GPU）',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': '其它',
+      'live.filter.project': '项目：{name}', 'live.filter.vendor': '厂商：{name}',
+      'live.me': '我的',
       'live.dist.device': '算力设备', 'live.dist.deviceSub': '机器用什么在算',
       'live.unit.frames': '帧', 'live.unit.machines': '台',
       'live.dist.other': '其它（{n} 个）',
@@ -478,19 +479,9 @@
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
 
-      /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
       /* 设置区自绘：三行开关 + 一行危险动作，动作直发站点端点（见 80-app.js 的 mgSet） */
       /* 项目管理页整页自绘：动作行 / 名单 / 概要 / 帧。站点没渲染的那几项不画。 */
       'mg.acl.needName': '先填一个名字', 'mg.acl.needPick': '请从建议列表里选一个团队',
-      /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
-         <td> 里，翻译层整块替换会把文件框一起删掉。 */
-      /* 上传后的分析等待页 */
-
-      /* 新版上传 · 第三步（68-step3.js 自绘那一块用的标签） */
-
-      /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
-      /* 管着这两行的硬约束，长在决策行上 —— 以前只在上一步的须知里出现过（记忆桥） */
-      /* 0.2.0 源码重写 · 第一步（64-step1.js 自绘的上传页） */
       /* 站点结构变了：不许沉默 —— 说清 + 给出切档办法 */
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
@@ -513,6 +504,7 @@
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
       'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
       'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'top.account': 'Account settings', 'top.logout': 'Log out', 'nav.more': 'More',
       'top.themeCycle': 'Theme: {cur} (click to cycle)',
       'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
@@ -683,6 +675,11 @@
       'live.trend.machines': 'Machines online', 'live.trend.machinesSub': 'Machines connected per day (last 4 months)',
       'live.dist.projects': 'By project', 'live.dist.projectsSub': 'Frames in progress, top 8 projects',
       'live.dist.os': 'Systems', 'live.dist.osSub': 'Operating systems of connected machines',
+      'live.dist.vendor': 'Hardware vendors', 'live.dist.vendorSub': 'What the online machines are running (CPU / GPU)',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': 'Other',
+      'live.filter.project': 'Project: {name}', 'live.filter.vendor': 'Vendor: {name}',
+      'live.me': 'yours',
       'live.dist.device': 'Compute', 'live.dist.deviceSub': 'What the machines render with',
       'live.unit.frames': 'frames', 'live.unit.machines': 'machines',
       'live.dist.other': 'Others ({n})',
@@ -773,6 +770,18 @@
       'sess.tl.error': 'Error',
 
       'mg.acl.needName': 'Type a name first', 'mg.acl.needPick': 'Pick a team from the suggestions',
+
+      /* 原生 <dialog> 确认框（替代 window.confirm） */
+      'dlg.title': 'Are you sure?', 'dlg.ok': 'Confirm', 'dlg.cancel': 'Cancel',
+      /* 可排序表头的无障碍名称：方向必须是文字，不能只靠箭头图标 */
+      'sort.none': 'not sorted', 'sort.asc': 'ascending', 'sort.desc': 'descending',
+      'sort.title': 'Sort by {col} ({dir})',
+      /* 实况页：厂商归类、钻取筛选、我的机器 */
+      'live.dist.vendor': 'GPU vendors', 'live.dist.vendorSub': 'What the online machines are running',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': 'Other',
+      'live.filter.project': 'Project: {name}', 'live.filter.vendor': 'Vendor: {name}',
+      'live.me': 'yours',
     },
   };
 
@@ -880,6 +889,11 @@
       '--r': '10px', '--r-sm': '6px',
       // 上传页估算器的「推荐这么切」行（30-style 的 .up1-tbl td.ok）：站点原本用 label-success 标它
       '--positive': '#3fb950',
+      /* 分类色板：只给「构成类」图表（系统 / 算力设备）用。
+         实况页每边只有 3 类，单色 100%/88%/76% 的透明度阶梯在深色底上几乎连成一条 ——
+         这不是"种类少"的问题，是编码维度选错了：用色相区分，而不是用同一色相的浓淡。 */
+      '--cat-1': '#e06d58', '--cat-2': '#d9a441', '--cat-3': '#4f92a8',
+      '--cat-4': '#9479b0', '--cat-5': '#5f9a70', '--cat-other': '#7c8695',
     },
     light: {
       '--bg': '#fbfbfc', '--surface': '#ffffff', '--surface-2': '#f5f6f8', '--surface-3': '#eceef1',
@@ -895,6 +909,9 @@
       '--shadow': '0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)',
       '--r': '10px', '--r-sm': '6px',
       '--positive': '#1a7f37',
+      /* 分类色板的浅色主题版本：同一组色相压深，保证在 #fbfbfc 上也有对比 */
+      '--cat-1': '#b6472f', '--cat-2': '#8a6415', '--cat-3': '#2f6f86',
+      '--cat-4': '#6b5385', '--cat-5': '#3f7350', '--cat-other': '#656d79',
     },
   };
 
@@ -2234,6 +2251,14 @@ ${Theme.css('#sp')}
 #sp .who .uname{font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .who .ini{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-3);flex:none}
+/* 头像菜单：退出登录的常驻入口。窄屏只收名字，入口本身不消失。 */
+#sp .who-wrap{position:relative;display:flex;align-items:center;min-width:0}
+#sp button.who{background:none;border:none;padding:0;font:inherit;cursor:pointer;border-radius:var(--r-sm)}
+#sp button.who:hover .uname,#sp button.who[aria-expanded="true"] .uname{color:var(--accent)}
+#sp .umenu{position:absolute;right:0;top:calc(100% + 8px);min-width:0;width:max-content;max-width:220px;padding:5px;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow);z-index:40}
+#sp .umenu[hidden]{display:none}
+#sp .umenu a,#sp .umenu button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--text-2);text-decoration:none;background:none;border:none;cursor:pointer}
+#sp .umenu a:hover,#sp .umenu button:hover{background:var(--surface-3);color:var(--text)}
 
 /* nav 默认 flex-shrink:1，窄屏被压到 148px、按钮互相盖住 —— 必须显式 flex:none。 */
 @media (max-width:860px){
@@ -2242,12 +2267,9 @@ ${Theme.css('#sp')}
   #sp .metaline{display:none}
 }
 @media (max-width:620px){
-  #sp .top{gap:8px}
-  /* 一行摆不下（品牌 + 6 个导航 + 右侧组）：右侧整组换到第二行，别横向溢出。
-     原版本在 390 宽时就已经溢出约 90px，这里顺手修掉。 */
-  #sp .top{flex-wrap:wrap;row-gap:6px}
-  #sp .top .spacer{display:none}
-  #sp .topright{flex:1 1 100%;justify-content:flex-end}
+  #sp .top{gap:8px;flex-wrap:nowrap}
+  /* 底部导航接管后 nav 已隐藏，品牌 + 右侧控制一行放得下，不再折成两行。 */
+  #sp .topright{flex:none;justify-content:flex-end;min-width:0}
   #sp .brand{font-size:14px}
   #sp .brand .sheep{width:20px;height:20px;border-radius:5px}
   #sp .brand em{display:none}
@@ -2255,8 +2277,32 @@ ${Theme.css('#sp')}
   #sp nav button{padding:6px 7px;font-size:13px}
   #sp nav .navfull{display:none}
   #sp nav .navshort{display:inline}
-  /* 头像整个撤掉而不是只藏名字：硬塞会被挤出视口，在右缘留下一条 1px 断边框。 */
-  #sp .who{display:none}
+  /* 底部导航起来后顶栏右侧有空间：只收名字、保留头像 —— 退出登录入口不能在窄屏消失。 */
+  #sp .who .uname{display:none}
+}
+
+/* ==== 底部导航（≤620px） ====
+   8 个导航项在 390px 会折成两行、把右侧控制挤下去；窄屏改成底部 5 个高频入口，
+   顶栏 nav 隐藏但保留品牌与刷新/主题/切原版。 */
+#sp .tabbar{display:none}
+@media (max-width:620px){
+  #sp .top nav{display:none}
+  #sp .tabbar{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:26;
+    background:var(--bg);border-top:1px solid var(--border);
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  #sp .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:8px;font-size:11px;color:var(--text-3)}
+  #sp .tabbar button[aria-current="page"]{color:var(--accent);background:var(--accent-weak);font-weight:600}
+  #sp .tabbar .icon{width:18px;height:18px}
+  #sp .tabmore-wrap{position:relative;flex:1;display:flex;min-width:0}
+  #sp .tabmore-wrap > button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:8px;font-size:11px;color:var(--text-3)}
+  #sp .tabmore-wrap > button[aria-expanded="true"]{color:var(--accent);background:var(--accent-weak)}
+  #sp .tabmore{position:absolute;bottom:calc(100% + 10px);right:8px;min-width:0;width:max-content;max-width:200px;padding:5px;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow);z-index:45}
+  #sp .tabmore[hidden]{display:none}
+  #sp .tabmore button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--text-2)}
+  #sp .tabmore button:hover{background:var(--surface-3);color:var(--text)}
+  #sp .wrap{padding-bottom:88px}
 }
 
 /* ==== 图标按钮 ==== */
@@ -2279,7 +2325,7 @@ ${Theme.css('#sp')}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
 /* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
-   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+ */
 #sp .btn:disabled{opacity:.5;cursor:not-allowed}
 #sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
@@ -2366,21 +2412,43 @@ ${Theme.css('#sp')}
 #sp .phead .sub{font-size:12px;color:var(--text-3);min-width:0}
 #sp .phead .sub b{color:var(--text-2);font-weight:600}
 #sp .phead .spacer{flex:1}
+/* 面板内容的水平内边距：.phead 自己带 20px，内容必须同一边距，否则会左右各凸出 20px */
+#sp .pbody{padding:0 20px}
 
 /* ==== 图表 ==== */
 #sp .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media (max-width:900px){#sp .grid2{grid-template-columns:1fr}}
 /* 实况的占比：一条 100% 堆叠条 + 图例（比每项一条横条更直观，也不截断名字） */
-#sp .stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface-3);margin:8px 0 14px}
-#sp .stack i{display:block;height:100%;min-width:2px}
-#sp .stack i + i{box-shadow:inset 1px 0 0 rgba(0,0,0,.18)}
+#sp .stack{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface-3);margin:8px 0 14px;gap:2px}
+#sp .stack i{display:block;height:100%;min-width:3px;border-radius:3px;transition:opacity .12s}
+/* 分类色块之间留 2px 缝：相邻色相（橙 / 金）在色弱下可能接近，缝是第二道边界。 */
+#sp .stack.hl i{opacity:.3}
+#sp .stack.hl i.hl{opacity:1}
 /* 用 .llegend 而不是 .legend：后者已经被日历热力图的图例占用（横排、居中），同名会互相覆盖。 */
 #sp .llegend{display:flex;flex-direction:column;gap:7px;width:100%}
-#sp .lrow{display:flex;align-items:center;gap:9px;font-size:12.5px}
-#sp .lrow .sw{width:10px;height:10px;border-radius:3px;flex:none}
+#sp .lrow{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:3px 5px;border-radius:5px;transition:background .12s}
+#sp .lrow:hover{background:var(--surface-2)}
+#sp .lrow .sw{width:12px;height:12px;border-radius:3px;flex:none}
 #sp .lrow .ln{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
 #sp .lrow .lv{flex:none;min-width:54px;text-align:right;color:var(--text)}
 #sp .lrow .lp{flex:none;min-width:40px;text-align:right;color:var(--text-3)}
+/* 项目分布：条形列表。排名的重点是长短，不是色相 —— 8 项各配一色只会变成调色盘。 */
+#sp .lbars{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+#sp .lbar{display:flex;align-items:center;gap:10px;font-size:12.5px;border-radius:5px;margin:0 -4px;padding:2px 4px}
+/* 可钻取的行：项目分布点一行 → 下方明细按这个项目筛 */
+#sp .lbar[data-p]{cursor:pointer;transition:background .12s}
+#sp .lbar[data-p]:hover{background:var(--surface-2)}
+#sp .lrow[data-v]{cursor:pointer}
+#sp .you{font-size:11px;color:var(--accent);margin-left:6px;font-weight:600;white-space:nowrap}
+#sp .lbar .ln{flex:0 1 44%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+#sp .lbar .ltrack{flex:1;min-width:36px;height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+#sp .lbar .ltrack i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+/* 「其它」是聚合项，不是第 9 名：用分隔线和灰条把它和排名分开 */
+#sp .lbar.other{border-top:1px solid var(--border);padding-top:9px;margin-top:2px}
+#sp .lbar.other .ltrack i{background:var(--text-3)}
+#sp .lbar .lv{flex:none;min-width:52px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+#sp .lbar .lp{flex:none;min-width:38px;text-align:right;color:var(--text-3);font-variant-numeric:tabular-nums}
+@media (max-width:620px){#sp .lbar .ln{flex-basis:38%}#sp .lbar .ltrack{min-width:24px}}
 /* 「正在渲染 / 在线机器」这排切换离下面的搜索框远一点 */
 #sp #sp-live-tab{margin:10px 0 18px}
 #sp .tbl tbody tr.dim{opacity:.55}
@@ -2496,6 +2564,17 @@ ${Theme.css('#sp')}
 
 /* ==== 表格 ==== */
 #sp .tablewrap{overflow-x:auto}
+/* 只有真的溢出才允许横向滚动：width:100% 的表格在宽屏下会有 1–2px 亚像素误差，
+   scrollWidth 比 clientWidth 略大，不关掉 overflow-x 就会常驻一条底部滚动条。
+   80-app 的 applyTableOverflow() 用 2px 阈值判断并挂 .has-x。 */
+#sp .tablewrap:not(.has-x),#sp .tablewrap.log:not(.has-x){overflow-x:hidden}
+/* 顶部镜像滚动条：只在表格真的横向溢出时由 80-app 插入。比原生滚动条细一档，
+   不参与表格布局（高度固定 12px）。 */
+/* 顶部镜像条不再自绘：继承全局 ::-webkit-scrollbar（10px / border-strong / 6px 圆角 /
+   3px 底色描边），与表格底部那条原生滚动条完全同一套样式。容器高度就取 10px，
+   等于滚动条自身高度 —— 之前 14px 加槽底，多的空白让条看起来被截断、不居中。 */
+#sp .tscroll{overflow-x:auto;overflow-y:hidden;height:10px;margin:0 6px 2px;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+#sp .tscroll > div{height:1px}
 /* 横向滚动的表格要能被键盘滚：wrapper 拿 tabindex=0，焦点环说明"这一块可以滚" */
 #sp .tablewrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #sp .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -2517,6 +2596,14 @@ ${Theme.css('#sp')}
 #sp .tbl tbody tr{transition:background .1s}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
+/* 宽表横向滚动时固定首列：滚走以后读者不知道这一行是谁。只给 .fit 表做，
+   避免影响那些首列本来就没有标识作用的表。 */
+/* 首列 sticky 必须带 z-index：只给 position/背景时，后面滚过来的单元格（进度条）
+   会在它上面绘制，肉眼看就是"进度条穿过项目名"。 */
+#sp .tbl.fit thead th:first-child,#sp .tbl.fit tbody td:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
+#sp .tbl.fit thead th:first-child{z-index:2}
+#sp .tbl.fit tbody tr:hover td:first-child{background:var(--surface-2)}
+#sp .tbl.fit tbody tr.me td:first-child{background:var(--accent-weak)}
 /* 团队详情：固定列宽，成员列吃掉剩余空间（否则积分被推到中间、两边各一大片空） */
 /* 列宽写在 th 上（col 的 width 在 fixed 布局里不稳），表格给显式宽度：
    否则 width:100% 会把成员列拉到一整屏，积分被推到中间、两边各一大片空。 */
@@ -2917,11 +3004,39 @@ ${Theme.css('#sp')}
 /* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
    → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
    被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
-#sp .tbl.fit{table-layout:fixed}
+/* 中等宽度（761–1200）不把六列压扁：压扁的结果是发布者/状态/设备/帧数全被截断，
+   而容器又没有滚动条可看。给一个可读下限，不够宽就横向滚动。 */
+#sp .tbl.fit{table-layout:fixed;min-width:980px}
 #sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+
 /* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
 #sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:100%}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
+/* 1200 以下：横向滚动解决"列看不全"，但发布者/状态在列内再省略一次，读者还是读不到人。
+   这两个字段改为换行；项目名仍保持单行（首列 sticky 时换行会把行高拉得很高）。 */
+@media (max-width:1200px){
+  /* 用户名常常是一整串没有空格的字符（mztothemoonstudio2）：只给 white-space:normal 不会断词，
+     仍然溢出被裁；和项目名一样补 overflow-wrap:anywhere，长名字才会真的换到第二行。 */
+  #sp .tbl.fit .ow span,#sp .tbl.fit .ow a.nm,#sp .tbl.fit .st{white-space:normal;overflow:visible;text-overflow:clip;max-width:none;overflow-wrap:anywhere}
+  #sp .tbl.fit .ow{flex-wrap:wrap}
+}
+/* 窄屏：六列压进 390px 的代价是省略号、进度条溢出、名字全截断。
+   保持表格可读宽度、靠横向滚动；首列**不再 sticky** —— 390px 里固定 28% 的首列会吃掉
+   半屏，可动区域只剩右边一小块；取消后整表左右滑（与排行榜一致）。名字允许换行。 */
+@media (max-width:760px){
+  #sp .tbl.fit{min-width:760px}
+  #sp .tbl.fit thead th:first-child,#sp .tbl.fit tbody td:first-child{position:static}
+  #sp .tbl.fit .pn,#sp .tbl.fit .ow span,#sp .tbl.fit .ow a.nm,#sp .tbl.fit .st{
+    white-space:normal;overflow:visible;text-overflow:clip;max-width:none;
+  }
+  #sp .tbl.fit .pn{overflow-wrap:anywhere}
+  #sp .tbl.fit .ow{flex-wrap:wrap}
+  /* 进度列：分数文本（最长 "8,439 / 11,000"）会把条子挤出列宽，横向滚动时看起来像穿透。
+     窄屏让条子独占一行、分数落到下一行右对齐。 */
+  #sp .tbl.fit .pwrap{flex-wrap:wrap;gap:4px 8px}
+  #sp .tbl.fit .pwrap .bar{flex:1 1 100%;min-width:0}
+  #sp .tbl.fit .pwrap .frac{flex:0 0 auto;min-width:0}
+}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
@@ -2982,86 +3097,6 @@ ${Theme.css('#sp')}
   #sp.sp-anim .grid{animation-delay:.06s}
   #sp.sp-anim .farm{animation-delay:.1s}
 }
-
-/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
-   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
-   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
-   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
-/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
-   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
-#sp .sp-up3 [hidden]{display:none !important}
-/* 硬件需求：一个块，三行，行间发丝线 */
-#sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
-#sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
-#sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-k{flex:0 0 68px;font-size:12.5px;color:var(--text-3);padding-top:1px}
-#sp .sp-up3 .up3-c{flex:1 1 auto;min-width:0}
-#sp .sp-up3 .up3-tip{font-size:12px;color:var(--text-3);line-height:1.65}
-#sp .sp-up3 .up3-tiprow{flex:1 1 100%;margin-top:2px}
-#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:8px 18px}
-#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
-#sp .sp-up3 .up3-opt input{margin:0}
-#sp .sp-up3 .up3-opt[title]{cursor:help}
-#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
-#sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
-#sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
-#sp .sp-up3 .up3-cmp{font-weight:600}
-#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
-#sp .sp-up3 .up3-ramck{margin:0}
-#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
-#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
-#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
-#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .sp-up3 .up3-ram > input{width:130px}
-/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
-#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
-#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
-#sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
-#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
-#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
-#sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
-#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
-#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
-/* 切块：三种形态都摆成"名字: 值" */
-#sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
-#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
-#sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
-#sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
-#sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
-#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
-  font-size:12.5px;color:var(--accent);line-height:1.7}
-#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
-#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
-/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
-#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
-#sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
-#sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
-#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 button.up3-submit{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-}
-#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
-/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
-#sp .sp-up3 input[type=range]{
-  appearance:none;-webkit-appearance:none;flex:1 1 200px;max-width:320px;height:18px;
-  background:transparent;cursor:pointer;padding:0;border:none;margin:0;
-}
-#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
-#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
-  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
-  background:var(--accent);border:2px solid var(--surface);
-}
-#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
-#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
 
 `;
 
@@ -3157,6 +3192,9 @@ ${Theme.css('#sp')}
     caretDown: '<path d="M12 15.5l-5.5-7h11z"/>',
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
+    /* 底部导航用：文件夹（项目）与条形（排行榜） */
+    folder: '<path d="M2 5.5h6.2l1.7 2H22v11.9a1.1 1.1 0 0 1-1.1 1.1H3.1A1.1 1.1 0 0 1 2 19.4zm2 3.5v10.9h16V9z"/>',
+    bars: '<path d="M4 6h16v2H4zm0 5h11v2H4zm0 5h14v2H4z"/>',
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
     /* 警示（三角 + 感叹号）：给"检测到降噪"这类"这一项为什么没得选"用 */
     warn: '<path d="M12 2.4c.56 0 1.08.3 1.36.78l8.2 14.2A1.57 1.57 0 0 1 20.2 19.8H3.8a1.57 1.57 0 0 1-1.36-2.42l8.2-14.2A1.57 1.57 0 0 1 12 2.4zm0 2.4L5.06 17.4h13.88L12 4.8zm-1 3.1h2v4.9h-2zm0 6.1h2v2h-2z"/>',
@@ -3181,6 +3219,50 @@ ${Theme.css('#sp')}
   const avatar = (src, name, cls) => (src
     ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : `<span class="${cls || ''}">${esc(initial(name))}</span>`);
+
+  /* ---- 确认框：原生 <dialog>，替代 window.confirm ----
+     window.confirm 两个硬伤：样式不可控（深色界面弹一个白框）、说不出"删了会怎样"。
+     原生 dialog 自带焦点陷阱、Esc 关闭、::backdrop、关闭后焦点回到触发元素 —— 这些都不该手写。
+     返回 Promise<boolean>，调用点仍然是一次 await。危险操作默认焦点落在「取消」上。 */
+  let dlgSeq = 0;
+  function confirmBox(opts) {
+    const o = opts || {};
+    const id = ++dlgSeq;
+    const dlg = document.createElement('dialog');
+    dlg.className = 'spdlg' + (o.danger ? ' danger' : '');
+    /* 不写 role / aria-modal：原生 modal 已经提供 dialog 语义（指南的 DON'T）。
+       危险操作靠红色确认键与后果文案表达，不靠改 role。 */
+    dlg.setAttribute('aria-labelledby', 'sp-dlg-t' + id);
+    if (o.body) dlg.setAttribute('aria-describedby', 'sp-dlg-b' + id);
+    /* closedby="any"：原生的「点遮罩关闭」。不支持的浏览器由下面那个 click 兜底。 */
+    dlg.setAttribute('closedby', 'any');
+    /* <form method="dialog">：按钮的 value 直接写进 returnValue；
+       Esc、点遮罩、两个按钮全都汇到同一个 close 事件 —— 不需要给每个出口各挂一个处理器
+       （html 指南的 DO：用原生关闭，不要手写 JS）。 */
+    dlg.innerHTML = `<form method="dialog" class="dlg-in">
+        <h2 class="dlg-t" id="sp-dlg-t${id}">${esc(o.title || t('dlg.title'))}</h2>
+        ${o.body ? `<p class="dlg-b" id="sp-dlg-b${id}">${esc(o.body)}</p>` : ''}
+        <div class="dlg-a">
+          <button type="submit" class="btn" value="cancel" autofocus>${esc(o.cancel || t('dlg.cancel'))}</button>
+          <button type="submit" class="btn ${o.danger ? 'danger' : 'primary'}" value="ok">${esc(o.ok || t('dlg.ok'))}</button>
+        </div>
+      </form>`;
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => {
+        resolve(dlg.returnValue === 'ok');
+        // 先 close 让浏览器把焦点还给触发元素，再摘节点
+        setTimeout(() => dlg.remove(), 0);
+      });
+      /* closedby 的降级（Safari 尚未支持）：只在缺这个 IDL 属性时补一次。
+         点遮罩时 event.target 就是 dialog 本身（内容全在 .dlg-in 里），子元素不会误判。 */
+      if (!('closedBy' in HTMLDialogElement.prototype)) {
+        dlg.addEventListener('click', (ev) => { if (ev.target === dlg && dlg.open) dlg.close(''); });
+      }
+      // 挂进 #sp 才能在 top layer 里继承主题 token；dialog 的 top layer 不受父级 overflow 影响
+      (document.getElementById('sp') || document.body).appendChild(dlg);
+      dlg.showModal();
+    });
+  }
 
   /** 指标带：格数写进 data-n 交给 CSS（30-style.js 的 .kpis[data-n]），别在这里写死列数 */
   const kpis = (items) => `<div class="kpis" data-n="${items.length}">${items.map((it) => `
@@ -3352,7 +3434,12 @@ ${Theme.css('#sp')}
         const mx = Math.max(...series), mn = Math.min(...series);
         const d = series.map((v, i) =>
           `${i ? 'L' : 'M'}${(i * 100 / (series.length - 1)).toFixed(1)},${(20 - ((v - mn) / Math.max(1, mx - mn)) * 18).toFixed(1)}`).join('');
-        spark = `<svg viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" opacity=".75"/></svg>`;
+        /* 站点只给值序列、不给时间戳；悬停只能报「第几个采样点的值」。
+           每个点一段透明热区 + 原生 <title>，不引 JS、不占布局。 */
+        const n = series.length;
+        const hits = series.map((v, i) =>
+          `<rect x="${(i * 100 / n).toFixed(2)}" y="0" width="${(100 / n).toFixed(2)}" height="20" fill="transparent"><title>${esc(fmt(v))}</title></rect>`).join('');
+        spark = `<svg viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" opacity=".75"/>${hits}</svg>`;
       }
       return `<div>
         <div class="k">${esc(s.key ? t(s.key) : s.label || '—')}</div>
@@ -3563,6 +3650,25 @@ ${Theme.css('#sp')}
     if (chartResize) { window.removeEventListener('resize', chartResize); chartResize = null; }
   }
 
+  /* 站点给的日期串有三种形状："Aug 27" / "27-07-2026" / "2026-10-07"。
+     中文环境统一成「7月27日」；跨年才带年份（图表跨度 3–4 个月，同年省略年份更省 x 轴空间）。
+     英文环境保持站点原样 —— 这是站点自己的日期写法，不替它改。 */
+  function dateLabel(raw, opts) {
+    const s = String(raw || '').trim();
+    if (!SP.I18n || SP.I18n.lang !== 'zh') return s;
+    const forceYear = !!(opts && opts.year);
+    let y = '', m = 0, d = 0, mm;
+    if ((mm = s.match(/^(\d{1,2})-(\d{2})-(\d{4})$/))) { d = +mm[1]; m = +mm[2]; y = mm[3]; }
+    else if ((mm = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) { y = mm[1]; m = +mm[2]; d = +mm[3]; }
+    else if ((mm = s.match(/^(\d{1,2})-(\d{2})$/))) { m = +mm[1]; d = +mm[2]; }
+    else if ((mm = s.match(/^(\d{4})-(\d{2})$/))) { y = mm[1]; m = +mm[2]; }
+    else if ((mm = s.match(/^([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/)) && MON3[mm[1].toLowerCase()]) { m = MON3[mm[1].toLowerCase()]; d = +mm[2]; }
+    if (!m) return s;
+    const sameYear = !y || y === String(new Date().getFullYear());
+    const head = (y && (forceYear || !sameYear)) ? y + '年' : '';
+    return head + m + '月' + (d ? d + '日' : '');
+  }
+
   function pointsChart(box, series, opts) {
     if (!box || !series || series.length < 2) return;
     /* 单位跟着调用方走：总览是「积分」，实况是「帧 / 台」——不能写死。 */
@@ -3587,7 +3693,7 @@ ${Theme.css('#sp')}
         `<text x="${L - 9}" y="${(y(tv) + 3.6).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--text-3)" style="font-variant-numeric:tabular-nums">${compact(tv)}</text>`).join('');
       const at = [0, Math.floor((n - 1) / 2), n - 1];
       const xl = at.map((i, k) =>
-        `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${esc(series[i].d)}</text>`).join('');
+        `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${esc(dateLabel(series[i].d))}</text>`).join('');
 
       const old = box.querySelector('svg');
       if (old) old.remove();
@@ -3629,7 +3735,7 @@ ${Theme.css('#sp')}
       cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '.55');
       dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.setAttribute('opacity', '1');
       if (tip) {
-        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b>${unit ? ' ' + esc(unit) : ''}<i>${esc(series[i].d)}</i>`;
+        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b>${unit ? ' ' + esc(unit) : ''}<i>${esc(dateLabel(series[i].d))}</i>`;
         tip.style.left = (vx / geom.W * 100) + '%';
         tip.style.top = (vy - 10) + 'px';
         tip.style.opacity = '1';
@@ -3665,7 +3771,7 @@ ${Theme.css('#sp')}
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, logo, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, logo, avatar, confirmBox, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact, dateLabel };
   SP.Charts = { points: pointsChart, dispose: disposeCharts };
 })();
 
@@ -3687,8 +3793,9 @@ ${Theme.css('#sp')}
   const foot = () => `<div class="foot">${esc(t('footer.source'))}</div>`;
 
     function dailySeries(cum) {
-    const rows = (cum || []).filter((p) => p && p.d && Number.isFinite(p.v)).slice()
-      .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    /* toSorted：不先拷贝再排序，原数组也不可能被就地改掉（这里传进来的 cum 来自 state） */
+    const rows = (cum || []).filter((p) => p && p.d && Number.isFinite(p.v))
+      .toSorted((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
     if (rows.length < 2) return [];
 
     const monotonic = rows.every((p, i) => i === 0 || p.v >= rows[i - 1].v);
@@ -3787,7 +3894,27 @@ ${Theme.css('#sp')}
     ['settings', true],
   ];
 
-  SP.VK = { esc, fmt, foot, moreRow, pageSize, dailySeries, statOf, asCount, rankOf, isoDate, packLabel, whyLabel, NAV_ITEMS };
+  /* ---- 视图公共组件 ----
+     这些片段原来在每个视图里各写一遍（panel 27 处、sechead 10 处、表内空行 7 处）。
+     提取判据：结构完全同构、只差文案与类名；带视图私有事件的不放进来。 */
+
+  /** 面板：标题 + 副标题 + 内容。内容默认走 .pbody（与 .phead 同为 20px 边距）——
+   *  「内容比标题凸出」就是漏了这层。pad:false 表示调用方自己控制内容边距。
+   *  title / sub / right 接**已转义**的 HTML，组件不重复转义。 */
+  const panel = (o) => `<div class="panel${o.cls ? ' ' + o.cls : ''}"${o.id ? ` id="${o.id}"` : ''}${o.style ? ` style="${o.style}"` : ''}>`
+    + (o.title ? `<div class="phead"><h2>${o.title}</h2>${o.sub ? `<span class="sub">${o.sub}</span>` : ''}${o.right ? `<span class="spacer"></span>${o.right}` : ''}</div>` : '')
+    + (o.pad === false ? (o.body || '') : `<div class="pbody">${o.body || ''}</div>`)
+    + '</div>';
+
+  /** 区块标题：左标题 + 可选副标题 + 右侧操作。sub / right 接已转义 HTML。 */
+  const sechead = (o) => `<div class="sechead"><h2>${o.title}</h2>${o.sub ? `<span class="sub">${o.sub}</span>` : ''}<span class="spacer"></span>${o.right || ''}</div>`;
+
+  /** 表内空行：colspan + 文案。表格里的空态统一 36px 12px，别每处各写一个 padding。 */
+  const emptyRow = (colspan, msg, pad) => `<tr><td colspan="${colspan}"><div class="state" style="padding:${pad || '36px 12px'}"><div class="small">${msg}</div></div></td></tr>`;
+
+  /** 横向滚动容器：统一 tabindex=0；可选 aria 名称与内联样式。 */
+  const tableWrap = (html, o) => `<div class="tablewrap${o && o.cls ? ' ' + o.cls : ''}" tabindex="0"${o && o.style ? ` style="${o.style}"` : ''}${o && o.label ? ` role="region" aria-label="${o.label}"` : ''}>${html}</div>`;
+  SP.VK = { esc, fmt, foot, moreRow, pageSize, dailySeries, statOf, asCount, rankOf, isoDate, packLabel, whyLabel, NAV_ITEMS, panel, sechead, emptyRow, tableWrap };
 })();
 
 /* ===== src/50-views-overview.js ===== */
@@ -4014,7 +4141,7 @@ ${Theme.css('#sp')}
     if (rank) bits.push(`<span><b class="num">#${esc(rank)}</b> ${esc(t('hero.rank'))}</span>`);
     if (badge) bits.push(`<span><b>${esc(badge)}</b></span>`);
     if (teamText) bits.push(`<span>${teamHref ? `<a href="${esc(teamHref)}" target="_self"><b>${esc(teamText.toUpperCase())}</b></a>` : `<b>${esc(teamText.toUpperCase())}</b>`} ${esc(t('hero.team'))}</span>`);
-    if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(joined)}</b></span>`);
+    if (joined) bits.push(`<span>${esc(t('hero.joined'))} <b class="num">${esc(UI.dateLabel(joined, { year: true }))}</b></span>`);
 
     return `<div class="identity">
       <div class="idmain">
@@ -4204,8 +4331,11 @@ ${Theme.css('#sp')}
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
+  /* 重复注入（站点导航 / 同页再 eval 产物）时不要重建 projState：第二个实例会用默认排序
+     覆盖 SP.Views，表头看起来像「记忆丢了」（用户实报：内存升序刷新后回退）。与 52 的 rankState 同规。 */
+  if (SP.Views && SP.Views.projState) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow, packLabel, whyLabel , pageSize } = SP.VK;
+  const { esc, fmt, foot, moreRow, packLabel, whyLabel , pageSize, sechead, emptyRow } = SP.VK;
 
   /* ==== 项目 ==== */
 
@@ -4234,16 +4364,29 @@ ${Theme.css('#sp')}
   /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
      存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
      不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
-  (function restoreSort() {
-    const s = Util.store.get(SORT_PREF, null);
+  const SESS_KEY = 'sheepit-plus:' + SORT_PREF;
+
+  /* 站点偶尔会清 localStorage（站点自己的脚本会 clear），排序偏好跟着一起没。
+     写两份：localStorage 正常路径，sessionStorage 兜底（同标签页刷新仍在）。 */
+  function readSortPref() {
+    const fromLocal = Util.store.get(SORT_PREF, null);
+    if (fromLocal && typeof fromLocal === 'object') return fromLocal;
+    try { return JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function restoreSort() {
+    const s = readSortPref();
     if (!s || typeof s !== 'object') return;
     if (P_SORTS[s.sort]) projState.sort = s.sort;
     if (M_SORTS[s.msort]) projState.msort = s.msort;
     if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
-  })();
+  }
+  restoreSort();
 
   function saveSort() {
-    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+    const v = { sort: projState.sort, msort: projState.msort, dir: projState.dir };
+    Util.store.set(SORT_PREF, v);
+    try { sessionStorage.setItem(SESS_KEY, JSON.stringify(v)); } catch (e) { /* 隐私模式等 */ }
   }
 
   /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
@@ -4408,7 +4551,7 @@ ${Theme.css('#sp')}
 
     /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
     const cmp = sortCmp(M_SORTS, projState.msort);
-    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    if (cmp) rows = rows.toSorted((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
     return { all, rows };
   }
 
@@ -4449,9 +4592,14 @@ ${Theme.css('#sp')}
     /* 没有 id 的行（别人的主页、解析失败）不能删：不画 checkbox，也不画行内删除按钮 */
     const idOf = (x) => (x && x.id ? String(x.id) : '');
 
+    /* 排序入口必须是 <button>：只给 th 绑 click 时，键盘用户没有可达的激活点。
+       aria-sort 放在 th 上（语义属于表头），按钮自己带一句可读的排序说明。 */
     const th = (key, label, cls) => {
       const on = projState.msort === key;
-      return `<th class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      const dir = on ? (projState.dir === 'asc' ? t('sort.asc') : t('sort.desc')) : t('sort.none');
+      return `<th scope="col" class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">`
+        + `<button type="button" class="thbtn" aria-label="${esc(t('sort.title', { col: label, dir }))}">${esc(label)}`
+        + `${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</button></th>`;
     };
 
     /* 空态两种，别混成一句「你还没有发布过项目」：
@@ -4515,11 +4663,11 @@ ${Theme.css('#sp')}
             <col class="c-pick"><col><col class="c-status"><col class="c-prog"><col class="c-act">
           </colgroup>
           <thead><tr>
-            <th class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
+            <th scope="col" class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
             ${th('name', t('proj.col.project'))}
-            <th class="c-status">${esc(t('proj.col.status'))}</th>
+            <th scope="col" class="c-status">${esc(t('proj.col.status'))}</th>
             ${th('progress', t('proj.col.progress'), 'c-prog')}
-            <th class="c-act">${esc(t('proj.col.manage'))}</th>
+            <th scope="col" class="c-act">${esc(t('proj.col.manage'))}</th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>
@@ -4528,6 +4676,8 @@ ${Theme.css('#sp')}
   }
 
   function projects(state) {
+    /* 每次渲染都以存储为准：实例被重建、或 localStorage 被站点清掉时，排序不会退回默认。 */
+    restoreSort();
     if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
@@ -4543,11 +4693,14 @@ ${Theme.css('#sp')}
 
     /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
     const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
-    rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    rows = rows.toSorted((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
       const on = projState.sort === key;
-      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      const dir = on ? (projState.dir === 'asc' ? t('sort.asc') : t('sort.desc')) : t('sort.none');
+      return `<th scope="col" class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">`
+        + `<button type="button" class="thbtn" aria-label="${esc(t('sort.title', { col: label, dir }))}">${esc(label)}`
+        + `${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</button></th>`;
     };
 
     const maps = listsOf(state);
@@ -4566,10 +4719,7 @@ ${Theme.css('#sp')}
     const openP = projState.menu ? all.find((p) => p.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
-    return farmRow + `<div class="sechead"><h2>${esc(t('proj.title'))}</h2>
-        <span class="sub">${esc(t('proj.count', { n: all.length }))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span></div>
+    return farmRow + `${sechead({ title: esc(t('proj.title')), sub: esc(t('proj.count', { n: all.length })), right: `<span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span>` })}
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -4579,7 +4729,7 @@ ${Theme.css('#sp')}
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl fit">
+        <div class="tablewrap" tabindex="0"><table class="tbl fit">
           <colgroup>
             <col style="width:28%"><col style="width:19%"><col style="width:13%">
             <col style="width:19%"><col style="width:11%"><col style="width:10%">
@@ -4587,13 +4737,13 @@ ${Theme.css('#sp')}
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
-            <th>${esc(t('proj.col.status'))}</th>
+            <th scope="col">${esc(t('proj.col.status'))}</th>
             ${th('progress', t('proj.col.progress'))}
-            <th>${esc(t('proj.col.device'))}</th>
+            <th scope="col">${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || emptyRow(6, esc(t('proj.empty')), '40px 12px')}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>
@@ -4620,7 +4770,7 @@ ${Theme.css('#sp')}
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow , pageSize } = SP.VK;
+  const { esc, fmt, foot, moreRow , pageSize, sechead, emptyRow } = SP.VK;
 
   /* 重复注入（同一页里再 eval 一次产物）时不要把委托监听挂两遍。 */
   if (SP.Views && SP.Views.rankState) return;
@@ -4663,10 +4813,7 @@ ${Theme.css('#sp')}
       </tr>`;
     }).join('');
 
-    return `<div class="sechead"><h2>${esc(t('rank.title'))}</h2>
-        <span class="sub">${esc(t('rank.sub'))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('rank.count', { n: rows.length }))}</span></div>
+    return `${sechead({ title: esc(t('rank.title')), sub: esc(t('rank.sub')), right: `<span class="sub num">${esc(t('rank.count', { n: rows.length }))}</span>` })}
       ${rankSeg()}
       <div class="toolbar">
         <label class="input">${UI.icon('search')}
@@ -4675,11 +4822,11 @@ ${Theme.css('#sp')}
         <span class="sub num">${esc(t('rank.showing', { n: Math.min(shown.length, rankState.limit), total: shown.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap" tabindex="0"><table class="tbl">
           <thead><tr>
-            <th class="tight">${esc(t('rank.col.rank'))}</th><th>${esc(t('rank.col.user'))}</th>
-            <th class="r">${esc(t('rank.col.frames'))}</th><th class="r">${esc(t('rank.col.time'))}</th>
-            <th class="r">${esc(t('rank.col.points'))}</th>
+            <th scope="col" class="tight">${esc(t('rank.col.rank'))}</th><th scope="col">${esc(t('rank.col.user'))}</th>
+            <th scope="col" class="r">${esc(t('rank.col.frames'))}</th><th scope="col" class="r">${esc(t('rank.col.time'))}</th>
+            <th scope="col" class="r">${esc(t('rank.col.points'))}</th>
           </tr></thead><tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(shown.length, rankState.limit), shown.length, 100)}
@@ -4725,9 +4872,7 @@ ${Theme.css('#sp')}
   function machineRank(state) {
     const m = state.machine;
     /* 还没取到数据时不印「共 0 款机型」—— 那是"没加载"，不是"确实没有" */
-    const head = `<div class="sechead"><h2>${esc(t('rank.machine.title'))}</h2>
-        <span class="sub">${esc(t('rank.machine.sub'))}</span>
-        <span class="spacer"></span>${m ? `<span class="sub num">${esc(t('rank.machine.count', { n: machineTotal(m) }))}</span>` : ''}</div>`;
+    const head = `${sechead({ title: esc(t('rank.machine.title')), sub: esc(t('rank.machine.sub')), right: (m ? `<span class="sub num">${esc(t('rank.machine.count', { n: machineTotal(m) }))}</span>` : '') })}`;
     if (!m) {
       /* 第一次切到机器档（或直接打开 /ranking/machine）时在这里排一次加载。
          失败过就不再自动重排：给错误态和一个重试按钮，别在 render 里空转。 */
@@ -4745,8 +4890,7 @@ ${Theme.css('#sp')}
         <td><div class="pn" title="${esc(r.model)}">${esc(r.model)}</div></td>
         ${gpu ? `<td class="r num">${esc(r.memoryText || '—')}</td>` : ''}
         <td class="r num" title="${esc(r.powerText)}">${esc(r.powerText)}</td>
-      </tr>`).join('') || `<tr><td colspan="${gpu ? 3 : 2}"><div class="state" style="padding:36px 12px">
-          <div class="small">${esc(t('rank.machine.empty'))}</div></div></td></tr>`;
+      </tr>`).join('') || emptyRow(gpu ? 3 : 2, esc(t('rank.machine.empty')));
 
     const sectSeg = `<div class="seg" id="sp-mach">${MACH_SECTS.map((k) =>
     `<button data-m="${k}" aria-pressed="${sect === k}">${esc(MACH_LABELS[k])}
@@ -4760,10 +4904,10 @@ ${Theme.css('#sp')}
         <span class="sub num">${esc(t('rank.showing', { n: Math.min(list.length, rankState.limit), total: list.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-mach">
-          <thead><tr><th>${esc(t('rank.machine.col.model'))}</th>
-            ${gpu ? `<th class="r">${esc(t('rank.machine.col.memory'))}</th>` : ''}
-            <th class="r">${esc(t('rank.machine.col.power'))}</th></tr></thead>
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-mach">
+          <thead><tr><th scope="col">${esc(t('rank.machine.col.model'))}</th>
+            ${gpu ? `<th scope="col" class="r">${esc(t('rank.machine.col.memory'))}</th>` : ''}
+            <th scope="col" class="r">${esc(t('rank.machine.col.power'))}</th></tr></thead>
           <tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(list.length, rankState.limit), list.length, 100)}
@@ -4796,7 +4940,7 @@ ${Theme.css('#sp')}
         <td class="r num">${esc(x.totalText)}</td>
         <td class="r num">${esc(x.membersText)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="6"><div class="state" style="padding:36px 12px"><div class="small">${esc(t('team.none'))}</div></div></td></tr>`;
+    }).join('') : emptyRow(6, esc(t('team.none')));
 
     /* 我的团队单独一行：榜单按积分排，自己那个队可能在第 1600 名，分页里根本看不到 */
     const mine = mineId ? all.find((x) => String(x.id) === mineId) : null;
@@ -4817,22 +4961,19 @@ ${Theme.css('#sp')}
         </div>`
       : '';
 
-    return `<div class="sechead"><h2>${esc(t('team.title'))}</h2>
-        <span class="sub">${esc(t('team.sub'))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('team.count', { n: all.length }))}</span></div>
+    return `${sechead({ title: esc(t('team.title')), sub: esc(t('team.sub')), right: `<span class="sub num">${esc(t('team.count', { n: all.length }))}</span>` })}
       <div class="toolbar">
         <label class="input">${UI.icon('search')}
           <input id="sp-tq" type="search" placeholder="${esc(t('team.search'))}" value="${esc(teamsState.q)}">
         </label>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-teams">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-teams">
           <colgroup><col class="c-rank"><col class="c-name"><col class="c-90"><col class="c-180"><col class="c-total"><col class="c-mem"></colgroup>
           <thead><tr>
-            <th class="tight">${esc(t('team.col.rank'))}</th><th>${esc(t('team.col.name'))}</th>
-            <th class="r">${esc(t('team.col.p90'))}</th><th class="r">${esc(t('team.col.p180'))}</th>
-            <th class="r">${esc(t('team.col.total'))}</th><th class="r">${esc(t('team.col.members'))}</th>
+            <th scope="col" class="tight">${esc(t('team.col.rank'))}</th><th scope="col">${esc(t('team.col.name'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.p90'))}</th><th scope="col" class="r">${esc(t('team.col.p180'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.total'))}</th><th scope="col" class="r">${esc(t('team.col.members'))}</th>
           </tr></thead><tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, teamsState.limit), rows.length, 100)}
@@ -4873,7 +5014,7 @@ ${Theme.css('#sp')}
         ${d.hasLastFrame ? `<td class="r num">${esc(m.lastFrame || '—')}</td>` : ''}
         ${d.hasRemove ? `<td class="r">${m.removeUrl ? `<button class="btn sm" data-act="team-act" data-url="${esc(m.removeUrl)}" data-confirm="${esc(t('team.removeConfirm'))}">${esc(t('team.remove'))}</button>` : ''}</td>` : ''}
       </tr>`;
-    }).join('') || `<tr><td colspan="4"><div class="state" style="padding:30px 12px"><div class="small">${esc(t('team.noMembers'))}</div></div></td></tr>`;
+    }).join('') || emptyRow(4, esc(t('team.noMembers')), '30px 12px');
 
     return `<div class="sechead"><h2>${esc(d.name)}</h2>
         <span class="sub num">${esc(d.pointsText)}</span>
@@ -4883,10 +5024,10 @@ ${Theme.css('#sp')}
         ${act}
         <a class="btn" href="/team" target="_self">${esc(t('team.back'))}</a></div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-team${d.hasRemove ? ' tbl-team-6' : (d.hasLastFrame ? ' tbl-team-5' : '')}">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-team${d.hasRemove ? ' tbl-team-6' : (d.hasLastFrame ? ' tbl-team-5' : '')}">
           <colgroup><col class="c-rank"><col class="c-member"><col class="c-pts"><col class="c-date">${d.hasLastFrame ? '<col class="c-last">' : ''}${d.hasRemove ? '<col class="c-rm">' : ''}</colgroup>
-          <thead><tr><th class="tight">${esc(t('team.col.rank'))}</th><th>${esc(t('team.col.member'))}</th>
-            <th class="r">${esc(t('team.col.points'))}</th><th class="r">${esc(t('team.col.joined'))}</th>${d.hasLastFrame ? `<th class="r">${esc(t('team.col.lastFrame'))}</th>` : ''}${d.hasRemove ? `<th class="r">${esc(t('team.col.remove'))}</th>` : ''}</tr></thead>
+          <thead><tr><th scope="col" class="tight">${esc(t('team.col.rank'))}</th><th scope="col">${esc(t('team.col.member'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.points'))}</th><th scope="col" class="r">${esc(t('team.col.joined'))}</th>${d.hasLastFrame ? `<th scope="col" class="r">${esc(t('team.col.lastFrame'))}</th>` : ''}${d.hasRemove ? `<th scope="col" class="r">${esc(t('team.col.remove'))}</th>` : ''}</tr></thead>
           <tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(members.length, teamState.limit), members.length, 100)}
@@ -5069,7 +5210,7 @@ function typeLabel(raw) {
 
   /** 事件流 → 活动汇总：跨度 >31 天按月、否则按天，最近的在前。 */
   function activity(list) {
-    const ev = (list || []).filter((e) => Number.isFinite(e.start)).slice().sort((a, b) => b.start - a.start);
+    const ev = (list || []).filter((e) => Number.isFinite(e.start)).toSorted((a, b) => b.start - a.start);
     if (!ev.length) return { rows: [], byMonth: false, anyRender: false, anyFail: false, crossYear: false };
     const byMonth = Util.ddiff(lkey(ev[ev.length - 1].start), lkey(ev[0].start)) + 1 > 31;
     const crossYear = new Date(ev[0].start).getFullYear() !== new Date(ev[ev.length - 1].start).getFullYear();
@@ -5268,7 +5409,7 @@ function typeLabel(raw) {
         ${acts.anyFail ? `<span class="h s" role="columnheader">${esc(t('sess.act.failed'))}</span>` : ''}
       </div>
       ${buckets.map((b) => `<div class="actrow" role="row">
-        <span class="ad num" role="cell">${esc(b.key)}</span>
+        <span class="ad num" role="cell">${esc(UI.dateLabel(b.key))}</span>
         <span class="av num" role="cell">${b.render ? esc(spanText(b.render)) : '—'}</span>
         <span class="an num" role="cell">${fmt(b.events)}</span>
         <span class="aj num" role="cell">${fmt(b.jobs)}</span>
@@ -5282,9 +5423,9 @@ function typeLabel(raw) {
         ${types.map((x) => `<button data-t="${esc(x)}" aria-pressed="${sessState.type === x}">${esc(typeLabel(x))} <span class="num">${counts.get(x)}</span></button>`).join('')}
       </div></div>
       <div class="tlwrap"><div class="tablewrap log" tabindex="0" role="region" aria-label="${esc(t('sess.timeline'))}"><table class="tbl dense log">
-        <thead><tr><th>${esc(t('sess.col.type'))}</th><th>${esc(t('sess.col.start'))}</th>
-          <th class="r">${esc(t('sess.col.span'))}</th>
-          <th>${esc(t('sess.col.job'))}</th></tr></thead>
+        <thead><tr><th scope="col">${esc(t('sess.col.type'))}</th><th scope="col">${esc(t('sess.col.start'))}</th>
+          <th scope="col" class="r">${esc(t('sess.col.span'))}</th>
+          <th scope="col">${esc(t('sess.col.job'))}</th></tr></thead>
         <tbody>${logRows(rows.slice(0, sessState.limit))}
         </tbody>
       </table></div>
@@ -5337,18 +5478,18 @@ function typeLabel(raw) {
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+      ${prjRows.length ? `<div class="tablewrap" tabindex="0" style="margin:0 6px 6px"><table class="tbl dense fit">
         <colgroup>
           <col style="width:29%"><col style="width:19%"><col style="width:17%">
           <col style="width:19%"><col style="width:9%"><col style="width:7%">
         </colgroup>
         <thead><tr>
-          <th>${esc(t('proj.col.project'))}</th>
-          <th>${esc(t('proj.col.owner'))}</th>
-          <th>${esc(t('proj.col.status'))}</th>
-          <th>${esc(t('proj.col.progress'))}</th>
-          <th>${esc(t('proj.col.device'))}</th>
-          <th class="r">${esc(t('proj.col.memory'))}</th>
+          <th scope="col">${esc(t('proj.col.project'))}</th>
+          <th scope="col">${esc(t('proj.col.owner'))}</th>
+          <th scope="col">${esc(t('proj.col.status'))}</th>
+          <th scope="col">${esc(t('proj.col.progress'))}</th>
+          <th scope="col">${esc(t('proj.col.device'))}</th>
+          <th scope="col" class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
         <tbody>${prjRows.map(({ n, label, p }) => {
           const who = p && (p.ownerId || p.owner) ? SP.Views.ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';
@@ -5383,7 +5524,7 @@ function typeLabel(raw) {
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow } = SP.VK;
+  const { esc, fmt, foot, moreRow, sechead } = SP.VK;
 
   /* 账户页当前标签（原放在 51 里，跟着视图走） */
   const acctState = { tab: 'sched' };
@@ -5396,7 +5537,7 @@ function typeLabel(raw) {
     const langOpts = [['auto', t('set.lang.auto')]]
       .concat(I18n.available().map((l) => [l.code, l.label]));
 
-    return `<div class="sechead"><h2>${esc(t('set.title'))}</h2></div>
+    return `${sechead({ title: esc(t('set.title')) })}
       <div class="panel settings">
         <div class="row"><div class="lbl">${esc(t('set.theme'))}</div>
           ${seg('sp-theme', state.themePref, [['auto', t('set.theme.auto')], ['dark', t('set.theme.dark')], ['light', t('set.theme.light')]])}</div>
@@ -5662,7 +5803,8 @@ function typeLabel(raw) {
     const name = btn && btn.dataset.listDel;
     const s = prioState();
     if (!url || !list || !s || !s.account) return;   // 读不到站点给的地址：不发空 POST
-    if (btn.dataset.confirm && !window.confirm(btn.dataset.confirm)) return;
+    /* 原生对话框：样式跟随主题，Esc 取消，焦点默认在「取消」 */
+    if (btn.dataset.confirm && !(await SP.UI.confirmBox({ body: btn.dataset.confirm, danger: true }))) return;
     btn.disabled = true;
     try {
       const r = await SP.Api.post(url);
@@ -5830,7 +5972,7 @@ function typeLabel(raw) {
     };
     const tab = acctPanels[acctState.tab] ? acctState.tab : 'sched';
 
-    return `<div class="sechead"><h2>${esc(t('account.title'))}</h2></div>
+    return `${sechead({ title: esc(t('account.title')) })}
       <div class="seg" id="sp-acct-tabs" role="tablist">${acctTabs.map(([k, label]) =>
         `<button data-tab="${k}" role="tab" aria-selected="${tab === k}" aria-pressed="${tab === k}">${esc(label)}</button>`).join('')}</div>
       <div class="acct">${acctPanels[tab]}</div>
@@ -5883,84 +6025,116 @@ function typeLabel(raw) {
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
   const { Util, UI, t } = { Util: SP.Util, UI: SP.UI, t: SP.t };
-  const { esc, fmt, foot, moreRow, pageSize } = SP.VK;
+  const { esc, fmt, foot, moreRow, pageSize, panel, sechead, emptyRow, tableWrap } = SP.VK;
 
-  const liveState = { tab: 'frames', q: '', limit: pageSize(), mq: '' };
+  const liveState = { tab: 'frames', q: '', limit: pageSize(), mq: '', vendor: '', pq: '' };
 
-  /* 占比用**一条堆叠条 + 图例**：横向条每项单独一条时，"占总多少"要靠心算，
-     截图里名字还被 190px 截断。堆叠条一行就看完整分布，图例写全名字和百分比。 */
-  const SHADES = [1, 0.88, 0.76, 0.64, 0.53, 0.43, 0.34, 0.26];
-  const shade = (i) => (i < SHADES.length
-    ? `color-mix(in srgb, var(--accent) ${Math.round(SHADES[i] * 100)}%, var(--surface-3))`
-    : 'var(--text-3)');
+  /* 厂商归类：站点不给厂商字段，只能从机器型号推断。推断不出就归 other，不硬猜成 NVIDIA。 */
+  const VENDOR_RES = [
+    /* NVIDIA：除了 GeForce/Quadro/Tesla 这些常见前缀，还要认矿卡与计算卡 ——
+       P104-100 / P102-100 / P106-100（Pascal 矿卡）、CMP 系列（30HX/50HX/90HX）、
+       A40/L4/L40/V100/T4（数据中心卡），以及 GP104/GA102 这类芯片代号。 */
+    ['nvidia', /(geforce|rtx|gtx|quadro|tesla|titan|nvidia|a100|h100|a40|l4|l40|v100|t4|p10[0-9]|cmp\s*\d|gp10[0-9]|ga10[0-9])/i],
+    ['amd', /(radeon|rx |vega|instinct|firepro|amd)/i],
+    ['apple', /(apple|m1|m2|m3|m4)/i],
+    ['intel', /(intel|arc|iris|uhd)/i],
+  ];
+  function vendorOf(model) {
+    const s = String(model || '');
+    for (const pair of VENDOR_RES) if (pair[1].test(s)) return pair[0];
+    return 'other';
+  }
+  /* 构成类图表用分类色板（见 10-core 的 --cat-*）：
+     实况页每边只有 3 类，同一橙色 100% / 88% / 76% 的透明度阶梯在深色底上几乎连成一条。
+     分类色板只在这里用 —— 状态、按钮、强调仍然是 --accent。 */
+  const cat = (i) => `var(--cat-${i < 5 ? i + 1 : 5})`;
 
   function stackBar(entries, total) {
     const sum = total || entries.reduce((n, x) => n + x.v, 0) || 1;
-    return `<div class="stack">${entries.map((x, i) => `<i style="width:${(x.v / sum * 100).toFixed(2)}%;background:${x.other ? 'var(--text-3)' : shade(i)}" title="${esc(x.d)}: ${fmt(x.v)}"></i>`).join('')}</div>`;
+    return `<div class="stack">${entries.map((x, i) => `<i data-i="${i}" style="width:${(x.v / sum * 100).toFixed(2)}%;background:${x.other ? 'var(--cat-other)' : cat(i)}" title="${esc(x.d)}: ${fmt(x.v)} (${Math.round(x.v / sum * 100)}%)"></i>`).join('')}</div>`;
   }
 
-  function legend(entries, total) {
+  function legend(entries, total, labelOf) {
     const sum = total || entries.reduce((n, x) => n + x.v, 0) || 1;
-    return `<div class="llegend">${entries.map((x, i) => `<div class="lrow">
-        <span class="sw" style="background:${x.other ? 'var(--text-3)' : shade(i)}"></span>
-        <span class="ln" title="${esc(x.d)}">${esc(x.d)}</span>
+    const nameOf = (x) => (labelOf ? labelOf(x) : x.d);
+    return `<div class="llegend">${entries.map((x, i) => `<div class="lrow" data-i="${i}"${labelOf ? ` data-v="${esc(x.d)}"` : ''}>
+        <span class="sw" style="background:${x.other ? 'var(--cat-other)' : cat(i)}"></span>
+        <span class="ln" title="${esc(nameOf(x))}">${esc(nameOf(x))}</span>
         <span class="lv num">${fmt(x.v)}</span>
         <span class="lp num">${Math.round(x.v / sum * 100)}%</span>
       </div>`).join('')}</div>`;
   }
 
+  /* 项目分布是**排名**，不是几个类别：用条形列表，读者比的是长短。
+     给 8 项各配一种颜色只会变成调色盘，颜色超过 5 个也不再可靠。 */
+  function barRow(name, v, ratio, other, filter) {
+    return `<div class="lbar${other ? ' other' : ''}"${filter ? ` data-p="${esc(filter)}"` : ''}>
+      <span class="ln" title="${esc(name)}">${esc(name)}</span>
+      <span class="ltrack"><i style="width:${Math.max(1, ratio * 100).toFixed(2)}%"></i></span>
+      <span class="lv num">${fmt(v)}</span>
+      <span class="lp num">${Math.round(ratio * 100)}%</span>
+    </div>`;
+  }
+
   function distPanel(title, sub, list, top) {
     const items = (list || []).filter((x) => x.v > 0);
     if (!items.length) return '';
+    const sum = items.reduce((n, x) => n + x.v, 0) || 1;
     const shown = items.slice(0, top);
     const rest = items.slice(top);
     const restV = rest.reduce((n, x) => n + x.v, 0);
-    const entries = shown.map((x) => ({ d: x.d, v: x.v }));
-    if (restV) entries.push({ d: t('live.dist.other', { n: rest.length }), v: restV, other: true });
-    return `<div class="panel" style="padding:14px 20px 16px">
-      <div class="phead"><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span></div>
-      ${stackBar(entries)}
-      ${legend(entries)}
-    </div>`;
+    const rows = shown.map((x) => barRow(x.d, x.v, x.v / sum, false, x.d));
+    if (restV) rows.push(barRow(t('live.dist.other', { n: rest.length }), restV, restV / sum, true));
+    return panel({ title: esc(title), sub: esc(sub), style: 'padding:14px 0 16px', body: `<div class="lbars">${rows.join('')}</div>` });
   }
 
   function pairPanel(title, sub, list) {
     const items = (list || []).filter((x) => x.v > 0);
     if (!items.length) return '';
     const entries = items.map((x) => ({ d: x.d, v: x.v }));
-    return `<div class="panel" style="padding:14px 20px 16px">
-      <div class="phead"><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span></div>
-      ${stackBar(entries)}
-      ${legend(entries)}
-    </div>`;
+    return panel({ title: esc(title), sub: esc(sub), style: 'padding:14px 0 16px', body: `${stackBar(entries)}${legend(entries)}` });
+  }
+
+  /* 厂商分布：站点没有厂商字段，从型号推断；点图例可筛下方机器表。 */
+  function vendorPanel(m) {
+    const list = [...(m.active || []), ...(m.paused || [])];
+    if (!list.length) return '';
+    const counts = new Map();
+    for (const r of list) {
+      const k = vendorOf(r.model);
+      counts.set(k, (counts.get(k) || 0) + 1);
+    }
+    const entries = [...counts.entries()].sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ d: k, v, other: k === 'other' }));
+    return panel({ title: esc(t('live.dist.vendor')), sub: esc(t('live.dist.vendorSub')), style: 'padding:14px 0 16px', body: `${stackBar(entries)}${legend(entries, 0, (x) => t('live.vendor.' + x.d))}` });
   }
 
   function framesTab(state) {
     const d = state.live || {};
     const all = (d.frames || []).filter((r) => {
+      if (liveState.pq && r.project !== liveState.pq) return false;
       const q = liveState.q.trim().toLowerCase();
       return !q || String(r.project).toLowerCase().includes(q) || String(r.user).toLowerCase().includes(q) || String(r.machine).toLowerCase().includes(q);
     });
     const body = all.length ? all.slice(0, liveState.limit).map((r) => `<tr>
         <td><div class="pn" title="${esc(r.project)}">${esc(r.project)}</div></td>
         <td class="r num">${esc(r.frame)}</td>
-        <td>${r.userId ? `<a class="nm" href="/user/${encodeURIComponent(r.userId)}/profile" target="_self">${esc(r.user)}</a>` : esc(r.user)}</td>
+        <td>${r.userId ? `<a class="nm" href="/user/${encodeURIComponent(r.userId)}/profile" target="_self">${esc(r.user)}</a>` : esc(r.user)}${state && state.userName && r.user === state.userName ? `<span class="you">${esc(t('live.me'))}</span>` : ''}</td>
         <td class="r num">${esc(r.waited || '—')}</td>
         <td class="r num">${esc(r.eta || '—')}</td>
         <td>${esc(r.remaining || '—')}</td>
         <td class="num">${esc(r.machine || '—')}</td>
-      </tr>`).join('') : `<tr><td colspan="7"><div class="state" style="padding:36px 12px"><div class="small">${esc(t('live.none'))}</div></div></td></tr>`;
+      </tr>`).join('') : emptyRow(7, esc(t('live.none')));
     return `<div class="toolbar">
         <label class="input">${UI.icon('search')}<input id="sp-lq" type="search" placeholder="${esc(t('live.searchFrames'))}" value="${esc(liveState.q)}"></label>
         <span class="sub num">${esc(t('live.showing', { n: Math.min(all.length, liveState.limit), total: all.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
-          <thead><tr><th>${esc(t('live.col.project'))}</th><th class="r">${esc(t('live.col.frame'))}</th>
-            <th>${esc(t('live.col.user'))}</th><th class="r">${esc(t('live.col.waited'))}</th>
-            <th class="r">${esc(t('live.col.eta'))}</th><th class="r">${esc(t('live.col.remaining'))}</th>
-            <th>${esc(t('live.col.machine'))}</th></tr></thead>
-          <tbody>${body}</tbody></table></div>
+        ${tableWrap(`<table class="tbl">
+          <thead><tr><th scope="col">${esc(t('live.col.project'))}</th><th scope="col" class="r">${esc(t('live.col.frame'))}</th>
+            <th scope="col">${esc(t('live.col.user'))}</th><th scope="col" class="r">${esc(t('live.col.waited'))}</th>
+            <th scope="col" class="r">${esc(t('live.col.eta'))}</th><th scope="col" class="r">${esc(t('live.col.remaining'))}</th>
+            <th scope="col">${esc(t('live.col.machine'))}</th></tr></thead>
+          <tbody>${body}</tbody></table>`)}
         ${moreRow(Math.min(all.length, liveState.limit), all.length, 100)}
       </div>`;
   }
@@ -5969,27 +6143,28 @@ function typeLabel(raw) {
     const d = state.live || {};
     const m = d.machines || {};
     const all = [...(m.active || []), ...(m.paused || [])].filter((r) => {
+      if (liveState.vendor && vendorOf(r.model) !== liveState.vendor) return false;
       const q = liveState.mq.trim().toLowerCase();
       return !q || String(r.model).toLowerCase().includes(q) || String(r.user).toLowerCase().includes(q);
     });
-    const body = all.length ? all.slice(0, liveState.limit).map((r) => `<tr class="${r.active ? '' : 'dim'}">
+    const body = all.length ? all.slice(0, liveState.limit).map((r) => `<tr class="${r.active ? '' : 'dim'}${state && state.userName && r.user === state.userName ? ' me' : ''}">
         <td><div class="pn" title="${esc(r.model)}">${esc(r.model)}</div></td>
         <td class="r num">${esc(r.memory || '—')}</td>
         <td class="r num">${esc(r.frames || '—')}</td>
         <td class="r num">${esc(r.heartbeat || '—')}</td>
         <td class="r num">${esc(r.elapsed || '—')}</td>
-        <td>${r.userId ? `<a class="nm" href="/user/${encodeURIComponent(r.userId)}/profile" target="_self">${esc(r.user)}</a>` : esc(r.user)}</td>
-      </tr>`).join('') : `<tr><td colspan="6"><div class="state" style="padding:36px 12px"><div class="small">${esc(t('live.none'))}</div></div></td></tr>`;
+        <td>${r.userId ? `<a class="nm" href="/user/${encodeURIComponent(r.userId)}/profile" target="_self">${esc(r.user)}</a>` : esc(r.user)}${state && state.userName && r.user === state.userName ? `<span class="you">${esc(t('live.me'))}</span>` : ''}</td>
+      </tr>`).join('') : emptyRow(6, esc(t('live.none')));
     return `<div class="toolbar">
         <label class="input">${UI.icon('search')}<input id="sp-lmq" type="search" placeholder="${esc(t('live.searchMachines'))}" value="${esc(liveState.mq)}"></label>
         <span class="sub num">${esc(t('live.showing', { n: Math.min(all.length, liveState.limit), total: all.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
-          <thead><tr><th>${esc(t('live.col.model'))}</th><th class="r">${esc(t('live.col.memory'))}</th>
-            <th class="r">${esc(t('live.col.frames'))}</th><th class="r">${esc(t('live.col.heartbeat'))}</th>
-            <th class="r">${esc(t('live.col.elapsed'))}</th><th>${esc(t('live.col.user'))}</th></tr></thead>
-          <tbody>${body}</tbody></table></div>
+        ${tableWrap(`<table class="tbl">
+          <thead><tr><th scope="col">${esc(t('live.col.model'))}</th><th scope="col" class="r">${esc(t('live.col.memory'))}</th>
+            <th scope="col" class="r">${esc(t('live.col.frames'))}</th><th scope="col" class="r">${esc(t('live.col.heartbeat'))}</th>
+            <th scope="col" class="r">${esc(t('live.col.elapsed'))}</th><th scope="col">${esc(t('live.col.user'))}</th></tr></thead>
+          <tbody>${body}</tbody></table>`)}
         ${moreRow(Math.min(all.length, liveState.limit), all.length, 100)}
       </div>`;
   }
@@ -6010,10 +6185,10 @@ function typeLabel(raw) {
       { k: t('live.kpi.perDay'), v: lastOf(ch.framesByDay) != null ? fmt(lastOf(ch.framesByDay)) : '—' },
     ]);
 
-    const chartPanel = (id, title, sub) => `<div class="panel" style="padding:14px 20px 6px">
-        <div class="phead"><h2>${esc(title)}</h2><span class="sub">${esc(sub)}</span></div>
-        <div class="chart" id="${id}"><div class="tip"></div></div>
-      </div>`;
+    const chartPanel = (id, title, sub) => panel({
+      title: esc(title), sub: esc(sub), style: 'padding:14px 20px 6px', pad: false,
+      body: `<div class="chart" id="${id}"><div class="tip"></div></div>`,
+    });
 
     const trend = `<div class="grid2">
       ${chartPanel('sp-live-frames', t('live.trend.frames'), t('live.trend.framesSub'))}
@@ -6021,13 +6196,18 @@ function typeLabel(raw) {
     </div>`;
 
     const comp = `<div class="grid2">
-      ${distPanel(t('live.dist.projects'), t('live.dist.projectsSub'), ch.projectDist, 8)}
+      <div class="grid2" style="grid-template-columns:1fr;gap:16px;margin:0">
+        ${distPanel(t('live.dist.projects'), t('live.dist.projectsSub'), ch.projectDist, 8)}
+        ${vendorPanel(m)}
+      </div>
       <div class="grid2" style="grid-template-columns:1fr;gap:16px;margin:0">
         ${pairPanel(t('live.dist.os'), t('live.dist.osSub'), ch.os)}
         ${pairPanel(t('live.dist.device'), t('live.dist.deviceSub'), ch.device)}
       </div>
     </div>`;
 
+    const filt = (liveState.pq ? `<button class="btn sm" data-live-clear="pq">${esc(t('live.filter.project', { name: liveState.pq }))} ×</button>` : '')
+      + (liveState.vendor ? `<button class="btn sm" data-live-clear="vendor">${esc(t('live.filter.vendor', { name: t('live.vendor.' + liveState.vendor) }))} ×</button>` : '');
     const tabBar = `<div class="seg" id="sp-live-tab">
       <button data-l="frames" aria-pressed="${liveState.tab === 'frames'}">${esc(t('live.tab.frames'))}
         <span class="num">${(d.frames || []).length}</span></button>
@@ -6037,7 +6217,7 @@ function typeLabel(raw) {
 
     const detail = `<div class="sechead"><h2>${esc(t('live.detail'))}</h2>
         <span class="sub">${esc(t('live.detailSub'))}</span></div>
-      ${tabBar}
+      ${filt}${tabBar}
       ${liveState.tab === 'machines' ? machinesTab(state) : framesTab(state)}
       ${foot()}`;
 
@@ -6049,13 +6229,17 @@ function typeLabel(raw) {
       if (b2 && ch.machinesByDay && ch.machinesByDay.length > 1) SP.Charts.points(b2, ch.machinesByDay, { unit: t('live.unit.machines') });
     });
 
-    return `<div class="sechead"><h2>${esc(t('live.title'))}</h2>
-        <span class="sub">${esc(t('live.sub'))}</span></div>
-      ${kpi}${trend}${comp}${detail}`;
+    return sechead({ title: esc(t('live.title')), sub: esc(t('live.sub')) }) + `${kpi}${trend}${comp}${detail}`;
   }
 
   /* 自己的委托：tab 切换 + 两个搜索框（和排行榜同一套写法，不塞进 80-app 的事件表）。 */
   document.addEventListener('click', (ev) => {
+    const clear = ev.target.closest('[data-live-clear]');
+    if (clear) { liveState[clear.dataset.liveClear] = ''; liveState.limit = pageSize(); if (SP.app) SP.app.render(); return; }
+    const prow = ev.target.closest('.lbar[data-p]');
+    if (prow) { liveState.pq = prow.dataset.p; liveState.tab = 'frames'; liveState.limit = pageSize(); if (SP.app) SP.app.render(); return; }
+    const vrow = ev.target.closest('.lrow[data-v]');
+    if (vrow) { liveState.vendor = liveState.vendor === vrow.dataset.v ? '' : vrow.dataset.v; liveState.tab = 'machines'; liveState.limit = pageSize(); if (SP.app) SP.app.render(); return; }
     const b = ev.target.closest('#sp-live-tab [data-l]');
     if (!b) return;
     const k = b.dataset.l;
@@ -6077,6 +6261,27 @@ function typeLabel(raw) {
       const again = document.getElementById(id);
       if (again) { again.focus(); try { again.setSelectionRange(pos, pos); } catch (e) { /* noop */ } }
     }, 180);
+  });
+
+  /* 图例与堆叠条联动：鼠标停在一类上，其余段压暗。
+     3 类时颜色已能分，但相邻色相（橙 / 金）在色弱下仍可能接近 —— 联动是第二道保险。 */
+  document.addEventListener('pointerover', (ev) => {
+    const row = ev.target && ev.target.closest ? ev.target.closest('.lrow[data-i]') : null;
+    if (!row) return;
+    const panel = row.closest('.panel');
+    const stack = panel && panel.querySelector('.stack');
+    if (!stack) return;
+    stack.classList.add('hl');
+    stack.querySelectorAll('i[data-i]').forEach((el) => el.classList.toggle('hl', el.dataset.i === row.dataset.i));
+  });
+  document.addEventListener('pointerout', (ev) => {
+    const row = ev.target && ev.target.closest ? ev.target.closest('.lrow[data-i]') : null;
+    if (!row || (ev.relatedTarget && row.contains(ev.relatedTarget))) return;
+    const panel = row.closest('.panel');
+    const stack = panel && panel.querySelector('.stack');
+    if (!stack) return;
+    stack.classList.remove('hl');
+    stack.querySelectorAll('i.hl').forEach((el) => el.classList.remove('hl'));
   });
 
   SP.Views = SP.Views || {};
@@ -6468,6 +6673,25 @@ function typeLabel(raw) {
     const item = ([k, label, short]) =>
       `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
+    /* 窄屏底部导航：只放 5 个高频入口；设置页隐藏的项在底部也一起隐藏。 */
+    const TAB_ITEMS = [['overview', 'sheep'], ['projects', 'folder'], ['ranking', 'bars'], ['live', 'cpu'], ['account', 'user']];
+    const tabs = TAB_ITEMS
+      .filter(([k]) => NAV_ITEMS.some(([n, locked]) => n === k && (locked || !state.navHidden.includes(k))))
+      .map(([k, ic]) => `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>${UI.icon(ic)}<span>${Util.esc(t('nav.' + k))}</span></button>`)
+      .join('');
+    /* 底部没放的项（上传 / 团队 / 设置）收进「更多」：否则设置在手机上没有入口。 */
+    const tabKeys = TAB_ITEMS.map(([k]) => k);
+    const moreItems = NAV_ITEMS
+      .filter(([k, locked]) => tabKeys.indexOf(k) < 0 && (locked || !state.navHidden.includes(k)))
+      .map(([k]) => [k, t('nav.' + k)]);
+    const tabMore = moreItems.length
+      ? `<div class="tabmore-wrap">
+          <button type="button" data-act="tab-more" aria-haspopup="menu" aria-expanded="false">${UI.icon('more')}<span>${Util.esc(t('nav.more'))}</span></button>
+          <div class="tabmore" id="sp-tabmore" role="menu" hidden>
+            ${moreItems.map(([k, label]) => `<button type="button" role="menuitem" data-nav="${k}">${Util.esc(label)}</button>`).join('')}
+          </div>
+        </div>`
+      : '';
     /* 右侧顺序（用户 2026-10-18 定）：刷新时间 → 主题快速切换 → 刷新 → 原版界面 → 头像 */
     const classic = Util.esc(t('mode.toClassic'));
     return `<div class="wrap">
@@ -6480,11 +6704,18 @@ function typeLabel(raw) {
           <button class="iconbtn" id="sp-theme-quick" data-act="theme-cycle" title="${Util.esc(themeQuickTitle(state.themePref))}" aria-label="${Util.esc(themeQuickTitle(state.themePref))}">${themeQuickIcon(state.themePref)}</button>
           <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
           <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassicTip'))}"><span class="txt">&lt; ${classic}</span><span class="txts">&lt; ${Util.esc(t('mode.toClassicShort'))}</span></button>
-                    ${u ? `<span class="who" title="${Util.esc(u)}">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}</span>` : ''}
+                    ${u ? `<div class="who-wrap">
+                      <button type="button" class="who" data-act="user-menu" aria-haspopup="menu" aria-expanded="false" title="${Util.esc(u)}">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}<span class="uname">${Util.esc(u)}</span></button>
+                      <div class="umenu" id="sp-umenu" role="menu" hidden>
+                        <button type="button" role="menuitem" data-nav="account">${Util.esc(t('top.account'))}</button>
+                        <a role="menuitem" href="/user/logout">${Util.esc(t('top.logout'))}</a>
+                      </div>
+                    </div>` : ''}
         </div>
       </div>
       <div id="sp-body"></div>
-    </div>`;
+    </div>
+    <nav class="tabbar">${tabs}${tabMore}</nav>`;
   }
 
   /** 重建外壳（导航项变了）+ 重画内容，保留滚动位置。 */
@@ -6557,6 +6788,60 @@ function typeLabel(raw) {
     paintMeta();
     /* 表头全选 / 批量条 / 行勾选的状态必须跟着新 DOM 一起落定（render 不负责这些派生状态） */
     syncPicks();
+    initTableScrollX();
+  }
+
+  /* ---- 表格横向滚动：顶部镜像条 ----
+     窄屏/中宽表格靠横向滚动，但原生滚动条在表格最底部 —— 表格一长，用户得先滚到底才能拖它。
+     在每张真的溢出的表格上方插一条镜像滚动条，两边 scrollLeft 双向同步；不溢出的表格不插。 */
+  let tscrollObs = null;
+  /* 真溢出才允许横向滚动：宽屏下表格 width:100% 的亚像素会让 scrollWidth 比 clientWidth
+     多 1–2px，不关掉 overflow-x 就会常驻一条底部滚动条。阈值 2px 吞掉亚像素。 */
+  function applyTableOverflow() {
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      w.classList.toggle('has-x', w.scrollWidth > w.clientWidth + 2);
+    });
+  }
+  /* 给溢出的表格插一条顶部镜像条；已经存在就不重复插。 */
+  function attachTopScroll(w) {
+    const prev = w.previousElementSibling;
+    if (prev && prev.classList.contains('tscroll')) return;
+    const top = document.createElement('div');
+    top.className = 'tscroll';
+    top.setAttribute('aria-hidden', 'true');
+    const inner = document.createElement('div');
+    top.appendChild(inner);
+    w.parentNode.insertBefore(top, w);
+    top.addEventListener('scroll', () => { w.scrollLeft = top.scrollLeft; });
+    w.addEventListener('scroll', () => { if (top.scrollLeft !== w.scrollLeft) top.scrollLeft = w.scrollLeft; });
+  }
+  /* 宽度变化时同时维护三件事：overflow-x 开关、顶部条的插入/移除、顶部条宽度同步。
+     从宽屏缩到放不下 → 出现；从窄屏放大到放得下 → 消失。 */
+  function syncTableScrollX() {
+    applyTableOverflow();
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      const need = w.scrollWidth > w.clientWidth + 2;
+      const prev = w.previousElementSibling;
+      const top = prev && prev.classList.contains('tscroll') ? prev : null;
+      if (need && !top) attachTopScroll(w);
+      if (!need && top) top.remove();
+      const t = w.previousElementSibling;
+      if (t && t.classList.contains('tscroll')) {
+        const inner = t.firstElementChild;
+        if (inner) inner.style.width = w.scrollWidth + 'px';
+      }
+    });
+  }
+  function initTableScrollX() {
+    if (!window.ResizeObserver) return;
+    if (tscrollObs) tscrollObs.disconnect();
+    tscrollObs = new ResizeObserver(syncTableScrollX);
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      tscrollObs.observe(w);
+      const tbl = w.firstElementChild;
+      if (tbl) tscrollObs.observe(tbl);
+    });
+    syncTableScrollX();
   }
 
   function paintMeta() {
@@ -7130,6 +7415,36 @@ function typeLabel(raw) {
       closeProjMenu();
     }
 
+    /* 头像菜单：账户设置 / 退出登录。点按钮切换，点别处关闭。 */
+    const umBtn = ev.target.closest('[data-act="user-menu"]');
+    const umenu = document.getElementById('sp-umenu');
+    if (umBtn) {
+      if (umenu) {
+        const open = umenu.hidden;
+        umenu.hidden = !open;
+        umBtn.setAttribute('aria-expanded', String(open));
+      }
+      return;
+    }
+    if (umenu && !umenu.hidden && !ev.target.closest('.umenu')) {
+      umenu.hidden = true;
+      const b = document.querySelector('[data-act="user-menu"]');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+
+    /* 底部「更多」二级菜单：上传 / 团队 / 设置 */
+    const tmBtn = ev.target.closest('[data-act="tab-more"]');
+    const tm = document.getElementById('sp-tabmore');
+    if (tmBtn) {
+      if (tm) { const open = tm.hidden; tm.hidden = !open; tmBtn.setAttribute('aria-expanded', String(open)); }
+      return;
+    }
+    if (tm && !tm.hidden && !ev.target.closest('.tabmore')) {
+      tm.hidden = true;
+      const b = document.querySelector('[data-act="tab-more"]');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
       /* 删除中不许跳走：串行 POST 还在发，换页会让"删到哪了"完全断掉 */
@@ -7302,32 +7617,27 @@ function typeLabel(raw) {
       if (kind === 'team-act') {
         const url = act.dataset.url;
         if (!url) return;
-        /* 二级确认：第一次点只把按钮变成「再点一次确认」，4 秒内不点自动复原。
-           退出/解散都是不可逆或半不可逆的动作，一次误触代价太高。 */
-        if (act.dataset.armed !== '1') {
-          act.dataset.armed = '1';
-          act.dataset.label = act.textContent;
-          act.textContent = t('team.armConfirm');
-          act.style.color = 'var(--accent)';
-          setTimeout(() => {
-            if (!act.isConnected || act.dataset.armed !== '1') return;
-            act.dataset.armed = '0';
-            act.textContent = act.dataset.label || '';
-            act.style.color = '';
-          }, 4000);
+        /* 确认文案一直存在 data-confirm 上，但旧实现只做了「再点一次」的 arm ——
+           用户看不到「离开会怎样」。改成原生对话框：文案一次说清，取消是默认焦点。
+           危险动作（解散 / 退出 / 移除）用红色确认键；接受申请这类可逆操作直接执行。 */
+        const danger = /disband|leave|remove/.test(act.dataset.teamAct || '');
+        const go = () => {
+          act.disabled = true;
+          Api.post(url).then((r) => {
+            if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); act.disabled = false; return; }
+            toast(t('team.ok'));
+            Api.invalidate();
+            setTimeout(() => location.reload(), 500);
+          }).catch((e) => {
+            toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+            act.disabled = false;
+          });
+        };
+        if (act.dataset.confirm) {
+          UI.confirmBox({ body: act.dataset.confirm, danger }).then((ok) => { if (ok) go(); });
           return;
         }
-        act.dataset.armed = '0';
-        act.disabled = true;
-        Api.post(url).then((r) => {
-          if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); act.disabled = false; return; }
-          toast(t('team.ok'));
-          Api.invalidate();
-          setTimeout(() => location.reload(), 500);
-        }).catch((e) => {
-          toast(t('account.failed', { msg: (e && e.message) || String(e) }));
-          act.disabled = false;
-        });
+        go();
         return;
       }
 
@@ -7447,8 +7757,14 @@ function typeLabel(raw) {
 
     const del = ev.target.closest('[data-del]');
     if (del) {
-      if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
       if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
+      /* 事件回调不能 await：确认框返回 Promise，用 then 串起"确认后才发请求" */
+      if (del.dataset.confirm) {
+        const url = del.dataset.del;
+        UI.confirmBox({ body: del.dataset.confirm, danger: true })
+          .then((ok) => { if (ok) submit(() => Api.post(url)); });
+        return;
+      }
       submit(() => Api.post(del.dataset.del));
       return;
     }

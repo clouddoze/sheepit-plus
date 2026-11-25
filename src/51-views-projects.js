@@ -4,8 +4,11 @@
   'use strict';
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
+  /* 重复注入（站点导航 / 同页再 eval 产物）时不要重建 projState：第二个实例会用默认排序
+     覆盖 SP.Views，表头看起来像「记忆丢了」（用户实报：内存升序刷新后回退）。与 52 的 rankState 同规。 */
+  if (SP.Views && SP.Views.projState) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow, packLabel, whyLabel , pageSize } = SP.VK;
+  const { esc, fmt, foot, moreRow, packLabel, whyLabel , pageSize, sechead, emptyRow } = SP.VK;
 
   /* ==== 项目 ==== */
 
@@ -34,16 +37,29 @@
   /* 排序偏好落盘（用户自定义）：点一次表头就是一次"记住这个默认"，刷新与换页后仍在。
      存的字段名认不出来（旧版本存过、或以后删了某列）就退回默认 —— 别把列表卡在一个
      不存在的排序上，那样表头不会有箭头、点哪列都不生效，看起来像坏了。 */
-  (function restoreSort() {
-    const s = Util.store.get(SORT_PREF, null);
+  const SESS_KEY = 'sheepit-plus:' + SORT_PREF;
+
+  /* 站点偶尔会清 localStorage（站点自己的脚本会 clear），排序偏好跟着一起没。
+     写两份：localStorage 正常路径，sessionStorage 兜底（同标签页刷新仍在）。 */
+  function readSortPref() {
+    const fromLocal = Util.store.get(SORT_PREF, null);
+    if (fromLocal && typeof fromLocal === 'object') return fromLocal;
+    try { return JSON.parse(sessionStorage.getItem(SESS_KEY) || 'null'); } catch (e) { return null; }
+  }
+
+  function restoreSort() {
+    const s = readSortPref();
     if (!s || typeof s !== 'object') return;
     if (P_SORTS[s.sort]) projState.sort = s.sort;
     if (M_SORTS[s.msort]) projState.msort = s.msort;
     if (s.dir === 'asc' || s.dir === 'desc') projState.dir = s.dir;
-  })();
+  }
+  restoreSort();
 
   function saveSort() {
-    Util.store.set(SORT_PREF, { sort: projState.sort, msort: projState.msort, dir: projState.dir });
+    const v = { sort: projState.sort, msort: projState.msort, dir: projState.dir };
+    Util.store.set(SORT_PREF, v);
+    try { sessionStorage.setItem(SESS_KEY, JSON.stringify(v)); } catch (e) { /* 隐私模式等 */ }
   }
 
   /** 设置页改默认排序。主列表一定跟着改；「我发布的」那张表站点只给得出名字与进度，
@@ -208,7 +224,7 @@
 
     /* 默认顺序 = 解析器给的（站点 id 倒序 ≈ 新建在前）；点了表头（或设置里选了）才按列排 */
     const cmp = sortCmp(M_SORTS, projState.msort);
-    if (cmp) rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    if (cmp) rows = rows.toSorted((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
     return { all, rows };
   }
 
@@ -249,9 +265,14 @@
     /* 没有 id 的行（别人的主页、解析失败）不能删：不画 checkbox，也不画行内删除按钮 */
     const idOf = (x) => (x && x.id ? String(x.id) : '');
 
+    /* 排序入口必须是 <button>：只给 th 绑 click 时，键盘用户没有可达的激活点。
+       aria-sort 放在 th 上（语义属于表头），按钮自己带一句可读的排序说明。 */
     const th = (key, label, cls) => {
       const on = projState.msort === key;
-      return `<th class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      const dir = on ? (projState.dir === 'asc' ? t('sort.asc') : t('sort.desc')) : t('sort.none');
+      return `<th scope="col" class="sortable${cls ? ' ' + cls : ''}" data-msort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">`
+        + `<button type="button" class="thbtn" aria-label="${esc(t('sort.title', { col: label, dir }))}">${esc(label)}`
+        + `${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</button></th>`;
     };
 
     /* 空态两种，别混成一句「你还没有发布过项目」：
@@ -315,11 +336,11 @@
             <col class="c-pick"><col><col class="c-status"><col class="c-prog"><col class="c-act">
           </colgroup>
           <thead><tr>
-            <th class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
+            <th scope="col" class="c-pick"><label class="pickbox"><input type="checkbox" id="sp-pickall" data-pickall="1" aria-label="${esc(t('proj.pickAll'))}"></label></th>
             ${th('name', t('proj.col.project'))}
-            <th class="c-status">${esc(t('proj.col.status'))}</th>
+            <th scope="col" class="c-status">${esc(t('proj.col.status'))}</th>
             ${th('progress', t('proj.col.progress'), 'c-prog')}
-            <th class="c-act">${esc(t('proj.col.manage'))}</th>
+            <th scope="col" class="c-act">${esc(t('proj.col.manage'))}</th>
           </tr></thead>
           <tbody>${body}</tbody>
         </table></div>
@@ -328,6 +349,8 @@
   }
 
   function projects(state) {
+    /* 每次渲染都以存储为准：实例被重建、或 localStorage 被站点清掉时，排序不会退回默认。 */
+    restoreSort();
     if (projState.scope === 'mine') return mineProjects(state);
     const all = state.projects || [];
     if (!all.length) return UI.state.empty();
@@ -343,11 +366,14 @@
 
     /* 排序字段来自注册表（设置页可选、表头可点，两处都落盘）；认不出来的字段退回进度 */
     const cmp = sortCmp(P_SORTS, projState.sort) || sortCmp(P_SORTS, 'progress');
-    rows = rows.slice().sort((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
+    rows = rows.toSorted((a, b) => (projState.dir === 'asc' ? cmp(a, b) : -cmp(a, b)));
 
     const th = (key, label, span) => {
       const on = projState.sort === key;
-      return `<th class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">${esc(label)}${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</th>`;
+      const dir = on ? (projState.dir === 'asc' ? t('sort.asc') : t('sort.desc')) : t('sort.none');
+      return `<th scope="col" class="sortable"${span ? ` colspan="${span}"` : ''} data-sort="${key}" aria-sort="${on ? (projState.dir === 'asc' ? 'ascending' : 'descending') : 'none'}">`
+        + `<button type="button" class="thbtn" aria-label="${esc(t('sort.title', { col: label, dir }))}">${esc(label)}`
+        + `${on ? `<span class="arw">${UI.icon(projState.dir === 'asc' ? 'caretUp' : 'caretDown')}</span>` : ''}</button></th>`;
     };
 
     const maps = listsOf(state);
@@ -366,10 +392,7 @@
     const openP = projState.menu ? all.find((p) => p.id === projState.menu) : null;
     const menuHtml = openP ? ownerMenu(openP, state.userName, maps) : '';
 
-    return farmRow + `<div class="sechead"><h2>${esc(t('proj.title'))}</h2>
-        <span class="sub">${esc(t('proj.count', { n: all.length }))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span></div>
+    return farmRow + `${sechead({ title: esc(t('proj.title')), sub: esc(t('proj.count', { n: all.length })), right: `<span class="sub num">${esc(t('proj.match', { n: rows.length, total: all.length }))}</span>` })}
       <div class="toolbar">
         ${scopeSeg()}
         <label class="input">${UI.icon('search')}
@@ -379,7 +402,7 @@
           `<button data-f="${k}" aria-pressed="${projState.filter === k}">${esc(label)}</button>`).join('')}</div>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl fit">
+        <div class="tablewrap" tabindex="0"><table class="tbl fit">
           <colgroup>
             <col style="width:28%"><col style="width:19%"><col style="width:13%">
             <col style="width:19%"><col style="width:11%"><col style="width:10%">
@@ -387,13 +410,13 @@
           <thead><tr>
             ${th('name', t('proj.col.project'))}
             ${th('owner', t('proj.col.owner'))}
-            <th>${esc(t('proj.col.status'))}</th>
+            <th scope="col">${esc(t('proj.col.status'))}</th>
             ${th('progress', t('proj.col.progress'))}
-            <th>${esc(t('proj.col.device'))}</th>
+            <th scope="col">${esc(t('proj.col.device'))}</th>
             ${th('memory', t('proj.col.memory'))}
           </tr></thead>
           <tbody>${rows.slice(0, projState.limit).map((p) => projectRow(p, state.userName, maps)).join('')
-            || `<tr><td colspan="6"><div class="state" style="padding:40px 12px"><div class="small">${esc(t('proj.empty'))}</div></div></td></tr>`}</tbody>
+            || emptyRow(6, esc(t('proj.empty')), '40px 12px')}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, projState.limit), rows.length, 120)}
       </div>

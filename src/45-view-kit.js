@@ -15,8 +15,9 @@
   const foot = () => `<div class="foot">${esc(t('footer.source'))}</div>`;
 
     function dailySeries(cum) {
-    const rows = (cum || []).filter((p) => p && p.d && Number.isFinite(p.v)).slice()
-      .sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    /* toSorted：不先拷贝再排序，原数组也不可能被就地改掉（这里传进来的 cum 来自 state） */
+    const rows = (cum || []).filter((p) => p && p.d && Number.isFinite(p.v))
+      .toSorted((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
     if (rows.length < 2) return [];
 
     const monotonic = rows.every((p, i) => i === 0 || p.v >= rows[i - 1].v);
@@ -115,5 +116,25 @@
     ['settings', true],
   ];
 
-  SP.VK = { esc, fmt, foot, moreRow, pageSize, dailySeries, statOf, asCount, rankOf, isoDate, packLabel, whyLabel, NAV_ITEMS };
+  /* ---- 视图公共组件 ----
+     这些片段原来在每个视图里各写一遍（panel 27 处、sechead 10 处、表内空行 7 处）。
+     提取判据：结构完全同构、只差文案与类名；带视图私有事件的不放进来。 */
+
+  /** 面板：标题 + 副标题 + 内容。内容默认走 .pbody（与 .phead 同为 20px 边距）——
+   *  「内容比标题凸出」就是漏了这层。pad:false 表示调用方自己控制内容边距。
+   *  title / sub / right 接**已转义**的 HTML，组件不重复转义。 */
+  const panel = (o) => `<div class="panel${o.cls ? ' ' + o.cls : ''}"${o.id ? ` id="${o.id}"` : ''}${o.style ? ` style="${o.style}"` : ''}>`
+    + (o.title ? `<div class="phead"><h2>${o.title}</h2>${o.sub ? `<span class="sub">${o.sub}</span>` : ''}${o.right ? `<span class="spacer"></span>${o.right}` : ''}</div>` : '')
+    + (o.pad === false ? (o.body || '') : `<div class="pbody">${o.body || ''}</div>`)
+    + '</div>';
+
+  /** 区块标题：左标题 + 可选副标题 + 右侧操作。sub / right 接已转义 HTML。 */
+  const sechead = (o) => `<div class="sechead"><h2>${o.title}</h2>${o.sub ? `<span class="sub">${o.sub}</span>` : ''}<span class="spacer"></span>${o.right || ''}</div>`;
+
+  /** 表内空行：colspan + 文案。表格里的空态统一 36px 12px，别每处各写一个 padding。 */
+  const emptyRow = (colspan, msg, pad) => `<tr><td colspan="${colspan}"><div class="state" style="padding:${pad || '36px 12px'}"><div class="small">${msg}</div></div></td></tr>`;
+
+  /** 横向滚动容器：统一 tabindex=0；可选 aria 名称与内联样式。 */
+  const tableWrap = (html, o) => `<div class="tablewrap${o && o.cls ? ' ' + o.cls : ''}" tabindex="0"${o && o.style ? ` style="${o.style}"` : ''}${o && o.label ? ` role="region" aria-label="${o.label}"` : ''}>${html}</div>`;
+  SP.VK = { esc, fmt, foot, moreRow, pageSize, dailySeries, statOf, asCount, rankOf, isoDate, packLabel, whyLabel, NAV_ITEMS, panel, sechead, emptyRow, tableWrap };
 })();

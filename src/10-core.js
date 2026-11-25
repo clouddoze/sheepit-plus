@@ -177,6 +177,7 @@
       'nav.overview': '总览', 'nav.projects': '项目', 'nav.ranking': '排行榜', 'nav.settings': '设置',
       'nav.rankingShort': '排行', 'nav.accountShort': '账户',
       'top.refresh': '刷新', 'top.updated': '更新于',
+      'top.account': '账户设置', 'top.logout': '退出登录', 'nav.more': '更多',
       'top.themeCycle': '主题：{cur}（点击切换）',
       'hero.rank': '排名', 'hero.team': '团队', 'hero.joined': '注册于',
       'stat.frames': '已渲染帧数', 'stat.points': '积分', 'stat.time': '累计渲染时长',
@@ -184,7 +185,6 @@
       'stat.streakHint': '历史最长 {best} 天',
       // 键由原文 slug 化（见 50-views.js packLabel）
       'badge.top-10-renderers': 'TOP 10% 渲染者',
-      /* 站点那个「Connected as …」框里的客户端状态词条已随那一格一起删（用户 2026-10-07）。 */
       'stat.avgPeak': '历史日均 {avg} 帧 · 历史峰值 {peak}',
       'stat.rankWindow': '全站排名 {rank} · 30 天滚动',
       'stat.daysEquiv': '约 {days} 天机时',
@@ -362,6 +362,11 @@
       'live.trend.machines': '机器在线', 'live.trend.machinesSub': '每天连上来的机器数（近 4 个月）',
       'live.dist.projects': '项目分布', 'live.dist.projectsSub': '正在渲染的帧按项目聚合，前 8 名',
       'live.dist.os': '系统', 'live.dist.osSub': '在线机器的操作系统',
+      'live.dist.vendor': '硬件厂商', 'live.dist.vendorSub': '在线机器的型号归属（CPU / GPU）',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': '其它',
+      'live.filter.project': '项目：{name}', 'live.filter.vendor': '厂商：{name}',
+      'live.me': '我的',
       'live.dist.device': '算力设备', 'live.dist.deviceSub': '机器用什么在算',
       'live.unit.frames': '帧', 'live.unit.machines': '台',
       'live.dist.other': '其它（{n} 个）',
@@ -454,19 +459,9 @@
       'sess.tl.login': '登录', 'sess.tl.senderror': '发送失败', 'sess.tl.send': '发送',
       'sess.tl.error': '错误',
 
-      /* 三块搬自 /getstarted，但那页本身不接管（见 80-app.js viewForPath）。 */
       /* 设置区自绘：三行开关 + 一行危险动作，动作直发站点端点（见 80-app.js 的 mgSet） */
       /* 项目管理页整页自绘：动作行 / 名单 / 概要 / 帧。站点没渲染的那几项不画。 */
       'mg.acl.needName': '先填一个名字', 'mg.acl.needPick': '请从建议列表里选一个团队',
-      /* 这句顶掉站点原文（"Max: … before ZIP compression"），必须由我们来说：它和文件框在同一个
-         <td> 里，翻译层整块替换会把文件框一起删掉。 */
-      /* 上传后的分析等待页 */
-
-      /* 新版上传 · 第三步（68-step3.js 自绘那一块用的标签） */
-
-      /* 0.2.0 源码重写 · 第三步（62-chain.js 解析 + 68-step3.js 自绘） */
-      /* 管着这两行的硬约束，长在决策行上 —— 以前只在上一步的须知里出现过（记忆桥） */
-      /* 0.2.0 源码重写 · 第一步（64-step1.js 自绘的上传页） */
       /* 站点结构变了：不许沉默 —— 说清 + 给出切档办法 */
 
       'why.no-big-archive-download-on-this-computer': '本机没有大存档下载',
@@ -489,6 +484,7 @@
       'nav.overview': 'Overview', 'nav.projects': 'Projects', 'nav.ranking': 'Ranking', 'nav.settings': 'Settings',
       'nav.rankingShort': 'Ranking', 'nav.accountShort': 'Account',
       'top.refresh': 'Refresh', 'top.updated': 'Updated',
+      'top.account': 'Account settings', 'top.logout': 'Log out', 'nav.more': 'More',
       'top.themeCycle': 'Theme: {cur} (click to cycle)',
       'hero.rank': 'Rank', 'hero.team': 'Team', 'hero.joined': 'Joined',
       'stat.frames': 'Frames rendered', 'stat.points': 'Points', 'stat.time': 'Render time',
@@ -659,6 +655,11 @@
       'live.trend.machines': 'Machines online', 'live.trend.machinesSub': 'Machines connected per day (last 4 months)',
       'live.dist.projects': 'By project', 'live.dist.projectsSub': 'Frames in progress, top 8 projects',
       'live.dist.os': 'Systems', 'live.dist.osSub': 'Operating systems of connected machines',
+      'live.dist.vendor': 'Hardware vendors', 'live.dist.vendorSub': 'What the online machines are running (CPU / GPU)',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': 'Other',
+      'live.filter.project': 'Project: {name}', 'live.filter.vendor': 'Vendor: {name}',
+      'live.me': 'yours',
       'live.dist.device': 'Compute', 'live.dist.deviceSub': 'What the machines render with',
       'live.unit.frames': 'frames', 'live.unit.machines': 'machines',
       'live.dist.other': 'Others ({n})',
@@ -749,6 +750,18 @@
       'sess.tl.error': 'Error',
 
       'mg.acl.needName': 'Type a name first', 'mg.acl.needPick': 'Pick a team from the suggestions',
+
+      /* 原生 <dialog> 确认框（替代 window.confirm） */
+      'dlg.title': 'Are you sure?', 'dlg.ok': 'Confirm', 'dlg.cancel': 'Cancel',
+      /* 可排序表头的无障碍名称：方向必须是文字，不能只靠箭头图标 */
+      'sort.none': 'not sorted', 'sort.asc': 'ascending', 'sort.desc': 'descending',
+      'sort.title': 'Sort by {col} ({dir})',
+      /* 实况页：厂商归类、钻取筛选、我的机器 */
+      'live.dist.vendor': 'GPU vendors', 'live.dist.vendorSub': 'What the online machines are running',
+      'live.vendor.nvidia': 'NVIDIA', 'live.vendor.amd': 'AMD', 'live.vendor.apple': 'Apple',
+      'live.vendor.intel': 'Intel', 'live.vendor.other': 'Other',
+      'live.filter.project': 'Project: {name}', 'live.filter.vendor': 'Vendor: {name}',
+      'live.me': 'yours',
     },
   };
 
@@ -856,6 +869,11 @@
       '--r': '10px', '--r-sm': '6px',
       // 上传页估算器的「推荐这么切」行（30-style 的 .up1-tbl td.ok）：站点原本用 label-success 标它
       '--positive': '#3fb950',
+      /* 分类色板：只给「构成类」图表（系统 / 算力设备）用。
+         实况页每边只有 3 类，单色 100%/88%/76% 的透明度阶梯在深色底上几乎连成一条 ——
+         这不是"种类少"的问题，是编码维度选错了：用色相区分，而不是用同一色相的浓淡。 */
+      '--cat-1': '#e06d58', '--cat-2': '#d9a441', '--cat-3': '#4f92a8',
+      '--cat-4': '#9479b0', '--cat-5': '#5f9a70', '--cat-other': '#7c8695',
     },
     light: {
       '--bg': '#fbfbfc', '--surface': '#ffffff', '--surface-2': '#f5f6f8', '--surface-3': '#eceef1',
@@ -871,6 +889,9 @@
       '--shadow': '0 1px 2px rgba(16,24,40,.06), 0 4px 12px rgba(16,24,40,.05)',
       '--r': '10px', '--r-sm': '6px',
       '--positive': '#1a7f37',
+      /* 分类色板的浅色主题版本：同一组色相压深，保证在 #fbfbfc 上也有对比 */
+      '--cat-1': '#b6472f', '--cat-2': '#8a6415', '--cat-3': '#2f6f86',
+      '--cat-4': '#6b5385', '--cat-5': '#3f7350', '--cat-other': '#656d79',
     },
   };
 

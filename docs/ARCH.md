@@ -66,8 +66,8 @@ node -e "const fs=require('fs');const a=fs.readFileSync('src/51-views-projects.j
 |---|---|---|
 | `src/` | 唯一源码 | 测试、夹具、构建脚本 |
 | `dist/` | 构建产物（入库，方便 GreasyFork 对照） | 手改 |
-| `tools/` | 开发期工具：`harness`（夹具服务）、`rig`（CDP）、`regress`（回归）、`coverage` | 运行时代码 |
-| `docs/` | 当前有效的设计与流程文档（见 `docs/README.md`） | 一次性审计、已完结的重写记录 |
+| `tools/` | 开发期工具：`harness`（夹具服务）、`rig`（CDP）、`regress`（回归）、`coverage`、`mwg`（modern-web-guidance 检索）、`serve-local`（本地安装/更新源）、`update-upstream`（拉上游 www）、`parser-contract`（解析器契约测试） | 运行时代码 |
+| `docs/` | 当前有效的设计与流程文档（见 `docs/README.md`） | 一次性审计、已完结的策略记录（均已删除，见 git 历史） |
 | `.tmp/` | 夹具、探针、截图（gitignore） | 任何要交付的东西 |
 
 ## 4. 构建
@@ -135,3 +135,21 @@ node -e "…"   # 见 .tmp/events-scan.mjs 的写法：差集必须为空
 为什么：站点文案一改，逐条词条就静默失效；覆盖率永远追不上，维护成本却一直涨。切回原版是"看站点原样"，翻译反而违背意图。
 
 **代价**：原版页对中文用户就是纯英文。回滚方式：`git revert 1e39294`，词条在历史里。
+
+## 8. 现代 Web 约定（2026-11-22 起）
+
+改任何 HTML / CSS / 客户端 JS 之前，先按 `docs/MODERN-WEB.md` 的流程走一遍
+（`node tools/mwg.mjs search "<2–5 个英文词>"` → `retrieve` → 按指南改 → `legacy-scan` 必须 0 命中）。
+
+产物是零依赖单文件，所以：
+
+- 只用 Baseline Widely available；更新的 API 要特性检测 + 优雅降级（≤20 行、不引依赖）。
+- 不加打包器、不加 polyfill、不加 CDN。
+- 动效尊重 `prefers-reduced-motion`；主题尊重 `prefers-color-scheme`。
+
+两个已经落地的结构约定：
+
+| 约定 | 为什么 |
+|---|---|
+| 确认框走 `SP.UI.confirmBox()`（原生 `<dialog>` + `<form method="dialog">`） | 浏览器自带焦点陷阱、Esc、点遮罩关闭、关闭后焦点返回触发元素；`window.confirm` 全都做不到，也无法展示后果文案 |
+| 可排序表头是 `<th scope="col" aria-sort="{...}">` 里包 `<button class="thbtn">` | `aria-sort` 只让读屏「读得出」，`<button>` 才让键盘「操作得了」；事件委托仍用 `closest('th[data-sort]')` |

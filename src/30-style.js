@@ -80,6 +80,14 @@ ${Theme.css('#sp')}
 #sp .who .uname{font-weight:500;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #sp .who img{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);flex:none}
 #sp .who .ini{width:26px;height:26px;border-radius:var(--r-sm);border:1px solid var(--border);background:var(--surface-2);display:grid;place-items:center;font-size:12px;color:var(--text-3);flex:none}
+/* 头像菜单：退出登录的常驻入口。窄屏只收名字，入口本身不消失。 */
+#sp .who-wrap{position:relative;display:flex;align-items:center;min-width:0}
+#sp button.who{background:none;border:none;padding:0;font:inherit;cursor:pointer;border-radius:var(--r-sm)}
+#sp button.who:hover .uname,#sp button.who[aria-expanded="true"] .uname{color:var(--accent)}
+#sp .umenu{position:absolute;right:0;top:calc(100% + 8px);min-width:0;width:max-content;max-width:220px;padding:5px;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow);z-index:40}
+#sp .umenu[hidden]{display:none}
+#sp .umenu a,#sp .umenu button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--text-2);text-decoration:none;background:none;border:none;cursor:pointer}
+#sp .umenu a:hover,#sp .umenu button:hover{background:var(--surface-3);color:var(--text)}
 
 /* nav 默认 flex-shrink:1，窄屏被压到 148px、按钮互相盖住 —— 必须显式 flex:none。 */
 @media (max-width:860px){
@@ -88,12 +96,9 @@ ${Theme.css('#sp')}
   #sp .metaline{display:none}
 }
 @media (max-width:620px){
-  #sp .top{gap:8px}
-  /* 一行摆不下（品牌 + 6 个导航 + 右侧组）：右侧整组换到第二行，别横向溢出。
-     原版本在 390 宽时就已经溢出约 90px，这里顺手修掉。 */
-  #sp .top{flex-wrap:wrap;row-gap:6px}
-  #sp .top .spacer{display:none}
-  #sp .topright{flex:1 1 100%;justify-content:flex-end}
+  #sp .top{gap:8px;flex-wrap:nowrap}
+  /* 底部导航接管后 nav 已隐藏，品牌 + 右侧控制一行放得下，不再折成两行。 */
+  #sp .topright{flex:none;justify-content:flex-end;min-width:0}
   #sp .brand{font-size:14px}
   #sp .brand .sheep{width:20px;height:20px;border-radius:5px}
   #sp .brand em{display:none}
@@ -101,8 +106,32 @@ ${Theme.css('#sp')}
   #sp nav button{padding:6px 7px;font-size:13px}
   #sp nav .navfull{display:none}
   #sp nav .navshort{display:inline}
-  /* 头像整个撤掉而不是只藏名字：硬塞会被挤出视口，在右缘留下一条 1px 断边框。 */
-  #sp .who{display:none}
+  /* 底部导航起来后顶栏右侧有空间：只收名字、保留头像 —— 退出登录入口不能在窄屏消失。 */
+  #sp .who .uname{display:none}
+}
+
+/* ==== 底部导航（≤620px） ====
+   8 个导航项在 390px 会折成两行、把右侧控制挤下去；窄屏改成底部 5 个高频入口，
+   顶栏 nav 隐藏但保留品牌与刷新/主题/切原版。 */
+#sp .tabbar{display:none}
+@media (max-width:620px){
+  #sp .top nav{display:none}
+  #sp .tabbar{
+    display:flex;position:fixed;left:0;right:0;bottom:0;z-index:26;
+    background:var(--bg);border-top:1px solid var(--border);
+    padding:6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+  #sp .tabbar button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:8px;font-size:11px;color:var(--text-3)}
+  #sp .tabbar button[aria-current="page"]{color:var(--accent);background:var(--accent-weak);font-weight:600}
+  #sp .tabbar .icon{width:18px;height:18px}
+  #sp .tabmore-wrap{position:relative;flex:1;display:flex;min-width:0}
+  #sp .tabmore-wrap > button{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 4px;border-radius:8px;font-size:11px;color:var(--text-3)}
+  #sp .tabmore-wrap > button[aria-expanded="true"]{color:var(--accent);background:var(--accent-weak)}
+  #sp .tabmore{position:absolute;bottom:calc(100% + 10px);right:8px;min-width:0;width:max-content;max-width:200px;padding:5px;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:var(--r-sm);box-shadow:var(--shadow);z-index:45}
+  #sp .tabmore[hidden]{display:none}
+  #sp .tabmore button{display:block;width:100%;text-align:left;padding:8px 10px;border-radius:6px;font-size:12.5px;color:var(--text-2)}
+  #sp .tabmore button:hover{background:var(--surface-3);color:var(--text)}
+  #sp .wrap{padding-bottom:88px}
 }
 
 /* ==== 图标按钮 ==== */
@@ -125,7 +154,7 @@ ${Theme.css('#sp')}
 #sp .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--btn-ink);font-weight:600}
 #sp .btn.primary:hover{filter:brightness(1.07);color:var(--btn-ink)}
 /* 不可用必须看得出来：主色按钮在"还没就绪"时长得和就绪时一模一样，用户点下去只会挨一句责备。
-   .up3-submit 早就有这条规则，通用 .btn 一直没有。 */
+ */
 #sp .btn:disabled{opacity:.5;cursor:not-allowed}
 #sp .btn.primary:disabled{filter:none}
 #sp .btn.sm{padding:4px 10px;font-size:12px;border-radius:var(--r-sm)}
@@ -212,21 +241,43 @@ ${Theme.css('#sp')}
 #sp .phead .sub{font-size:12px;color:var(--text-3);min-width:0}
 #sp .phead .sub b{color:var(--text-2);font-weight:600}
 #sp .phead .spacer{flex:1}
+/* 面板内容的水平内边距：.phead 自己带 20px，内容必须同一边距，否则会左右各凸出 20px */
+#sp .pbody{padding:0 20px}
 
 /* ==== 图表 ==== */
 #sp .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
 @media (max-width:900px){#sp .grid2{grid-template-columns:1fr}}
 /* 实况的占比：一条 100% 堆叠条 + 图例（比每项一条横条更直观，也不截断名字） */
-#sp .stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--surface-3);margin:8px 0 14px}
-#sp .stack i{display:block;height:100%;min-width:2px}
-#sp .stack i + i{box-shadow:inset 1px 0 0 rgba(0,0,0,.18)}
+#sp .stack{display:flex;height:16px;border-radius:8px;overflow:hidden;background:var(--surface-3);margin:8px 0 14px;gap:2px}
+#sp .stack i{display:block;height:100%;min-width:3px;border-radius:3px;transition:opacity .12s}
+/* 分类色块之间留 2px 缝：相邻色相（橙 / 金）在色弱下可能接近，缝是第二道边界。 */
+#sp .stack.hl i{opacity:.3}
+#sp .stack.hl i.hl{opacity:1}
 /* 用 .llegend 而不是 .legend：后者已经被日历热力图的图例占用（横排、居中），同名会互相覆盖。 */
 #sp .llegend{display:flex;flex-direction:column;gap:7px;width:100%}
-#sp .lrow{display:flex;align-items:center;gap:9px;font-size:12.5px}
-#sp .lrow .sw{width:10px;height:10px;border-radius:3px;flex:none}
+#sp .lrow{display:flex;align-items:center;gap:9px;font-size:12.5px;padding:3px 5px;border-radius:5px;transition:background .12s}
+#sp .lrow:hover{background:var(--surface-2)}
+#sp .lrow .sw{width:12px;height:12px;border-radius:3px;flex:none}
 #sp .lrow .ln{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
 #sp .lrow .lv{flex:none;min-width:54px;text-align:right;color:var(--text)}
 #sp .lrow .lp{flex:none;min-width:40px;text-align:right;color:var(--text-3)}
+/* 项目分布：条形列表。排名的重点是长短，不是色相 —— 8 项各配一色只会变成调色盘。 */
+#sp .lbars{display:flex;flex-direction:column;gap:9px;margin-top:2px}
+#sp .lbar{display:flex;align-items:center;gap:10px;font-size:12.5px;border-radius:5px;margin:0 -4px;padding:2px 4px}
+/* 可钻取的行：项目分布点一行 → 下方明细按这个项目筛 */
+#sp .lbar[data-p]{cursor:pointer;transition:background .12s}
+#sp .lbar[data-p]:hover{background:var(--surface-2)}
+#sp .lrow[data-v]{cursor:pointer}
+#sp .you{font-size:11px;color:var(--accent);margin-left:6px;font-weight:600;white-space:nowrap}
+#sp .lbar .ln{flex:0 1 44%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-2)}
+#sp .lbar .ltrack{flex:1;min-width:36px;height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden}
+#sp .lbar .ltrack i{display:block;height:100%;border-radius:4px;background:var(--accent)}
+/* 「其它」是聚合项，不是第 9 名：用分隔线和灰条把它和排名分开 */
+#sp .lbar.other{border-top:1px solid var(--border);padding-top:9px;margin-top:2px}
+#sp .lbar.other .ltrack i{background:var(--text-3)}
+#sp .lbar .lv{flex:none;min-width:52px;text-align:right;color:var(--text);font-variant-numeric:tabular-nums}
+#sp .lbar .lp{flex:none;min-width:38px;text-align:right;color:var(--text-3);font-variant-numeric:tabular-nums}
+@media (max-width:620px){#sp .lbar .ln{flex-basis:38%}#sp .lbar .ltrack{min-width:24px}}
 /* 「正在渲染 / 在线机器」这排切换离下面的搜索框远一点 */
 #sp #sp-live-tab{margin:10px 0 18px}
 #sp .tbl tbody tr.dim{opacity:.55}
@@ -342,6 +393,17 @@ ${Theme.css('#sp')}
 
 /* ==== 表格 ==== */
 #sp .tablewrap{overflow-x:auto}
+/* 只有真的溢出才允许横向滚动：width:100% 的表格在宽屏下会有 1–2px 亚像素误差，
+   scrollWidth 比 clientWidth 略大，不关掉 overflow-x 就会常驻一条底部滚动条。
+   80-app 的 applyTableOverflow() 用 2px 阈值判断并挂 .has-x。 */
+#sp .tablewrap:not(.has-x),#sp .tablewrap.log:not(.has-x){overflow-x:hidden}
+/* 顶部镜像滚动条：只在表格真的横向溢出时由 80-app 插入。比原生滚动条细一档，
+   不参与表格布局（高度固定 12px）。 */
+/* 顶部镜像条不再自绘：继承全局 ::-webkit-scrollbar（10px / border-strong / 6px 圆角 /
+   3px 底色描边），与表格底部那条原生滚动条完全同一套样式。容器高度就取 10px，
+   等于滚动条自身高度 —— 之前 14px 加槽底，多的空白让条看起来被截断、不居中。 */
+#sp .tscroll{overflow-x:auto;overflow-y:hidden;height:10px;margin:0 6px 2px;scrollbar-width:thin;scrollbar-color:var(--border-strong) transparent}
+#sp .tscroll > div{height:1px}
 /* 横向滚动的表格要能被键盘滚：wrapper 拿 tabindex=0，焦点环说明"这一块可以滚" */
 #sp .tablewrap:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 #sp .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -363,6 +425,14 @@ ${Theme.css('#sp')}
 #sp .tbl tbody tr{transition:background .1s}
 #sp .tbl tbody tr:hover{background:var(--surface-2)}
 #sp .tbl tbody tr.me{background:var(--accent-weak)}
+/* 宽表横向滚动时固定首列：滚走以后读者不知道这一行是谁。只给 .fit 表做，
+   避免影响那些首列本来就没有标识作用的表。 */
+/* 首列 sticky 必须带 z-index：只给 position/背景时，后面滚过来的单元格（进度条）
+   会在它上面绘制，肉眼看就是"进度条穿过项目名"。 */
+#sp .tbl.fit thead th:first-child,#sp .tbl.fit tbody td:first-child{position:sticky;left:0;z-index:1;background:var(--surface)}
+#sp .tbl.fit thead th:first-child{z-index:2}
+#sp .tbl.fit tbody tr:hover td:first-child{background:var(--surface-2)}
+#sp .tbl.fit tbody tr.me td:first-child{background:var(--accent-weak)}
 /* 团队详情：固定列宽，成员列吃掉剩余空间（否则积分被推到中间、两边各一大片空） */
 /* 列宽写在 th 上（col 的 width 在 fixed 布局里不稳），表格给显式宽度：
    否则 width:100% 会把成员列拉到一整屏，积分被推到中间、两边各一大片空。 */
@@ -763,11 +833,39 @@ ${Theme.css('#sp')}
 /* 这张表（会话页的「这台机器相关项目」）列多、状态那列又是长句子，自动布局下总宽会超过容器
    → 容器出现横向滚动条、右边两列被推出视野。固定列宽 + 单元格内省略号，让它永远正好装下；
    被截断的那些格子（.pn / 状态 / 发布者）本来就有 title，悬浮即可看全文。 */
-#sp .tbl.fit{table-layout:fixed}
+/* 中等宽度（761–1200）不把六列压扁：压扁的结果是发布者/状态/设备/帧数全被截断，
+   而容器又没有滚动条可看。给一个可读下限，不够宽就横向滚动。 */
+#sp .tbl.fit{table-layout:fixed;min-width:980px}
 #sp .tbl.fit th,#sp .tbl.fit td{overflow:hidden}
+
 /* 列宽已经由 colgroup 定死了，.pn/.st 上那两个写死的 max-width 只会白白空出一截 */
 #sp .tbl.fit .pn,#sp .tbl.fit .st{max-width:100%}
 @media (max-width:720px){#sp .tbl.dense{min-width:560px}}
+/* 1200 以下：横向滚动解决"列看不全"，但发布者/状态在列内再省略一次，读者还是读不到人。
+   这两个字段改为换行；项目名仍保持单行（首列 sticky 时换行会把行高拉得很高）。 */
+@media (max-width:1200px){
+  /* 用户名常常是一整串没有空格的字符（mztothemoonstudio2）：只给 white-space:normal 不会断词，
+     仍然溢出被裁；和项目名一样补 overflow-wrap:anywhere，长名字才会真的换到第二行。 */
+  #sp .tbl.fit .ow span,#sp .tbl.fit .ow a.nm,#sp .tbl.fit .st{white-space:normal;overflow:visible;text-overflow:clip;max-width:none;overflow-wrap:anywhere}
+  #sp .tbl.fit .ow{flex-wrap:wrap}
+}
+/* 窄屏：六列压进 390px 的代价是省略号、进度条溢出、名字全截断。
+   保持表格可读宽度、靠横向滚动；首列**不再 sticky** —— 390px 里固定 28% 的首列会吃掉
+   半屏，可动区域只剩右边一小块；取消后整表左右滑（与排行榜一致）。名字允许换行。 */
+@media (max-width:760px){
+  #sp .tbl.fit{min-width:760px}
+  #sp .tbl.fit thead th:first-child,#sp .tbl.fit tbody td:first-child{position:static}
+  #sp .tbl.fit .pn,#sp .tbl.fit .ow span,#sp .tbl.fit .ow a.nm,#sp .tbl.fit .st{
+    white-space:normal;overflow:visible;text-overflow:clip;max-width:none;
+  }
+  #sp .tbl.fit .pn{overflow-wrap:anywhere}
+  #sp .tbl.fit .ow{flex-wrap:wrap}
+  /* 进度列：分数文本（最长 "8,439 / 11,000"）会把条子挤出列宽，横向滚动时看起来像穿透。
+     窄屏让条子独占一行、分数落到下一行右对齐。 */
+  #sp .tbl.fit .pwrap{flex-wrap:wrap;gap:4px 8px}
+  #sp .tbl.fit .pwrap .bar{flex:1 1 100%;min-width:0}
+  #sp .tbl.fit .pwrap .frac{flex:0 0 auto;min-width:0}
+}
 
 #sp .now{flex:none;font-size:11px;font-weight:600;padding:1px 6px;border-radius:4px;background:var(--accent-weak);color:var(--accent);white-space:nowrap}
 #sp .dash{color:var(--text-3)}
@@ -828,86 +926,6 @@ ${Theme.css('#sp')}
   #sp.sp-anim .grid{animation-delay:.06s}
   #sp.sp-anim .farm{animation-delay:.1s}
 }
-
-/* ==== 新版上传 · 第三步（0.2.0 起是 68-step3.js **自绘**的那一块）====
-   这一块里没有一个站点节点：控件、id、提交全是我们自己的。服务端只认 POST 键，
-   所以自绘不违反契约。版式按站内那套来（标题 13.5 / 正文 13 / 次要 12.5 / 提示 12）：
-   上半 = 硬件需求（一个块三行），下半 = 画面设置（每个 .blend 一块，块间只隔发丝线）。 */
-/* hidden 属性必须真的隐藏：作者样式里的 display:flex 会压过 UA 的 [hidden]{display:none}（实测踩过：
-   折叠的内存框、未选中的"帧范围"那一行都还在显示） */
-#sp .sp-up3 [hidden]{display:none !important}
-/* 硬件需求：一个块，三行，行间发丝线 */
-#sp .sp-up3 .up3-group{border:1px solid var(--border);border-radius:var(--r);background:var(--surface-2);overflow:hidden}
-#sp .sp-up3 .up3-line{display:flex;gap:14px;padding:11px 14px;align-items:flex-start}
-#sp .sp-up3 .up3-line + .up3-line{border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-k{flex:0 0 68px;font-size:12.5px;color:var(--text-3);padding-top:1px}
-#sp .sp-up3 .up3-c{flex:1 1 auto;min-width:0}
-#sp .sp-up3 .up3-tip{font-size:12px;color:var(--text-3);line-height:1.65}
-#sp .sp-up3 .up3-tiprow{flex:1 1 100%;margin-top:2px}
-#sp .sp-up3 .up3-opts{display:flex;flex-wrap:wrap;gap:8px 18px}
-#sp .sp-up3 .up3-opt{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--text);cursor:pointer;margin:0}
-#sp .sp-up3 .up3-opt input{margin:0}
-#sp .sp-up3 .up3-opt[title]{cursor:help}
-#sp .sp-up3 .up3-opt[title] > span{border-bottom:1px dotted var(--border-strong)}
-#sp .sp-up3 .up3-cmps{display:flex;flex-wrap:wrap;gap:8px 22px}
-#sp .sp-up3 .up3-cmpbox{flex:0 1 auto}
-#sp .sp-up3 .up3-cmp{font-weight:600}
-#sp .sp-up3 .up3-rams{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px}
-#sp .sp-up3 .up3-ramck{margin:0}
-#sp .sp-up3 .up3-ramck > span{border-bottom:1px dotted var(--border-strong)}
-#sp .sp-up3 .up3-ramfields{flex:1 1 100%;display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:2px}
-#sp .sp-up3 .up3-ram{display:flex;align-items:center;gap:6px}
-#sp .sp-up3 .up3-ram > label{font-size:12.5px;color:var(--text-2);max-width:190px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-#sp .sp-up3 .up3-ram > input{width:130px}
-/* 画面设置：小标题 + 每个文件一块（只有一条上边线，不套框） */
-#sp .sp-up3 .up3-subhead{margin:20px 0 0;font-size:12.5px;color:var(--text-3);letter-spacing:.03em}
-#sp .sp-up3 .up3-blend{margin-top:10px;padding-top:14px;border-top:1px solid var(--border)}
-#sp .sp-up3 .up3-bhead h4{margin:0;font-size:14px;font-weight:600;color:var(--text)}
-#sp .sp-up3 .up3-bmeta{margin-top:3px;font-size:12px;color:var(--text-3);line-height:1.7}
-#sp .sp-up3 .up3-frames .up3-fields + .up3-fields{margin-top:10px}
-#sp .sp-up3 .up3-fields{display:flex;flex-wrap:wrap;gap:12px}
-#sp .sp-up3 .up3-fld{flex:1 1 118px;min-width:0}
-#sp .sp-up3 .up3-fld > label{display:block;margin:0 0 5px;font-size:12.5px;color:var(--text-2)}
-#sp .sp-up3 .up3-fld > input,#sp .sp-up3 .up3-fld > select{width:100%}
-/* 切块：三种形态都摆成"名字: 值" */
-#sp .sp-up3 .up3-split{display:flex;flex-wrap:wrap;align-items:center;gap:10px}
-#sp .sp-up3 .up3-split > select{min-width:150px;width:auto}
-#sp .sp-up3 .up3-static{display:inline-block;padding:6px 10px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface);font-size:13px;color:var(--text-2);cursor:help}
-#sp .sp-up3 .up3-slider{display:flex;flex-wrap:wrap;align-items:center;gap:10px;flex:1 1 auto}
-#sp .sp-up3 .up3-slider > label{font-size:12.5px;color:var(--text-2);flex:0 0 auto}
-#sp .sp-up3 .up3-read{font-size:12.5px;color:var(--accent);font-variant-numeric:tabular-nums}
-/* 切块这一行为什么没得选：理由长在这一行上，主题色 + 警示图标，别让人看漏 */
-#sp .sp-up3 .up3-why{display:flex;align-items:flex-start;gap:6px;flex:1 1 100%;margin-top:4px;
-  font-size:12.5px;color:var(--accent);line-height:1.7}
-#sp .sp-up3 .up3-whyico{flex:none;display:block;margin-top:2px}
-#sp .sp-up3 .up3-whyico .icon{width:13px;height:13px}
-/* 其余说明（EXR 清单、缺文件、驱动警告…）：与 .up3-slot 同一套消息块 */
-#sp .sp-up3 .up3-notes{margin-top:12px;padding:9px 12px;border:1px solid var(--border);border-radius:var(--r-sm);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.75}
-#sp .sp-up3 .up3-notes > div + div{margin-top:3px}
-#sp .sp-up3 .up3-notes.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 .up3-bfoot{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:flex-end;gap:12px;margin-top:14px}
-#sp .sp-up3 .up3-slot{margin-top:12px;padding:9px 12px;border-radius:var(--r-sm);border:1px solid var(--border);
-  background:var(--surface-2);font-size:12.5px;color:var(--text-2);line-height:1.7}
-#sp .sp-up3 .up3-slot.up3-bad{border-color:var(--accent);color:var(--accent)}
-#sp .sp-up3 button.up3-submit{
-  font:inherit;font-weight:600;font-size:13px;padding:9px 16px;border-radius:var(--r-sm);
-  background:var(--accent);border:1px solid var(--accent);color:var(--btn-ink);cursor:pointer;
-}
-#sp .sp-up3 button.up3-submit:disabled{opacity:.5;cursor:progress}
-/* 滑条：原生画法各浏览器差异太大，自绘一条轨道 + 一个圆点（亮暗主题都走变量） */
-#sp .sp-up3 input[type=range]{
-  appearance:none;-webkit-appearance:none;flex:1 1 200px;max-width:320px;height:18px;
-  background:transparent;cursor:pointer;padding:0;border:none;margin:0;
-}
-#sp .sp-up3 input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:var(--border-strong)}
-#sp .sp-up3 input[type=range]::-webkit-slider-thumb{
-  appearance:none;-webkit-appearance:none;width:14px;height:14px;margin-top:-5px;border-radius:50%;
-  background:var(--accent);border:2px solid var(--surface);
-}
-#sp .sp-up3 input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:var(--border-strong)}
-#sp .sp-up3 input[type=range]::-moz-range-thumb{width:12px;height:12px;border:2px solid var(--surface);border-radius:50%;background:var(--accent)}
 
 `;
 

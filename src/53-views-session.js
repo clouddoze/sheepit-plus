@@ -105,7 +105,7 @@ function typeLabel(raw) {
 
   /** 事件流 → 活动汇总：跨度 >31 天按月、否则按天，最近的在前。 */
   function activity(list) {
-    const ev = (list || []).filter((e) => Number.isFinite(e.start)).slice().sort((a, b) => b.start - a.start);
+    const ev = (list || []).filter((e) => Number.isFinite(e.start)).toSorted((a, b) => b.start - a.start);
     if (!ev.length) return { rows: [], byMonth: false, anyRender: false, anyFail: false, crossYear: false };
     const byMonth = Util.ddiff(lkey(ev[ev.length - 1].start), lkey(ev[0].start)) + 1 > 31;
     const crossYear = new Date(ev[0].start).getFullYear() !== new Date(ev[ev.length - 1].start).getFullYear();
@@ -304,7 +304,7 @@ function typeLabel(raw) {
         ${acts.anyFail ? `<span class="h s" role="columnheader">${esc(t('sess.act.failed'))}</span>` : ''}
       </div>
       ${buckets.map((b) => `<div class="actrow" role="row">
-        <span class="ad num" role="cell">${esc(b.key)}</span>
+        <span class="ad num" role="cell">${esc(UI.dateLabel(b.key))}</span>
         <span class="av num" role="cell">${b.render ? esc(spanText(b.render)) : '—'}</span>
         <span class="an num" role="cell">${fmt(b.events)}</span>
         <span class="aj num" role="cell">${fmt(b.jobs)}</span>
@@ -318,9 +318,9 @@ function typeLabel(raw) {
         ${types.map((x) => `<button data-t="${esc(x)}" aria-pressed="${sessState.type === x}">${esc(typeLabel(x))} <span class="num">${counts.get(x)}</span></button>`).join('')}
       </div></div>
       <div class="tlwrap"><div class="tablewrap log" tabindex="0" role="region" aria-label="${esc(t('sess.timeline'))}"><table class="tbl dense log">
-        <thead><tr><th>${esc(t('sess.col.type'))}</th><th>${esc(t('sess.col.start'))}</th>
-          <th class="r">${esc(t('sess.col.span'))}</th>
-          <th>${esc(t('sess.col.job'))}</th></tr></thead>
+        <thead><tr><th scope="col">${esc(t('sess.col.type'))}</th><th scope="col">${esc(t('sess.col.start'))}</th>
+          <th scope="col" class="r">${esc(t('sess.col.span'))}</th>
+          <th scope="col">${esc(t('sess.col.job'))}</th></tr></thead>
         <tbody>${logRows(rows.slice(0, sessState.limit))}
         </tbody>
       </table></div>
@@ -373,18 +373,18 @@ function typeLabel(raw) {
         <h2>${esc(t('sess.projects'))}</h2>
         <span class="sub">${esc(t('sess.prjSub', { n: fmt(s.projects.length) }))}</span>
       </div>
-      ${prjRows.length ? `<div class="tablewrap" style="margin:0 6px 6px"><table class="tbl dense fit">
+      ${prjRows.length ? `<div class="tablewrap" tabindex="0" style="margin:0 6px 6px"><table class="tbl dense fit">
         <colgroup>
           <col style="width:29%"><col style="width:19%"><col style="width:17%">
           <col style="width:19%"><col style="width:9%"><col style="width:7%">
         </colgroup>
         <thead><tr>
-          <th>${esc(t('proj.col.project'))}</th>
-          <th>${esc(t('proj.col.owner'))}</th>
-          <th>${esc(t('proj.col.status'))}</th>
-          <th>${esc(t('proj.col.progress'))}</th>
-          <th>${esc(t('proj.col.device'))}</th>
-          <th class="r">${esc(t('proj.col.memory'))}</th>
+          <th scope="col">${esc(t('proj.col.project'))}</th>
+          <th scope="col">${esc(t('proj.col.owner'))}</th>
+          <th scope="col">${esc(t('proj.col.status'))}</th>
+          <th scope="col">${esc(t('proj.col.progress'))}</th>
+          <th scope="col">${esc(t('proj.col.device'))}</th>
+          <th scope="col" class="r">${esc(t('proj.col.memory'))}</th>
         </tr></thead>
         <tbody>${prjRows.map(({ n, label, p }) => {
           const who = p && (p.ownerId || p.owner) ? SP.Views.ownerCell(p, state.userName, maps) : '<span class="dash">—</span>';

@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = dirname(HERE);
-const CHROME = process.env.SP_CHROME || 'C:/Users/user/AppData/Local/ms-playwright/chromium-1200/chrome-win64/chrome.exe';
+const CHROME = process.env.SP_CHROME || join(process.env.LOCALAPPDATA || '', 'ms-playwright', 'chromium-1200', 'chrome-win64', 'chrome.exe');
 const HARNESS_PORT = Number(process.env.SP_PORT || 8734);
 export const BASE = `http://127.0.0.1:${HARNESS_PORT}`;
 const CDP_PORT = Number(process.env.SP_CDP_PORT || 9444);

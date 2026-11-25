@@ -5,7 +5,7 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow , pageSize } = SP.VK;
+  const { esc, fmt, foot, moreRow , pageSize, sechead, emptyRow } = SP.VK;
 
   /* 重复注入（同一页里再 eval 一次产物）时不要把委托监听挂两遍。 */
   if (SP.Views && SP.Views.rankState) return;
@@ -48,10 +48,7 @@
       </tr>`;
     }).join('');
 
-    return `<div class="sechead"><h2>${esc(t('rank.title'))}</h2>
-        <span class="sub">${esc(t('rank.sub'))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('rank.count', { n: rows.length }))}</span></div>
+    return `${sechead({ title: esc(t('rank.title')), sub: esc(t('rank.sub')), right: `<span class="sub num">${esc(t('rank.count', { n: rows.length }))}</span>` })}
       ${rankSeg()}
       <div class="toolbar">
         <label class="input">${UI.icon('search')}
@@ -60,11 +57,11 @@
         <span class="sub num">${esc(t('rank.showing', { n: Math.min(shown.length, rankState.limit), total: shown.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl">
+        <div class="tablewrap" tabindex="0"><table class="tbl">
           <thead><tr>
-            <th class="tight">${esc(t('rank.col.rank'))}</th><th>${esc(t('rank.col.user'))}</th>
-            <th class="r">${esc(t('rank.col.frames'))}</th><th class="r">${esc(t('rank.col.time'))}</th>
-            <th class="r">${esc(t('rank.col.points'))}</th>
+            <th scope="col" class="tight">${esc(t('rank.col.rank'))}</th><th scope="col">${esc(t('rank.col.user'))}</th>
+            <th scope="col" class="r">${esc(t('rank.col.frames'))}</th><th scope="col" class="r">${esc(t('rank.col.time'))}</th>
+            <th scope="col" class="r">${esc(t('rank.col.points'))}</th>
           </tr></thead><tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(shown.length, rankState.limit), shown.length, 100)}
@@ -110,9 +107,7 @@
   function machineRank(state) {
     const m = state.machine;
     /* 还没取到数据时不印「共 0 款机型」—— 那是"没加载"，不是"确实没有" */
-    const head = `<div class="sechead"><h2>${esc(t('rank.machine.title'))}</h2>
-        <span class="sub">${esc(t('rank.machine.sub'))}</span>
-        <span class="spacer"></span>${m ? `<span class="sub num">${esc(t('rank.machine.count', { n: machineTotal(m) }))}</span>` : ''}</div>`;
+    const head = `${sechead({ title: esc(t('rank.machine.title')), sub: esc(t('rank.machine.sub')), right: (m ? `<span class="sub num">${esc(t('rank.machine.count', { n: machineTotal(m) }))}</span>` : '') })}`;
     if (!m) {
       /* 第一次切到机器档（或直接打开 /ranking/machine）时在这里排一次加载。
          失败过就不再自动重排：给错误态和一个重试按钮，别在 render 里空转。 */
@@ -130,8 +125,7 @@
         <td><div class="pn" title="${esc(r.model)}">${esc(r.model)}</div></td>
         ${gpu ? `<td class="r num">${esc(r.memoryText || '—')}</td>` : ''}
         <td class="r num" title="${esc(r.powerText)}">${esc(r.powerText)}</td>
-      </tr>`).join('') || `<tr><td colspan="${gpu ? 3 : 2}"><div class="state" style="padding:36px 12px">
-          <div class="small">${esc(t('rank.machine.empty'))}</div></div></td></tr>`;
+      </tr>`).join('') || emptyRow(gpu ? 3 : 2, esc(t('rank.machine.empty')));
 
     const sectSeg = `<div class="seg" id="sp-mach">${MACH_SECTS.map((k) =>
     `<button data-m="${k}" aria-pressed="${sect === k}">${esc(MACH_LABELS[k])}
@@ -145,10 +139,10 @@
         <span class="sub num">${esc(t('rank.showing', { n: Math.min(list.length, rankState.limit), total: list.length }))}</span>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-mach">
-          <thead><tr><th>${esc(t('rank.machine.col.model'))}</th>
-            ${gpu ? `<th class="r">${esc(t('rank.machine.col.memory'))}</th>` : ''}
-            <th class="r">${esc(t('rank.machine.col.power'))}</th></tr></thead>
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-mach">
+          <thead><tr><th scope="col">${esc(t('rank.machine.col.model'))}</th>
+            ${gpu ? `<th scope="col" class="r">${esc(t('rank.machine.col.memory'))}</th>` : ''}
+            <th scope="col" class="r">${esc(t('rank.machine.col.power'))}</th></tr></thead>
           <tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(list.length, rankState.limit), list.length, 100)}
@@ -181,7 +175,7 @@
         <td class="r num">${esc(x.totalText)}</td>
         <td class="r num">${esc(x.membersText)}</td>
       </tr>`;
-    }).join('') : `<tr><td colspan="6"><div class="state" style="padding:36px 12px"><div class="small">${esc(t('team.none'))}</div></div></td></tr>`;
+    }).join('') : emptyRow(6, esc(t('team.none')));
 
     /* 我的团队单独一行：榜单按积分排，自己那个队可能在第 1600 名，分页里根本看不到 */
     const mine = mineId ? all.find((x) => String(x.id) === mineId) : null;
@@ -202,22 +196,19 @@
         </div>`
       : '';
 
-    return `<div class="sechead"><h2>${esc(t('team.title'))}</h2>
-        <span class="sub">${esc(t('team.sub'))}</span>
-        <span class="spacer"></span>
-        <span class="sub num">${esc(t('team.count', { n: all.length }))}</span></div>
+    return `${sechead({ title: esc(t('team.title')), sub: esc(t('team.sub')), right: `<span class="sub num">${esc(t('team.count', { n: all.length }))}</span>` })}
       <div class="toolbar">
         <label class="input">${UI.icon('search')}
           <input id="sp-tq" type="search" placeholder="${esc(t('team.search'))}" value="${esc(teamsState.q)}">
         </label>
       </div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-teams">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-teams">
           <colgroup><col class="c-rank"><col class="c-name"><col class="c-90"><col class="c-180"><col class="c-total"><col class="c-mem"></colgroup>
           <thead><tr>
-            <th class="tight">${esc(t('team.col.rank'))}</th><th>${esc(t('team.col.name'))}</th>
-            <th class="r">${esc(t('team.col.p90'))}</th><th class="r">${esc(t('team.col.p180'))}</th>
-            <th class="r">${esc(t('team.col.total'))}</th><th class="r">${esc(t('team.col.members'))}</th>
+            <th scope="col" class="tight">${esc(t('team.col.rank'))}</th><th scope="col">${esc(t('team.col.name'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.p90'))}</th><th scope="col" class="r">${esc(t('team.col.p180'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.total'))}</th><th scope="col" class="r">${esc(t('team.col.members'))}</th>
           </tr></thead><tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(rows.length, teamsState.limit), rows.length, 100)}
@@ -258,7 +249,7 @@
         ${d.hasLastFrame ? `<td class="r num">${esc(m.lastFrame || '—')}</td>` : ''}
         ${d.hasRemove ? `<td class="r">${m.removeUrl ? `<button class="btn sm" data-act="team-act" data-url="${esc(m.removeUrl)}" data-confirm="${esc(t('team.removeConfirm'))}">${esc(t('team.remove'))}</button>` : ''}</td>` : ''}
       </tr>`;
-    }).join('') || `<tr><td colspan="4"><div class="state" style="padding:30px 12px"><div class="small">${esc(t('team.noMembers'))}</div></div></td></tr>`;
+    }).join('') || emptyRow(4, esc(t('team.noMembers')), '30px 12px');
 
     return `<div class="sechead"><h2>${esc(d.name)}</h2>
         <span class="sub num">${esc(d.pointsText)}</span>
@@ -268,10 +259,10 @@
         ${act}
         <a class="btn" href="/team" target="_self">${esc(t('team.back'))}</a></div>
       <div class="panel" style="padding:14px 6px 6px">
-        <div class="tablewrap"><table class="tbl tbl-team${d.hasRemove ? ' tbl-team-6' : (d.hasLastFrame ? ' tbl-team-5' : '')}">
+        <div class="tablewrap" tabindex="0"><table class="tbl tbl-team${d.hasRemove ? ' tbl-team-6' : (d.hasLastFrame ? ' tbl-team-5' : '')}">
           <colgroup><col class="c-rank"><col class="c-member"><col class="c-pts"><col class="c-date">${d.hasLastFrame ? '<col class="c-last">' : ''}${d.hasRemove ? '<col class="c-rm">' : ''}</colgroup>
-          <thead><tr><th class="tight">${esc(t('team.col.rank'))}</th><th>${esc(t('team.col.member'))}</th>
-            <th class="r">${esc(t('team.col.points'))}</th><th class="r">${esc(t('team.col.joined'))}</th>${d.hasLastFrame ? `<th class="r">${esc(t('team.col.lastFrame'))}</th>` : ''}${d.hasRemove ? `<th class="r">${esc(t('team.col.remove'))}</th>` : ''}</tr></thead>
+          <thead><tr><th scope="col" class="tight">${esc(t('team.col.rank'))}</th><th scope="col">${esc(t('team.col.member'))}</th>
+            <th scope="col" class="r">${esc(t('team.col.points'))}</th><th scope="col" class="r">${esc(t('team.col.joined'))}</th>${d.hasLastFrame ? `<th scope="col" class="r">${esc(t('team.col.lastFrame'))}</th>` : ''}${d.hasRemove ? `<th scope="col" class="r">${esc(t('team.col.remove'))}</th>` : ''}</tr></thead>
           <tbody>${body}</tbody>
         </table></div>
         ${moreRow(Math.min(members.length, teamState.limit), members.length, 100)}

@@ -24,6 +24,9 @@
     caretDown: '<path d="M12 15.5l-5.5-7h11z"/>',
     star: '<path d="M12 2.6l2.94 5.96 6.58.96-4.76 4.64 1.12 6.55L12 17.62l-5.88 3.09 1.12-6.55L2.48 9.52l6.58-.96z"/>',
     more: '<path d="M6 10a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4zm6 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>',
+    /* 底部导航用：文件夹（项目）与条形（排行榜） */
+    folder: '<path d="M2 5.5h6.2l1.7 2H22v11.9a1.1 1.1 0 0 1-1.1 1.1H3.1A1.1 1.1 0 0 1 2 19.4zm2 3.5v10.9h16V9z"/>',
+    bars: '<path d="M4 6h16v2H4zm0 5h11v2H4zm0 5h14v2H4z"/>',
     check: '<path d="M9.55 17.6l-4.6-4.6 1.7-1.7 2.9 2.9 7.8-7.8 1.7 1.7z"/>',
     /* 警示（三角 + 感叹号）：给"检测到降噪"这类"这一项为什么没得选"用 */
     warn: '<path d="M12 2.4c.56 0 1.08.3 1.36.78l8.2 14.2A1.57 1.57 0 0 1 20.2 19.8H3.8a1.57 1.57 0 0 1-1.36-2.42l8.2-14.2A1.57 1.57 0 0 1 12 2.4zm0 2.4L5.06 17.4h13.88L12 4.8zm-1 3.1h2v4.9h-2zm0 6.1h2v2h-2z"/>',
@@ -48,6 +51,50 @@
   const avatar = (src, name, cls) => (src
     ? `<img src="${esc(src)}" alt="" loading="lazy" referrerpolicy="no-referrer">`
     : `<span class="${cls || ''}">${esc(initial(name))}</span>`);
+
+  /* ---- 确认框：原生 <dialog>，替代 window.confirm ----
+     window.confirm 两个硬伤：样式不可控（深色界面弹一个白框）、说不出"删了会怎样"。
+     原生 dialog 自带焦点陷阱、Esc 关闭、::backdrop、关闭后焦点回到触发元素 —— 这些都不该手写。
+     返回 Promise<boolean>，调用点仍然是一次 await。危险操作默认焦点落在「取消」上。 */
+  let dlgSeq = 0;
+  function confirmBox(opts) {
+    const o = opts || {};
+    const id = ++dlgSeq;
+    const dlg = document.createElement('dialog');
+    dlg.className = 'spdlg' + (o.danger ? ' danger' : '');
+    /* 不写 role / aria-modal：原生 modal 已经提供 dialog 语义（指南的 DON'T）。
+       危险操作靠红色确认键与后果文案表达，不靠改 role。 */
+    dlg.setAttribute('aria-labelledby', 'sp-dlg-t' + id);
+    if (o.body) dlg.setAttribute('aria-describedby', 'sp-dlg-b' + id);
+    /* closedby="any"：原生的「点遮罩关闭」。不支持的浏览器由下面那个 click 兜底。 */
+    dlg.setAttribute('closedby', 'any');
+    /* <form method="dialog">：按钮的 value 直接写进 returnValue；
+       Esc、点遮罩、两个按钮全都汇到同一个 close 事件 —— 不需要给每个出口各挂一个处理器
+       （html 指南的 DO：用原生关闭，不要手写 JS）。 */
+    dlg.innerHTML = `<form method="dialog" class="dlg-in">
+        <h2 class="dlg-t" id="sp-dlg-t${id}">${esc(o.title || t('dlg.title'))}</h2>
+        ${o.body ? `<p class="dlg-b" id="sp-dlg-b${id}">${esc(o.body)}</p>` : ''}
+        <div class="dlg-a">
+          <button type="submit" class="btn" value="cancel" autofocus>${esc(o.cancel || t('dlg.cancel'))}</button>
+          <button type="submit" class="btn ${o.danger ? 'danger' : 'primary'}" value="ok">${esc(o.ok || t('dlg.ok'))}</button>
+        </div>
+      </form>`;
+    return new Promise((resolve) => {
+      dlg.addEventListener('close', () => {
+        resolve(dlg.returnValue === 'ok');
+        // 先 close 让浏览器把焦点还给触发元素，再摘节点
+        setTimeout(() => dlg.remove(), 0);
+      });
+      /* closedby 的降级（Safari 尚未支持）：只在缺这个 IDL 属性时补一次。
+         点遮罩时 event.target 就是 dialog 本身（内容全在 .dlg-in 里），子元素不会误判。 */
+      if (!('closedBy' in HTMLDialogElement.prototype)) {
+        dlg.addEventListener('click', (ev) => { if (ev.target === dlg && dlg.open) dlg.close(''); });
+      }
+      // 挂进 #sp 才能在 top layer 里继承主题 token；dialog 的 top layer 不受父级 overflow 影响
+      (document.getElementById('sp') || document.body).appendChild(dlg);
+      dlg.showModal();
+    });
+  }
 
   /** 指标带：格数写进 data-n 交给 CSS（30-style.js 的 .kpis[data-n]），别在这里写死列数 */
   const kpis = (items) => `<div class="kpis" data-n="${items.length}">${items.map((it) => `
@@ -219,7 +266,12 @@
         const mx = Math.max(...series), mn = Math.min(...series);
         const d = series.map((v, i) =>
           `${i ? 'L' : 'M'}${(i * 100 / (series.length - 1)).toFixed(1)},${(20 - ((v - mn) / Math.max(1, mx - mn)) * 18).toFixed(1)}`).join('');
-        spark = `<svg viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" opacity=".75"/></svg>`;
+        /* 站点只给值序列、不给时间戳；悬停只能报「第几个采样点的值」。
+           每个点一段透明热区 + 原生 <title>，不引 JS、不占布局。 */
+        const n = series.length;
+        const hits = series.map((v, i) =>
+          `<rect x="${(i * 100 / n).toFixed(2)}" y="0" width="${(100 / n).toFixed(2)}" height="20" fill="transparent"><title>${esc(fmt(v))}</title></rect>`).join('');
+        spark = `<svg viewBox="0 0 100 20" preserveAspectRatio="none" aria-hidden="true"><path d="${d}" fill="none" stroke="var(--accent)" stroke-width="1.5" vector-effect="non-scaling-stroke" opacity=".75"/>${hits}</svg>`;
       }
       return `<div>
         <div class="k">${esc(s.key ? t(s.key) : s.label || '—')}</div>
@@ -430,6 +482,25 @@
     if (chartResize) { window.removeEventListener('resize', chartResize); chartResize = null; }
   }
 
+  /* 站点给的日期串有三种形状："Aug 27" / "27-07-2026" / "2026-10-07"。
+     中文环境统一成「7月27日」；跨年才带年份（图表跨度 3–4 个月，同年省略年份更省 x 轴空间）。
+     英文环境保持站点原样 —— 这是站点自己的日期写法，不替它改。 */
+  function dateLabel(raw, opts) {
+    const s = String(raw || '').trim();
+    if (!SP.I18n || SP.I18n.lang !== 'zh') return s;
+    const forceYear = !!(opts && opts.year);
+    let y = '', m = 0, d = 0, mm;
+    if ((mm = s.match(/^(\d{1,2})-(\d{2})-(\d{4})$/))) { d = +mm[1]; m = +mm[2]; y = mm[3]; }
+    else if ((mm = s.match(/^(\d{4})-(\d{2})-(\d{2})$/))) { y = mm[1]; m = +mm[2]; d = +mm[3]; }
+    else if ((mm = s.match(/^(\d{1,2})-(\d{2})$/))) { m = +mm[1]; d = +mm[2]; }
+    else if ((mm = s.match(/^(\d{4})-(\d{2})$/))) { y = mm[1]; m = +mm[2]; }
+    else if ((mm = s.match(/^([A-Za-z]{3})[a-z]*\s+(\d{1,2})$/)) && MON3[mm[1].toLowerCase()]) { m = MON3[mm[1].toLowerCase()]; d = +mm[2]; }
+    if (!m) return s;
+    const sameYear = !y || y === String(new Date().getFullYear());
+    const head = (y && (forceYear || !sameYear)) ? y + '年' : '';
+    return head + m + '月' + (d ? d + '日' : '');
+  }
+
   function pointsChart(box, series, opts) {
     if (!box || !series || series.length < 2) return;
     /* 单位跟着调用方走：总览是「积分」，实况是「帧 / 台」——不能写死。 */
@@ -454,7 +525,7 @@
         `<text x="${L - 9}" y="${(y(tv) + 3.6).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--text-3)" style="font-variant-numeric:tabular-nums">${compact(tv)}</text>`).join('');
       const at = [0, Math.floor((n - 1) / 2), n - 1];
       const xl = at.map((i, k) =>
-        `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${esc(series[i].d)}</text>`).join('');
+        `<text x="${x(i).toFixed(1)}" y="${H - 6}" text-anchor="${k === 0 ? 'start' : k === 2 ? 'end' : 'middle'}" font-size="11" fill="var(--text-3)">${esc(dateLabel(series[i].d))}</text>`).join('');
 
       const old = box.querySelector('svg');
       if (old) old.remove();
@@ -496,7 +567,7 @@
       cross.setAttribute('x1', vx); cross.setAttribute('x2', vx); cross.setAttribute('opacity', '.55');
       dot.setAttribute('cx', vx); dot.setAttribute('cy', vy); dot.setAttribute('opacity', '1');
       if (tip) {
-        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b>${unit ? ' ' + esc(unit) : ''}<i>${esc(series[i].d)}</i>`;
+        tip.innerHTML = `<b class="num">${fmt(vals[i])}</b>${unit ? ' ' + esc(unit) : ''}<i>${esc(dateLabel(series[i].d))}</i>`;
         tip.style.left = (vx / geom.W * 100) + '%';
         tip.style.top = (vy - 10) + 'px';
         tip.style.opacity = '1';
@@ -532,6 +603,6 @@
     return String(Math.round(n));
   };
 
-  SP.UI = { icon, ICONS, logo, avatar, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact };
+  SP.UI = { icon, ICONS, logo, avatar, confirmBox, kpis, heatmap, bindHeatTips, months, farm, machines, machineDetail, pauseKeys, progress, progressText, devices, state, newUser, skeleton, compact, dateLabel };
   SP.Charts = { points: pointsChart, dispose: disposeCharts };
 })();

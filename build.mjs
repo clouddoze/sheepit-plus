@@ -28,20 +28,6 @@ const outArg = (() => {
 })();
 const OUT = outArg || join(DIST, 'sheepit-plus.user.js');
 
-// ---- 体积提示（只提示，不拦构建） ----
-// 为什么要有：上一轮把源码注释从 99.7 KB 压到 33.4 KB、产物从 339,846 压到 271,560 字节
-// （-20%）。但构建只打印 KB，没有任何东西提醒注释以后再长回来，这条就是那个提醒。
-// 为什么只提示不拦（2026-10-06 用户拍板「不要硬上限，提示一下就行」）：加功能本来就会让产物
-// 变大，构建不该替人挡路 —— 提醒一下，变大是否接受由人决定。
-// 提示线本来就该是「离现状一截」，不是「贴着现状」——贴着现状就变成每次构建都报，报久了没人看。
-// 0.1.13 加了第三步翻译与管理页接管（+21 KB），所以从 285000 抬到 320000，留约 10% 余量。
-// 0.1.15 补管理页/调度器文案（12-lang-zh.js +3.5 KB）后到 321,161，正好贴线 —— 抬到 360000。
-// 0.2.0 起「原版」与「新版（源码重写）」两套界面临时并存（三态：关/原版/开），产物到 42x KB，
-// 所以抬到 460000。2026-10-07 兼容档整条退役（60-step3.js 删除，产物回到 414,853），按上面
-// 「提示线该离现状一截」的口径收到 440000 —— 再涨 25 KB 就该有人看一眼了。
-const BUDGET_OUT_BYTES = 440000;   // 产物 UTF-8 字节提示线
-const BUDGET_COMMENT_RATIO = 0.25; // 注释字节 / 产物字节 的提示线
-
 const files = readdirSync(SRC).filter((f) => f.endsWith('.js')).sort();
 if (!files.length) {
   console.error('× src/ 下没有找到任何 .js');
@@ -60,13 +46,13 @@ if (!version) {
   process.exit(1);
 }
 
-const banner = `/* sheepit-plus v${version} — 由 build.mjs 生成，请勿直接编辑。源码见 src/ */`;
+
 const chunks = files.map((f, i) => {
   const body = readFileSync(join(SRC, f), 'utf8').trimEnd();
   // 第 1 个文件是用户脚本头。// ==UserScript== 必须落在产物第 1 行：前面挂任何注释或空白，
   // GreasyFork 都会警告「您的代码没有以 // ==UserScript== 开头」，部分管理器也会不认。
   // 所以文件 0 不挂模块横幅（模块名就是它自己），生成的 banner 排在 metadata 块之后。
-  if (i === 0) return `${body}\n\n${banner}`;
+  if (i === 0) return body;
   return `/* ===== src/${f} ===== */\n${body}`;
 });
 const out = `${chunks.join('\n\n')}\n`;
@@ -153,19 +139,8 @@ const commentBytes = files.reduce((sum, f) => {
 }, 0);
 const outBytes = Buffer.byteLength(out, 'utf8');
 const commentRatio = commentBytes / outBytes;
-console.log(`  注释：${commentBytes} 字节 / 产物 ${outBytes} 字节 = ${(commentRatio * 100).toFixed(1)}%`
-  + `（占比提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%）`);
+console.log(`  注释：${commentBytes} 字节 / 产物 ${outBytes} 字节 = ${(commentRatio * 100).toFixed(1)}%`);
 
-// 只提示、不拦：加功能本来就会变大，构建不该替人挡路（用户 2026-10-06 拍板）。
-if (outBytes > BUDGET_OUT_BYTES) {
-  console.warn(`⚠ 产物 ${outBytes} 字节，已过提示线 ${BUDGET_OUT_BYTES} 字节（超 ${outBytes - BUDGET_OUT_BYTES} 字节）——`
-    + '变的这版是不是有意的？');
-}
-if (commentRatio > BUDGET_COMMENT_RATIO) {
-  console.warn(`⚠ 注释 ${commentBytes} 字节，占产物 ${(commentRatio * 100).toFixed(1)}%，`
-    + `已过提示线 ${(BUDGET_COMMENT_RATIO * 100).toFixed(0)}%（${Math.floor(outBytes * BUDGET_COMMENT_RATIO)} 字节）`
-    + ' —— 注释是不是又写多了？');
-}
 
 if (!checkOnly) {
   if (!outArg && !existsSync(DIST)) mkdirSync(DIST, { recursive: true });

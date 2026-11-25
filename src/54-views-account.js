@@ -5,7 +5,7 @@
   const SP = window.__SHEEPIT_PLUS__;
   if (!SP) return;
   const { Util, UI, t, I18n } = { Util: SP.Util, UI: SP.UI, t: SP.t, I18n: SP.I18n };
-  const { esc, fmt, foot, moreRow } = SP.VK;
+  const { esc, fmt, foot, moreRow, sechead } = SP.VK;
 
   /* 账户页当前标签（原放在 51 里，跟着视图走） */
   const acctState = { tab: 'sched' };
@@ -18,7 +18,7 @@
     const langOpts = [['auto', t('set.lang.auto')]]
       .concat(I18n.available().map((l) => [l.code, l.label]));
 
-    return `<div class="sechead"><h2>${esc(t('set.title'))}</h2></div>
+    return `${sechead({ title: esc(t('set.title')) })}
       <div class="panel settings">
         <div class="row"><div class="lbl">${esc(t('set.theme'))}</div>
           ${seg('sp-theme', state.themePref, [['auto', t('set.theme.auto')], ['dark', t('set.theme.dark')], ['light', t('set.theme.light')]])}</div>
@@ -284,7 +284,8 @@
     const name = btn && btn.dataset.listDel;
     const s = prioState();
     if (!url || !list || !s || !s.account) return;   // 读不到站点给的地址：不发空 POST
-    if (btn.dataset.confirm && !window.confirm(btn.dataset.confirm)) return;
+    /* 原生对话框：样式跟随主题，Esc 取消，焦点默认在「取消」 */
+    if (btn.dataset.confirm && !(await SP.UI.confirmBox({ body: btn.dataset.confirm, danger: true }))) return;
     btn.disabled = true;
     try {
       const r = await SP.Api.post(url);
@@ -452,7 +453,7 @@
     };
     const tab = acctPanels[acctState.tab] ? acctState.tab : 'sched';
 
-    return `<div class="sechead"><h2>${esc(t('account.title'))}</h2></div>
+    return `${sechead({ title: esc(t('account.title')) })}
       <div class="seg" id="sp-acct-tabs" role="tablist">${acctTabs.map(([k, label]) =>
         `<button data-tab="${k}" role="tab" aria-selected="${tab === k}" aria-pressed="${tab === k}">${esc(label)}</button>`).join('')}</div>
       <div class="acct">${acctPanels[tab]}</div>

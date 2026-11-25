@@ -285,6 +285,25 @@
     const item = ([k, label, short]) =>
       `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>`
       + `<span class="navfull">${Util.esc(label)}</span><span class="navshort">${Util.esc(short || label)}</span></button>`;
+    /* 窄屏底部导航：只放 5 个高频入口；设置页隐藏的项在底部也一起隐藏。 */
+    const TAB_ITEMS = [['overview', 'sheep'], ['projects', 'folder'], ['ranking', 'bars'], ['live', 'cpu'], ['account', 'user']];
+    const tabs = TAB_ITEMS
+      .filter(([k]) => NAV_ITEMS.some(([n, locked]) => n === k && (locked || !state.navHidden.includes(k))))
+      .map(([k, ic]) => `<button data-nav="${k}" ${navHere === k ? 'aria-current="page"' : ''}>${UI.icon(ic)}<span>${Util.esc(t('nav.' + k))}</span></button>`)
+      .join('');
+    /* 底部没放的项（上传 / 团队 / 设置）收进「更多」：否则设置在手机上没有入口。 */
+    const tabKeys = TAB_ITEMS.map(([k]) => k);
+    const moreItems = NAV_ITEMS
+      .filter(([k, locked]) => tabKeys.indexOf(k) < 0 && (locked || !state.navHidden.includes(k)))
+      .map(([k]) => [k, t('nav.' + k)]);
+    const tabMore = moreItems.length
+      ? `<div class="tabmore-wrap">
+          <button type="button" data-act="tab-more" aria-haspopup="menu" aria-expanded="false">${UI.icon('more')}<span>${Util.esc(t('nav.more'))}</span></button>
+          <div class="tabmore" id="sp-tabmore" role="menu" hidden>
+            ${moreItems.map(([k, label]) => `<button type="button" role="menuitem" data-nav="${k}">${Util.esc(label)}</button>`).join('')}
+          </div>
+        </div>`
+      : '';
     /* 右侧顺序（用户 2026-10-18 定）：刷新时间 → 主题快速切换 → 刷新 → 原版界面 → 头像 */
     const classic = Util.esc(t('mode.toClassic'));
     return `<div class="wrap">
@@ -297,11 +316,18 @@
           <button class="iconbtn" id="sp-theme-quick" data-act="theme-cycle" title="${Util.esc(themeQuickTitle(state.themePref))}" aria-label="${Util.esc(themeQuickTitle(state.themePref))}">${themeQuickIcon(state.themePref)}</button>
           <button class="iconbtn" data-act="refresh" title="${Util.esc(t('top.refresh'))}" aria-label="${Util.esc(t('top.refresh'))}">${UI.icon('refresh')}</button>
           <button class="modebtn" data-act="mode-classic" title="${Util.esc(t('mode.toClassicTip'))}"><span class="txt">&lt; ${classic}</span><span class="txts">&lt; ${Util.esc(t('mode.toClassicShort'))}</span></button>
-                    ${u ? `<span class="who" title="${Util.esc(u)}">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}</span>` : ''}
+                    ${u ? `<div class="who-wrap">
+                      <button type="button" class="who" data-act="user-menu" aria-haspopup="menu" aria-expanded="false" title="${Util.esc(u)}">${UI.avatar(SP.state && SP.state.myAvatar, u, 'ini')}<span class="uname">${Util.esc(u)}</span></button>
+                      <div class="umenu" id="sp-umenu" role="menu" hidden>
+                        <button type="button" role="menuitem" data-nav="account">${Util.esc(t('top.account'))}</button>
+                        <a role="menuitem" href="/user/logout">${Util.esc(t('top.logout'))}</a>
+                      </div>
+                    </div>` : ''}
         </div>
       </div>
       <div id="sp-body"></div>
-    </div>`;
+    </div>
+    <nav class="tabbar">${tabs}${tabMore}</nav>`;
   }
 
   /** 重建外壳（导航项变了）+ 重画内容，保留滚动位置。 */
@@ -374,6 +400,60 @@
     paintMeta();
     /* 表头全选 / 批量条 / 行勾选的状态必须跟着新 DOM 一起落定（render 不负责这些派生状态） */
     syncPicks();
+    initTableScrollX();
+  }
+
+  /* ---- 表格横向滚动：顶部镜像条 ----
+     窄屏/中宽表格靠横向滚动，但原生滚动条在表格最底部 —— 表格一长，用户得先滚到底才能拖它。
+     在每张真的溢出的表格上方插一条镜像滚动条，两边 scrollLeft 双向同步；不溢出的表格不插。 */
+  let tscrollObs = null;
+  /* 真溢出才允许横向滚动：宽屏下表格 width:100% 的亚像素会让 scrollWidth 比 clientWidth
+     多 1–2px，不关掉 overflow-x 就会常驻一条底部滚动条。阈值 2px 吞掉亚像素。 */
+  function applyTableOverflow() {
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      w.classList.toggle('has-x', w.scrollWidth > w.clientWidth + 2);
+    });
+  }
+  /* 给溢出的表格插一条顶部镜像条；已经存在就不重复插。 */
+  function attachTopScroll(w) {
+    const prev = w.previousElementSibling;
+    if (prev && prev.classList.contains('tscroll')) return;
+    const top = document.createElement('div');
+    top.className = 'tscroll';
+    top.setAttribute('aria-hidden', 'true');
+    const inner = document.createElement('div');
+    top.appendChild(inner);
+    w.parentNode.insertBefore(top, w);
+    top.addEventListener('scroll', () => { w.scrollLeft = top.scrollLeft; });
+    w.addEventListener('scroll', () => { if (top.scrollLeft !== w.scrollLeft) top.scrollLeft = w.scrollLeft; });
+  }
+  /* 宽度变化时同时维护三件事：overflow-x 开关、顶部条的插入/移除、顶部条宽度同步。
+     从宽屏缩到放不下 → 出现；从窄屏放大到放得下 → 消失。 */
+  function syncTableScrollX() {
+    applyTableOverflow();
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      const need = w.scrollWidth > w.clientWidth + 2;
+      const prev = w.previousElementSibling;
+      const top = prev && prev.classList.contains('tscroll') ? prev : null;
+      if (need && !top) attachTopScroll(w);
+      if (!need && top) top.remove();
+      const t = w.previousElementSibling;
+      if (t && t.classList.contains('tscroll')) {
+        const inner = t.firstElementChild;
+        if (inner) inner.style.width = w.scrollWidth + 'px';
+      }
+    });
+  }
+  function initTableScrollX() {
+    if (!window.ResizeObserver) return;
+    if (tscrollObs) tscrollObs.disconnect();
+    tscrollObs = new ResizeObserver(syncTableScrollX);
+    document.querySelectorAll('#sp .tablewrap').forEach((w) => {
+      tscrollObs.observe(w);
+      const tbl = w.firstElementChild;
+      if (tbl) tscrollObs.observe(tbl);
+    });
+    syncTableScrollX();
   }
 
   function paintMeta() {
@@ -947,6 +1027,36 @@
       closeProjMenu();
     }
 
+    /* 头像菜单：账户设置 / 退出登录。点按钮切换，点别处关闭。 */
+    const umBtn = ev.target.closest('[data-act="user-menu"]');
+    const umenu = document.getElementById('sp-umenu');
+    if (umBtn) {
+      if (umenu) {
+        const open = umenu.hidden;
+        umenu.hidden = !open;
+        umBtn.setAttribute('aria-expanded', String(open));
+      }
+      return;
+    }
+    if (umenu && !umenu.hidden && !ev.target.closest('.umenu')) {
+      umenu.hidden = true;
+      const b = document.querySelector('[data-act="user-menu"]');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+
+    /* 底部「更多」二级菜单：上传 / 团队 / 设置 */
+    const tmBtn = ev.target.closest('[data-act="tab-more"]');
+    const tm = document.getElementById('sp-tabmore');
+    if (tmBtn) {
+      if (tm) { const open = tm.hidden; tm.hidden = !open; tmBtn.setAttribute('aria-expanded', String(open)); }
+      return;
+    }
+    if (tm && !tm.hidden && !ev.target.closest('.tabmore')) {
+      tm.hidden = true;
+      const b = document.querySelector('[data-act="tab-more"]');
+      if (b) b.setAttribute('aria-expanded', 'false');
+    }
+
     const nav = ev.target.closest('[data-nav]');
     if (nav) {
       /* 删除中不许跳走：串行 POST 还在发，换页会让"删到哪了"完全断掉 */
@@ -1119,32 +1229,27 @@
       if (kind === 'team-act') {
         const url = act.dataset.url;
         if (!url) return;
-        /* 二级确认：第一次点只把按钮变成「再点一次确认」，4 秒内不点自动复原。
-           退出/解散都是不可逆或半不可逆的动作，一次误触代价太高。 */
-        if (act.dataset.armed !== '1') {
-          act.dataset.armed = '1';
-          act.dataset.label = act.textContent;
-          act.textContent = t('team.armConfirm');
-          act.style.color = 'var(--accent)';
-          setTimeout(() => {
-            if (!act.isConnected || act.dataset.armed !== '1') return;
-            act.dataset.armed = '0';
-            act.textContent = act.dataset.label || '';
-            act.style.color = '';
-          }, 4000);
+        /* 确认文案一直存在 data-confirm 上，但旧实现只做了「再点一次」的 arm ——
+           用户看不到「离开会怎样」。改成原生对话框：文案一次说清，取消是默认焦点。
+           危险动作（解散 / 退出 / 移除）用红色确认键；接受申请这类可逆操作直接执行。 */
+        const danger = /disband|leave|remove/.test(act.dataset.teamAct || '');
+        const go = () => {
+          act.disabled = true;
+          Api.post(url).then((r) => {
+            if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); act.disabled = false; return; }
+            toast(t('team.ok'));
+            Api.invalidate();
+            setTimeout(() => location.reload(), 500);
+          }).catch((e) => {
+            toast(t('account.failed', { msg: (e && e.message) || String(e) }));
+            act.disabled = false;
+          });
+        };
+        if (act.dataset.confirm) {
+          UI.confirmBox({ body: act.dataset.confirm, danger }).then((ok) => { if (ok) go(); });
           return;
         }
-        act.dataset.armed = '0';
-        act.disabled = true;
-        Api.post(url).then((r) => {
-          if (!Api.isOk(r)) { toast(t('account.failed', { msg: r })); act.disabled = false; return; }
-          toast(t('team.ok'));
-          Api.invalidate();
-          setTimeout(() => location.reload(), 500);
-        }).catch((e) => {
-          toast(t('account.failed', { msg: (e && e.message) || String(e) }));
-          act.disabled = false;
-        });
+        go();
         return;
       }
 
@@ -1264,8 +1369,14 @@
 
     const del = ev.target.closest('[data-del]');
     if (del) {
-      if (del.dataset.confirm && !window.confirm(del.dataset.confirm)) return;
       if (!del.dataset.del) return;   // 站点给不出动作地址时不发空 POST（会打到当前页）
+      /* 事件回调不能 await：确认框返回 Promise，用 then 串起"确认后才发请求" */
+      if (del.dataset.confirm) {
+        const url = del.dataset.del;
+        UI.confirmBox({ body: del.dataset.confirm, danger: true })
+          .then((ok) => { if (ok) submit(() => Api.post(url)); });
+        return;
+      }
       submit(() => Api.post(del.dataset.del));
       return;
     }
